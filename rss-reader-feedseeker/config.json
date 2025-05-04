@@ -1,0 +1,93 @@
+{
+    "name": "RSS Reader using Feedseeker",
+    "version": "1.0.0",
+    "description": "An integration for reading RSS feeds using Feedseeker as the internal implementeation",
+    "entry_point": "rss_reader.py",
+    "auth": {
+        "identifier": "rss_authentication",
+        "type": "custom",
+        "fields": {
+            "type":"object",
+            "properties": {
+                "user_name": {
+                    "type": "string",
+                    "format": "text",
+                    "label": "Username for the RSS feed",
+                    "help_text": "You'll get this from the RSS feed provider."
+                },
+                "password": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "Password for the RSS feed",
+                    "help_text": "You'll get this from the RSS feed provider."
+                }
+            },
+            "required": [
+            ]
+        }
+    },
+    "actions": {
+        "get_feed": {
+            "description": "Retrieve entries from an RSS feed.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "feed_url": {
+                        "type": "string",
+                        "description": "The URL of the RSS feed to read."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of entries to return.",
+                        "default": 10
+                    }
+                },
+                "required": [
+                    "feed_url"
+                ]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "feed_title": {
+                        "type": "string",
+                        "description": "Title of the RSS feed"
+                    },
+                    "feed_link": {
+                        "type": "string",
+                        "description": "Link to the RSS feed"
+                    },
+                    "entries": {
+                        "type": "array",
+                        "description": "Array of feed entries",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "Entry title"
+                                },
+                                "link": {
+                                    "type": "string",
+                                    "description": "Link to entry"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "The description of the entry"
+                                },
+                                "published": {
+                                    "type": "string",
+                                    "description": "Published date"
+                                },
+                                "author": {
+                                    "type": "string",
+                                    "description": "Author"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
