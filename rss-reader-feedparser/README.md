@@ -8,9 +8,9 @@ The RSS Reader integration provides a simple way to access and process RSS feed 
 
 ## Setup & Authentication
 
-The integration via feedparser supports optional **HTTP basic authentication** for RSS feeds that require credentials. Any other authentication requirements that are [supported by feedparser](https://pythonhosted.org/feedparser/http-authentication.html) beyond that, will need to be added to this integration via PRs.
-
 While most public RSS feeds don't require authentication, some private or protected feeds may need username and password credentials.
+
+The integration via feedparser supports optional **HTTP basic authentication** for RSS feeds that require credentials. Any other authentication requirements that are [supported by feedparser](https://pythonhosted.org/feedparser/http-authentication.html) beyond that, will need to be added to this integration via PRs.
 
 **Authentication Fields:**
 
@@ -53,7 +53,7 @@ Inputs:
 }
 ```
 
-**Example 2: Monitor a news source with authentication**
+**Example 2: Get data from a news source with authentication**
 
 Inputs:
 
@@ -78,6 +78,6 @@ Auth:
 
 To run the tests:
 
-1.  Navigate to the integration's directory: `cd rss-reader-feedseeker`
+1.  Navigate to the integration's directory: `cd rss-reader-feedparser`
 2.  Install dependencies: `pip install -r requirements.txt -t dependencies`
 3.  Run the tests: `python tests/test_rss_reader.py` 
