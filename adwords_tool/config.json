@@ -3,22 +3,32 @@
     "version": "1.0.0",
     "description": "Fetches campaign data from Google AdWords API.",
     "entry_point": "adwords_module.py",
-    "auth": {
-        "identifier": "google_ads_yaml",
-        "type": "yaml_file",
-        "fields": {
-            "type": "object",
-            "properties": {
-                "info": {
-                    "type": "string",
-                    "format": "text",
-                    "label": "Authentication Info",
-                    "help_text": "This integration requires a google-ads.yaml file in its root directory for authentication. Please refer to Google Ads API documentation for creating this file."
-                }
+    "configuration_schema": {
+        "type": "object",
+        "properties": {
+            "developer_token": {
+                "type": "string",
+                "format": "password",
+                "label": "Google Ads Developer Token",
+                "help_text": "Your Google Ads API Developer Token."
             },
-            "required": []
+            "login_customer_id": {
+                "type": "string",
+                "format": "text",
+                "label": "Login Customer ID (for MCC)",
+                "help_text": "Optional. Your MCC's customer ID (without hyphens) if accessing accounts via an MCC. Required if your OAuth credentials belong to the MCC."
+            }
         },
-        "usage_instructions": "Place a valid google-ads.yaml file in the root directory of this integration (integrations-autohive/adwords_tool/)."
+        "required": [
+            "developer_token"
+        ]
+    },
+    "auth": {
+        "type": "platform",
+        "provider": "google-ads",
+        "scopes": [
+            "https://www.googleapis.com/auth/adwords"
+        ]
     },
     "actions": {
         "get_campaign_data": {

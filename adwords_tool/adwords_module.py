@@ -4,7 +4,9 @@ import logging
 from datetime import datetime, timedelta
 
 from google.ads.googleads.client import GoogleAdsClient
-from autohive_integrations_sdk import ActionHandler, ExecutionContext # Assuming this is how ActionHandler is imported
+from autohive_integrations_sdk import ActionHandler, ExecutionContext
+from autohive_integrations_sdk.auth import get_integration_auth # Assuming this is the way to get auth
+from autohive_integrations_sdk.config import get_integration_config # Assuming this is the way to get config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -156,51 +158,70 @@ def get_campaign_data_logic(client, customer_id, date_ranges_input):
 
 
 class AdwordsCampaignAction(ActionHandler):
-    def __init__(self):
-        # Assuming google-ads.yaml is in the same directory or accessible path
-        # The SDK might provide a way to manage credentials/config files,
-        # which would be better than hardcoding the path here.
-        # For now, we keep the original loading mechanism.
-        # This client initialization might be better done lazily if the action is called infrequently
-        # or if the SDK manages the lifecycle of handlers.
-        try:
-            # You'll need to ensure 'google-ads.yaml' is packaged with your integration
-            # and its path is correctly resolved here.
-            self.client = GoogleAdsClient.load_from_storage("google-ads.yaml")
-        except Exception as e:
-            logger.error(f"Failed to load GoogleAdsClient from google-ads.yaml: {str(e)}")
-            # This is a critical failure for the action. How to handle depends on SDK.
-            # Raising an exception here might prevent the integration from loading.
-            self.client = None # Or raise an error to be caught by the SDK
+    # Remove __init__ or leave it empty if base class requires it
+    # def __init__(self):
+    #     pass
 
     def execute(self, context: ExecutionContext, action_inputs: dict):
         logger.info(f"Executing AdwordsCampaignAction with inputs: {action_inputs}")
 
-        if not self.client:
-            logger.error("GoogleAdsClient not initialized. Cannot execute action.")
-            # The SDK should define how errors are returned.
-            # This might involve raising a specific exception or returning an error structure.
-            return {"error": "GoogleAdsClient not initialized. Check google-ads.yaml."}
+        try:
+            # Fetch platform auth credentials
+            # Adapt this based on actual SDK methods. Assumes dictionary-like return.
+            auth_details = get_integration_auth()
+            if not auth_details or 'refresh_token' not in auth_details or 'client_id' not in auth_details or 'client_secret' not in auth_details:
+                logger.error("Failed to retrieve valid authentication details from platform.")
+                return {"error": "Platform authentication failed or incomplete."}
 
+            # Fetch integration configuration
+            # Adapt this based on actual SDK methods. Assumes dictionary-like return.
+            config = get_integration_config()
+            developer_token = config.get('developer_token')
+            login_customer_id = config.get('login_customer_id') # Optional
+
+            if not developer_token:
+                logger.error("Developer Token is missing in integration configuration.")
+                return {"error": "Developer Token configuration is missing."}
+
+            # Construct credentials dictionary for GoogleAdsClient
+            credentials = {
+                "developer_token": developer_token,
+                "client_id": auth_details['client_id'],
+                "client_secret": auth_details['client_secret'],
+                "refresh_token": auth_details['refresh_token'],
+                "use_proto_plus": True # Keep this for better usability
+            }
+
+            # Add login_customer_id if provided in config
+            if login_customer_id:
+                credentials["login_customer_id"] = login_customer_id
+
+            # Initialize the Google Ads client using the fetched credentials
+            client = GoogleAdsClient.load_from_dict(credentials)
+
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            return {"error": f"Failed to initialize Google Ads client: {str(e)}"}
 
         customer_id = action_inputs.get('customer_id')
-        date_ranges_input = action_inputs.get('date_ranges', ["last_7_days", "prev_7_days"]) # Default from old lambda
+        # Default date ranges can be defined in config.json action schema if needed
+        date_ranges_input = action_inputs.get('date_ranges', ["last_7_days", "prev_7_days"])
 
         if not customer_id:
             logger.error("Customer ID is missing in action_inputs")
-            return {"error": "Customer ID is required"} # Or raise appropriate error
+            return {"error": "Customer ID is required"}
 
         try:
-            results = get_campaign_data_logic(self.client, customer_id, date_ranges_input)
+            # Pass the initialized client to the logic function
+            results = get_campaign_data_logic(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
-            return results # The SDK will handle serializing this to JSON if needed
-        except ValueError as ve: # Catch specific errors like malformed date ranges
+            return results
+        except ValueError as ve:
             logger.error(f"ValueError in AdwordsCampaignAction: {str(ve)}")
             return {"error": str(ve)}
         except Exception as e:
-            logger.error(f"Exception in AdwordsCampaignAction: {str(e)}")
-            # Depending on SDK, might need to return a specific error format or raise an SDK-specific exception
-            return {"error": f"An unexpected error occurred: {str(e)}"}
+            logger.exception(f"Exception during campaign data retrieval: {str(e)}")
+            return {"error": f"An unexpected error occurred during data retrieval: {str(e)}"}
 
 # Example of how you might register this with the SDK (actual registration depends on the SDK)
 # This part would typically go into the main integration file, like 'my_integration.py' from the template.
