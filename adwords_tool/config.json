@@ -3,26 +3,6 @@
     "version": "1.0.0",
     "description": "Fetches campaign data from Google AdWords API.",
     "entry_point": "adwords_module.py",
-    "configuration_schema": {
-        "type": "object",
-        "properties": {
-            "developer_token": {
-                "type": "string",
-                "format": "password",
-                "label": "Google Ads Developer Token",
-                "help_text": "Your Google Ads API Developer Token."
-            },
-            "login_customer_id": {
-                "type": "string",
-                "format": "text",
-                "label": "Login Customer ID (for MCC)",
-                "help_text": "Optional. Your MCC's customer ID (without hyphens) if accessing accounts via an MCC. Required if your OAuth credentials belong to the MCC."
-            }
-        },
-        "required": [
-            "developer_token"
-        ]
-    },
     "auth": {
         "type": "platform",
         "provider": "google-ads",
