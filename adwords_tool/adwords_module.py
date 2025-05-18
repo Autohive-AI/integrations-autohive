@@ -12,6 +12,8 @@ from autohive_integrations_sdk.config import get_integration_config # Assuming t
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Create the integration using the config.json
+adwords_tool = Integration.load()
 
 def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
@@ -156,7 +158,8 @@ def get_campaign_data_logic(client, customer_id, date_ranges_input):
         all_results.append(date_range_result)
     return all_results
 
-
+# ---- Action Handlers ----
+@adwords_tool.action("get_campaign_data")
 class AdwordsCampaignAction(ActionHandler):
     # Remove __init__ or leave it empty if base class requires it
     # def __init__(self):
@@ -222,12 +225,3 @@ class AdwordsCampaignAction(ActionHandler):
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
             return {"error": f"An unexpected error occurred during data retrieval: {str(e)}"}
-
-# Example of how you might register this with the SDK (actual registration depends on the SDK)
-# This part would typically go into the main integration file, like 'my_integration.py' from the template.
-# from autohive_integrations_sdk import Integration
-# my_integration = Integration.load() # Loads config.json
-# my_integration.add_action_handler("get_adwords_campaign_data", AdwordsCampaignAction())
-#
-# If this file IS the entry point defined in config.json, then the SDK might auto-discover handlers
-# or you might need a specific function for the SDK to call to initialize. 
