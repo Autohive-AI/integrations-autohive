@@ -1,19 +1,23 @@
 import json
 import proto
 import logging
+import os
 from datetime import datetime, timedelta
 
 from google.ads.googleads.client import GoogleAdsClient
-from autohive_integrations_sdk import ActionHandler, ExecutionContext
-from autohive_integrations_sdk.auth import get_integration_auth # Assuming this is the way to get auth
-from autohive_integrations_sdk.config import get_integration_config # Assuming this is the way to get config
+from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Create the integration using the config.json
-adwords_tool = Integration.load()
+# Determine the directory of the current script to help Integration.load() find config.json
+# This makes the path relative to this file, ensuring config.json is found.
+current_dir = os.path.dirname(os.path.abspath(__file__))
+config_file_path = os.path.join(current_dir, "config.json") # Construct full path to config.json
+
+# Create the integration using the config.json located in the same directory as this script
+adwords_tool = Integration.load(config_file_path) # Pass the full file path
 
 def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
@@ -169,29 +173,29 @@ class AdwordsCampaignAction(ActionHandler):
         logger.info(f"Executing AdwordsCampaignAction with inputs: {action_inputs}")
 
         try:
-            # Fetch platform auth credentials
-            # Adapt this based on actual SDK methods. Assumes dictionary-like return.
-            auth_details = get_integration_auth()
-            if not auth_details or 'refresh_token' not in auth_details or 'client_id' not in auth_details or 'client_secret' not in auth_details:
-                logger.error("Failed to retrieve valid authentication details from platform.")
-                return {"error": "Platform authentication failed or incomplete."}
+            # Fetch platform auth credentials from context.auth
+            refresh_token = context.auth.get("refresh_token")
+            client_id = context.auth.get("client_id")
+            client_secret = context.auth.get("client_secret")
 
-            # Fetch integration configuration
-            # Adapt this based on actual SDK methods. Assumes dictionary-like return.
-            config = get_integration_config()
-            developer_token = config.get('developer_token')
-            login_customer_id = config.get('login_customer_id') # Optional
+            if not all([refresh_token, client_id, client_secret]):
+                logger.error("Failed to retrieve valid authentication details from context.auth.")
+                return {"error": "Platform authentication failed or incomplete. Missing refresh_token, client_id, or client_secret."}
+
+            # Fetch integration configuration from context.config
+            developer_token = context.config.get('developer_token')
+            login_customer_id = context.config.get('login_customer_id') # Optional
 
             if not developer_token:
-                logger.error("Developer Token is missing in integration configuration.")
+                logger.error("Developer Token is missing in integration configuration (context.config).")
                 return {"error": "Developer Token configuration is missing."}
 
             # Construct credentials dictionary for GoogleAdsClient
             credentials = {
                 "developer_token": developer_token,
-                "client_id": auth_details['client_id'],
-                "client_secret": auth_details['client_secret'],
-                "refresh_token": auth_details['refresh_token'],
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
                 "use_proto_plus": True # Keep this for better usability
             }
 
