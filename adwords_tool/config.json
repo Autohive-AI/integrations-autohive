@@ -5,7 +5,7 @@
     "entry_point": "adwords_module.py",
     "auth": {
         "type": "platform",
-        "provider": "google-ads",
+        "provider": "Google Ads",
         "scopes": [
             "https://www.googleapis.com/auth/adwords"
         ]
