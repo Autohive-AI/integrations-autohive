@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any
 
 import proto
@@ -23,28 +23,32 @@ DEVELOPER_TOKEN = "DEVELOPER_TOKEN"
 CLIENT_ID = "CLIENT_ID"
 CLIENT_SECRET = "CLIENT_SECRET"
 
-# TODO: Can likely make this be an input from the LLM, this was more a hack that was done in the old platform as LLMs didn't know what the time was
-def parse_date_range(range_name):
-    now = datetime.now()
-    if range_name == "last_7_days":
-        start_date = (now - timedelta(days=7)).strftime('%Y-%m-%d')
-        end_date = now.strftime('%Y-%m-%d')
-    elif range_name == "prev_7_days":
-        start_date = (now - timedelta(days=14)).strftime('%Y-%m-%d')
-        end_date = (now - timedelta(days=7)).strftime('%Y-%m-%d')
-    else:
-        # For custom date ranges, expect "YYYY-MM-DD_YYYY-MM-DD"
-        try:
-            start_str, end_str = range_name.split('_')
-            datetime.strptime(start_str, '%Y-%m-%d')
-            datetime.strptime(end_str, '%Y-%m-%d')
-            start_date = start_str
-            end_date = end_str
-        except ValueError:
-            logger.error(f"Unsupported or malformed date range: {range_name}")
-            raise ValueError(f"Unsupported or malformed date range: {range_name}. Expected 'last_7_days', 'prev_7_days', or 'YYYY-MM-DD_YYYY-MM-DD'.")
+def parse_date_range(range_name_str: str) -> Dict[str, str]:
+    """
+    Parses an explicit date range string into start and end dates.
 
-    return {"start_date": start_date, "end_date": end_date}
+    The calling LLM is expected to resolve any relative date phrases 
+    (e.g., "last 7 days") into an explicit date range string before calling this tool.
+
+    Args:
+        range_name_str: The date range string, expected in "YYYY-MM-DD_YYYY-MM-DD" format.
+
+    Returns:
+        A dictionary with "start_date" and "end_date".
+
+    Raises:
+        ValueError: If the string is not in the expected "YYYY-MM-DD_YYYY-MM-DD" format.
+    """
+    try:
+        start_str, end_str = range_name_str.split('_')
+        # Validate format by attempting to parse
+        datetime.strptime(start_str, '%Y-%m-%d')
+        datetime.strptime(end_str, '%Y-%m-%d')
+        # Consider adding validation that start_date is not after end_date if necessary
+        return {"start_date": start_str, "end_date": end_str}
+    except ValueError:
+        logger.error(f"Invalid date range string format: '{range_name_str}'. Expected 'YYYY-MM-DD_YYYY-MM-DD'.")
+        raise ValueError(f"Invalid date range string format: '{range_name_str}'. Must be 'YYYY-MM-DD_YYYY-MM-DD'.")
 
 
 # TODO: Likely need to make this a lot more generic, as this is more focused around what we ourselves used
@@ -207,7 +211,11 @@ class AdwordsCampaignAction(ActionHandler):
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
             return {"error": f"Failed to initialize Google Ads client: {str(e)}"}
 
-        date_ranges_input = inputs.get('date_ranges', ["last_7_days", "prev_7_days"])
+        date_ranges_input = inputs.get('date_ranges')
+
+        if not date_ranges_input: # Catches None, empty list, empty string.
+            logger.error("'date_ranges' is a required input and was not provided or is empty.")
+            return {"error": "'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings."}
 
         try:
             results = get_campaign_data_logic(client, customer_id, date_ranges_input)
