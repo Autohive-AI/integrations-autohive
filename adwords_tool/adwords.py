@@ -52,7 +52,7 @@ def parse_date_range(range_name_str: str) -> Dict[str, str]:
 
 
 # TODO: Likely need to make this a lot more generic, as this is more focused around what we ourselves used
-def get_campaign_data_logic(client, customer_id, date_ranges_input):
+def fetch_campaign_data(client, customer_id, date_ranges_input):
     ga_service = client.get_service("GoogleAdsService")
 
     query_template = """
@@ -218,7 +218,7 @@ class AdwordsCampaignAction(ActionHandler):
             raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
 
         try:
-            results = get_campaign_data_logic(client, customer_id, date_ranges_input)
+            results = fetch_campaign_data(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
             return results
         except ValueError as ve:
