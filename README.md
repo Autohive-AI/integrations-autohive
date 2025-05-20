@@ -13,7 +13,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Google Ads
 
-[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library.
+[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
 
 ## Template
 
