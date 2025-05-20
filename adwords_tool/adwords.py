@@ -170,9 +170,24 @@ class AdwordsCampaignAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             refresh_token = context.auth.get("credentials", {}).get("refresh_token")
+            
+            if not refresh_token:
+                logger.error("Refresh token is missing in auth credentials")
+                return {"error": "Refresh token is required for authentication with Google Ads API"}
 
-            # TODO: Likely need to change this to get the real login customer id
-            login_customer_id = inputs.get('customer_id')
+            # Get login_customer_id (Manager account) from inputs
+            login_customer_id = inputs.get('login_customer_id')
+            
+            # Get customer_id (Account to query) from inputs
+            customer_id = inputs.get('customer_id')
+            
+            if not login_customer_id:
+                logger.error("Manager Account ID (login_customer_id) is missing in action_inputs")
+                return {"error": "Manager Account ID (login_customer_id) is required"}
+                
+            if not customer_id:
+                logger.error("Customer ID is missing in action_inputs")
+                return {"error": "Customer ID is required"}
 
             credentials = {
                 "developer_token": DEVELOPER_TOKEN,
@@ -192,14 +207,7 @@ class AdwordsCampaignAction(ActionHandler):
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
             return {"error": f"Failed to initialize Google Ads client: {str(e)}"}
 
-        # TODO: Figure our how we should pass login customer id (Manager account) and customer id (Adwords account we want to query)
-        customer_id = inputs.get('customer_id')
-
         date_ranges_input = inputs.get('date_ranges', ["last_7_days", "prev_7_days"])
-
-        if not customer_id:
-            logger.error("Customer ID is missing in action_inputs")
-            return {"error": "Customer ID is required"}
 
         try:
             results = get_campaign_data_logic(client, customer_id, date_ranges_input)

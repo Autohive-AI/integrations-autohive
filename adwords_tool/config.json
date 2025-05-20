@@ -17,9 +17,13 @@
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes (e.g., '1234567890'). This is the account that has administrative access to the customer account being queried."
+                    },
                     "customer_id": {
                         "type": "string",
-                        "description": "Your Google Ads customer ID (e.g., '123-456-7890')."
+                        "description": "The Google Ads Customer ID of the specific account you want to query data from (e.g., '1234567890'). This is the account whose campaign data will be retrieved."
                     },
                     "date_ranges": {
                         "type": "array",
@@ -30,6 +34,7 @@
                     }
                 },
                 "required": [
+                    "login_customer_id",
                     "customer_id"
                 ]
             },
