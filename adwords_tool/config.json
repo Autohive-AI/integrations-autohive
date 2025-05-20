@@ -1,8 +1,8 @@
 {
-    "name": "adwords-tool",
+    "name": "Google Ads",
     "version": "1.0.0",
     "description": "Fetches campaign data from Google AdWords API.",
-    "entry_point": "adwords_module.py",
+    "entry_point": "adwords.py",
     "auth": {
         "type": "platform",
         "provider": "Google Ads",
@@ -12,22 +12,21 @@
     },
     "actions": {
         "get_campaign_data": {
+            "display_name": "Get Campaign Data",
             "description": "Retrieves Google Ads campaign data for specified customer ID and date ranges.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "customer_id": {
                         "type": "string",
-                        "label": "Customer ID",
-                        "help_text": "Your Google Ads customer ID (e.g., '123-456-7890')."
+                        "description": "Your Google Ads customer ID (e.g., '123-456-7890')."
                     },
                     "date_ranges": {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "label": "Date Ranges",
-                        "help_text": "List of date ranges. Supported formats: 'last_7_days', 'prev_7_days', or 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"last_7_days\", \"2023-01-01_2023-01-31\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
+                        "description": "List of date ranges. Supported formats: 'last_7_days', 'prev_7_days', or 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"last_7_days\", \"2023-01-01_2023-01-31\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
                     }
                 },
                 "required": [
@@ -39,16 +38,23 @@
                 "items": {
                     "type": "object",
                     "properties": {
-                        "date_range": {"type": "string"},
+                        "date_range": {
+                            "type": "string",
+                            "description": "The date range this data represents"
+                        },
                         "data": {
                             "type": "array",
                             "items": {
                                 "type": "object",
                                 "additionalProperties": true,
                                 "properties": {}
-                            }
+                            },
+                            "description": "Campaign data for the specified date range"
                         },
-                        "error": {"type": ["string", "null"]}
+                        "error": {
+                            "type": ["string", "null"],
+                            "description": "Error message if retrieval failed, null otherwise"
+                        }
                     }
                 }
             }

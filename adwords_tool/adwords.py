@@ -1,28 +1,29 @@
-import json
-import proto
 import logging
 import os
 from datetime import datetime, timedelta
+from typing import Dict, Any
 
-from google.ads.googleads.client import GoogleAdsClient
+import proto
 from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration
+from google.ads.googleads.client import GoogleAdsClient
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Determine the directory of the current script to help Integration.load() find config.json
-# This makes the path relative to this file, ensuring config.json is found.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-config_file_path = os.path.join(current_dir, "config.json") # Construct full path to config.json
+config_file_path = os.path.join(current_dir, "config.json")
 
-# Create the integration using the config.json located in the same directory as this script
-adwords_tool = Integration.load(config_file_path) # Pass the full file path
+adwords = Integration.load(config_file_path)
 
 def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
 
+# Replace these with the real values
+DEVELOPER_TOKEN = "DEVELOPER_TOKEN"
+CLIENT_ID = "CLIENT_ID"
+CLIENT_SECRET = "CLIENT_SECRET"
 
+# TODO: Can likely make this be an input from the LLM, this was more a hack that was done in the old platform as LLMs didn't know what the time was
 def parse_date_range(range_name):
     now = datetime.now()
     if range_name == "last_7_days":
@@ -35,8 +36,8 @@ def parse_date_range(range_name):
         # For custom date ranges, expect "YYYY-MM-DD_YYYY-MM-DD"
         try:
             start_str, end_str = range_name.split('_')
-            datetime.strptime(start_str, '%Y-%m-%d') # Validate format
-            datetime.strptime(end_str, '%Y-%m-%d')   # Validate format
+            datetime.strptime(start_str, '%Y-%m-%d')
+            datetime.strptime(end_str, '%Y-%m-%d')
             start_date = start_str
             end_date = end_str
         except ValueError:
@@ -46,6 +47,7 @@ def parse_date_range(range_name):
     return {"start_date": start_date, "end_date": end_date}
 
 
+# TODO: Likely need to make this a lot more generic, as this is more focused around what we ourselves used
 def get_campaign_data_logic(client, customer_id, date_ranges_input):
     ga_service = client.get_service("GoogleAdsService")
 
@@ -163,63 +165,43 @@ def get_campaign_data_logic(client, customer_id, date_ranges_input):
     return all_results
 
 # ---- Action Handlers ----
-@adwords_tool.action("get_campaign_data")
+@adwords.action("get_campaign_data")
 class AdwordsCampaignAction(ActionHandler):
-    # Remove __init__ or leave it empty if base class requires it
-    # def __init__(self):
-    #     pass
-
-    def execute(self, context: ExecutionContext, action_inputs: dict):
-        logger.info(f"Executing AdwordsCampaignAction with inputs: {action_inputs}")
-
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Fetch platform auth credentials from context.auth
-            refresh_token = context.auth.get("refresh_token")
-            client_id = context.auth.get("client_id")
-            client_secret = context.auth.get("client_secret")
+            refresh_token = context.auth.get("credentials", {}).get("refresh_token")
 
-            if not all([refresh_token, client_id, client_secret]):
-                logger.error("Failed to retrieve valid authentication details from context.auth.")
-                return {"error": "Platform authentication failed or incomplete. Missing refresh_token, client_id, or client_secret."}
+            # TODO: Likely need to change this to get the real login customer id
+            login_customer_id = inputs.get('customer_id')
 
-            # Fetch integration configuration from context.config
-            developer_token = context.config.get('developer_token')
-            login_customer_id = context.config.get('login_customer_id') # Optional
-
-            if not developer_token:
-                logger.error("Developer Token is missing in integration configuration (context.config).")
-                return {"error": "Developer Token configuration is missing."}
-
-            # Construct credentials dictionary for GoogleAdsClient
             credentials = {
-                "developer_token": developer_token,
-                "client_id": client_id,
-                "client_secret": client_secret,
+                "developer_token": DEVELOPER_TOKEN,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
                 "refresh_token": refresh_token,
-                "use_proto_plus": True # Keep this for better usability
+                "login_customer_id": login_customer_id,
+                "use_proto_plus": True
             }
 
-            # Add login_customer_id if provided in config
-            if login_customer_id:
-                credentials["login_customer_id"] = login_customer_id
-
-            # Initialize the Google Ads client using the fetched credentials
             client = GoogleAdsClient.load_from_dict(credentials)
+
+            print("\nGoogle Ads API Test Results:")
 
         except Exception as e:
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
             return {"error": f"Failed to initialize Google Ads client: {str(e)}"}
 
-        customer_id = action_inputs.get('customer_id')
-        # Default date ranges can be defined in config.json action schema if needed
-        date_ranges_input = action_inputs.get('date_ranges', ["last_7_days", "prev_7_days"])
+        # TODO: Figure our how we should pass login customer id (Manager account) and customer id (Adwords account we want to query)
+        customer_id = inputs.get('customer_id')
+
+        date_ranges_input = inputs.get('date_ranges', ["last_7_days", "prev_7_days"])
 
         if not customer_id:
             logger.error("Customer ID is missing in action_inputs")
             return {"error": "Customer ID is required"}
 
         try:
-            # Pass the initialized client to the logic function
             results = get_campaign_data_logic(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
             return results
