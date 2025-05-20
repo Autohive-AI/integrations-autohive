@@ -205,7 +205,7 @@ class AdwordsCampaignAction(ActionHandler):
 
             client = GoogleAdsClient.load_from_dict(credentials)
 
-            print("\nGoogle Ads API Test Results:")
+
 
         except Exception as e:
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
