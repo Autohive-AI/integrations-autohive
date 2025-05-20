@@ -1,13 +1,7 @@
-import sys
-import os
 import asyncio
 from pprint import pprint
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../dependencies"))
-
+from context import adwords
 from autohive_integrations_sdk import ExecutionContext
-from adwords import adwords
 
 async def test_get_campaigns():
     auth = {
@@ -24,8 +18,9 @@ async def test_get_campaigns():
 
     inputs = {
         # TODO: See todo in adwords.py on passing in the login client id
-        "customer_id": "CUSTOMER_ID", # ID of the Google Ads account we want to query from (cannot be a Manager Account)
-        "date_ranges": ["last_7_days"]
+        "login_customer_id": "LOGIN_CUSTOMER_ID",
+        "customer_id": "CUSTOMER_ID",
+        "date_ranges": ["2025-05-14_2025-05-20"] # Explicit date range for last 7 days
     }
 
     try:
