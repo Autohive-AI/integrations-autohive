@@ -177,7 +177,7 @@ class AdwordsCampaignAction(ActionHandler):
             
             if not refresh_token:
                 logger.error("Refresh token is missing in auth credentials")
-                return {"error": "Refresh token is required for authentication with Google Ads API"}
+                raise Exception("Refresh token is required for authentication with Google Ads API")
 
             # Get login_customer_id (Manager account) from inputs
             login_customer_id = inputs.get('login_customer_id')
@@ -187,11 +187,11 @@ class AdwordsCampaignAction(ActionHandler):
             
             if not login_customer_id:
                 logger.error("Manager Account ID (login_customer_id) is missing in inputs")
-                return {"error": "Manager Account ID (login_customer_id) is required"}
+                raise Exception("Manager Account ID (login_customer_id) is required")
                 
             if not customer_id:
                 logger.error("Customer ID is missing in inputs")
-                return {"error": "Customer ID is required"}
+                raise Exception("Customer ID is required")
 
             credentials = {
                 "developer_token": DEVELOPER_TOKEN,
@@ -209,13 +209,13 @@ class AdwordsCampaignAction(ActionHandler):
 
         except Exception as e:
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
-            return {"error": f"Failed to initialize Google Ads client: {str(e)}"}
+            raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
 
         date_ranges_input = inputs.get('date_ranges')
 
         if not date_ranges_input: # Catches None, empty list, empty string.
             logger.error("'date_ranges' is a required input and was not provided or is empty.")
-            return {"error": "'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings."}
+            raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
 
         try:
             results = get_campaign_data_logic(client, customer_id, date_ranges_input)
@@ -223,7 +223,7 @@ class AdwordsCampaignAction(ActionHandler):
             return results
         except ValueError as ve:
             logger.error(f"ValueError in AdwordsCampaignAction: {str(ve)}")
-            return {"error": str(ve)}
+            raise Exception(str(ve))
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
-            return {"error": f"An unexpected error occurred during data retrieval: {str(e)}"}
+            raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
