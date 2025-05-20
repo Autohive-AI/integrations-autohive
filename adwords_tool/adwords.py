@@ -186,11 +186,11 @@ class AdwordsCampaignAction(ActionHandler):
             customer_id = inputs.get('customer_id')
             
             if not login_customer_id:
-                logger.error("Manager Account ID (login_customer_id) is missing in action_inputs")
+                logger.error("Manager Account ID (login_customer_id) is missing in inputs")
                 return {"error": "Manager Account ID (login_customer_id) is required"}
                 
             if not customer_id:
-                logger.error("Customer ID is missing in action_inputs")
+                logger.error("Customer ID is missing in inputs")
                 return {"error": "Customer ID is required"}
 
             credentials = {
