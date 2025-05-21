@@ -55,10 +55,6 @@
                                 "properties": {}
                             },
                             "description": "Campaign data for the specified date range"
-                        },
-                        "error": {
-                            "type": ["string", "null"],
-                            "description": "Error message if retrieval failed, null otherwise"
                         }
                     }
                 }
