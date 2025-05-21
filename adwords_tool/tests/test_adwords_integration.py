@@ -17,7 +17,6 @@ async def test_get_campaigns():
     )
 
     inputs = {
-        # TODO: See todo in adwords.py on passing in the login client id
         "login_customer_id": "LOGIN_CUSTOMER_ID",
         "customer_id": "CUSTOMER_ID",
         "date_ranges": ["2025-05-14_2025-05-20"] # Explicit date range for last 7 days

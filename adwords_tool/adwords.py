@@ -182,10 +182,8 @@ class AdwordsCampaignAction(ActionHandler):
                 logger.error("Refresh token is missing in auth credentials")
                 raise Exception("Refresh token is required for authentication with Google Ads API")
 
-            # Get login_customer_id (Manager account) from inputs
             login_customer_id = inputs.get('login_customer_id')
             
-            # Get customer_id (Account to query) from inputs
             customer_id = inputs.get('customer_id')
             
             if not login_customer_id:
