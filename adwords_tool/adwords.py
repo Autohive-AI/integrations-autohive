@@ -1,5 +1,8 @@
-import logging
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
+import logging
 from datetime import datetime
 from typing import Dict, Any
 
@@ -19,9 +22,9 @@ def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
 
 # Replace these with the real values
-DEVELOPER_TOKEN = "DEVELOPER_TOKEN"
-CLIENT_ID = "CLIENT_ID"
-CLIENT_SECRET = "CLIENT_SECRET"
+DEVELOPER_TOKEN = os.environ.get("ADWORDS_DEVELOPER_TOKEN")
+CLIENT_ID = os.environ.get("ADWORDS_CLIENT_ID")
+CLIENT_SECRET = os.environ.get("ADWORDS_CLIENT_SECRET")
 
 def parse_date_range(range_name_str: str) -> Dict[str, str]:
     """
