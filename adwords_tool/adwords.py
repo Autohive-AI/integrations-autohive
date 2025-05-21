@@ -21,6 +21,93 @@ adwords = Integration.load(config_file_path)
 def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
 
+def _get_ad_text_assets(ad_data_from_row: Dict[str, Any]) -> Dict[str, list]:
+    """Extracts headlines and descriptions from the ad_data part of a Google Ads API row."""
+    headlines = []
+    descriptions = []
+    ad_type = ad_data_from_row.get('type', 'N/A')
+
+    if ad_type == 'RESPONSIVE_SEARCH_AD':
+        rsa_info = ad_data_from_row.get('responsive_search_ad', {})
+        headlines.extend([h.get('text', '') for h in rsa_info.get('headlines', []) if h.get('text')])
+        descriptions.extend([d.get('text', '') for d in rsa_info.get('descriptions', []) if d.get('text')])
+    elif ad_type == 'EXPANDED_TEXT_AD':
+        eta_info = ad_data_from_row.get('expanded_text_ad', {})
+        for part in ['headline_part1', 'headline_part2', 'headline_part3']:
+            if eta_info.get(part):
+                headlines.append(eta_info.get(part))
+        for part in ['description', 'description2']:
+            if eta_info.get(part):
+                descriptions.append(eta_info.get(part))
+    # TODO: Extend with other ad types from the GAQL query as needed (App, Display, Video etc.)
+    # Example for App Ad (modify field names based on actual GAQL query structure if different)
+    # elif ad_type == 'APP_AD':
+    #     app_ad_info = ad_data_from_row.get('app_ad', {})
+    #     headlines.extend([h.get('text', '') for h in app_ad_info.get('headlines', []) if h.get('text')])
+    #     descriptions.extend([d.get('text', '') for d in app_ad_info.get('descriptions', []) if d.get('text')])
+    
+    # Add more elif blocks for other ad types you query for, like:
+    # ad_group_ad.ad.app_engagement_ad, ad_group_ad.ad.local_ad, 
+    # ad_group_ad.ad.responsive_display_ad, ad_group_ad.ad.video_responsive_ad etc.
+
+    return {"headlines": headlines, "descriptions": descriptions}
+
+def _calculate_safe_rate(numerator_raw, denominator_raw, default_numerator=0.0, default_denominator=0.0):
+    """Safely calculates a rate (e.g., conversion rate), handling potential non-numeric inputs."""
+    try:
+        numerator = float(numerator_raw)
+    except (ValueError, TypeError):
+        numerator = default_numerator
+    try:
+        denominator = float(denominator_raw)
+    except (ValueError, TypeError):
+        denominator = default_denominator
+    
+    if denominator > 0:
+        return numerator / denominator
+    return 0.0
+
+def _initialize_ad_group_data(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Initializes the data structure for a new ad group."""
+    return {
+        "ad_group_id": row.get('ad_group', {}).get('id', 'N/A'),
+        "ad_group_name": row.get('ad_group', {}).get('name', 'N/A'),
+        "ad_group_status": row.get('ad_group', {}).get('status', 'N/A'),
+        "ad_group_type": row.get('ad_group', {}).get('type', 'N/A'),
+        "campaign_id": row.get('campaign', {}).get('id', 'N/A'),
+        "campaign_name": row.get('campaign', {}).get('name', 'N/A'),
+        "campaign_bidding_strategy_type": row.get('campaign', {}).get('bidding_strategy_type', 'N/A'),
+        "ads": {}  # Ads will be keyed by ad_id here
+    }
+
+def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
+    """Initializes the data structure for a new ad, including text assets and base metrics."""
+    ad_column_data = row.get('ad_group_ad', {}).get('ad', {})
+    ad_metrics = row.get('metrics', {})
+    text_assets = _get_ad_text_assets(ad_column_data)
+    ad_type = ad_column_data.get('type', 'N/A')
+
+    # Calculate overall conversion rate for the ad
+    ad_conversion_rate = _calculate_safe_rate(
+        ad_metrics.get('all_conversions'), 
+        ad_metrics.get('clicks')
+    )
+
+    return {
+        "ad_id": ad_id,
+        "ad_type": ad_type,
+        "ad_status": row.get('ad_group_ad', {}).get('status', 'N/A'),
+        "headlines": text_assets["headlines"],
+        "descriptions": text_assets["descriptions"],
+        "impressions": ad_metrics.get('impressions', 'N/A'),
+        "clicks": ad_metrics.get('clicks', 'N/A'),
+        "cost_currency": micros_to_currency(ad_metrics.get('cost_micros')),
+        "all_conversions": ad_metrics.get('all_conversions', 'N/A'),  # Total for the ad
+        "interaction_rate": ad_metrics.get('interaction_rate', 'N/A'),
+        "conversion_rate": ad_conversion_rate,  # Overall for the ad
+        "conversions_by_type": []  # This will be populated by conversion segments
+    }
+
 # Replace these with the real values
 DEVELOPER_TOKEN = os.environ.get("ADWORDS_DEVELOPER_TOKEN")
 CLIENT_ID = os.environ.get("ADWORDS_CLIENT_ID")
@@ -54,7 +141,6 @@ def parse_date_range(range_name_str: str) -> Dict[str, str]:
         raise ValueError(f"Invalid date range string format: '{range_name_str}'. Must be 'YYYY-MM-DD_YYYY-MM-DD'.")
 
 
-# TODO: Likely need to make this a lot more generic, as this is more focused around what we ourselves used
 def fetch_campaign_data(client, customer_id, date_ranges_input):
     ga_service = client.get_service("GoogleAdsService")
 
@@ -171,6 +257,162 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
         all_results.append(date_range_result)
     return all_results
 
+# ---- Function to fetch Ad Group and Ad Data ----
+def fetch_ad_group_ad_data(client, customer_id, date_ranges_input, campaign_ids_input=None, ad_group_ids_input=None):
+    ga_service = client.get_service("GoogleAdsService")
+    all_results = []
+
+    # Parse date ranges
+    parsed_date_ranges = []
+    if isinstance(date_ranges_input, str):
+        date_ranges_input = [date_ranges_input]
+    for dr_input in date_ranges_input:
+        parsed_date_ranges.append(parse_date_range(dr_input))
+
+    # TODO: Construct GAQL Query here based on requested fields:
+    # Ad group: type, bid strategy type (from campaign), status
+    # Ad details: headlines, descriptions
+    # Performance: impressions, clicks, spend/cost, conversions, conversion type, conversion rate, interaction rate
+    # Filter by campaign_ids and ad_group_ids if provided
+    # Segment by segments.conversion_action to get conversion types
+
+    query_template = """
+    SELECT
+        ad_group.id,
+        ad_group.name,
+        ad_group.status,
+        ad_group.type,
+        campaign.id,
+        campaign.name,
+        campaign.bidding_strategy_type,
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.type,
+        ad_group_ad.status,
+        ad_group_ad.ad.responsive_search_ad.headlines,
+        ad_group_ad.ad.responsive_search_ad.descriptions,
+        ad_group_ad.ad.expanded_text_ad.headline_part1,
+        ad_group_ad.ad.expanded_text_ad.headline_part2,
+        ad_group_ad.ad.expanded_text_ad.headline_part3,
+        ad_group_ad.ad.expanded_text_ad.description,
+        ad_group_ad.ad.expanded_text_ad.description2,
+        ad_group_ad.ad.app_ad.headlines,
+        ad_group_ad.ad.app_ad.descriptions,
+        ad_group_ad.ad.app_engagement_ad.headlines,
+        ad_group_ad.ad.app_engagement_ad.descriptions,
+        ad_group_ad.ad.display_upload_ad.media_bundle,
+        ad_group_ad.ad.expanded_dynamic_search_ad.description,
+        ad_group_ad.ad.expanded_dynamic_search_ad.description2,
+        ad_group_ad.ad.hotel_ad.headline,
+        ad_group_ad.ad.legacy_app_install_ad.headline,
+        ad_group_ad.ad.legacy_responsive_display_ad.short_headline,
+        ad_group_ad.ad.legacy_responsive_display_ad.long_headline,
+        ad_group_ad.ad.legacy_responsive_display_ad.description,
+        ad_group_ad.ad.local_ad.headlines,
+        ad_group_ad.ad.local_ad.descriptions,
+        ad_group_ad.ad.responsive_display_ad.headlines,
+        ad_group_ad.ad.responsive_display_ad.descriptions,
+        ad_group_ad.ad.shopping_smart_ad.headline,
+        ad_group_ad.ad.shopping_product_ad.headline,
+        ad_group_ad.ad.video_responsive_ad.headlines,
+        ad_group_ad.ad.video_responsive_ad.descriptions,
+        ad_group_ad.ad.video_trueview_in_stream_ad.headline,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.all_conversions,
+        metrics.all_conversions_value,
+        metrics.interaction_rate,
+        metrics.interactions,
+        segments.conversion_action,
+        segments.conversion_action_name
+    FROM ad_group_ad
+    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+      AND ad_group.status != 'REMOVED'
+      AND ad_group_ad.status != 'REMOVED'
+    """
+
+    # Add campaign_ids filter
+    if campaign_ids_input and len(campaign_ids_input) > 0:
+        campaign_filter = ", ".join([f"'{cid}'" for cid in campaign_ids_input])
+        query_template += f" AND campaign.id IN ({campaign_filter})"
+
+    # Add ad_group_ids filter
+    if ad_group_ids_input and len(ad_group_ids_input) > 0:
+        ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids_input])
+        query_template += f" AND ad_group.id IN ({ad_group_filter})"
+        
+    logger.info(f"Constructed GAQL Query Template: {query_template}")
+
+
+    for date_range in parsed_date_ranges:
+        query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
+        logger.info(f"Executing GAQL Query for date range {date_range['start_date']} to {date_range['end_date']}: {query}")
+
+        current_range_results = {
+            'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
+            'error': None,
+            'ad_groups_data': []
+        }
+
+        try:
+            response_stream = ga_service.search_stream(customer_id=customer_id, query=query)
+            
+            # Temporary storage to group rows by ad_group and then by ad_id
+            # This is complex because of segmentation by conversion_action
+            processed_ad_groups = {}
+
+            for batch in response_stream:
+                for row_data in batch.results:
+                    row = proto.Message.to_dict(row_data, use_integers_for_enums=False)
+                    
+                    ag_id = row.get('ad_group', {}).get('id')
+                    ad_id = row.get('ad_group_ad', {}).get('ad', {}).get('id')
+
+                    if not ag_id or not ad_id:
+                        logger.warning(f"Skipping row due to missing ad_group_id or ad_id: {row}")
+                        continue
+
+                    # Initialize ad_group if not seen
+                    if ag_id not in processed_ad_groups:
+                        processed_ad_groups[ag_id] = _initialize_ad_group_data(row)
+                    
+                    current_ad_group_data = processed_ad_groups[ag_id]
+
+                    # Initialize ad if not seen for this ad_group
+                    if ad_id not in current_ad_group_data["ads"]:
+                        current_ad_group_data["ads"][ad_id] = _initialize_ad_data(row, ad_id)
+
+                    # Add conversion action details to the current ad
+                    conversion_action_name = row.get('segments', {}).get('conversion_action_name', 'N/A')
+                    segment_conversions = row.get('metrics', {}).get('all_conversions', 0.0)
+                    segment_conversions_value = row.get('metrics', {}).get('all_conversions_value', 0.0)
+                    
+                    numeric_segment_conversions = _calculate_safe_rate(segment_conversions, 1, default_denominator=1) # effectively a float conversion
+                    numeric_segment_conversions_value = _calculate_safe_rate(segment_conversions_value, 1, default_denominator=1) # effectively a float conversion
+
+                    if conversion_action_name != 'N/A' and numeric_segment_conversions > 0:
+                        current_ad_group_data["ads"][ad_id]["conversions_by_type"].append({
+                            "conversion_action_name": conversion_action_name,
+                            "conversions_count": numeric_segment_conversions,
+                            "conversions_value": numeric_segment_conversions_value
+                        })
+            
+            # Convert the processed_ad_groups structure into the final list format
+            for ag_id, ag_data in processed_ad_groups.items():
+                # Convert ads dict to list
+                ag_data["ads"] = list(ag_data["ads"].values())
+                current_range_results['ad_groups_data'].append(ag_data)
+
+
+        except Exception as e:
+            logger.error(f"Error during Google Ads API call for ad group data, range {date_range}: {str(e)}")
+            current_range_results['error'] = f"Failed to retrieve ad group data: {str(e)}"
+        
+        all_results.append(current_range_results)
+
+    return all_results
+
+
 # ---- Action Handlers ----
 @adwords.action("get_campaign_data")
 class AdwordsCampaignAction(ActionHandler):
@@ -228,3 +470,62 @@ class AdwordsCampaignAction(ActionHandler):
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
             raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
+
+@adwords.action("get_ad_group_ad_data")
+class AdwordsAdGroupAdAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token = context.auth.get("credentials", {}).get("refresh_token")
+            if not refresh_token:
+                logger.error("Refresh token is missing in auth credentials")
+                raise Exception("Refresh token is required for authentication")
+
+            login_customer_id = inputs.get('login_customer_id')
+            customer_id = inputs.get('customer_id')
+            date_ranges_input = inputs.get('date_ranges')
+            campaign_ids_input = inputs.get('campaign_ids') # Optional
+            ad_group_ids_input = inputs.get('ad_group_ids') # Optional
+
+            if not login_customer_id:
+                logger.error("Manager Account ID (login_customer_id) is missing")
+                raise Exception("Manager Account ID (login_customer_id) is required")
+            if not customer_id:
+                logger.error("Customer ID is missing")
+                raise Exception("Customer ID is required")
+            if not date_ranges_input:
+                logger.error("'date_ranges' is required and was not provided or is empty.")
+                raise Exception("'date_ranges' is required.")
+
+            credentials = {
+                "developer_token": DEVELOPER_TOKEN,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "refresh_token": refresh_token,
+                "login_customer_id": login_customer_id,
+                "use_proto_plus": True
+            }
+            client = GoogleAdsClient.load_from_dict(credentials)
+            logger.info("GoogleAdsClient initialized successfully for get_ad_group_ad_data.")
+
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient for get_ad_group_ad_data: {str(e)}")
+            raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
+
+        try:
+            results = fetch_ad_group_ad_data(
+                client, 
+                customer_id, 
+                date_ranges_input,
+                campaign_ids_input,
+                ad_group_ids_input
+            )
+            logger.info("Successfully retrieved ad group and ad data.")
+            return results
+        except ValueError as ve:
+            logger.error(f"ValueError in AdwordsAdGroupAdAction: {str(ve)}")
+            # Potentially from parse_date_range if reused or similar logic
+            raise Exception(str(ve))
+        except Exception as e:
+            logger.exception(f"Exception during ad group/ad data retrieval: {str(e)}")
+            raise Exception(f"An unexpected error occurred during ad group/ad data retrieval: {str(e)}")

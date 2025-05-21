@@ -59,7 +59,70 @@
                     }
                 }
             }
+        },
+        "get_ad_group_ad_data": {
+            "display_name": "Get Ad Group and Ad Data",
+            "description": "Retrieves detailed ad group and ad-level data, including performance metrics and content.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID of the specific account."
+                    },
+                    "date_ranges": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of date ranges (e.g., [\"YYYY-MM-DD_YYYY-MM-DD\"])."
+                    },
+                    "campaign_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Optional. Filter by specific campaign IDs."
+                    },
+                    "ad_group_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Optional. Filter by specific ad group IDs."
+                    }
+                },
+                "required": [
+                    "login_customer_id",
+                    "customer_id",
+                    "date_ranges"
+                ]
+            },
+            "output_schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "date_range": {
+                            "type": "string",
+                            "description": "The date range this data represents."
+                        },
+                        "data": {
+                            "type": "array",
+                            "description": "Data for ad groups and their ads.",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true,
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            }
         }
-    },
-    "polling_triggers": {}
+    }
 } 
