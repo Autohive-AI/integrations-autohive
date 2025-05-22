@@ -59,6 +59,71 @@
                     }
                 }
             }
+        },
+        "retrieve_keyword_metrics": {
+            "display_name": "Get Keyword information",
+            "description": "Retrieves detailed performance metrics for keywords including match type, impressions, clicks, cost, conversions, conversion rate, and interaction rate.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes (e.g., '1234567890'). This is the account that has administrative access to the customer account being queried."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID of the specific account you want to query data from (e.g., '1234567890'). This is the account whose keyword data will be retrieved."
+                    },
+                    "ad_group_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of ad group IDs to filter by"
+                    },
+                    "campaign_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of campaign IDs to filter by"
+                    },
+                    "date_ranges": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of date ranges. Format: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"])."
+                    }
+                },
+                "required": [
+                    "login_customer_id",
+                    "customer_id",
+                    "ad_group_ids",
+                    "campaign_ids"
+                ]
+            },
+            "output_schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "date_range": {
+                            "type": "string",
+                            "description": "The date range this data represents"
+                        },
+                        "data": {
+                            "type": "array",
+                            "description": "Keyword data for the specified date range",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true,
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 } 

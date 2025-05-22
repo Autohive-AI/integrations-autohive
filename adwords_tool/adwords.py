@@ -205,7 +205,13 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
             'data': []
         }
 
+        # Limit to processing only 20 rows
+        count = 0
         for row in response:
+            # Process only the first 20 rows to avoid timeouts
+            if count >= 20:
+                break
+            
             row_dict = proto.Message.to_dict(row, use_integers_for_enums=False)
 
             campaign = row_dict.get('campaign', {})
@@ -270,10 +276,11 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
                 "All Conversions Rate": all_conversions_rate # Calculated numeric value
             }
             date_range_result['data'].append(data)
+            count += 1
         all_results.append(date_range_result)
     return all_results
 
-
+def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None, ad_group_ids=None):
     ga_service = client.get_service("GoogleAdsService")
     all_results = []
 
@@ -284,105 +291,86 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
     for dr_input in date_ranges_input:
         parsed_date_ranges.append(parse_date_range(dr_input))
 
-    # Simplified query - reduce selected fields to speed up processing
+    # Define query template for keyword data
     query_template = """
-    SELECT
-        ad_group.id,
-        ad_group.name,
-        ad_group.status,
-        ad_group.type,
-        campaign.id,
-        campaign.name,
-        campaign.bidding_strategy_type,
-        ad_group_ad.ad.id,
-        ad_group_ad.ad.type,
-        ad_group_ad.status,
-        ad_group_ad.ad.responsive_search_ad.headlines,
-        ad_group_ad.ad.responsive_search_ad.descriptions,
+        SELECT
+        ad_group_criterion.keyword.text,
         metrics.impressions,
         metrics.clicks,
-        metrics.cost_micros,
-        metrics.all_conversions,
-        metrics.all_conversions_value
-    FROM ad_group_ad
-    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
-      AND ad_group.status != 'REMOVED'
-      AND ad_group_ad.status != 'REMOVED'
-    LIMIT 10000
+        metrics.cost_micros
+        FROM keyword_view
+        WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+        AND ad_group_criterion.status != 'REMOVED'
     """
 
-    # Add campaign_ids filter
-    if campaign_ids_input and len(campaign_ids_input) > 0:
-        campaign_filter = ", ".join([f"'{cid}'" for cid in campaign_ids_input])
+    # Add campaign_ids filter if provided
+    if campaign_ids and len(campaign_ids) > 0:
+        campaign_filter = ", ".join([f"'{cid}'" for cid in campaign_ids])
         query_template += f" AND campaign.id IN ({campaign_filter})"
 
-    # Add ad_group_ids filter
-    if ad_group_ids_input and len(ad_group_ids_input) > 0:
-        ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids_input])
+    # Add ad_group_ids filter if provided
+    if ad_group_ids and len(ad_group_ids) > 0:
+        ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids])
         query_template += f" AND ad_group.id IN ({ad_group_filter})"
+    
+    # Remove the LIMIT clause
+    # query_template += " LIMIT 20"
         
-    logger.info(f"Constructed GAQL Query Template: {query_template}")
+    logger.info(f"Constructed GAQL Query Template for keywords: {query_template}")
 
-    # Set a timeout for each date range to avoid Lambda timeout
-    max_time_per_range = 20  # seconds (keeping well below the 30s Lambda timeout)
-
+    # Process each date range
     for date_range in parsed_date_ranges:
         query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
-        logger.info(f"Executing GAQL Query for date range {date_range['start_date']} to {date_range['end_date']}: {query}")
+        logger.info(f"Executing GAQL Query for keyword data, date range {date_range['start_date']} to {date_range['end_date']}")
 
         current_range_results = {
             'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
             'error': None,
-            'ad_groups_data': []
+            'data': []
         }
 
         try:
-            # Set timeout start time
-            start_time = datetime.now()
+            # Execute search
+            response = ga_service.search(customer_id=customer_id, query=query)
             
-            # Initialize processed data
-            processed_ad_groups = {}
-            
-            # Execute search with stream for efficient processing of large results
-            response_stream = ga_service.search_stream(customer_id=customer_id, query=query)
-            
-            for batch in response_stream:
-                # Check if approaching timeout
-                elapsed = (datetime.now() - start_time).total_seconds()
-                if elapsed > max_time_per_range:
-                    logger.warning(f"Approaching timeout limit for date range {date_range}, stopping batch processing")
-                    current_range_results['warning'] = "Data retrieval was partial due to timeout constraints. Consider narrowing date range or adding more filters."
-                    break
-                    
-                for row_data in batch.results:
-                    row = proto.Message.to_dict(row_data, use_integers_for_enums=False)
-                    
-                    ag_id = row.get('ad_group', {}).get('id')
-                    ad_id = row.get('ad_group_ad', {}).get('ad', {}).get('id')
-
-                    if not ag_id or not ad_id:
-                        continue
-
-                    # Initialize ad_group if not seen
-                    if ag_id not in processed_ad_groups:
-                        processed_ad_groups[ag_id] = _initialize_ad_group_data(row)
-                    
-                    current_ad_group_data = processed_ad_groups[ag_id]
-
-                    # Initialize ad if not seen for this ad_group
-                    if ad_id not in current_ad_group_data["ads"]:
-                        current_ad_group_data["ads"][ad_id] = _initialize_ad_data(row, ad_id)
-            
-            # Convert the processed_ad_groups structure into the final list format
-            for ag_id, ag_data in processed_ad_groups.items():
-                # Convert ads dict to list
-                ag_data["ads"] = list(ag_data["ads"].values())
-                current_range_results['ad_groups_data'].append(ag_data)
-
+            for row in response:
+                row_dict = proto.Message.to_dict(row, use_integers_for_enums=False)
+                
+                campaign = row_dict.get('campaign', {})
+                ad_group = row_dict.get('ad_group', {})
+                criterion = row_dict.get('ad_group_criterion', {})
+                keyword = criterion.get('keyword', {})
+                metrics = row_dict.get('metrics', {})
+                quality_info = criterion.get('quality_info', {})
+                
+                # Calculate conversion rate safely
+                conversion_rate = metrics.get('conversion_rate', 0.0)
+                
+                # Process keyword data
+                keyword_data = {
+                    "Campaign ID": campaign.get('id', 'N/A'),
+                    "Campaign": campaign.get('name', 'N/A'),
+                    "Ad Group ID": ad_group.get('id', 'N/A'),
+                    "Ad Group": ad_group.get('name', 'N/A'),
+                    "Keyword ID": criterion.get('criterion_id', 'N/A'),
+                    "Keyword": keyword.get('text', 'N/A'),
+                    "Match Type": keyword.get('match_type', 'N/A'),
+                    "Status": criterion.get('status', 'N/A'),
+                    "Quality Score": quality_info.get('quality_score', 'N/A'),
+                    "Impressions": metrics.get('impressions', 'N/A'),
+                    "Clicks": metrics.get('clicks', 'N/A'),
+                    "Cost": micros_to_currency(metrics.get('cost_micros')),
+                    "Conversions": metrics.get('all_conversions', 'N/A'),
+                    "Conversion Rate": conversion_rate,
+                    "Interaction Rate": metrics.get('interaction_rate', 'N/A'),
+                    "Avg. CPC": micros_to_currency(metrics.get('average_cpc'))
+                }
+                
+                current_range_results['data'].append(keyword_data)
 
         except Exception as e:
-            logger.error(f"Error during Google Ads API call for ad group data, range {date_range}: {str(e)}")
-            current_range_results['error'] = f"Failed to retrieve ad group data: {str(e)}"
+            logger.error(f"Error during Google Ads API call for keyword data, range {date_range}: {str(e)}")
+            current_range_results['error'] = f"Failed to retrieve keyword data: {str(e)}"
         
         all_results.append(current_range_results)
 
@@ -445,4 +433,65 @@ class AdwordsCampaignAction(ActionHandler):
             raise Exception(str(ve))
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
+            raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
+
+@adwords.action("retrieve_keyword_metrics")
+class AdwordsKeywordAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Get authentication details
+            refresh_token = context.auth.get("credentials", {}).get("refresh_token")
+            
+            if not refresh_token:
+                logger.error("Refresh token is missing in auth credentials")
+                raise Exception("Refresh token is required for authentication with Google Ads API")
+
+            # Get required input parameters
+            login_customer_id = inputs.get('login_customer_id')
+            customer_id = inputs.get('customer_id')
+            
+            if not login_customer_id:
+                logger.error("Manager Account ID (login_customer_id) is missing in inputs")
+                raise Exception("Manager Account ID (login_customer_id) is required")
+                
+            if not customer_id:
+                logger.error("Customer ID is missing in inputs")
+                raise Exception("Customer ID is required")
+
+            # Initialize Google Ads client
+            credentials = {
+                "developer_token": DEVELOPER_TOKEN,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "refresh_token": refresh_token,
+                "login_customer_id": login_customer_id,
+                "use_proto_plus": True
+            }
+
+            client = GoogleAdsClient.load_from_dict(credentials)
+
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
+
+        # Get input parameters
+        date_ranges_input = inputs.get('date_ranges')
+        campaign_ids = inputs.get('campaign_ids', [])
+        ad_group_ids = inputs.get('ad_group_ids', [])
+
+        if not date_ranges_input:
+            logger.error("'date_ranges' is a required input and was not provided or is empty.")
+            raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
+
+        try:
+            # Fetch the keyword data
+            results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
+            logger.info("Successfully retrieved keyword data.")
+            return results
+        except ValueError as ve:
+            logger.error(f"ValueError in AdwordsKeywordAction: {str(ve)}")
+            raise Exception(str(ve))
+        except Exception as e:
+            logger.exception(f"Exception during keyword data retrieval: {str(e)}")
             raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")

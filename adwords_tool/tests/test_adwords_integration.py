@@ -3,7 +3,7 @@ from pprint import pprint
 from context import adwords
 from autohive_integrations_sdk import ExecutionContext
 
-async def test_get_campaigns():
+async def test_retrieve_campaign_metrics():
     auth = {
         "auth_type": "PlatformOAuth2",
         "credentials": {
@@ -23,7 +23,7 @@ async def test_get_campaigns():
     }
 
     try:
-        result = await adwords.execute_action("get_campaign_data", inputs, context)
+        result = await adwords.execute_action("retrieve_campaign_metrics", inputs, context)
         
         print("\nGoogle Ads API Test Results:")
         print("============================")
