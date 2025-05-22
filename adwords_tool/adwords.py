@@ -224,6 +224,23 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
             elif cost == 'N/A' or cost == 0: # if cost is N/A or 0, ROAS is 0 or undefined. Let's use 0.
                  roas = 0
 
+            # Calculate All Conversions Rate safely
+            raw_all_conversions = metrics.get('all_conversions')
+            raw_interactions = metrics.get('interactions')
+
+            try:
+                numeric_all_conversions = float(raw_all_conversions)
+            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
+                numeric_all_conversions = 0.0
+
+            try:
+                numeric_interactions = float(raw_interactions)
+            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
+                numeric_interactions = 0.0
+
+            all_conversions_rate = 0.0 # Default to 0.0
+            if numeric_interactions > 0: # Check for > 0 to avoid division by zero and ensure meaningful rate
+                all_conversions_rate = numeric_all_conversions / numeric_interactions
 
             data = {
                 "Campaign ID" : campaign.get('id', 'N/A'),
@@ -249,7 +266,8 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
                 "Conv. value / cost": roas,
                 "Conversions": metrics.get('all_conversions', 'N/A'),
                 "Avg. CPC": micros_to_currency(metrics.get('average_cpc')),
-                "Cost / conv.": micros_to_currency(metrics.get('cost_per_conversion'))
+                "Cost / conv.": micros_to_currency(metrics.get('cost_per_conversion')),
+                "All Conversions Rate": all_conversions_rate # Calculated numeric value
             }
             date_range_result['data'].append(data)
         all_results.append(date_range_result)
