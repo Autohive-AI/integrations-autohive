@@ -1,7 +1,7 @@
 {
     "name": "Google Ads",
     "version": "1.0.0",
-    "description": "Fetches campaign data from Google AdWords API.",
+    "description": "Fetches various performance data from the Google Ads API, including campaigns, ad groups, ads, and audience segments.",
     "entry_point": "adwords.py",
     "auth": {
         "type": "platform",
@@ -11,9 +11,9 @@
         ]
     },
     "actions": {
-        "get_campaign_data": {
-            "display_name": "Get Campaign Data",
-            "description": "Retrieves Google Ads campaign data for specified customer ID and date ranges.",
+        "retrieve_campaign_metrics": {
+            "display_name": "Get Campaign information",
+            "description": "Retrieves overall performance metrics for campaigns (e.g., total clicks, cost, conversions per campaign). Use this for high-level summaries of how each campaign is performing as a whole.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -49,71 +49,7 @@
                         },
                         "data": {
                             "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": true,
-                                "properties": {}
-                            },
-                            "description": "Campaign data for the specified date range"
-                        }
-                    }
-                }
-            }
-        },
-        "get_ad_group_ad_data": {
-            "display_name": "Get Ad Group and Ad Data",
-            "description": "Retrieves detailed ad group and ad-level data, including performance metrics and content.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "login_customer_id": {
-                        "type": "string",
-                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
-                    },
-                    "customer_id": {
-                        "type": "string",
-                        "description": "The Google Ads Customer ID of the specific account."
-                    },
-                    "date_ranges": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of date ranges (e.g., [\"YYYY-MM-DD_YYYY-MM-DD\"])."
-                    },
-                    "campaign_ids": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Optional. Filter by specific campaign IDs."
-                    },
-                    "ad_group_ids": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Optional. Filter by specific ad group IDs."
-                    }
-                },
-                "required": [
-                    "login_customer_id",
-                    "customer_id",
-                    "date_ranges"
-                ]
-            },
-            "output_schema": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "date_range": {
-                            "type": "string",
-                            "description": "The date range this data represents."
-                        },
-                        "data": {
-                            "type": "array",
-                            "description": "Data for ad groups and their ads.",
+                            "description": "Campaign data for the specified date range",
                             "items": {
                                 "type": "object",
                                 "additionalProperties": true,
