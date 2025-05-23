@@ -305,9 +305,6 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
     if ad_group_ids and len(ad_group_ids) > 0:
         ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids])
         query_template += f" AND ad_group.id IN ({ad_group_filter})"
-    
-    # Remove the LIMIT clause
-    # query_template += " LIMIT 20"
         
     logger.info(f"Constructed GAQL Query Template for keywords: {query_template}")
 
