@@ -39,16 +39,6 @@ def _get_ad_text_assets(ad_data_from_row: Dict[str, Any]) -> Dict[str, list]:
         for part in ['description', 'description2']:
             if eta_info.get(part):
                 descriptions.append(eta_info.get(part))
-    # TODO: Extend with other ad types from the GAQL query as needed (App, Display, Video etc.)
-    # Example for App Ad (modify field names based on actual GAQL query structure if different)
-    # elif ad_type == 'APP_AD':
-    #     app_ad_info = ad_data_from_row.get('app_ad', {})
-    #     headlines.extend([h.get('text', '') for h in app_ad_info.get('headlines', []) if h.get('text')])
-    #     descriptions.extend([d.get('text', '') for d in app_ad_info.get('descriptions', []) if d.get('text')])
-    
-    # Add more elif blocks for other ad types you query for, like:
-    # ad_group_ad.ad.app_engagement_ad, ad_group_ad.ad.local_ad, 
-    # ad_group_ad.ad.responsive_display_ad, ad_group_ad.ad.video_responsive_ad etc.
 
     return {"headlines": headlines, "descriptions": descriptions}
 
@@ -77,7 +67,7 @@ def _initialize_ad_group_data(row: Dict[str, Any]) -> Dict[str, Any]:
         "campaign_id": row.get('campaign', {}).get('id', 'N/A'),
         "campaign_name": row.get('campaign', {}).get('name', 'N/A'),
         "campaign_bidding_strategy_type": row.get('campaign', {}).get('bidding_strategy_type', 'N/A'),
-        "ads": {}  # Ads will be keyed by ad_id here
+        "ads": {}
     }
 
 def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
@@ -87,7 +77,6 @@ def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
     text_assets = _get_ad_text_assets(ad_column_data)
     ad_type = ad_column_data.get('type', 'N/A')
 
-    # Calculate overall conversion rate for the ad
     ad_conversion_rate = _calculate_safe_rate(
         ad_metrics.get('all_conversions'), 
         ad_metrics.get('clicks')
@@ -102,9 +91,9 @@ def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
         "impressions": ad_metrics.get('impressions', 'N/A'),
         "clicks": ad_metrics.get('clicks', 'N/A'),
         "cost_currency": micros_to_currency(ad_metrics.get('cost_micros')),
-        "all_conversions": ad_metrics.get('all_conversions', 'N/A'),  # Total for the ad
+        "all_conversions": ad_metrics.get('all_conversions', 'N/A'),
         "interaction_rate": ad_metrics.get('interaction_rate', 'N/A'),
-        "conversion_rate": ad_conversion_rate  # Overall for the ad
+        "conversion_rate": ad_conversion_rate
     }
 
 # Replace these with the real values
@@ -130,10 +119,10 @@ def parse_date_range(range_name_str: str) -> Dict[str, str]:
     """
     try:
         start_str, end_str = range_name_str.split('_')
-        # Validate format by attempting to parse
+
         datetime.strptime(start_str, '%Y-%m-%d')
         datetime.strptime(end_str, '%Y-%m-%d')
-        # Consider adding validation that start_date is not after end_date if necessary
+
         return {"start_date": start_str, "end_date": end_str}
     except ValueError:
         logger.error(f"Invalid date range string format: '{range_name_str}'. Expected 'YYYY-MM-DD_YYYY-MM-DD'.")
@@ -174,9 +163,9 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
 
     all_results = []
     
-    # Parse date ranges from input strings to dicts
+
     parsed_date_ranges = []
-    if isinstance(date_ranges_input, str): # Handle single string date range
+    if isinstance(date_ranges_input, str):
         date_ranges_input = [date_ranges_input]
     
     for dr_input in date_ranges_input:
@@ -185,19 +174,18 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
     for date_range in parsed_date_ranges:
         query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
         
-        # It's good practice to wrap API calls in try-except blocks
+
         try:
             response = ga_service.search(customer_id=customer_id, query=query)
         except Exception as e:
             logger.error(f"Error during Google Ads API call for date range {date_range}: {str(e)}")
-            # Depending on requirements, you might want to skip this range or stop entirely
-            # For now, let's add a placeholder for this error in the results.
+
             all_results.append({
                 'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
                 'error': f"Failed to retrieve data: {str(e)}",
                 'data': []
             })
-            continue # Move to the next date range
+            continue 
 
 
         date_range_result = {
@@ -217,57 +205,54 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
             cost_micros = metrics.get('cost_micros', 1) 
             cost = micros_to_currency(cost_micros)
             
-            # Ensure cost is a number and not 'N/A' before division
             roas = 0
             if isinstance(cost, (int, float)) and cost != 0:
                  roas = conversions_value / cost
-            elif cost == 'N/A' or cost == 0: # if cost is N/A or 0, ROAS is 0 or undefined. Let's use 0.
+            elif cost == 'N/A' or cost == 0: 
                  roas = 0
 
-            # Calculate All Conversions Rate safely
+            
             raw_all_conversions = metrics.get('all_conversions')
             raw_interactions = metrics.get('interactions')
 
             try:
                 numeric_all_conversions = float(raw_all_conversions)
-            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
+            except (ValueError, TypeError): 
                 numeric_all_conversions = 0.0
 
             try:
                 numeric_interactions = float(raw_interactions)
-            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
+            except (ValueError, TypeError): 
                 numeric_interactions = 0.0
 
-            all_conversions_rate = 0.0 # Default to 0.0
-            if numeric_interactions > 0: # Check for > 0 to avoid division by zero and ensure meaningful rate
+            all_conversions_rate = 0.0 
+            if numeric_interactions > 0: 
                 all_conversions_rate = numeric_all_conversions / numeric_interactions
 
             data = {
                 "Campaign ID" : campaign.get('id', 'N/A'),
                 "Campaign status": campaign.get('status', 'N/A'),
                 "Campaign": campaign.get('name', 'N/A'),
-                # "Budget name": 'N/A', # This was N/A in original, consider if it can be fetched
                 "Currency code": customer.get('currency_code', 'N/A'),
-                "Budget": micros_to_currency(budget.get('amount_micros')), # Removed default 0
-                # "Budget type": 'N/A', # This was N/A in original
+                "Budget": micros_to_currency(budget.get('amount_micros')),
                 "Status": campaign.get('bidding_strategy_system_status', 'N/A'),
                 "Optimization score": campaign.get('optimization_score', 'N/A'),
                 "Account": customer.get('descriptive_name', 'N/A'),
                 "Campaign type": campaign.get('advertising_channel_type', 'N/A'),
                 "Avg. CPV": micros_to_currency(metrics.get('average_cpv')),
                 "Interactions": metrics.get('interactions', 'N/A'),
-                "Interaction rate": metrics.get('interaction_rate', 'N/A'), # Convert to percentage if it's a decimal
+                "Interaction rate": metrics.get('interaction_rate', 'N/A'),
                 "Avg. cost": micros_to_currency(metrics.get('average_cost')),
-                "Cost": cost, # Use the calculated cost
+                "Cost": cost,
                 "Impr.": metrics.get('impressions', 'N/A'),
                 "Bid strategy type": campaign.get('bidding_strategy_type', 'N/A'),
                 "Clicks": metrics.get('clicks', 'N/A'),
-                "Conv. value": conversions_value, # Use the float value
+                "Conv. value": conversions_value,
                 "Conv. value / cost": roas,
                 "Conversions": metrics.get('all_conversions', 'N/A'),
                 "Avg. CPC": micros_to_currency(metrics.get('average_cpc')),
                 "Cost / conv.": micros_to_currency(metrics.get('cost_per_conversion')),
-                "All Conversions Rate": all_conversions_rate # Calculated numeric value
+                "All Conversions Rate": all_conversions_rate
             }
             date_range_result['data'].append(data)
         all_results.append(date_range_result)
@@ -277,14 +262,14 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
     ga_service = client.get_service("GoogleAdsService")
     all_results = []
 
-    # Parse date ranges
+
     parsed_date_ranges = []
     if isinstance(date_ranges_input, str):
         date_ranges_input = [date_ranges_input]
     for dr_input in date_ranges_input:
         parsed_date_ranges.append(parse_date_range(dr_input))
 
-    # Define query template for keyword data
+
     query_template = """
         SELECT
         ad_group_criterion.keyword.text,
@@ -296,19 +281,19 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
         AND ad_group_criterion.status != 'REMOVED'
     """
 
-    # Add campaign_ids filter if provided
+
     if campaign_ids and len(campaign_ids) > 0:
         campaign_filter = ", ".join([f"'{cid}'" for cid in campaign_ids])
         query_template += f" AND campaign.id IN ({campaign_filter})"
 
-    # Add ad_group_ids filter if provided
+
     if ad_group_ids and len(ad_group_ids) > 0:
         ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids])
         query_template += f" AND ad_group.id IN ({ad_group_filter})"
         
     logger.info(f"Constructed GAQL Query Template for keywords: {query_template}")
 
-    # Process each date range
+
     for date_range in parsed_date_ranges:
         query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
         logger.info(f"Executing GAQL Query for keyword data, date range {date_range['start_date']} to {date_range['end_date']}")
@@ -320,7 +305,7 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
         }
 
         try:
-            # Execute search
+
             response = ga_service.search(customer_id=customer_id, query=query)
             
             for row in response:
@@ -333,10 +318,10 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
                 metrics = row_dict.get('metrics', {})
                 quality_info = criterion.get('quality_info', {})
                 
-                # Calculate conversion rate safely
+
                 conversion_rate = metrics.get('conversion_rate', 0.0)
                 
-                # Process keyword data
+
                 keyword_data = {
                     "Campaign ID": campaign.get('id', 'N/A'),
                     "Campaign": campaign.get('name', 'N/A'),
@@ -410,7 +395,7 @@ class AdwordsCampaignAction(ActionHandler):
 
         date_ranges_input = inputs.get('date_ranges')
 
-        if not date_ranges_input: # Catches None, empty list, empty string.
+        if not date_ranges_input: 
             logger.error("'date_ranges' is a required input and was not provided or is empty.")
             raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
 
@@ -429,14 +414,14 @@ class AdwordsCampaignAction(ActionHandler):
 class AdwordsKeywordAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Get authentication details
+           
             refresh_token = context.auth.get("credentials", {}).get("refresh_token")
             
             if not refresh_token:
                 logger.error("Refresh token is missing in auth credentials")
                 raise Exception("Refresh token is required for authentication with Google Ads API")
 
-            # Get required input parameters
+           
             login_customer_id = inputs.get('login_customer_id')
             customer_id = inputs.get('customer_id')
             
@@ -448,7 +433,7 @@ class AdwordsKeywordAction(ActionHandler):
                 logger.error("Customer ID is missing in inputs")
                 raise Exception("Customer ID is required")
 
-            # Initialize Google Ads client
+            
             credentials = {
                 "developer_token": DEVELOPER_TOKEN,
                 "token_uri": "https://oauth2.googleapis.com/token",
@@ -465,7 +450,7 @@ class AdwordsKeywordAction(ActionHandler):
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
             raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
 
-        # Get input parameters
+        
         date_ranges_input = inputs.get('date_ranges')
         campaign_ids = inputs.get('campaign_ids', [])
         ad_group_ids = inputs.get('ad_group_ids', [])
@@ -475,7 +460,7 @@ class AdwordsKeywordAction(ActionHandler):
             raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
 
         try:
-            # Fetch the keyword data
+          
             results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
             logger.info("Successfully retrieved keyword data.")
             return results
