@@ -205,13 +205,7 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
             'data': []
         }
 
-        # Limit to processing only 20 rows
-        count = 0
         for row in response:
-            # Process only the first 20 rows to avoid timeouts
-            if count >= 20:
-                break
-            
             row_dict = proto.Message.to_dict(row, use_integers_for_enums=False)
 
             campaign = row_dict.get('campaign', {})
@@ -276,7 +270,6 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
                 "All Conversions Rate": all_conversions_rate # Calculated numeric value
             }
             date_range_result['data'].append(data)
-            count += 1
         all_results.append(date_range_result)
     return all_results
 
