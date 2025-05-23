@@ -30,7 +30,7 @@
                         "items": {
                             "type": "string"
                         },
-                        "description": "List of date ranges. Supported formats: 'last_7_days', 'prev_7_days', or 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"last_7_days\", \"2023-01-01_2023-01-31\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
+                        "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"]), 'last 7 days' or 'last_7_days', or single dates 'DD/MM/YYYY' (e.g., [\"16/03/2024\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
                     }
                 },
                 "required": [
@@ -93,7 +93,7 @@
                         "items": {
                             "type": "string"
                         },
-                        "description": "List of date ranges. Format: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"])."
+                        "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"]), 'last 7 days' or 'last_7_days', or single dates 'DD/MM/YYYY' (e.g., [\"16/03/2024\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
                     }
                 },
                 "required": [

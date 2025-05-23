@@ -3,7 +3,7 @@ load_dotenv()
 
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 import proto
@@ -111,31 +111,66 @@ CLIENT_SECRET = os.environ.get("ADWORDS_CLIENT_SECRET")
 
 def parse_date_range(range_name_str: str) -> Dict[str, str]:
     """
-    Parses an explicit date range string into start and end dates.
-
-    The calling LLM is expected to resolve any relative date phrases 
-    (e.g., "last 7 days") into an explicit date range string before calling this tool.
-
+    Parses a date range string into start and end dates.
+    
+    Supports explicit date ranges, relative date phrases, and single dates.
+    
     Args:
-        range_name_str: The date range string, expected in "YYYY-MM-DD_YYYY-MM-DD" format.
+        range_name_str: Either an explicit date range "YYYY-MM-DD_YYYY-MM-DD",
+                       a relative phrase like "last 7 days", 
+                       or a single date like "16/03/2024" (DD/MM/YYYY)
 
     Returns:
-        A dictionary with "start_date" and "end_date".
+        A dictionary with "start_date" and "end_date" in YYYY-MM-DD format.
 
     Raises:
-        ValueError: If the string is not in the expected "YYYY-MM-DD_YYYY-MM-DD" format.
+        ValueError: If the string is not in a supported format.
     """
-    try:
-        # Split the date range string on underscore
-        start_str, end_str = range_name_str.split('_')
-        # Validate format by attempting to parse as dates
-        datetime.strptime(start_str, '%Y-%m-%d')
-        datetime.strptime(end_str, '%Y-%m-%d')
-        # Consider adding validation that start_date is not after end_date if necessary
-        return {"start_date": start_str, "end_date": end_str}
-    except ValueError:
-        logger.error(f"Invalid date range string format: '{range_name_str}'. Expected 'YYYY-MM-DD_YYYY-MM-DD'.")
-        raise ValueError(f"Invalid date range string format: '{range_name_str}'. Must be 'YYYY-MM-DD_YYYY-MM-DD'.")
+    # Handle relative date ranges
+    if range_name_str.lower() == "last 7 days" or range_name_str.lower() == "last_7_days":
+        # Calculate the last 7 complete days (excluding today)
+        today = datetime.now().date()
+        end_date = today - timedelta(days=1)  # Yesterday
+        start_date = end_date - timedelta(days=6)  # 7 days total including end_date
+        
+        return {
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+    
+    # Handle single date in DD/MM/YYYY format
+    if '/' in range_name_str and '_' not in range_name_str:
+        try:
+            # Parse DD/MM/YYYY format
+            parsed_date = datetime.strptime(range_name_str, '%d/%m/%Y').date()
+            formatted_date = parsed_date.strftime('%Y-%m-%d')
+            
+            # Return as single-day range
+            return {
+                "start_date": formatted_date,
+                "end_date": formatted_date
+            }
+        except ValueError:
+            # Fall through to handle other formats or raise error
+            pass
+    
+    # Handle explicit date range format
+    if '_' in range_name_str:
+        try:
+            # Split the date range string on underscore
+            start_str, end_str = range_name_str.split('_')
+            # Validate format by attempting to parse as dates
+            datetime.strptime(start_str, '%Y-%m-%d')
+            datetime.strptime(end_str, '%Y-%m-%d')
+            # Consider adding validation that start_date is not after end_date if necessary
+            return {"start_date": start_str, "end_date": end_str}
+        except ValueError:
+            # Fall through to error handling
+            pass
+    
+    # If we get here, the format wasn't recognized
+    logger.error(f"Invalid date range string format: '{range_name_str}'. Expected 'YYYY-MM-DD_YYYY-MM-DD', 'DD/MM/YYYY', or 'last 7 days'.")
+    raise ValueError(f"Invalid date range string format: '{range_name_str}'. Must be 'YYYY-MM-DD_YYYY-MM-DD', 'DD/MM/YYYY', or 'last 7 days'.")
 
 def fetch_campaign_data(client, customer_id, date_ranges_input):
     """Fetches campaign performance data from Google Ads API."""
