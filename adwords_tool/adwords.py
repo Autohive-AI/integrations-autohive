@@ -10,15 +10,12 @@ import proto
 from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration
 from google.ads.googleads.client import GoogleAdsClient
 
+# Load integration configuration
+adwords = Integration.load()
+
 # Configure logging for debugging and monitoring
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# Load integration configuration
-current_dir = os.path.dirname(os.path.abspath(__file__))
-config_file_path = os.path.join(current_dir, "config.json")
-
-adwords = Integration.load(config_file_path)
 
 def micros_to_currency(micros):
     """Convert Google Ads API micros (millionths) to standard currency format."""
