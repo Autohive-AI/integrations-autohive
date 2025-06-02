@@ -19,6 +19,7 @@ except KeyError as e:
 
 from datetime import datetime, timedelta
 from typing import Dict, Any
+from enum import Enum
 
 import proto
 from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration
@@ -26,6 +27,10 @@ from google.ads.googleads.client import GoogleAdsClient
 
 # Load integration configuration
 adwords = Integration.load()
+
+class AdType(Enum):
+    RESPONSIVE_SEARCH_AD = 'RESPONSIVE_SEARCH_AD'
+    EXPANDED_TEXT_AD = 'EXPANDED_TEXT_AD'
 
 def micros_to_currency(micros):
     """Convert Google Ads API micros (millionths) to standard currency format."""
@@ -38,11 +43,11 @@ def _get_ad_text_assets(ad_data_from_row: Dict[str, Any]) -> Dict[str, list]:
     ad_type = ad_data_from_row.get('type', 'N/A')
 
     # Extract text assets based on ad type
-    if ad_type == 'RESPONSIVE_SEARCH_AD':
+    if ad_type == AdType.RESPONSIVE_SEARCH_AD.value:
         rsa_info = ad_data_from_row.get('responsive_search_ad', {})
         headlines.extend([h.get('text', '') for h in rsa_info.get('headlines', []) if h.get('text')])
         descriptions.extend([d.get('text', '') for d in rsa_info.get('descriptions', []) if d.get('text')])
-    elif ad_type == 'EXPANDED_TEXT_AD':
+    elif ad_type == AdType.EXPANDED_TEXT_AD.value:
         eta_info = ad_data_from_row.get('expanded_text_ad', {})
         # Extract headline parts (up to 3 for expanded text ads)
         for part in ['headline_part1', 'headline_part2', 'headline_part3']:
