@@ -1,8 +1,22 @@
+import os
+
+import logging
+# Configure logging for debugging and monitoring
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Setup environment variables and throw if they don't exist
 from dotenv import load_dotenv
 load_dotenv()
+try:
+    # Google Ads API credentials from environment variables
+    DEVELOPER_TOKEN = os.environ["ADWORDS_DEVELOPER_TOKEN"]
+    CLIENT_ID = os.environ["ADWORDS_CLIENT_ID"]
+    CLIENT_SECRET = os.environ["ADWORDS_CLIENT_SECRET"]
+except KeyError as e:
+    logger.error(f"Error loading environment variables: {str(e)}")
+    raise
 
-import os
-import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
@@ -12,10 +26,6 @@ from google.ads.googleads.client import GoogleAdsClient
 
 # Load integration configuration
 adwords = Integration.load()
-
-# Configure logging for debugging and monitoring
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 def micros_to_currency(micros):
     """Convert Google Ads API micros (millionths) to standard currency format."""
@@ -100,11 +110,6 @@ def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
         "interaction_rate": ad_metrics.get('interaction_rate', 'N/A'),
         "conversion_rate": ad_conversion_rate  # Overall for the ad
     }
-
-# Google Ads API credentials from environment variables
-DEVELOPER_TOKEN = os.environ.get("ADWORDS_DEVELOPER_TOKEN")
-CLIENT_ID = os.environ.get("ADWORDS_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("ADWORDS_CLIENT_SECRET")
 
 def parse_date_range(range_name_str: str) -> Dict[str, str]:
     """
