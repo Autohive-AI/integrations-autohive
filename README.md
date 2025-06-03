@@ -11,6 +11,10 @@ This repository hosts Autohive integrations made and maintained by the Autohive 
 
 Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
+### Google Ads
+
+[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
