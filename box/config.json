@@ -1,0 +1,396 @@
+{
+    "name": "Box",
+    "version": "0.0.1",
+    "description": "Box integration for managing files and folders",
+    "entry_point": "box.py",
+    "auth": {
+        "type": "platform",
+        "provider": "box",
+        "scopes": []
+    },
+    "actions": {
+        "list_shared_folders": {
+            "display_name": "List Shared Folders",
+            "description": "Lists all shared folders the user has access to. Results are paginated - when there are more folders than can be returned in a single response, a nextPageToken will be included in the response.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "Maximum number of folders to return per page."
+                    },
+                    "pageToken": {
+                        "type": "string",
+                        "description": "Page token for folders from a previous response."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "folders": {
+                        "type": "array",
+                        "description": "List of shared folders",
+                        "items": {
+                            "type": "object",
+                            "description": "Information about a shared folder"
+                        }
+                    },
+                    "nextPageToken": {
+                        "type": "string",
+                        "description": "Page token for the next page of folders (only present if there are more folders)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "The result of the operation"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": [
+                    "folders",
+                    "result"
+                ]
+            }
+        },
+        "list_files": {
+            "display_name": "List Files",
+            "description": "Lists files in the user's Box account. Results are paginated - when there are more files than can be returned in a single response, a nextPageToken will be included in the response.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "Maximum number of files to return per page."
+                    },
+                    "pageToken": {
+                        "type": "string",
+                        "description": "Page token for files from a previous response."
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string to filter files by name or content."
+                    },
+                    "file_extensions": {
+                        "type": "array",
+                        "description": "File extensions to filter by (e.g., ['pdf', 'docx']).",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "folder_id": {
+                        "type": "string",
+                        "description": "ID of ancestor folder to search within."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "description": "List of files",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the file"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the file"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "The type of the item (file or folder)"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "The size of the file in bytes"
+                                },
+                                "modified_at": {
+                                    "type": "string",
+                                    "description": "The time the file was last modified"
+                                },
+                                "created_at": {
+                                    "type": "string",
+                                    "description": "The time the file was created"
+                                }
+                            }
+                        }
+                    },
+                    "nextPageToken": {
+                        "type": "string",
+                        "description": "Page token for the next page of files (only present if there are more files)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "The result of the operation"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": [
+                    "files",
+                    "result"
+                ]
+            }
+        },
+        "list_folder_contents": {
+            "display_name": "List Folder Contents",
+            "description": "Lists files and subfolders contained in a specific folder.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder_id": {
+                        "type": "string",
+                        "description": "The ID of the folder to list contents of."
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "Maximum number of items to return per page."
+                    },
+                    "pageToken": {
+                        "type": "string",
+                        "description": "Page token for items from a previous response."
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": "Whether to list contents recursively (default: false)."
+                    }
+                },
+                "required": [
+                    "folder_id"
+                ]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "description": "List of files and folders in the folder",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the item"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the item"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "The type of the item (file or folder)"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "The size of the item in bytes (for files)"
+                                },
+                                "modified_at": {
+                                    "type": "string",
+                                    "description": "The time the item was last modified"
+                                },
+                                "created_at": {
+                                    "type": "string",
+                                    "description": "The time the item was created"
+                                }
+                            }
+                        }
+                    },
+                    "nextPageToken": {
+                        "type": "string",
+                        "description": "Page token for the next page of items (only present if there are more items)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "The result of the operation"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": [
+                    "items",
+                    "result"
+                ]
+            }
+        },
+        "get_file": {
+            "display_name": "Get File",
+            "description": "Gets a file's contents and metadata from Box with binary content support.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "The ID of the file to download."
+                    }
+                },
+                "required": [
+                    "file_id"
+                ]
+            },
+            "output_schema": {
+                "type": "object",
+                "required": [
+                    "file",
+                    "metadata",
+                    "result"
+                ],
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "description": "The file object containing content and metadata"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "The ID of the file"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "size": {
+                                "type": "string",
+                                "description": "The size of the file in bytes"
+                            },
+                            "parents": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "The IDs of the parent folders"
+                            },
+                            "mimeType": {
+                                "type": "string",
+                                "description": "The MIME type of the file"
+                            },
+                            "createdTime": {
+                                "type": "string",
+                                "description": "The time the file was created (RFC 3339 date-time)"
+                            },
+                            "modifiedTime": {
+                                "type": "string",
+                                "description": "The time the file was last modified (RFC 3339 date-time)"
+                            }
+                        },
+                        "description": "The complete file metadata from Box API"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "The result of the operation"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "upload_file": {
+            "display_name": "Upload File",
+            "description": "Uploads a file to Box from a structured file object containing base64 content.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "description": "The file to upload"
+                    },
+                    "folder_id": {
+                        "type": "string",
+                        "description": "The ID of the destination folder. Defaults to root folder if not specified."
+                    }
+                },
+                "required": [
+                    "file"
+                ]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "The ID of the uploaded file"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The name of the uploaded file"
+                    },
+                    "file_size": {
+                        "type": "integer",
+                        "description": "The size of the uploaded file in bytes"
+                    },
+                    "content_type": {
+                        "type": "string",
+                        "description": "The content type of the uploaded file"
+                    },
+                    "upload_url": {
+                        "type": "string",
+                        "description": "URL to access the uploaded file"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "The result of the operation"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": [
+                    "result"
+                ]
+            }
+        }
+    }
+}
