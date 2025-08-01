@@ -1,0 +1,359 @@
+{
+    "name": "Microsoft 365",
+    "version": "1.0.0",
+    "description": "Microsoft 365 integration for Outlook, OneDrive, and Calendar",
+    "entry_point": "microsoft365.py",
+    "auth": {
+        "type": "platform",
+        "provider": "microsoft_graph",
+        "scopes": []
+    },
+    "actions": {
+        "send_email": {
+            "display_name": "Send Email",
+            "description": "Send an email via Outlook",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "to": {
+                        "type": "string",
+                        "description": "Recipient email address"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Email subject"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Email body content"
+                    },
+                    "body_type": {
+                        "type": "string",
+                        "description": "Body content type (Text or HTML)",
+                        "enum": ["Text", "HTML"],
+                        "default": "Text"
+                    },
+                    "cc": {
+                        "type": "array",
+                        "description": "CC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "bcc": {
+                        "type": "array",
+                        "description": "BCC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["to", "subject", "body"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "message_id": {
+                        "type": "string",
+                        "description": "The ID of the sent message"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "create_calendar_event": {
+            "display_name": "Create Calendar Event",
+            "description": "Create a calendar event in Outlook",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "Event title"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Event start time (ISO 8601 format)"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "description": "Event end time (ISO 8601 format)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Event location"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Event description"
+                    },
+                    "attendees": {
+                        "type": "array",
+                        "description": "List of attendee email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["subject", "start_time", "end_time"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The ID of the created event"
+                    },
+                    "web_link": {
+                        "type": "string",
+                        "description": "Web link to the event"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "upload_file": {
+            "display_name": "Upload File to OneDrive",
+            "description": "Upload a file to OneDrive",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "required": ["content", "name", "contentType"],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "description": "The file to upload"
+                    },
+                    "folder_path": {
+                        "type": "string",
+                        "description": "Destination folder path in OneDrive (default: root)",
+                        "default": "/"
+                    }
+                },
+                "required": ["file"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "The ID of the uploaded file"
+                    },
+                    "web_url": {
+                        "type": "string",
+                        "description": "Web URL to access the file"
+                    },
+                    "download_url": {
+                        "type": "string",
+                        "description": "Direct download URL"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "description": "File size in bytes"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "list_files": {
+            "display_name": "List OneDrive Files",
+            "description": "List files in a OneDrive folder",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder_path": {
+                        "type": "string",
+                        "description": "Folder path to list (default: root)",
+                        "default": "/"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of files to return",
+                        "default": 100
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "description": "List of files",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "File ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "File name"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "File size in bytes"
+                                },
+                                "modified_time": {
+                                    "type": "string",
+                                    "description": "Last modified time"
+                                },
+                                "web_url": {
+                                    "type": "string",
+                                    "description": "Web URL to the file"
+                                },
+                                "is_folder": {
+                                    "type": "boolean",
+                                    "description": "Whether this is a folder"
+                                }
+                            }
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["files", "result"]
+            }
+        }
+    },
+    "polling_triggers": {
+        "new_emails": {
+            "description": "Poll for new emails in Inbox",
+            "polling_interval": "5m",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder": {
+                        "type": "string",
+                        "description": "Mail folder to monitor",
+                        "default": "Inbox"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum emails to retrieve per poll",
+                        "default": 50
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Email ID"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Email subject"
+                    },
+                    "sender": {
+                        "type": "string",
+                        "description": "Sender email address"
+                    },
+                    "received_time": {
+                        "type": "string",
+                        "description": "Time email was received"
+                    },
+                    "body_preview": {
+                        "type": "string",
+                        "description": "Preview of email body"
+                    },
+                    "has_attachments": {
+                        "type": "boolean",
+                        "description": "Whether email has attachments"
+                    }
+                }
+            }
+        },
+        "new_files": {
+            "description": "Poll for new files in OneDrive",
+            "polling_interval": "10m",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder_path": {
+                        "type": "string",
+                        "description": "Folder to monitor for new files",
+                        "default": "/"
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "File ID"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "File name"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "File path"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "description": "File size in bytes"
+                    },
+                    "modified_time": {
+                        "type": "string",
+                        "description": "Last modified time"
+                    },
+                    "created_time": {
+                        "type": "string",
+                        "description": "Creation time"
+                    }
+                }
+            }
+        }
+    }
+}
