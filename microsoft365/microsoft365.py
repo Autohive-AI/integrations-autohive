@@ -228,11 +228,9 @@ class NewEmailsPoller(PollingTriggerHandler):
                 params["$filter"] = f"receivedDateTime gt {last_poll_ts}"
             
             # Get emails from specified folder
-            if folder.lower() == "inbox":
-                api_url = f"{GRAPH_API_BASE}/me/mailFolders/inbox/messages"
-            else:
-                # For other folders, we might need to search by folder name
-                api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
+            # Use well-known folder names (inbox, drafts, sentitems, deleteditems)
+            # or folder IDs for other folders
+            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
             
             response = await context.fetch(api_url, params=params)
             
