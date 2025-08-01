@@ -15,6 +15,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
 
+### Box
+
+[box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
