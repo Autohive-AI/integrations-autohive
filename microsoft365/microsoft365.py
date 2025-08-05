@@ -334,6 +334,107 @@ class ListCalendarEventsAction(ActionHandler):
                 "error": str(e)
             }
 
+@microsoft365.action("list_emails")
+class ListEmailsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            start_date = inputs["start_date"]
+            end_date = inputs.get("end_date", start_date)
+            folder = inputs.get("folder", "Inbox")
+            limit = inputs.get("limit", 50)
+            
+            # Convert dates to datetime strings for filtering
+            start_datetime = f"{start_date}T00:00:00Z"
+            end_datetime = f"{end_date}T23:59:59Z"
+            
+            # Build query parameters
+            params = {
+                "$top": limit,
+                "$orderby": "receivedDateTime desc",
+                "$select": "id,subject,sender,receivedDateTime,bodyPreview,body,hasAttachments,isRead,importance",
+                "$filter": f"receivedDateTime ge '{start_datetime}' and receivedDateTime le '{end_datetime}'"
+            }
+            
+            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
+            response = await context.fetch(api_url, params=params)
+            
+            # Format emails
+            emails = []
+            for email in response.get("value", []):
+                emails.append({
+                    "id": email["id"],
+                    "subject": email.get("subject", ""),
+                    "sender": email["sender"]["emailAddress"]["address"],
+                    "sender_name": email["sender"]["emailAddress"]["name"],
+                    "received_time": email["receivedDateTime"],
+                    "body_preview": email.get("bodyPreview", ""),
+                    "body_content": email.get("body", {}).get("content", ""),
+                    "has_attachments": email.get("hasAttachments", False),
+                    "is_read": email.get("isRead", False),
+                    "importance": email.get("importance", "normal")
+                })
+            
+            return {
+                "emails": emails,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "emails": [],
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("list_emails_from_contact")
+class ListEmailsFromContactAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            contact_email = inputs["contact_email"]
+            limit = inputs.get("limit", 5)
+            folder = inputs.get("folder", "Inbox")
+            
+            # Build query parameters to filter by sender email
+            params = {
+                "$top": limit,
+                "$orderby": "receivedDateTime desc",
+                "$select": "id,subject,sender,receivedDateTime,bodyPreview,body,hasAttachments,isRead,importance",
+                "$filter": f"sender/emailAddress/address eq '{contact_email}'"
+            }
+            
+            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
+            response = await context.fetch(api_url, params=params)
+            
+            # Format emails
+            emails = []
+            for email in response.get("value", []):
+                emails.append({
+                    "id": email["id"],
+                    "subject": email.get("subject", ""),
+                    "sender": email["sender"]["emailAddress"]["address"],
+                    "sender_name": email["sender"]["emailAddress"]["name"],
+                    "received_time": email["receivedDateTime"],
+                    "body_preview": email.get("bodyPreview", ""),
+                    "body_content": email.get("body", {}).get("content", ""),
+                    "has_attachments": email.get("hasAttachments", False),
+                    "is_read": email.get("isRead", False),
+                    "importance": email.get("importance", "normal")
+                })
+            
+            return {
+                "emails": emails,
+                "contact_email": contact_email,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "emails": [],
+                "contact_email": contact_email,
+                "result": False,
+                "error": str(e)
+            }
+
 @microsoft365.action("read_contacts")
 class ReadContactsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):

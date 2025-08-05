@@ -428,6 +428,188 @@
                 "required": ["events", "result"]
             }
         },
+        "list_emails": {
+            "display_name": "List Emails",
+            "description": "List emails for a specific date range and folder",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "start_date": {
+                        "type": "string",
+                        "description": "Start date to filter emails (ISO 8601 format, e.g., 2024-08-01)"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "End date to filter emails (ISO 8601 format, e.g., 2024-08-01). If not provided, defaults to start_date"
+                    },
+                    "folder": {
+                        "type": "string",
+                        "description": "Mail folder to query (default: Inbox)",
+                        "default": "Inbox"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of emails to return",
+                        "default": 50
+                    }
+                },
+                "required": ["start_date"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "emails": {
+                        "type": "array",
+                        "description": "List of emails",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Email ID"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Email subject"
+                                },
+                                "sender": {
+                                    "type": "string",
+                                    "description": "Sender email address"
+                                },
+                                "sender_name": {
+                                    "type": "string",
+                                    "description": "Sender display name"
+                                },
+                                "received_time": {
+                                    "type": "string",
+                                    "description": "Time email was received"
+                                },
+                                "body_preview": {
+                                    "type": "string",
+                                    "description": "Preview of email body"
+                                },
+                                "body_content": {
+                                    "type": "string",
+                                    "description": "Full email body content"
+                                },
+                                "has_attachments": {
+                                    "type": "boolean",
+                                    "description": "Whether email has attachments"
+                                },
+                                "is_read": {
+                                    "type": "boolean",
+                                    "description": "Whether email has been read"
+                                },
+                                "importance": {
+                                    "type": "string",
+                                    "description": "Email importance level"
+                                }
+                            }
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["emails", "result"]
+            }
+        },
+        "list_emails_from_contact": {
+            "display_name": "List Emails from Contact",
+            "description": "List latest emails from a specific contact",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "contact_email": {
+                        "type": "string",
+                        "description": "Email address of the contact to search for"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of emails to return",
+                        "default": 5
+                    },
+                    "folder": {
+                        "type": "string",
+                        "description": "Mail folder to search in (default: Inbox)",
+                        "default": "Inbox"
+                    }
+                },
+                "required": ["contact_email"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "emails": {
+                        "type": "array",
+                        "description": "List of emails from the contact",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Email ID"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Email subject"
+                                },
+                                "sender": {
+                                    "type": "string",
+                                    "description": "Sender email address"
+                                },
+                                "sender_name": {
+                                    "type": "string",
+                                    "description": "Sender display name"
+                                },
+                                "received_time": {
+                                    "type": "string",
+                                    "description": "Time email was received"
+                                },
+                                "body_preview": {
+                                    "type": "string",
+                                    "description": "Preview of email body"
+                                },
+                                "body_content": {
+                                    "type": "string",
+                                    "description": "Full email body content"
+                                },
+                                "has_attachments": {
+                                    "type": "boolean",
+                                    "description": "Whether email has attachments"
+                                },
+                                "is_read": {
+                                    "type": "boolean",
+                                    "description": "Whether email has been read"
+                                },
+                                "importance": {
+                                    "type": "string",
+                                    "description": "Email importance level"
+                                }
+                            }
+                        }
+                    },
+                    "contact_email": {
+                        "type": "string",
+                        "description": "The contact email that was searched for"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["emails", "contact_email", "result"]
+            }
+        },
         "read_contacts": {
             "display_name": "Read Contacts",
             "description": "Read contacts from Outlook",

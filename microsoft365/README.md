@@ -6,6 +6,8 @@ This integration provides access to Microsoft 365 services including Outlook, On
 
 ### Actions
 - **Send Email**: Send emails via Outlook with support for CC, BCC, and HTML content
+- **List Emails**: List emails for specific dates or date ranges with full content
+- **List Emails from Contact**: Get latest emails from a specific contact
 - **Create Calendar Event**: Create calendar events with attendees and location
 - **Update Calendar Event**: Update existing calendar events by ID
 - **List Calendar Events**: List calendar events for specific dates or date ranges
@@ -67,6 +69,25 @@ The integration is configured through the `config.json` file and uses the Autohi
     "contentType": "application/pdf"
   },
   "folder_path": "/Documents"
+}
+```
+
+### List Emails
+```json
+{
+  "start_date": "2024-08-01",
+  "end_date": "2024-08-07",
+  "folder": "Inbox",
+  "limit": 20
+}
+```
+
+### List Emails from Contact
+```json
+{
+  "contact_email": "john.doe@example.com",
+  "limit": 5,
+  "folder": "Inbox"
 }
 ```
 
