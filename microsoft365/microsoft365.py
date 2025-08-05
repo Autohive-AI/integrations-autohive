@@ -503,6 +503,161 @@ class MoveEmailAction(ActionHandler):
                 "error": str(e)
             }
 
+@microsoft365.action("read_email")
+class ReadEmailAction(ActionHandler):
+    # Reuse file type categories from ReadFileAction
+    READABLE_FILE_TYPES = {
+        'text/plain', 'text/csv', 'application/json', 'text/xml', 
+        'text/markdown', 'application/x-yaml', 'text/yaml',
+        'application/x-yaml', 'text/x-log'
+    }
+    
+    IMAGE_FILE_TYPES = {
+        'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 
+        'image/tiff', 'image/webp', 'image/svg+xml'
+    }
+    
+    OFFICE_FILE_TYPES = {
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/msword',
+        'application/vnd.ms-excel',
+        'application/vnd.ms-powerpoint'
+    }
+    
+    PDF_FILE_TYPE = 'application/pdf'
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            email_id = inputs["email_id"]
+            include_attachments = inputs.get("include_attachments", True)
+            max_attachment_size_mb = inputs.get("max_attachment_size_mb", 50)
+            max_size_bytes = max_attachment_size_mb * 1024 * 1024
+            
+            # Get email details
+            email_response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{email_id}",
+                params={
+                    "$select": "id,subject,sender,receivedDateTime,body,hasAttachments"
+                }
+            )
+            
+            # Format email details
+            email_details = {
+                "id": email_response["id"],
+                "subject": email_response.get("subject", ""),
+                "sender": email_response["sender"]["emailAddress"]["address"],
+                "sender_name": email_response["sender"]["emailAddress"]["name"],
+                "received_time": email_response["receivedDateTime"],
+                "body_content": email_response.get("body", {}).get("content", ""),
+                "has_attachments": email_response.get("hasAttachments", False)
+            }
+            
+            attachments = []
+            
+            if include_attachments and email_details["has_attachments"]:
+                # Get attachments
+                attachments_response = await context.fetch(
+                    f"{GRAPH_API_BASE}/me/messages/{email_id}/attachments"
+                )
+                
+                for attachment in attachments_response.get("value", []):
+                    attachment_id = attachment["id"]
+                    attachment_name = attachment["name"]
+                    attachment_size = attachment.get("size", 0)
+                    content_type = attachment.get("contentType", "application/octet-stream")
+                    
+                    # Determine file category
+                    if content_type in self.READABLE_FILE_TYPES:
+                        file_category = "text"
+                        is_readable = True
+                    elif content_type in self.IMAGE_FILE_TYPES:
+                        file_category = "image" 
+                        is_readable = False
+                    elif content_type == self.PDF_FILE_TYPE:
+                        file_category = "pdf"
+                        is_readable = False
+                    elif content_type in self.OFFICE_FILE_TYPES:
+                        file_category = "office_document"
+                        is_readable = False
+                    else:
+                        file_category = "other"
+                        is_readable = False
+                    
+                    attachment_data = {
+                        "id": attachment_id,
+                        "name": attachment_name,
+                        "size": attachment_size,
+                        "content_type": content_type,
+                        "file_category": file_category,
+                        "is_readable": is_readable
+                    }
+                    
+                    if attachment_size > max_size_bytes:
+                        attachment_data.update({
+                            "content_encoding": "too_large",
+                            "message": f"Attachment size ({attachment_size} bytes) exceeds limit ({max_attachment_size_mb}MB). Cannot download content."
+                        })
+                    else:
+                        try:
+                            # Download attachment content
+                            attachment_content = await context.fetch(
+                                f"{GRAPH_API_BASE}/me/messages/{email_id}/attachments/{attachment_id}/$value"
+                            )
+                            
+                            if file_category == "text":
+                                # Try to decode as text
+                                try:
+                                    text_content = attachment_content.decode('utf-8')
+                                    attachment_data.update({
+                                        "content": text_content,
+                                        "content_encoding": "text"
+                                    })
+                                except UnicodeDecodeError:
+                                    attachment_data.update({
+                                        "content": base64.b64encode(attachment_content).decode('utf-8'),
+                                        "content_encoding": "base64",
+                                        "message": "File appeared to be text but contained non-UTF8 characters. Returned as base64."
+                                    })
+                            else:
+                                # Return as base64 for binary files
+                                attachment_data.update({
+                                    "content": base64.b64encode(attachment_content).decode('utf-8'),
+                                    "content_encoding": "base64"
+                                })
+                                
+                                if file_category == "image":
+                                    attachment_data["message"] = "Image attachment returned as base64."
+                                elif file_category == "pdf":
+                                    attachment_data["message"] = "PDF attachment returned as base64. Use specialized PDF tools for text extraction."
+                                elif file_category == "office_document":
+                                    attachment_data["message"] = "Office document returned as base64."
+                                else:
+                                    attachment_data["message"] = f"Binary attachment ({content_type}) returned as base64."
+                                    
+                        except Exception as e:
+                            attachment_data.update({
+                                "content_encoding": "error",
+                                "message": f"Failed to download attachment: {str(e)}"
+                            })
+                    
+                    attachments.append(attachment_data)
+            
+            return {
+                "email": email_details,
+                "attachments": attachments,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "email": {},
+                "attachments": [],
+                "result": False,
+                "error": str(e)
+            }
+
 @microsoft365.action("read_file")
 class ReadFileAction(ActionHandler):
     # File type categories based on MIME types
@@ -532,7 +687,7 @@ class ReadFileAction(ActionHandler):
         try:
             file_id = inputs["file_id"]
             include_content = inputs.get("include_content", True)
-            max_size_mb = inputs.get("max_size_mb", 10)
+            max_size_mb = inputs.get("max_size_mb", 50)
             max_size_bytes = max_size_mb * 1024 * 1024
             
             # Get file metadata including download URL
@@ -584,7 +739,7 @@ class ReadFileAction(ActionHandler):
             }
             
             # Handle content inclusion
-            if include_content and download_url:
+            if include_content:
                 if file_size > max_size_bytes:
                     # File too large - return URL only
                     response.update({
@@ -592,40 +747,52 @@ class ReadFileAction(ActionHandler):
                         "message": f"File size ({file_size} bytes) exceeds limit ({max_size_mb}MB). Use download_url to access file."
                     })
                 else:
-                    # Download file content
-                    file_content = await context.fetch(download_url)
-                    
-                    if file_category == "text":
-                        # Return as text content
-                        try:
-                            text_content = file_content.decode('utf-8')
-                            response.update({
-                                "content": text_content,
-                                "content_type": "text"
-                            })
-                        except UnicodeDecodeError:
-                            # Fallback to base64 if text decoding fails
+                    # Download file content - use download_url if available, otherwise use /content endpoint
+                    try:
+                        if download_url:
+                            file_content = await context.fetch(download_url)
+                        else:
+                            # Fallback to /content endpoint when @microsoft.graph.downloadUrl is missing
+                            file_content = await context.fetch(f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content")
+                        
+                        if file_category == "text":
+                            # Return as text content
+                            try:
+                                text_content = file_content.decode('utf-8')
+                                response.update({
+                                    "content": text_content,
+                                    "content_type": "text"
+                                })
+                            except UnicodeDecodeError:
+                                # Fallback to base64 if text decoding fails
+                                response.update({
+                                    "content": base64.b64encode(file_content).decode('utf-8'),
+                                    "content_type": "base64",
+                                    "message": "File appeared to be text but contained non-UTF8 characters. Returned as base64."
+                                })
+                        else:
+                            # Return as base64 for binary files
                             response.update({
                                 "content": base64.b64encode(file_content).decode('utf-8'),
-                                "content_type": "base64",
-                                "message": "File appeared to be text but contained non-UTF8 characters. Returned as base64."
+                                "content_type": "base64"
                             })
-                    else:
-                        # Return as base64 for binary files
+                            
+                            # Add specific messages for different file types
+                            if file_category == "image":
+                                response["message"] = "Image file returned as base64. Can be displayed or processed by image tools."
+                            elif file_category == "pdf":
+                                response["message"] = "PDF file returned as base64. Use specialized PDF tools for text extraction."
+                            elif file_category == "office_document":
+                                response["message"] = "Office document returned as base64. Use appropriate tools for content extraction."
+                            else:
+                                response["message"] = f"Binary file ({mime_type}) returned as base64."
+                                
+                    except Exception as download_error:
+                        # Failed to download content
                         response.update({
-                            "content": base64.b64encode(file_content).decode('utf-8'),
-                            "content_type": "base64"
+                            "content_type": "download_error",
+                            "message": f"Failed to download file content: {str(download_error)}"
                         })
-                        
-                        # Add specific messages for different file types
-                        if file_category == "image":
-                            response["message"] = "Image file returned as base64. Can be displayed or processed by image tools."
-                        elif file_category == "pdf":
-                            response["message"] = "PDF file returned as base64. Use specialized PDF tools for text extraction."
-                        elif file_category == "office_document":
-                            response["message"] = "Office document returned as base64. Use appropriate tools for content extraction."
-                        else:
-                            response["message"] = f"Binary file ({mime_type}) returned as base64."
             else:
                 response.update({
                     "content_type": "metadata_only",

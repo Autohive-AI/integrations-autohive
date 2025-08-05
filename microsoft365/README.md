@@ -8,6 +8,7 @@ This integration provides access to Microsoft 365 services including Outlook, On
 - **Send Email**: Send emails via Outlook with support for CC, BCC, and HTML content
 - **List Emails**: List emails for specific dates or date ranges with full content
 - **List Emails from Contact**: Get latest emails from a specific contact
+- **Read Email**: Read email content including attachments with intelligent file type handling
 - **Mark Email as Read/Unread**: Change the read status of emails
 - **Move Email to Folder**: Move emails between folders (Archive, Junk, etc.)
 - **Create Calendar Event**: Create calendar events with attendees and location
@@ -91,6 +92,15 @@ The integration is configured through the `config.json` file and uses the Autohi
   "contact_email": "john.doe@example.com",
   "limit": 5,
   "folder": "Inbox"
+}
+```
+
+### Read Email with Attachments
+```json
+{
+  "email_id": "AAMkAGVmMDEzMTM4LWZmNjktNDVkNC1iZGRiLTJkNTBmNjNlNTM0ZAAA",
+  "include_attachments": true,
+  "max_attachment_size_mb": 5
 }
 ```
 
