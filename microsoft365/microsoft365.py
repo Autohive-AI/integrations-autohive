@@ -287,7 +287,7 @@ class ListCalendarEventsAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "start/dateTime",
                 "$select": "id,subject,start,end,location,bodyPreview,organizer,attendees,webLink,isAllDay",
-                "$filter": f"start/dateTime ge '{start_datetime}' and start/dateTime le '{end_datetime}'"
+                "$filter": f"start/dateTime ge {start_datetime} and start/dateTime le {end_datetime}"
             }
             
             response = await context.fetch(f"{GRAPH_API_BASE}/me/events", params=params)
@@ -352,7 +352,7 @@ class ListEmailsAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "receivedDateTime desc",
                 "$select": "id,subject,sender,receivedDateTime,bodyPreview,body,hasAttachments,isRead,importance",
-                "$filter": f"receivedDateTime ge '{start_datetime}' and receivedDateTime le '{end_datetime}'"
+                "$filter": f"receivedDateTime ge {start_datetime} and receivedDateTime le {end_datetime}"
             }
             
             api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
