@@ -435,6 +435,74 @@ class ListEmailsFromContactAction(ActionHandler):
                 "error": str(e)
             }
 
+@microsoft365.action("mark_email_read")
+class MarkEmailReadAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            email_id = inputs["email_id"]
+            is_read = inputs["is_read"]
+            
+            # Update email read status
+            update_data = {
+                "isRead": is_read
+            }
+            
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{email_id}",
+                method="PATCH",
+                json=update_data
+            )
+            
+            return {
+                "email_id": email_id,
+                "is_read": is_read,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "email_id": inputs.get("email_id", ""),
+                "is_read": inputs.get("is_read", False),
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("move_email")
+class MoveEmailAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            email_id = inputs["email_id"]
+            destination_folder = inputs["destination_folder"]
+            
+            # Move email to destination folder
+            move_data = {
+                "destinationId": destination_folder
+            }
+            
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{email_id}/move",
+                method="POST",
+                json=move_data
+            )
+            
+            # The response contains the moved email with potentially new ID
+            new_email_id = response.get("id", email_id)
+            
+            return {
+                "email_id": email_id,
+                "destination_folder": destination_folder,
+                "new_email_id": new_email_id,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "email_id": inputs.get("email_id", ""),
+                "destination_folder": inputs.get("destination_folder", ""),
+                "result": False,
+                "error": str(e)
+            }
+
 @microsoft365.action("read_contacts")
 class ReadContactsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):

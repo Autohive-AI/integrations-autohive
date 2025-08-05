@@ -610,6 +610,90 @@
                 "required": ["emails", "contact_email", "result"]
             }
         },
+        "mark_email_read": {
+            "display_name": "Mark Email as Read/Unread",
+            "description": "Mark an email as read or unread",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "email_id": {
+                        "type": "string",
+                        "description": "The ID of the email to mark"
+                    },
+                    "is_read": {
+                        "type": "boolean",
+                        "description": "True to mark as read, false to mark as unread"
+                    }
+                },
+                "required": ["email_id", "is_read"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "email_id": {
+                        "type": "string",
+                        "description": "The ID of the email that was updated"
+                    },
+                    "is_read": {
+                        "type": "boolean",
+                        "description": "The new read status"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "move_email": {
+            "display_name": "Move Email to Folder",
+            "description": "Move an email to a different folder",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "email_id": {
+                        "type": "string",
+                        "description": "The ID of the email to move"
+                    },
+                    "destination_folder": {
+                        "type": "string",
+                        "description": "Name or ID of the destination folder (e.g., 'Archive', 'Junk Email', 'Drafts')"
+                    }
+                },
+                "required": ["email_id", "destination_folder"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "email_id": {
+                        "type": "string",
+                        "description": "The ID of the email that was moved"
+                    },
+                    "destination_folder": {
+                        "type": "string",
+                        "description": "The folder the email was moved to"
+                    },
+                    "new_email_id": {
+                        "type": "string",
+                        "description": "The new email ID after moving (if changed)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
         "read_contacts": {
             "display_name": "Read Contacts",
             "description": "Read contacts from Outlook",
