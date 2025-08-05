@@ -207,6 +207,214 @@ class ListFilesAction(ActionHandler):
                 "error": str(e)
             }
 
+@microsoft365.action("update_calendar_event")
+class UpdateCalendarEventAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            event_id = inputs["event_id"]
+            
+            # Build event update data (only include fields that are provided)
+            event_data = {}
+            
+            if inputs.get("subject"):
+                event_data["subject"] = inputs["subject"]
+            
+            if inputs.get("start_time"):
+                event_data["start"] = {
+                    "dateTime": inputs["start_time"],
+                    "timeZone": "UTC"
+                }
+            
+            if inputs.get("end_time"):
+                event_data["end"] = {
+                    "dateTime": inputs["end_time"],
+                    "timeZone": "UTC"
+                }
+            
+            if inputs.get("location"):
+                event_data["location"] = {
+                    "displayName": inputs["location"]
+                }
+            
+            if inputs.get("body"):
+                event_data["body"] = {
+                    "contentType": "Text",
+                    "content": inputs["body"]
+                }
+            
+            if inputs.get("attendees"):
+                event_data["attendees"] = [
+                    {
+                        "emailAddress": {"address": email, "name": email},
+                        "type": "required"
+                    } for email in inputs["attendees"]
+                ]
+            
+            # Update event
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/events/{event_id}",
+                method="PATCH",
+                json=event_data
+            )
+            
+            return {
+                "event_id": response["id"],
+                "web_link": response["webLink"],
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("list_calendar_events")
+class ListCalendarEventsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            start_date = inputs["start_date"]
+            end_date = inputs.get("end_date", start_date)
+            limit = inputs.get("limit", 100)
+            
+            # Convert dates to datetime strings for filtering
+            # Assume dates are in YYYY-MM-DD format, convert to ISO 8601
+            start_datetime = f"{start_date}T00:00:00Z"
+            end_datetime = f"{end_date}T23:59:59Z"
+            
+            # Build query parameters
+            params = {
+                "$top": limit,
+                "$orderby": "start/dateTime",
+                "$select": "id,subject,start,end,location,bodyPreview,organizer,attendees,webLink,isAllDay",
+                "$filter": f"start/dateTime ge '{start_datetime}' and start/dateTime le '{end_datetime}'"
+            }
+            
+            response = await context.fetch(f"{GRAPH_API_BASE}/me/events", params=params)
+            
+            # Format events
+            events = []
+            for event in response.get("value", []):
+                # Process attendees
+                attendees = []
+                for attendee in event.get("attendees", []):
+                    attendees.append({
+                        "email": attendee["emailAddress"]["address"],
+                        "name": attendee["emailAddress"]["name"],
+                        "response_status": attendee["status"]["response"]
+                    })
+                
+                # Get organizer email
+                organizer_email = ""
+                if event.get("organizer") and event["organizer"].get("emailAddress"):
+                    organizer_email = event["organizer"]["emailAddress"]["address"]
+                
+                events.append({
+                    "id": event["id"],
+                    "subject": event.get("subject", ""),
+                    "start_time": event["start"]["dateTime"],
+                    "end_time": event["end"]["dateTime"],
+                    "location": event.get("location", {}).get("displayName", ""),
+                    "body_preview": event.get("bodyPreview", ""),
+                    "organizer": organizer_email,
+                    "attendees": attendees,
+                    "web_link": event["webLink"],
+                    "is_all_day": event.get("isAllDay", False)
+                })
+            
+            return {
+                "events": events,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "events": [],
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("read_contacts")
+class ReadContactsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            limit = inputs.get("limit", 100)
+            search = inputs.get("search")
+            
+            # Build API URL
+            api_url = f"{GRAPH_API_BASE}/me/contacts"
+            
+            # Build query parameters
+            params = {
+                "$top": limit,
+                "$select": "id,displayName,givenName,surname,emailAddresses,businessPhones,homePhones,mobilePhone,companyName,jobTitle"
+            }
+            
+            # Add search filter if provided
+            if search:
+                params["$filter"] = f"startswith(displayName,'{search}') or startswith(givenName,'{search}') or startswith(surname,'{search}')"
+            
+            response = await context.fetch(api_url, params=params)
+            
+            # Format contacts
+            contacts = []
+            for contact in response.get("value", []):
+                # Process email addresses
+                email_addresses = []
+                for email in contact.get("emailAddresses", []):
+                    email_addresses.append({
+                        "address": email.get("address", ""),
+                        "name": email.get("name", "")
+                    })
+                
+                # Process phone numbers
+                phone_numbers = []
+                
+                # Business phones
+                for phone in contact.get("businessPhones", []):
+                    phone_numbers.append({
+                        "number": phone,
+                        "type": "business"
+                    })
+                
+                # Home phones  
+                for phone in contact.get("homePhones", []):
+                    phone_numbers.append({
+                        "number": phone,
+                        "type": "home"
+                    })
+                
+                # Mobile phone
+                mobile = contact.get("mobilePhone")
+                if mobile:
+                    phone_numbers.append({
+                        "number": mobile,
+                        "type": "mobile"
+                    })
+                
+                contacts.append({
+                    "id": contact.get("id", ""),
+                    "display_name": contact.get("displayName", ""),
+                    "given_name": contact.get("givenName", ""),
+                    "surname": contact.get("surname", ""),
+                    "email_addresses": email_addresses,
+                    "phone_numbers": phone_numbers,
+                    "company_name": contact.get("companyName", ""),
+                    "job_title": contact.get("jobTitle", "")
+                })
+            
+            return {
+                "contacts": contacts,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "contacts": [],
+                "result": False,
+                "error": str(e)
+            }
+
 # ---- Polling Trigger Handlers ----
 
 @microsoft365.polling_trigger("new_emails")

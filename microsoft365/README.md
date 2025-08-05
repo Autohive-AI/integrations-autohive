@@ -7,8 +7,11 @@ This integration provides access to Microsoft 365 services including Outlook, On
 ### Actions
 - **Send Email**: Send emails via Outlook with support for CC, BCC, and HTML content
 - **Create Calendar Event**: Create calendar events with attendees and location
+- **Update Calendar Event**: Update existing calendar events by ID
+- **List Calendar Events**: List calendar events for specific dates or date ranges
 - **Upload File**: Upload files to OneDrive with folder support
 - **List Files**: List files and folders in OneDrive
+- **Read Contacts**: Read and search contacts from Outlook with detailed information
 
 ### Polling Triggers
 - **New Emails**: Monitor for new emails in specified folders (default: Inbox)
@@ -20,8 +23,10 @@ This integration uses Microsoft Graph OAuth2 authentication. Users need to conne
 
 Required Microsoft Graph API permissions:
 - `Mail.ReadWrite` - Read and send emails
+- `Mail.Send` - Send emails on behalf of user
 - `Files.ReadWrite` - Access OneDrive files
 - `Calendars.ReadWrite` - Manage calendar events
+- `Contacts.Read` - Read user contacts
 
 ## Configuration
 
@@ -62,6 +67,35 @@ The integration is configured through the `config.json` file and uses the Autohi
     "contentType": "application/pdf"
   },
   "folder_path": "/Documents"
+}
+```
+
+### Update Calendar Event
+```json
+{
+  "event_id": "AAMkAGI2TG93AAA=",
+  "subject": "Updated Team Meeting",
+  "start_time": "2024-08-01T15:00:00Z",
+  "end_time": "2024-08-01T16:00:00Z",
+  "location": "Conference Room B",
+  "attendees": ["newteam@example.com"]
+}
+```
+
+### List Calendar Events
+```json
+{
+  "start_date": "2024-08-01",
+  "end_date": "2024-08-07",
+  "limit": 20
+}
+```
+
+### Read Contacts
+```json
+{
+  "limit": 50,
+  "search": "John"
 }
 ```
 

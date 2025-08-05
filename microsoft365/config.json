@@ -261,6 +261,271 @@
                 },
                 "required": ["files", "result"]
             }
+        },
+        "update_calendar_event": {
+            "display_name": "Update Calendar Event",
+            "description": "Update an existing calendar event in Outlook",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "ID of the event to update"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Event title"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Event start time (ISO 8601 format)"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "description": "Event end time (ISO 8601 format)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Event location"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Event description"
+                    },
+                    "attendees": {
+                        "type": "array",
+                        "description": "List of attendee email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["event_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The ID of the updated event"
+                    },
+                    "web_link": {
+                        "type": "string",
+                        "description": "Web link to the event"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "list_calendar_events": {
+            "display_name": "List Calendar Events",
+            "description": "List calendar events for a specific date range",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "start_date": {
+                        "type": "string",
+                        "description": "Start date to filter events (ISO 8601 format, e.g., 2024-08-01)"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "End date to filter events (ISO 8601 format, e.g., 2024-08-01). If not provided, defaults to start_date"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of events to return",
+                        "default": 100
+                    }
+                },
+                "required": ["start_date"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "description": "List of calendar events",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Event ID"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Event title"
+                                },
+                                "start_time": {
+                                    "type": "string",
+                                    "description": "Event start time"
+                                },
+                                "end_time": {
+                                    "type": "string",
+                                    "description": "Event end time"
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "description": "Event location"
+                                },
+                                "body_preview": {
+                                    "type": "string",
+                                    "description": "Preview of event description"
+                                },
+                                "organizer": {
+                                    "type": "string",
+                                    "description": "Event organizer email"
+                                },
+                                "attendees": {
+                                    "type": "array",
+                                    "description": "List of attendees",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "description": "Attendee email"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Attendee name"
+                                            },
+                                            "response_status": {
+                                                "type": "string",
+                                                "description": "Response status (accepted, declined, tentativelyAccepted, notResponded)"
+                                            }
+                                        }
+                                    }
+                                },
+                                "web_link": {
+                                    "type": "string",
+                                    "description": "Web link to the event"
+                                },
+                                "is_all_day": {
+                                    "type": "boolean",
+                                    "description": "Whether this is an all-day event"
+                                }
+                            }
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["events", "result"]
+            }
+        },
+        "read_contacts": {
+            "display_name": "Read Contacts",
+            "description": "Read contacts from Outlook",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of contacts to return",
+                        "default": 100
+                    },
+                    "search": {
+                        "type": "string",
+                        "description": "Search query to filter contacts by name or email"
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "contacts": {
+                        "type": "array",
+                        "description": "List of contacts",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Contact ID"
+                                },
+                                "display_name": {
+                                    "type": "string",
+                                    "description": "Contact display name"
+                                },
+                                "given_name": {
+                                    "type": "string",
+                                    "description": "First name"
+                                },
+                                "surname": {
+                                    "type": "string",
+                                    "description": "Last name"
+                                },
+                                "email_addresses": {
+                                    "type": "array",
+                                    "description": "List of email addresses",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "address": {
+                                                "type": "string",
+                                                "description": "Email address"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Email address name/label"
+                                            }
+                                        }
+                                    }
+                                },
+                                "phone_numbers": {
+                                    "type": "array",
+                                    "description": "List of phone numbers",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "number": {
+                                                "type": "string",
+                                                "description": "Phone number"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Phone number type"
+                                            }
+                                        }
+                                    }
+                                },
+                                "company_name": {
+                                    "type": "string",
+                                    "description": "Company name"
+                                },
+                                "job_title": {
+                                    "type": "string",
+                                    "description": "Job title"
+                                }
+                            }
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["contacts", "result"]
+            }
         }
     },
     "polling_triggers": {
