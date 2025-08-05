@@ -694,6 +694,84 @@
                 "required": ["result"]
             }
         },
+        "read_file": {
+            "display_name": "Read OneDrive File",
+            "description": "Read file contents with intelligent type handling based on MIME type",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "OneDrive file ID or file path"
+                    },
+                    "include_content": {
+                        "type": "boolean",
+                        "description": "Whether to include file content or just metadata",
+                        "default": true
+                    },
+                    "max_size_mb": {
+                        "type": "integer",
+                        "description": "Maximum file size in MB to read content (default: 10MB)",
+                        "default": 10
+                    }
+                },
+                "required": ["file_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file_name": {
+                        "type": "string",
+                        "description": "Name of the file"
+                    },
+                    "file_size": {
+                        "type": "integer",
+                        "description": "File size in bytes"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "description": "MIME type of the file"
+                    },
+                    "file_category": {
+                        "type": "string",
+                        "description": "Category of file (text, image, pdf, office_document, other)"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "File content (text or base64 encoded)"
+                    },
+                    "content_type": {
+                        "type": "string",
+                        "description": "How content is encoded (text, base64, url_only)"
+                    },
+                    "download_url": {
+                        "type": "string",
+                        "description": "Direct download URL (temporary, valid for a few minutes)"
+                    },
+                    "web_url": {
+                        "type": "string",
+                        "description": "Web URL to view the file"
+                    },
+                    "is_readable": {
+                        "type": "boolean",
+                        "description": "Whether the file content can be read as text"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Additional information about the file handling"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
         "read_contacts": {
             "display_name": "Read Contacts",
             "description": "Read contacts from Outlook",

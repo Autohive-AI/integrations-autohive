@@ -15,6 +15,7 @@ This integration provides access to Microsoft 365 services including Outlook, On
 - **List Calendar Events**: List calendar events for specific dates or date ranges
 - **Upload File**: Upload files to OneDrive with folder support
 - **List Files**: List files and folders in OneDrive
+- **Read File**: Read file contents with intelligent type handling (text, images, PDFs, Office docs)
 - **Read Contacts**: Read and search contacts from Outlook with detailed information
 
 ### Polling Triggers
@@ -127,6 +128,15 @@ The integration is configured through the `config.json` file and uses the Autohi
   "start_date": "2024-08-01",
   "end_date": "2024-08-07",
   "limit": 20
+}
+```
+
+### Read File
+```json
+{
+  "file_id": "01BYE5RZ6QN3ZWBTUFOFD3GSPGOHDJD36K",
+  "include_content": true,
+  "max_size_mb": 5
 }
 ```
 
