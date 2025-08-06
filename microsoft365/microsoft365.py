@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler, PollingTriggerHandler
+    Integration, ExecutionContext, ActionHandler
 )
 from typing import Dict, Any, List, Optional
 import json
@@ -287,7 +287,7 @@ class ListCalendarEventsAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "start/dateTime",
                 "$select": "id,subject,start,end,location,bodyPreview,organizer,attendees,webLink,isAllDay",
-                "$filter": f"start/dateTime ge {start_datetime} and start/dateTime le {end_datetime}"
+                "$filter": f"start/dateTime ge '{start_datetime}' and start/dateTime le '{end_datetime}'"
             }
             
             response = await context.fetch(f"{GRAPH_API_BASE}/me/events", params=params)
@@ -352,7 +352,7 @@ class ListEmailsAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "receivedDateTime desc",
                 "$select": "id,subject,sender,receivedDateTime,bodyPreview,body,hasAttachments,isRead,importance",
-                "$filter": f"receivedDateTime ge {start_datetime} and receivedDateTime le {end_datetime}"
+                "$filter": f"receivedDateTime ge '{start_datetime}' and receivedDateTime le '{end_datetime}'"
             }
             
             api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
@@ -897,104 +897,3 @@ class ReadContactsAction(ActionHandler):
                 "result": False,
                 "error": str(e)
             }
-
-# ---- Polling Trigger Handlers ----
-
-@microsoft365.polling_trigger("new_emails")
-class NewEmailsPoller(PollingTriggerHandler):
-    async def poll(self, inputs: Dict[str, Any], last_poll_ts: Optional[str], context: ExecutionContext) -> List[Dict[str, Any]]:
-        try:
-            folder = inputs.get("folder", "Inbox")
-            limit = inputs.get("limit", 50)
-            
-            # Build query parameters
-            params = {
-                "$top": limit,
-                "$orderby": "receivedDateTime desc",
-                "$select": "id,subject,sender,receivedDateTime,bodyPreview,hasAttachments"
-            }
-            
-            # Add time filter if we have a last poll timestamp
-            if last_poll_ts:
-                params["$filter"] = f"receivedDateTime gt {last_poll_ts}"
-            
-            # Get emails from specified folder
-            # Use well-known folder names (inbox, drafts, sentitems, deleteditems)
-            # or folder IDs for other folders
-            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
-            
-            response = await context.fetch(api_url, params=params)
-            
-            # Format emails for polling trigger
-            new_emails = []
-            for email in response.get("value", []):
-                new_emails.append({
-                    "id": email["id"],  # Deduplication key
-                    "data": {
-                        "id": email["id"],
-                        "subject": email["subject"],
-                        "sender": email["sender"]["emailAddress"]["address"],
-                        "received_time": email["receivedDateTime"],
-                        "body_preview": email["bodyPreview"],
-                        "has_attachments": email["hasAttachments"]
-                    }
-                })
-            
-            return new_emails
-            
-        except Exception as e:
-            print(f"Error polling for new emails: {e}")
-            return []
-
-@microsoft365.polling_trigger("new_files")
-class NewFilesPoller(PollingTriggerHandler):
-    async def poll(self, inputs: Dict[str, Any], last_poll_ts: Optional[str], context: ExecutionContext) -> List[Dict[str, Any]]:
-        try:
-            folder_path = inputs.get("folder_path", "/").strip("/")
-            
-            # Build API URL
-            if folder_path:
-                api_url = f"{GRAPH_API_BASE}/me/drive/root:/{folder_path}:/children"
-            else:
-                api_url = f"{GRAPH_API_BASE}/me/drive/root/children"
-            
-            # Query parameters
-            params = {
-                "$orderby": "lastModifiedDateTime desc",
-                "$select": "id,name,lastModifiedDateTime,createdDateTime,size,webUrl,folder"
-            }
-            
-            response = await context.fetch(api_url, params=params)
-            
-            # Filter for new files since last poll
-            new_files = []
-            for item in response.get("value", []):
-                # Skip folders for now (only monitor files)
-                if "folder" in item:
-                    continue
-                
-                modified_time = item["lastModifiedDateTime"]
-                
-                # If we have a last poll timestamp, only include newer files
-                if last_poll_ts and modified_time <= last_poll_ts:
-                    continue
-                
-                file_path = f"{folder_path}/{item['name']}" if folder_path else item["name"]
-                
-                new_files.append({
-                    "id": item["id"],  # Deduplication key
-                    "data": {
-                        "id": item["id"],
-                        "name": item["name"],
-                        "path": file_path,
-                        "size": item.get("size", 0),
-                        "modified_time": modified_time,
-                        "created_time": item["createdDateTime"]
-                    }
-                })
-            
-            return new_files
-            
-        except Exception as e:
-            print(f"Error polling for new files: {e}")
-            return []

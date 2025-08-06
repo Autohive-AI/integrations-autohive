@@ -19,9 +19,6 @@ This integration provides access to Microsoft 365 services including Outlook, On
 - **Read File**: Read file contents with intelligent type handling (text, images, PDFs, Office docs)
 - **Read Contacts**: Read and search contacts from Outlook with detailed information
 
-### Polling Triggers
-- **New Emails**: Monitor for new emails in specified folders (default: Inbox)
-- **New Files**: Monitor OneDrive folders for new files
 
 ## Authentication
 
