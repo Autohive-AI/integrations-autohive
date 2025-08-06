@@ -273,14 +273,18 @@ class UpdateCalendarEventAction(ActionHandler):
 class ListCalendarEventsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            start_date = inputs["start_date"]
-            end_date = inputs.get("end_date", start_date)
-            limit = inputs.get("limit", 100)
+            # Accept either datetime or date parameters for backward compatibility
+            if "start_datetime" in inputs:
+                start_datetime = inputs["start_datetime"]
+                end_datetime = inputs.get("end_datetime", start_datetime)
+            else:
+                # Legacy date-only support (defaults to UTC)
+                start_date = inputs["start_date"]
+                end_date = inputs.get("end_date", start_date)
+                start_datetime = f"{start_date}T00:00:00Z"
+                end_datetime = f"{end_date}T23:59:59Z"
             
-            # Convert dates to datetime strings for filtering
-            # Assume dates are in YYYY-MM-DD format, convert to ISO 8601
-            start_datetime = f"{start_date}T00:00:00Z"
-            end_datetime = f"{end_date}T23:59:59Z"
+            limit = inputs.get("limit", 100)
             
             # Build query parameters
             params = {
@@ -338,14 +342,19 @@ class ListCalendarEventsAction(ActionHandler):
 class ListEmailsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            start_date = inputs["start_date"]
-            end_date = inputs.get("end_date", start_date)
+            # Accept either datetime or date parameters for backward compatibility
+            if "start_datetime" in inputs:
+                start_datetime = inputs["start_datetime"]
+                end_datetime = inputs.get("end_datetime", start_datetime)
+            else:
+                # Legacy date-only support (defaults to UTC)
+                start_date = inputs["start_date"]
+                end_date = inputs.get("end_date", start_date)
+                start_datetime = f"{start_date}T00:00:00Z"
+                end_datetime = f"{end_date}T23:59:59Z"
+            
             folder = inputs.get("folder", "Inbox")
             limit = inputs.get("limit", 50)
-            
-            # Convert dates to datetime strings for filtering
-            start_datetime = f"{start_date}T00:00:00Z"
-            end_datetime = f"{end_date}T23:59:59Z"
             
             # Build query parameters
             params = {

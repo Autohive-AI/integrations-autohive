@@ -76,12 +76,14 @@ The integration is configured through the `config.json` file and uses the Autohi
 ### List Emails
 ```json
 {
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-07",
+  "start_datetime": "2024-08-01T07:00:00Z",
+  "end_datetime": "2024-08-02T06:59:59Z",
   "folder": "Inbox",
   "limit": 20
 }
 ```
+
+**Timezone Handling**: For timezone-aware queries, use `start_datetime` and `end_datetime` parameters with UTC timestamps. Legacy `start_date` and `end_date` parameters default to UTC timezone.
 
 ### List Emails from Contact
 ```json
@@ -132,11 +134,13 @@ The integration is configured through the `config.json` file and uses the Autohi
 ### List Calendar Events
 ```json
 {
-  "start_date": "2024-08-01",
-  "end_date": "2024-08-07",
+  "start_datetime": "2024-08-01T07:00:00Z",
+  "end_datetime": "2024-08-02T06:59:59Z",
   "limit": 20
 }
 ```
+
+**Timezone Handling**: For timezone-aware queries, use `start_datetime` and `end_datetime` parameters with UTC timestamps. Legacy `start_date` and `end_date` parameters default to UTC timezone.
 
 ### Read File
 ```json
