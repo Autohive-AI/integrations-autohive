@@ -5,7 +5,7 @@
     "entry_point": "microsoft365.py",
     "auth": {
         "type": "platform",
-        "provider": "microsoft_graph",
+        "provider": "Microsoft 365",
         "scopes": []
     },
     "actions": {
