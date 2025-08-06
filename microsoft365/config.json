@@ -352,11 +352,7 @@
                         "description": "Maximum number of events to return",
                         "default": 100
                     }
-                },
-                "anyOf": [
-                    {"required": ["start_date"]},
-                    {"required": ["start_datetime"]}
-                ]
+                }
             },
             "output_schema": {
                 "type": "object",
@@ -471,11 +467,7 @@
                         "description": "Maximum number of emails to return",
                         "default": 50
                     }
-                },
-                "anyOf": [
-                    {"required": ["start_date"]},
-                    {"required": ["start_datetime"]}
-                ]
+                }
             },
             "output_schema": {
                 "type": "object",

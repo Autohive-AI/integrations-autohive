@@ -277,12 +277,18 @@ class ListCalendarEventsAction(ActionHandler):
             if "start_datetime" in inputs:
                 start_datetime = inputs["start_datetime"]
                 end_datetime = inputs.get("end_datetime", start_datetime)
-            else:
+            elif "start_date" in inputs:
                 # Legacy date-only support (defaults to UTC)
                 start_date = inputs["start_date"]
                 end_date = inputs.get("end_date", start_date)
                 start_datetime = f"{start_date}T00:00:00Z"
                 end_datetime = f"{end_date}T23:59:59Z"
+            else:
+                return {
+                    "events": [],
+                    "result": False,
+                    "error": "Either start_datetime or start_date parameter is required"
+                }
             
             limit = inputs.get("limit", 100)
             
@@ -346,12 +352,18 @@ class ListEmailsAction(ActionHandler):
             if "start_datetime" in inputs:
                 start_datetime = inputs["start_datetime"]
                 end_datetime = inputs.get("end_datetime", start_datetime)
-            else:
+            elif "start_date" in inputs:
                 # Legacy date-only support (defaults to UTC)
                 start_date = inputs["start_date"]
                 end_date = inputs.get("end_date", start_date)
                 start_datetime = f"{start_date}T00:00:00Z"
                 end_datetime = f"{end_date}T23:59:59Z"
+            else:
+                return {
+                    "emails": [],
+                    "result": False,
+                    "error": "Either start_datetime or start_date parameter is required"
+                }
             
             folder = inputs.get("folder", "Inbox")
             limit = inputs.get("limit", 50)
