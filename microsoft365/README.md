@@ -44,7 +44,14 @@ The integration is configured through the `config.json` file and uses the Autohi
   "body": "This is a test email sent via Microsoft 365 integration",
   "body_type": "Text",
   "cc": ["cc@example.com"],
-  "bcc": ["bcc@example.com"]
+  "bcc": ["bcc@example.com"],
+  "attachments": [
+    {
+      "name": "document.pdf",
+      "content": "base64-encoded-file-content",
+      "contentType": "application/pdf"
+    }
+  ]
 }
 ```
 
