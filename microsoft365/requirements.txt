@@ -1,6 +1,2 @@
 aiohttp>=3.8.0
 autohive_integrations_sdk
-msgraph-sdk>=1.0.0
-msgraph-core>=1.0.0
-httpx>=0.24.0
-kiota-abstractions>=1.0.0

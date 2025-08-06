@@ -24,7 +24,7 @@ GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
 
 # ---- Helper Functions ----
 
-async def create_graph_client(context: ExecutionContext):
+async def create_graph_client(context: ExecutionContext) -> Optional[GraphServiceClient]:
     """Create Microsoft Graph SDK client using platform authentication.
     
     Args:
