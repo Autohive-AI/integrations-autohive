@@ -569,7 +569,11 @@ class ReadEmailAction(ActionHandler):
                     content_type = attachment.get("contentType", "application/octet-stream")
                     
                     # Determine file category
-                    if content_type in self.READABLE_FILE_TYPES:
+                    if content_type in self.OFFICE_FILE_TYPES:
+                        # Office documents must be handled as binary files first
+                        file_category = "office_document"
+                        is_readable = False
+                    elif content_type in self.READABLE_FILE_TYPES:
                         file_category = "text"
                         is_readable = True
                     elif content_type in self.IMAGE_FILE_TYPES:
@@ -577,9 +581,6 @@ class ReadEmailAction(ActionHandler):
                         is_readable = False
                     elif content_type == self.PDF_FILE_TYPE:
                         file_category = "pdf"
-                        is_readable = False
-                    elif content_type in self.OFFICE_FILE_TYPES:
-                        file_category = "office_document"
                         is_readable = False
                     else:
                         file_category = "other"
@@ -710,7 +711,11 @@ class ReadFileAction(ActionHandler):
             mime_type = file_info.get('file', {}).get('mimeType', 'application/octet-stream')
             
             # Determine file category
-            if mime_type in self.READABLE_FILE_TYPES:
+            if mime_type in self.OFFICE_FILE_TYPES:
+                # Office documents must be handled as binary files first
+                file_category = "office_document"
+                is_readable = False
+            elif mime_type in self.READABLE_FILE_TYPES:
                 file_category = "text"
                 is_readable = True
             elif mime_type in self.IMAGE_FILE_TYPES:
@@ -718,9 +723,6 @@ class ReadFileAction(ActionHandler):
                 is_readable = False
             elif mime_type == self.PDF_FILE_TYPE:
                 file_category = "pdf"
-                is_readable = False
-            elif mime_type in self.OFFICE_FILE_TYPES:
-                file_category = "office_document"
                 is_readable = False
             else:
                 file_category = "other"
