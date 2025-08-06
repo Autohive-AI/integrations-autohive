@@ -8,7 +8,7 @@ This integration provides access to Microsoft 365 services including Outlook, On
 - **Send Email**: Send emails via Outlook with support for CC, BCC, and HTML content
 - **List Emails**: List emails for specific dates or date ranges with full content
 - **List Emails from Contact**: Get latest emails from a specific contact
-- **Read Email**: Read email content including attachments with intelligent file type handling
+- **Read Email**: Read email content and list attachment metadata
 - **Mark Email as Read/Unread**: Change the read status of emails
 - **Move Email to Folder**: Move emails between folders (Archive, Junk, etc.)
 - **Create Calendar Event**: Create calendar events with attendees and location
@@ -16,7 +16,6 @@ This integration provides access to Microsoft 365 services including Outlook, On
 - **List Calendar Events**: List calendar events for specific dates or date ranges
 - **Upload File**: Upload files to OneDrive with folder support
 - **List Files**: List files and folders in OneDrive
-- **Read File**: Read file contents with intelligent type handling (text, images, PDFs, Office docs)
 - **Read Contacts**: Read and search contacts from Outlook with detailed information
 
 
@@ -98,8 +97,7 @@ The integration is configured through the `config.json` file and uses the Autohi
 ```json
 {
   "email_id": "AAMkAGVmMDEzMTM4LWZmNjktNDVkNC1iZGRiLTJkNTBmNjNlNTM0ZAAA",
-  "include_attachments": true,
-  "max_attachment_size_mb": 5
+  "include_attachments": true
 }
 ```
 
@@ -141,15 +139,6 @@ The integration is configured through the `config.json` file and uses the Autohi
 ```
 
 **Timezone Handling**: For timezone-aware queries, use `start_datetime` and `end_datetime` parameters with UTC timestamps. Legacy `start_date` and `end_date` parameters default to UTC timezone.
-
-### Read File
-```json
-{
-  "file_id": "01BYE5RZ6QN3ZWBTUFOFD3GSPGOHDJD36K",
-  "include_content": true,
-  "max_size_mb": 5
-}
-```
 
 ### Read Contacts
 ```json
