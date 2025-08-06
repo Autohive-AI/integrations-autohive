@@ -6,90 +6,11 @@ import json
 import base64
 from datetime import datetime, timezone
 
-# Microsoft Graph SDK imports
-try:
-    import httpx
-    from kiota_abstractions.authentication import AnonymousAuthenticationProvider
-    from msgraph import GraphRequestAdapter, GraphServiceClient
-    from msgraph_core import GraphClientFactory
-    MSGRAPH_SDK_AVAILABLE = True
-except ImportError:
-    MSGRAPH_SDK_AVAILABLE = False
-
 # Create the integration using the config.json
 microsoft365 = Integration.load()
 
 # Microsoft Graph API Base URL
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
-
-# ---- Helper Functions ----
-
-async def create_graph_client(context: ExecutionContext) -> Optional[GraphServiceClient]:
-    """Create Microsoft Graph SDK client using platform authentication.
-    
-    Args:
-        context: ExecutionContext containing authentication information
-        
-    Returns:
-        GraphServiceClient instance or None if SDK not available
-    """
-    if not MSGRAPH_SDK_AVAILABLE:
-        return None
-        
-    # Get access token from platform authentication
-    access_token = context.auth.get('credentials', {}).get('access_token')
-    if not access_token:
-        return None
-    
-    try:
-        # Create custom httpx client with Authorization header
-        headers = {'Authorization': f'Bearer {access_token}'}
-        http_client = GraphClientFactory.create_with_default_middleware(
-            client=httpx.AsyncClient(headers=headers)
-        )
-        
-        # Create request adapter with anonymous auth provider (we handle auth via headers)
-        auth_provider = AnonymousAuthenticationProvider()
-        request_adapter = GraphRequestAdapter(auth_provider, http_client=http_client)
-        
-        # Create GraphServiceClient
-        return GraphServiceClient(request_adapter)
-        
-    except Exception as e:
-        print(f"Failed to create Graph client: {e}")
-        return None
-
-async def download_attachment_content(context: ExecutionContext, email_id: str, attachment_id: str) -> Optional[bytes]:
-    """Download email attachment content using Microsoft Graph SDK or context.fetch fallback.
-    
-    Args:
-        context: ExecutionContext containing authentication
-        email_id: Email message ID
-        attachment_id: Attachment ID
-        
-    Returns:
-        Raw attachment content as bytes or None if download failed
-    """
-    # Try Microsoft Graph SDK first
-    graph_client = await create_graph_client(context)
-    if graph_client:
-        try:
-            attachment_content = await graph_client.me.messages.by_message_id(email_id).attachments.by_attachment_id(attachment_id).microsoft_graph_attachment_item.value.get()
-            if attachment_content:
-                return attachment_content
-        except Exception as sdk_error:
-            print(f"Graph SDK attachment download failed: {sdk_error}")
-            # Fall through to context.fetch method
-    
-    # Fallback to context.fetch
-    try:
-        attachment_content = await context.fetch(
-            f"{GRAPH_API_BASE}/me/messages/{email_id}/attachments/{attachment_id}/$value"
-        )
-        return attachment_content
-    except Exception as fetch_error:
-        print(f"Context.fetch attachment download failed: {fetch_error}")
-        return None
 
 # ---- Action Handlers ----
 
@@ -707,10 +628,12 @@ class ReadEmailAction(ActionHandler):
                             "message": f"Attachment size ({attachment_size} bytes) exceeds limit ({max_attachment_size_mb}MB). Cannot download content."
                         })
                     else:
-                        # Download attachment content using Graph SDK or context.fetch fallback
-                        attachment_content = await download_attachment_content(context, email_id, attachment_id)
-                        
-                        if attachment_content is not None:
+                        try:
+                            # Download attachment content
+                            attachment_content = await context.fetch(
+                                f"{GRAPH_API_BASE}/me/messages/{email_id}/attachments/{attachment_id}/$value"
+                            )
+                            
                             if file_category == "text":
                                 # Try to decode as text
                                 try:
@@ -733,18 +656,18 @@ class ReadEmailAction(ActionHandler):
                                 })
                                 
                                 if file_category == "image":
-                                    attachment_data["message"] = "Image attachment returned as base64. Can be displayed or processed by image tools."
+                                    attachment_data["message"] = "Image attachment returned as base64."
                                 elif file_category == "pdf":
                                     attachment_data["message"] = "PDF attachment returned as base64. Use specialized PDF tools for text extraction."
                                 elif file_category == "office_document":
-                                    attachment_data["message"] = "Office document returned as base64. Use appropriate tools for content extraction."
+                                    attachment_data["message"] = "Office document returned as base64."
                                 else:
                                     attachment_data["message"] = f"Binary attachment ({content_type}) returned as base64."
-                        else:
-                            # Download failed
+                                    
+                        except Exception as e:
                             attachment_data.update({
-                                "content_encoding": "download_failed",
-                                "message": f"Failed to download attachment using all available methods."
+                                "content_encoding": "error",
+                                "message": f"Failed to download attachment: {str(e)}"
                             })
                     
                     attachments.append(attachment_data)
@@ -853,84 +776,51 @@ class ReadFileAction(ActionHandler):
                         "message": f"File size ({file_size} bytes) exceeds limit ({max_size_mb}MB). Use download_url to access file."
                     })
                 else:
-                    # Download file content - try Microsoft Graph SDK first, fallback to context.fetch
-                    file_content = None
-                    download_method = "unknown"
-                    
-                    # Try Microsoft Graph SDK for binary content
-                    graph_client = await create_graph_client(context)
-                    if graph_client:
-                        try:
-                            file_content = await graph_client.me.drive.items.by_drive_item_id(file_id).content.get()
-                            download_method = "msgraph_sdk"
-                        except Exception as sdk_error:
-                            print(f"Graph SDK download failed: {sdk_error}")
-                            # Fall through to context.fetch method
-                    
-                    # Fallback to context.fetch (original method)
-                    if file_content is None:
-                        try:
-                            if download_url:
-                                file_content = await context.fetch(download_url)
-                                download_method = "download_url"
-                            else:
-                                # Fallback to /content endpoint when @microsoft.graph.downloadUrl is missing
-                                # The /content endpoint returns a 302 redirect that the HTTP client should follow automatically
-                                file_content = await context.fetch(f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content")
-                                download_method = "content_endpoint"
-                        except Exception as fetch_error:
-                            print(f"Context.fetch download failed: {fetch_error}")
-                            # file_content remains None, will be handled below
-                    
-                    # Process downloaded content
-                    if file_content is not None:
-                        try:
-                            if file_category == "text":
-                                # Return as text content
-                                try:
-                                    text_content = file_content.decode('utf-8')
-                                    response.update({
-                                        "content": text_content,
-                                        "content_type": "text",
-                                        "download_method": download_method
-                                    })
-                                except UnicodeDecodeError:
-                                    # Fallback to base64 if text decoding fails
-                                    response.update({
-                                        "content": base64.b64encode(file_content).decode('utf-8'),
-                                        "content_type": "base64",
-                                        "download_method": download_method,
-                                        "message": "File appeared to be text but contained non-UTF8 characters. Returned as base64."
-                                    })
-                            else:
-                                # Return as base64 for binary files
+                    # Download file content - use download_url if available, otherwise use /content endpoint
+                    try:
+                        if download_url:
+                            file_content = await context.fetch(download_url)
+                        else:
+                            # Fallback to /content endpoint when @microsoft.graph.downloadUrl is missing
+                            file_content = await context.fetch(f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content")
+                        
+                        if file_category == "text":
+                            # Return as text content
+                            try:
+                                text_content = file_content.decode('utf-8')
+                                response.update({
+                                    "content": text_content,
+                                    "content_type": "text"
+                                })
+                            except UnicodeDecodeError:
+                                # Fallback to base64 if text decoding fails
                                 response.update({
                                     "content": base64.b64encode(file_content).decode('utf-8'),
                                     "content_type": "base64",
-                                    "download_method": download_method
+                                    "message": "File appeared to be text but contained non-UTF8 characters. Returned as base64."
                                 })
-                                
-                                # Add specific messages for different file types
-                                if file_category == "image":
-                                    response["message"] = f"Image file returned as base64 (via {download_method}). Can be displayed or processed by image tools."
-                                elif file_category == "pdf":
-                                    response["message"] = f"PDF file returned as base64 (via {download_method}). Use specialized PDF tools for text extraction."
-                                elif file_category == "office_document":
-                                    response["message"] = f"Office document returned as base64 (via {download_method}). Use appropriate tools for content extraction."
-                                else:
-                                    response["message"] = f"Binary file ({mime_type}) returned as base64 (via {download_method})."
-                                    
-                        except Exception as processing_error:
+                        else:
+                            # Return as base64 for binary files
                             response.update({
-                                "content_type": "processing_error",
-                                "download_method": download_method,
-                                "message": f"Downloaded file but failed to process content: {str(processing_error)}"
+                                "content": base64.b64encode(file_content).decode('utf-8'),
+                                "content_type": "base64"
                             })
-                    else:
-                        # All download methods failed
+                            
+                            # Add specific messages for different file types
+                            if file_category == "image":
+                                response["message"] = "Image file returned as base64. Can be displayed or processed by image tools."
+                            elif file_category == "pdf":
+                                response["message"] = "PDF file returned as base64. Use specialized PDF tools for text extraction."
+                            elif file_category == "office_document":
+                                response["message"] = "Office document returned as base64. Use appropriate tools for content extraction."
+                            else:
+                                response["message"] = f"Binary file ({mime_type}) returned as base64."
+                                
+                    except Exception as download_error:
+                        # Failed to download content
                         response.update({
-                            "content_type": "download_failed",
-                            "message": f"Failed to download file content using all available methods. File is available at: {web_url}"
+                            "content_type": "download_error",
+                            "message": f"Failed to download file content: {str(download_error)}"
                         })
             else:
                 response.update({
