@@ -74,12 +74,15 @@ async def download_attachment_content(context: ExecutionContext, email_id: str, 
     graph_client = await create_graph_client(context)
     if graph_client:
         try:
-            attachment_content = await graph_client.me.messages.by_message_id(email_id).attachments.by_attachment_id(attachment_id).microsoft_graph_attachment_item.value.get()
-            if attachment_content:
-                return attachment_content
+            # Use the correct Graph SDK path for attachment content
+            attachment_content = await graph_client.me.messages.by_message_id(email_id).attachments.by_attachment_id(attachment_id).get()
+            if attachment_content and hasattr(attachment_content, 'content_bytes'):
+                return attachment_content.content_bytes
         except Exception as sdk_error:
             print(f"Graph SDK attachment download failed: {sdk_error}")
             # Fall through to context.fetch method
+    else:
+        print("Microsoft Graph SDK not available, using context.fetch fallback")
     
     # Fallback to context.fetch
     try:
@@ -841,6 +844,7 @@ class ReadFileAction(ActionHandler):
                 "download_url": download_url,
                 "web_url": web_url,
                 "is_readable": is_readable,
+                "msgraph_sdk_available": MSGRAPH_SDK_AVAILABLE,
                 "result": True
             }
             
@@ -863,9 +867,12 @@ class ReadFileAction(ActionHandler):
                         try:
                             file_content = await graph_client.me.drive.items.by_drive_item_id(file_id).content.get()
                             download_method = "msgraph_sdk"
+                            print(f"Graph SDK download successful for file {file_id}")
                         except Exception as sdk_error:
                             print(f"Graph SDK download failed: {sdk_error}")
                             # Fall through to context.fetch method
+                    else:
+                        print("Microsoft Graph SDK not available, using context.fetch fallback")
                     
                     # Fallback to context.fetch (original method)
                     if file_content is None:
