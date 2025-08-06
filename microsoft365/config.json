@@ -327,7 +327,7 @@
         },
         "list_calendar_events": {
             "display_name": "List Calendar Events",
-            "description": "List calendar events for a specific date range",
+            "description": "List calendar events for a specific date range. Defaults to next 30 days if no date specified.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -351,6 +351,10 @@
                         "type": "integer",
                         "description": "Maximum number of events to return",
                         "default": 100
+                    },
+                    "user_timezone": {
+                        "type": "string",
+                        "description": "User's timezone (e.g., 'America/Los_Angeles') for intelligent date defaults. Optional - defaults to UTC."
                     }
                 }
             },
@@ -436,8 +440,8 @@
             }
         },
         "list_emails": {
-            "display_name": "List Emails",
-            "description": "List emails for a specific date range and folder",
+            "display_name": "List Emails", 
+            "description": "List emails for a specific date range and folder. Defaults to last 7 days if no date specified.",
             "input_schema": {
                 "type": "object",
                 "properties": {

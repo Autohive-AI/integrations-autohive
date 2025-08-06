@@ -273,7 +273,7 @@ class UpdateCalendarEventAction(ActionHandler):
 class ListCalendarEventsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Accept either datetime or date parameters for backward compatibility
+            # Accept either datetime or date parameters, with intelligent defaults
             if "start_datetime" in inputs:
                 start_datetime = inputs["start_datetime"]
                 end_datetime = inputs.get("end_datetime", start_datetime)
@@ -284,11 +284,14 @@ class ListCalendarEventsAction(ActionHandler):
                 start_datetime = f"{start_date}T00:00:00Z"
                 end_datetime = f"{end_date}T23:59:59Z"
             else:
-                return {
-                    "events": [],
-                    "result": False,
-                    "error": "Either start_datetime or start_date parameter is required"
-                }
+                # Intelligent default: next 30 days of calendar events (more useful for calendars)
+                from datetime import datetime, timedelta
+                
+                # Use UTC time for intelligent defaults (agent can provide timezone-aware datetime if needed)
+                now = datetime.utcnow()
+                end_time = now + timedelta(days=30)
+                start_datetime = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+                end_datetime = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             
             limit = inputs.get("limit", 100)
             
@@ -348,7 +351,7 @@ class ListCalendarEventsAction(ActionHandler):
 class ListEmailsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Accept either datetime or date parameters for backward compatibility
+            # Accept either datetime or date parameters, with intelligent defaults
             if "start_datetime" in inputs:
                 start_datetime = inputs["start_datetime"]
                 end_datetime = inputs.get("end_datetime", start_datetime)
@@ -359,11 +362,14 @@ class ListEmailsAction(ActionHandler):
                 start_datetime = f"{start_date}T00:00:00Z"
                 end_datetime = f"{end_date}T23:59:59Z"
             else:
-                return {
-                    "emails": [],
-                    "result": False,
-                    "error": "Either start_datetime or start_date parameter is required"
-                }
+                # Intelligent default: last 7 days of emails
+                from datetime import datetime, timedelta
+                
+                # Use UTC time for intelligent defaults (agent can provide timezone-aware datetime if needed)
+                now = datetime.utcnow()
+                start_time = now - timedelta(days=7)
+                start_datetime = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                end_datetime = now.strftime("%Y-%m-%dT%H:%M:%SZ")
             
             folder = inputs.get("folder", "Inbox")
             limit = inputs.get("limit", 50)
