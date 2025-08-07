@@ -3,6 +3,10 @@ This repository hosts Autohive integrations made and maintained by the Autohive 
 
 ## Integrations
 
+### Notion
+
+[notion](notion): Enhanced integration with Notion API featuring comprehensive workspace management capabilities. Supports searching pages and databases, querying database entries with advanced filtering, creating and managing pages, updating page properties, retrieving and modifying block content, and managing database schemas. Includes robust error handling and pagination support for large datasets.
+
 ### RSS Reader 
 
 [rss-reader-feedparser](rss-reader-feedparser): Reads RSS feeds using the `feedparser` library.
