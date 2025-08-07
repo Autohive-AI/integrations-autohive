@@ -134,28 +134,22 @@
         },
         "upload_file": {
             "display_name": "Upload File to OneDrive",
-            "description": "Upload a file to OneDrive",
+            "description": "Upload a file to OneDrive - provide filename, text content, and optional folder",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "file": {
-                        "type": "object",
-                        "required": ["content", "name", "contentType"],
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "The name of the file"
-                            },
-                            "content": {
-                                "type": "string",
-                                "description": "The file content encoded as base64"
-                            },
-                            "contentType": {
-                                "type": "string",
-                                "description": "The content type of the file"
-                            }
-                        },
-                        "description": "The file to upload"
+                    "filename": {
+                        "type": "string",
+                        "description": "Name of the file to create (e.g., 'test.txt', 'notes.md')"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Text content of the file (will be automatically encoded)"
+                    },
+                    "content_type": {
+                        "type": "string",
+                        "description": "MIME type of the file",
+                        "default": "text/plain"
                     },
                     "folder_path": {
                         "type": "string",
@@ -163,7 +157,7 @@
                         "default": "/"
                     }
                 },
-                "required": ["file"]
+                "required": ["filename", "content"]
             },
             "output_schema": {
                 "type": "object",

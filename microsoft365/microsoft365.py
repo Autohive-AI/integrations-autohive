@@ -127,25 +127,26 @@ class CreateCalendarEventAction(ActionHandler):
 class UploadFileAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            file_obj = inputs["file"]
+            filename = inputs["filename"]
+            content = inputs["content"]
+            content_type = inputs.get("content_type", "text/plain")
             folder_path = inputs.get("folder_path", "/").strip("/")
             
-            # Extract file properties
-            file_name = file_obj["name"]
-            file_content = base64.b64decode(file_obj["content"])
+            # Convert text to bytes
+            file_content = content.encode('utf-8')
             
             # Build upload URL
             if folder_path:
-                upload_url = f"{GRAPH_API_BASE}/me/drive/root:/{folder_path}/{file_name}:/content"
+                upload_url = f"{GRAPH_API_BASE}/me/drive/root:/{folder_path}/{filename}:/content"
             else:
-                upload_url = f"{GRAPH_API_BASE}/me/drive/root:/{file_name}:/content"
+                upload_url = f"{GRAPH_API_BASE}/me/drive/root:/{filename}:/content"
             
             # Upload file
             response = await context.fetch(
                 upload_url,
                 method="PUT",
                 data=file_content,
-                headers={"Content-Type": "application/octet-stream"}
+                headers={"Content-Type": content_type}
             )
             
             return {
