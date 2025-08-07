@@ -300,7 +300,7 @@ class ListCalendarEventsAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "start/dateTime",
                 "$select": "id,subject,start,end,location,bodyPreview,organizer,attendees,webLink,isAllDay",
-                "$filter": f"start/dateTime ge {start_datetime} and end/dateTime le {end_datetime}"
+                "$filter": f"start/dateTime ge {start_datetime} and start/dateTime le {end_datetime}"
             }
             
             response = await context.fetch(f"{GRAPH_API_BASE}/me/events", params=params)
@@ -426,7 +426,7 @@ class ListEmailsFromContactAction(ActionHandler):
                 "$top": limit,
                 "$orderby": "receivedDateTime desc",
                 "$select": "id,subject,sender,receivedDateTime,bodyPreview,body,hasAttachments,isRead,importance",
-                "$filter": f"from/emailAddress/address eq '{contact_email}'"
+                "$filter": f"sender/emailAddress/address eq '{contact_email}'"
             }
             
             api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder}/messages"
