@@ -42,17 +42,6 @@ class SendEmailAction(ActionHandler):
                     {"emailAddress": {"address": email}} for email in inputs["bcc"]
                 ]
             
-            # Add attachments if provided
-            if inputs.get("attachments"):
-                message["attachments"] = []
-                for attachment in inputs["attachments"]:
-                    message["attachments"].append({
-                        "@odata.type": "#microsoft.graph.fileAttachment",
-                        "name": attachment["name"],
-                        "contentType": attachment["contentType"],
-                        "contentBytes": attachment["content"]  # Base64 content
-                    })
-            
             # Send email
             email_data = {
                 "message": message,

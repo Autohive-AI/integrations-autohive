@@ -46,28 +46,6 @@
                         "items": {
                             "type": "string"
                         }
-                    },
-                    "attachments": {
-                        "type": "array",
-                        "description": "Email attachments",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Attachment filename"
-                                },
-                                "content": {
-                                    "type": "string",
-                                    "description": "File content encoded as base64"
-                                },
-                                "contentType": {
-                                    "type": "string",
-                                    "description": "MIME type of the file"
-                                }
-                            },
-                            "required": ["name", "content", "contentType"]
-                        }
                     }
                 },
                 "required": ["to", "subject", "body"]
