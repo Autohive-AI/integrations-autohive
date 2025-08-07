@@ -441,7 +441,7 @@
         },
         "list_emails": {
             "display_name": "List Emails", 
-            "description": "List emails for a specific date range and folder. Defaults to last 7 days if no date specified.",
+            "description": "List emails for a specific date range and folder. Defaults to last 24 hours if no date specified.",
             "input_schema": {
                 "type": "object",
                 "properties": {

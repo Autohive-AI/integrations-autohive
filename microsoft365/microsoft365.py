@@ -364,12 +364,12 @@ class ListEmailsAction(ActionHandler):
                 start_datetime = f"{start_date}T00:00:00Z"
                 end_datetime = f"{end_date}T23:59:59Z"
             else:
-                # Intelligent default: last 7 days of emails
+                # Intelligent default: last 1 day of emails
                 from datetime import datetime, timedelta
                 
                 # Use UTC time for intelligent defaults (agent can provide timezone-aware datetime if needed)
                 now = datetime.utcnow()
-                start_time = now - timedelta(days=7)
+                start_time = now - timedelta(days=1)
                 start_datetime = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
                 end_datetime = now.strftime("%Y-%m-%dT%H:%M:%SZ")
             
