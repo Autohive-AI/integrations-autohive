@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from context import gong  # integration instance
 
 
-class FakeExecutionContext:
+class MockExecutionContext:
     def __init__(self, responses: Dict[str, Any]):
         # mimic SDK context shape expected by gong.py
         self.auth = {"api_key": "x", "api_secret": "y"}
@@ -34,7 +34,7 @@ async def test_list_calls_basic():
             "nextCursor": None,
         }
     }
-    context = FakeExecutionContext(responses)
+    context = MockExecutionContext(responses)
     result = await gong.execute_action("list_calls", {"limit": 2}, context)
     assert "calls" in result and len(result["calls"]) == 2
     assert result["calls"][0]["id"] == "2"  # sorted newest first
@@ -56,7 +56,7 @@ async def test_get_call_details_shim():
             ]
         }
     }
-    context = FakeExecutionContext(responses)
+    context = MockExecutionContext(responses)
     result = await gong.execute_action("get_call_details", {"call_id": "abc"}, context)
     assert result["id"] == "abc"
     assert result["title"] == "Demo"
@@ -78,7 +78,7 @@ async def test_get_call_transcript_mapping():
             ]
         },
     }
-    context = FakeExecutionContext(responses)
+    context = MockExecutionContext(responses)
     result = await gong.execute_action("get_call_transcript", {"call_id": "xyz"}, context)
     assert len(result["transcript"]) == 2
     assert result["transcript"][0]["speaker_name"] == "Alice"
@@ -94,7 +94,7 @@ async def test_list_users():
             "nextCursor": None,
         }
     }
-    context = FakeExecutionContext(responses)
+    context = MockExecutionContext(responses)
     result = await gong.execute_action("list_users", {"limit": 1}, context)
     assert result["users"][0]["id"] == "u1"
 
@@ -109,5 +109,6 @@ if __name__ == "__main__":
     _run(test_get_call_transcript_mapping())
     _run(test_list_users())
     print("All tests passed")
+
 
 
