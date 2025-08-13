@@ -5,9 +5,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta, timezone
 import json
 import base64
-from pathlib import Path
 
-gong = Integration.load(config_path=Path(__file__).resolve().parent / "config.json")
+
+gong = Integration.load()
 
 class GongAPIClient:
     """Client for interacting with the Gong API"""
