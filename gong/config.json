@@ -1,0 +1,355 @@
+{
+    "name": "Gong",
+    "version": "1.0.0",
+    "description": "An integration with Gong to access call recordings, transcripts, and CRM data.",
+    "entry_point": "gong.py",
+    "auth": {
+        "type": "basic",
+        "provider": "gong",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_key": { "type": "string", "description": "Gong API key" },
+                "api_secret": { "type": "string", "description": "Gong API secret" }
+            },
+            "required": ["api_key", "api_secret"]
+        }
+    },
+    "actions": {
+        "list_calls": {
+            "display_name": "List Calls",
+            "description": "List calls from Gong with optional filtering by date range, users, or other criteria.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "from_date": {
+                        "type": "string",
+                        "description": "Start date for call filtering (YYYY-MM-DD format)."
+                    },
+                    "to_date": {
+                        "type": "string",
+                        "description": "End date for call filtering (YYYY-MM-DD format)."
+                    },
+                    "user_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of user IDs to filter calls by."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of calls to retrieve.",
+                        "default": 100
+                    },
+                    "cursor": {
+                        "type": "string",
+                        "description": "Cursor for pagination."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "calls": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The call ID"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "The call title"
+                                },
+                                "started": {
+                                    "type": "string",
+                                    "description": "Call start time in ISO format"
+                                },
+                                "duration": {
+                                    "type": "integer",
+                                    "description": "Call duration in seconds"
+                                },
+                                "participants": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "user_id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "outcome": {
+                                    "type": "string",
+                                    "description": "Call outcome"
+                                }
+                            }
+                        }
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether there are more calls to retrieve"
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for retrieving the next page of results"
+                    }
+                }
+            }
+        },
+        "get_call_transcript": {
+            "display_name": "Get Call Transcript",
+            "description": "Retrieve the transcript for a specific call.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "call_id": {
+                        "type": "string",
+                        "description": "The ID of the call to get transcript for."
+                    }
+                },
+                "required": ["call_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "call_id": {
+                        "type": "string",
+                        "description": "The call ID"
+                    },
+                    "transcript": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "speaker_id": {
+                                    "type": "string",
+                                    "description": "Unique Gong speaker ID"
+                                },
+                                "speaker_name": {
+                                    "type": "string",
+                                    "description": "Name of the speaker"
+                                },
+                                "start_time": {
+                                    "type": "number",
+                                    "description": "Start time of the segment in seconds"
+                                },
+                                "end_time": {
+                                    "type": "number",
+                                    "description": "End time of the segment in seconds"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "The spoken text"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "get_call_details": {
+            "display_name": "Get Call Details",
+            "description": "Get detailed information about a specific call.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "call_id": {
+                        "type": "string",
+                        "description": "The ID of the call to get details for."
+                    }
+                },
+                "required": ["call_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The call ID"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "The call title"
+                    },
+                    "started": {
+                        "type": "string",
+                        "description": "Call start time in ISO format"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Call duration in seconds"
+                    },
+                    "participants": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "user_id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "email": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "description": "Call outcome"
+                    },
+                    "crm_data": {
+                        "type": "object",
+                        "description": "Associated CRM data"
+                    }
+                }
+            }
+        },
+        "search_calls": {
+            "display_name": "Search Calls",
+            "description": "Search calls by keywords, topics, or other criteria.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string."
+                    },
+                    "from_date": {
+                        "type": "string",
+                        "description": "Start date for search (YYYY-MM-DD format)."
+                    },
+                    "to_date": {
+                        "type": "string",
+                        "description": "End date for search (YYYY-MM-DD format)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 50
+                    }
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "call_id": {
+                                    "type": "string",
+                                    "description": "The call ID"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "The call title"
+                                },
+                                "started": {
+                                    "type": "string",
+                                    "description": "Call start time in ISO format"
+                                },
+                                "relevance_score": {
+                                    "type": "number",
+                                    "description": "Relevance score for the search"
+                                },
+                                "matched_segments": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "text": {
+                                                "type": "string"
+                                            },
+                                            "start_time": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "total_count": {
+                        "type": "integer",
+                        "description": "Total number of matching calls"
+                    }
+                }
+            }
+        },
+        "list_users": {
+            "display_name": "List Users",
+            "description": "List all users in the Gong workspace.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of users to retrieve.",
+                        "default": 100
+                    },
+                    "cursor": {
+                        "type": "string",
+                        "description": "Cursor for pagination."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "users": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The user ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The user's name"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "The user's email"
+                                },
+                                "role": {
+                                    "type": "string",
+                                    "description": "The user's role"
+                                },
+                                "active": {
+                                    "type": "boolean",
+                                    "description": "Whether the user is active"
+                                }
+                            }
+                        }
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether there are more users to retrieve"
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for retrieving the next page of results"
+                    }
+                }
+            }
+        }
+    }
+}
