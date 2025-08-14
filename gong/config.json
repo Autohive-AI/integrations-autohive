@@ -4,16 +4,9 @@
     "description": "An integration with Gong to access call recordings, transcripts, and CRM data.",
     "entry_point": "gong.py",
     "auth": {
-        "type": "basic",
+        "type": "platform",
         "provider": "gong",
-        "fields": {
-            "type": "object",
-            "properties": {
-                "api_key": { "type": "string", "description": "Gong API key" },
-                "api_secret": { "type": "string", "description": "Gong API secret" }
-            },
-            "required": ["api_key", "api_secret"]
-        }
+        "scopes": []
     },
     "actions": {
         "list_calls": {

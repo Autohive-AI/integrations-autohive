@@ -4,10 +4,10 @@ from autohive_integrations_sdk import (
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta, timezone
 import json
-import base64
-from pathlib import Path
 
-gong = Integration.load(config_path=Path(__file__).resolve().parent / "config.json")
+
+
+gong = Integration.load()
 
 class GongAPIClient:
     """Client for interacting with the Gong API"""
@@ -15,28 +15,16 @@ class GongAPIClient:
     def __init__(self, context: ExecutionContext):
         self.context = context
         self.base_url = "https://us-10552.api.gong.io/v2"
-        # Load credentials from context.auth (no secrets in code)
-        auth_config = context.auth or {}
-        nested_credentials = auth_config.get("credentials", {}) if isinstance(auth_config, dict) else {}
-        self.api_key = auth_config.get("api_key") or nested_credentials.get("api_key")
-        self.api_secret = auth_config.get("api_secret") or nested_credentials.get("api_secret")
-        if not self.api_key or not self.api_secret:
-            raise ValueError("Missing Gong API credentials: expected 'api_key' and 'api_secret' in context.auth")
     
     async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict] = None, data: Optional[Dict] = None):
         """Make an authenticated request to the Gong API"""
         url = f"{self.base_url}/{endpoint}"
         
-        # Gong API uses Basic Auth: API Key as username, API Secret as password
-        credentials = f"{self.api_key}:{self.api_secret}"
-        encoded_credentials = base64.b64encode(credentials.encode()).decode()
-        
         headers = {
-            "Authorization": f"Basic {encoded_credentials}",
             "Content-Type": "application/json"
         }
         
-        # Use the context's fetch method for authenticated requests
+        # Use the context's fetch method for authenticated requests (OAuth handled by SDK)
         if method == "GET": 
             return await self.context.fetch(url, params=params, headers=headers)
         elif method == "POST":
