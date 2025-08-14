@@ -6,7 +6,12 @@
     "auth": {
         "type": "platform",
         "provider": "gong",
-        "scopes": []
+        "scopes": [
+            "api:calls:read:basic",
+            "api:calls:read:extensive", 
+            "api:calls:read:transcript",
+            "api:users:read"
+        ]
     },
     "actions": {
         "list_calls": {
