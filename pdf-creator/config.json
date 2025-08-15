@@ -1,0 +1,59 @@
+{
+  "name": "PDF Creator",
+  "version": "1.0.0",
+  "description": "Create and update PDFs (watermark, append pages) using ReportLab and pypdf.",
+  "entry_point": "pdf_creator.py",
+  "actions": {
+    "create_pdf": {
+      "display_name": "Create PDF",
+      "description": "Generate a PDF from structured inputs (title, table, image, header/footer).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string", "description": "Document title"},
+          "table_data": {
+            "type": "array",
+            "description": "2D array of strings for table rows",
+            "items": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "image_base64": {"type": "string", "description": "Optional base64-encoded image to embed"},
+          "image_url": {"type": "string", "description": "Optional URL of image to fetch and embed"},
+          "header_text": {"type": "string", "description": "Header text for each page", "default": ""},
+          "footer_text": {"type": "string", "description": "Footer text for each page", "default": ""},
+          "page_size": {"type": "string", "description": "Page size: LETTER or A4", "enum": ["LETTER", "A4"], "default": "LETTER"}
+        },
+        "required": ["title"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "pdf_base64": {"type": "string", "description": "Base64-encoded PDF bytes"},
+          "pages": {"type": "integer", "description": "Number of pages in the generated PDF"}
+        }
+      }
+    },
+    "update_pdf": {
+      "display_name": "Update PDF",
+      "description": "Update an existing PDF: add text watermark and/or append a page with text.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "pdf_base64": {"type": "string", "description": "Base64-encoded source PDF"},
+          "watermark_text": {"type": "string", "description": "Optional diagonal text watermark applied to all pages"},
+          "append_text": {"type": "string", "description": "Optional text to add on a new appended page"}
+        },
+        "required": ["pdf_base64"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "pdf_base64": {"type": "string", "description": "Base64-encoded updated PDF"},
+          "pages": {"type": "integer", "description": "Number of pages in the updated PDF"}
+        }
+      }
+    }
+  }
+}
