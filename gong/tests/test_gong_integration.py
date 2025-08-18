@@ -7,7 +7,7 @@ from context import gong  # integration instance
 class MockExecutionContext:
     def __init__(self, responses: Dict[str, Any]):
         # mimic SDK context shape expected by gong.py
-        self.auth = {"api_key": "x", "api_secret": "y"}
+        self.auth = {}  # OAuth handled by SDK
         self._responses = responses
 
     async def fetch(self, url: str, method: str = "GET", params: Optional[Dict[str, Any]] = None, json: Any = None, headers: Optional[Dict[str, str]] = None, **kwargs):
@@ -109,6 +109,7 @@ if __name__ == "__main__":
     _run(test_get_call_transcript_mapping())
     _run(test_list_users())
     print("All tests passed")
+
 
 
 
