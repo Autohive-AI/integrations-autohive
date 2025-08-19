@@ -99,6 +99,77 @@ async def test_list_users():
     assert result["users"][0]["id"] == "u1"
 
 
+async def test_list_calls_filters_private():
+    responses = {
+        "GET /calls": {
+            "calls": [
+                {"id": "p1", "title": "Private", "started": "2025-01-03T00:00:00Z", "duration": 1, "isPrivate": True},
+                {"id": "pub", "title": "Public", "started": "2025-01-02T00:00:00Z", "duration": 2, "isPrivate": False},
+            ],
+            "hasMore": False,
+            "nextCursor": None,
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await gong.execute_action("list_calls", {"limit": 10}, context)
+    ids = [c["id"] for c in result["calls"]]
+    assert "p1" not in ids and "pub" in ids
+
+
+async def test_get_call_details_private_filtered():
+    responses = {
+        "POST /calls/extensive": {
+            "calls": [
+                {"id": "x", "isPrivate": True}
+            ]
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await gong.execute_action("get_call_details", {"call_id": "x"}, context)
+    assert result.get("error") == "private_call_filtered"
+    assert result.get("id") == "x"
+    assert result.get("duration") == 0
+
+
+async def test_get_call_transcript_private_filtered():
+    responses = {
+        "POST /calls/extensive": {
+            "calls": [
+                {"id": "y", "isPrivate": True}
+            ]
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await gong.execute_action("get_call_transcript", {"call_id": "y"}, context)
+    assert result.get("error") == "private_call_filtered"
+    assert result.get("transcript") == []
+
+
+async def test_search_calls_skips_private():
+    responses = {
+        "POST /calls/extensive": {
+            "calls": [
+                {
+                    "id": "priv",
+                    "isPrivate": True,
+                    "content": {"highlights": [{"text": "demo pricing", "startTime": 0}]}
+                },
+                {
+                    "id": "pub",
+                    "isPrivate": False,
+                    "title": "Public",
+                    "started": "2025-01-01T00:00:00Z",
+                    "content": {"highlights": [{"text": "product demo pricing", "startTime": 10}]}
+                }
+            ]
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await gong.execute_action("search_calls", {"query": "pricing"}, context)
+    ids = [r["call_id"] for r in result["results"]]
+    assert ids == ["pub"]
+
+
 def _run(coro):
     return asyncio.get_event_loop().run_until_complete(coro)
 
@@ -108,7 +179,13 @@ if __name__ == "__main__":
     _run(test_get_call_details_shim())
     _run(test_get_call_transcript_mapping())
     _run(test_list_users())
+    # New tests for private call filtering
+    _run(test_list_calls_filters_private())
+    _run(test_get_call_details_private_filtered())
+    _run(test_get_call_transcript_private_filtered())
+    _run(test_search_calls_skips_private())
     print("All tests passed")
+
 
 
 

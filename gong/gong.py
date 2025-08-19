@@ -75,6 +75,9 @@ class ListCallsAction(ActionHandler):
             
             calls = []
             for call in response.get("calls", []):
+                # Filter out private calls
+                if bool(call.get("isPrivate", False)):
+                    continue
                 calls.append({
                     "id": call.get("id"),
                     "title": call.get("title", ""),
@@ -120,9 +123,17 @@ class GetCallTranscriptAction(ActionHandler):
             }
             call_response = await client._make_request("calls/extensive", method="POST", data=call_data)
             
+            # Block access to private calls
+            calls = call_response.get("calls", [])
+            if calls and bool(calls[0].get("isPrivate", False)):
+                return {
+                    "call_id": call_id,
+                    "transcript": [],
+                    "error": "private_call_filtered"
+                }
+
             # Build speaker mapping from call data
             speaker_map = {}
-            calls = call_response.get("calls", [])
             if calls:
                 call_data = calls[0]
                 # Check multiple possible locations for participant data
@@ -207,6 +218,18 @@ class GetCallDetailsAction(ActionHandler):
             calls = response.get("calls", [])
             if calls:
                 call = calls[0]
+                # Block access to private calls
+                if bool(call.get("isPrivate", False)):
+                    return {
+                        "id": call_id,
+                        "title": "",
+                        "started": "",
+                        "duration": 0,
+                        "participants": [],
+                        "outcome": "",
+                        "crm_data": {},
+                        "error": "private_call_filtered"
+                    }
                 return {
                     "id": call.get("id", call_id),
                     "title": call.get("title", "Unknown Call"),
@@ -284,6 +307,9 @@ class SearchCallsAction(ActionHandler):
             results = []
             
             for call in response.get("calls", []):
+                # Skip private calls
+                if bool(call.get("isPrivate", False)):
+                    continue
                 # Check if query appears in call content/highlights/topics
                 content_match = False
                 matched_segments = []
