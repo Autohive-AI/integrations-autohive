@@ -1,0 +1,98 @@
+{
+    "name": "reddit",
+    "version": "1.0.0",
+    "description": "Reddit integration for searching subreddits and posting comments",
+    "entry_point": "reddit.py",
+    "auth": {
+        "type": "platform",
+        "provider": "reddit",
+        "scopes": ["read", "submit"]
+    },
+    "actions": {
+        "search_subreddit": {
+            "display_name": "Search Subreddit Posts",
+            "description": "Search for posts in a specific subreddit",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "subreddit": {
+                        "type": "string",
+                        "description": "Name of the subreddit to search (without r/)"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search query terms"
+                    },
+                    "sort": {
+                        "type": "string",
+                        "enum": ["relevance", "hot", "top", "new", "comments"],
+                        "description": "Sort order for results",
+                        "default": "relevance"
+                    },
+                    "time_filter": {
+                        "type": "string",
+                        "enum": ["all", "day", "week", "month", "year"],
+                        "description": "Time filter for results",
+                        "default": "all"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of posts to return",
+                        "default": 25,
+                        "minimum": 1,
+                        "maximum": 100
+                    }
+                },
+                "required": ["subreddit"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "posts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "title": {"type": "string"},
+                                "selftext": {"type": "string"},
+                                "url": {"type": "string"},
+                                "author": {"type": "string"},
+                                "score": {"type": "integer"},
+                                "num_comments": {"type": "integer"},
+                                "created_utc": {"type": "number"},
+                                "permalink": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "post_comment": {
+            "display_name": "Post Comment",
+            "description": "Post a comment on a Reddit post or reply to another comment",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "parent_id": {
+                        "type": "string",
+                        "description": "ID of the post or comment to reply to (format: t3_postid or t1_commentid)"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Comment text content"
+                    }
+                },
+                "required": ["parent_id", "text"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "comment_id": {"type": "string"},
+                    "permalink": {"type": "string"},
+                    "success": {"type": "boolean"}
+                }
+            }
+        }
+    }
+}
