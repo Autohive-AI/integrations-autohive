@@ -1,5 +1,5 @@
 {
-    "name": "reddit",
+    "name": "Reddit",
     "version": "1.0.0",
     "description": "Reddit integration for searching subreddits and posting comments",
     "entry_point": "reddit.py",
@@ -65,7 +65,8 @@
                             }
                         }
                     }
-                }
+                },
+                "required": ["posts"]
             }
         },
         "post_comment": {
@@ -91,7 +92,8 @@
                     "comment_id": {"type": "string"},
                     "permalink": {"type": "string"},
                     "success": {"type": "boolean"}
-                }
+                },
+                "required":["comment_is","permalink","success"]
             }
         }
     }
