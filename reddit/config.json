@@ -93,7 +93,7 @@
                     "permalink": {"type": "string"},
                     "success": {"type": "boolean"}
                 },
-                "required":["comment_is","permalink","success"]
+                "required":["comment_id","permalink","success"]
             }
         }
     }
