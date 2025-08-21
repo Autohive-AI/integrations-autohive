@@ -424,8 +424,6 @@ class NotionGetPagePropertyHandler(ActionHandler):
             raise Exception(f"Failed to get property {property_id} from page {page_id}: {str(e)}")
 
 
-# ---- New Update/Delete Handlers ----
-
 @notion.action("update_notion_block")
 class NotionUpdateBlockHandler(ActionHandler):
     """Handler for updating existing blocks"""
