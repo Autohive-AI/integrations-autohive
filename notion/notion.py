@@ -453,9 +453,9 @@ class NotionUpdateBlockHandler(ActionHandler):
             "table_row", "table", "column", "synced_block", "template"
         }
         
-        # Prepare the update request body (only include valid block type fields)
+        # Prepare the update request body (only include valid block type fields, exclude internal fields)
         update_body = {key: value for key, value in inputs.items() 
-                      if key in valid_block_types and value is not None}
+                      if key in valid_block_types and value is not None and not key.startswith("NOTION_")}
         
         # Prepare headers for Notion API
         headers = {
@@ -531,8 +531,14 @@ class NotionUpdatePageHandler(ActionHandler):
         """
         page_id = inputs["page_id"]
         
-        # Prepare the update request body (exclude page_id from the body)
-        update_body = {key: value for key, value in inputs.items() if key != "page_id"}
+        # Valid page update fields
+        valid_page_fields = {
+            "properties", "icon", "cover", "archived"
+        }
+        
+        # Prepare the update request body (only include valid page fields, exclude internal fields)
+        update_body = {key: value for key, value in inputs.items() 
+                      if key in valid_page_fields and value is not None and not key.startswith("NOTION_")}
         
         # Prepare headers for Notion API
         headers = {
