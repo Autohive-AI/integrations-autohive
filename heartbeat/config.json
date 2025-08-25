@@ -1,0 +1,794 @@
+{
+    "name": "Heartbeat",
+    "version": "0.0.1",
+    "description": "An integration for the heartbeat.chat API",
+    "entry_point": "heartbeat.py",
+    "auth": {
+        "type": "custom",
+        "title": "Heartbeat",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "Bearer token",
+                    "help_text": "Bearer token for the Heartbeat API"
+                }
+            }
+        }
+    },
+    "actions": {
+        "get_heartbeat_channels": {
+            "display_name": "Get Channels",
+            "description": "Get a list of all channels in the Heartbeat community",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channels": {
+                        "type": "array",
+                        "description": "List of channels",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Channel ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Channel name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Channel description"
+                                },
+                                "channelCategoryID": {
+                                    "type": "string",
+                                    "description": "Channel category ID"
+                                },
+                                "private": {
+                                    "type": "boolean",
+                                    "description": "Whether the channel is private"
+                                }
+                            },
+                            "required": ["id", "name"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["channels", "result"]
+            }
+        },
+        "get_heartbeat_channel": {
+            "display_name": "Get Channel",
+            "description": "Get details of a specific channel by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {
+                        "type": "string",
+                        "description": "The ID of the channel to retrieve"
+                    }
+                },
+                "required": ["channel_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channel": {
+                        "type": "object",
+                        "description": "Channel details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Channel ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Channel name"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Channel description"
+                            },
+                            "channelCategoryID": {
+                                "type": "string",
+                                "description": "Channel category ID"
+                            },
+                            "private": {
+                                "type": "boolean",
+                                "description": "Whether the channel is private"
+                            }
+                        },
+                        "required": ["id", "name"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["channel", "result"]
+            }
+        },
+        "get_heartbeat_channel_threads": {
+            "display_name": "Get Channel Threads",
+            "description": "Get all threads from a specific channel",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {
+                        "type": "string",
+                        "description": "The ID of the channel to get threads from"
+                    }
+                },
+                "required": ["channel_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "threads": {
+                        "type": "array",
+                        "description": "List of threads in the channel",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Thread ID"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Thread title"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "Thread content"
+                                },
+                                "channelID": {
+                                    "type": "string",
+                                    "description": "Channel ID this thread belongs to"
+                                },
+                                "authorID": {
+                                    "type": "string",
+                                    "description": "User ID of the thread author"
+                                },
+                                "createdAt": {
+                                    "type": "string",
+                                    "description": "Thread creation timestamp"
+                                },
+                                "updatedAt": {
+                                    "type": "string",
+                                    "description": "Thread last update timestamp"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "Thread URL"
+                                },
+                                "comments": {
+                                    "type": "array",
+                                    "description": "Comments on the thread"
+                                },
+                                "user": {
+                                    "type": "object",
+                                    "description": "Thread author details",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "User ID"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "User display name"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "User email"
+                                        },
+                                        "bio": {
+                                            "type": "string",
+                                            "description": "User bio"
+                                        },
+                                        "avatar": {
+                                            "type": "string",
+                                            "description": "User avatar URL"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "description": "User creation timestamp"
+                                        }
+                                    },
+                                    "required": ["id", "name", "email"]
+                                }
+                            },
+                            "required": ["id", "title", "channelID", "authorID"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["threads", "result"]
+            }
+        },
+        "get_heartbeat_thread": {
+            "display_name": "Get Thread",
+            "description": "Get details of a specific thread by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "thread_id": {
+                        "type": "string",
+                        "description": "The ID of the thread to retrieve"
+                    }
+                },
+                "required": ["thread_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "thread": {
+                        "type": "object",
+                        "description": "Thread details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Thread ID"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Thread title"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Thread content"
+                            },
+                            "channelID": {
+                                "type": "string",
+                                "description": "Channel ID this thread belongs to"
+                            },
+                            "authorID": {
+                                "type": "string",
+                                "description": "User ID of the thread author"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "description": "Thread creation timestamp"
+                            },
+                            "updatedAt": {
+                                "type": "string",
+                                "description": "Thread last update timestamp"
+                            },
+                            "url": {
+                                "type": "string",
+                                "description": "Thread URL"
+                            },
+                            "comments": {
+                                "type": "array",
+                                "description": "Comments on the thread"
+                            },
+                            "user": {
+                                "type": "object",
+                                "description": "Thread author details",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "User ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "User display name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "User email"
+                                    },
+                                    "bio": {
+                                        "type": "string",
+                                        "description": "User bio"
+                                    },
+                                    "avatar": {
+                                        "type": "string",
+                                        "description": "User avatar URL"
+                                    },
+                                    "createdAt": {
+                                        "type": "string",
+                                        "description": "User creation timestamp"
+                                    }
+                                },
+                                "required": ["id", "name", "email"]
+                            }
+                        },
+                        "required": ["id", "title", "channelID", "authorID"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["thread", "result"]
+            }
+        },
+        "get_heartbeat_users": {
+            "display_name": "Get Users",
+            "description": "Get a list of all users in the Heartbeat community",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "users": {
+                        "type": "array",
+                        "description": "List of users",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "User ID"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "User email"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "User display name"
+                                },
+                                "bio": {
+                                    "type": "string",
+                                    "description": "User bio"
+                                },
+                                "avatar": {
+                                    "type": "string",
+                                    "description": "User avatar URL"
+                                },
+                                "createdAt": {
+                                    "type": "string",
+                                    "description": "User creation timestamp"
+                                }
+                            },
+                            "required": ["id", "email", "name"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["users", "result"]
+            }
+        },
+        "get_heartbeat_user": {
+            "display_name": "Get User",
+            "description": "Get details of a specific user by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The ID of the user to retrieve"
+                    }
+                },
+                "required": ["user_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "type": "object",
+                        "description": "User details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "User ID"
+                            },
+                            "email": {
+                                "type": "string",
+                                "description": "User email"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "User display name"
+                            },
+                            "bio": {
+                                "type": "string",
+                                "description": "User bio"
+                            },
+                            "avatar": {
+                                "type": "string",
+                                "description": "User avatar URL"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "description": "User creation timestamp"
+                            }
+                        },
+                        "required": ["id", "email", "name"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["user", "result"]
+            }
+        },
+        "get_heartbeat_events": {
+            "display_name": "Get Events",
+            "description": "Get a list of all events in the Heartbeat community",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "description": "List of events",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Event ID"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Event title"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Event description"
+                                },
+                                "startTime": {
+                                    "type": "string",
+                                    "description": "Event start time"
+                                },
+                                "endTime": {
+                                    "type": "string",
+                                    "description": "Event end time"
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "description": "Event location"
+                                },
+                                "createdAt": {
+                                    "type": "string",
+                                    "description": "Event creation timestamp"
+                                }
+                            },
+                            "required": ["id", "title", "startTime"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["events", "result"]
+            }
+        },
+        "get_heartbeat_event": {
+            "display_name": "Get Event",
+            "description": "Get details of a specific event by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The ID of the event to retrieve"
+                    }
+                },
+                "required": ["event_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "event": {
+                        "type": "object",
+                        "description": "Event details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Event ID"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Event title"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Event description"
+                            },
+                            "startTime": {
+                                "type": "string",
+                                "description": "Event start time"
+                            },
+                            "endTime": {
+                                "type": "string",
+                                "description": "Event end time"
+                            },
+                            "location": {
+                                "type": "string",
+                                "description": "Event location"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "description": "Event creation timestamp"
+                            }
+                        },
+                        "required": ["id", "title", "startTime"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["event", "result"]
+            }
+        },
+        "create_heartbeat_comment": {
+            "display_name": "Create Comment",
+            "description": "Create a new comment on a thread in the Heartbeat community",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "thread_id": {
+                        "type": "string",
+                        "description": "The ID of the thread to comment on"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The text content of the comment (supports Rich Text formatting)"
+                    },
+                    "parent_id": {
+                        "type": "string",
+                        "description": "The ID of the parent comment if this is a reply. Must be a direct reply to the thread, not a nested reply (optional)"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "description": "The ID of the admin user to create the comment as. Only admin users can be chosen. If not provided, will use the API key owner (optional)"
+                    }
+                },
+                "required": ["thread_id", "content"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "comment": {
+                        "type": "object",
+                        "description": "Created comment details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Comment ID"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Comment content"
+                            },
+                            "threadID": {
+                                "type": "string",
+                                "description": "Thread ID this comment belongs to"
+                            },
+                            "authorID": {
+                                "type": "string",
+                                "description": "User ID of the comment author"
+                            },
+                            "parentID": {
+                                "type": "string",
+                                "description": "Parent comment ID if this is a reply"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "description": "Comment creation timestamp"
+                            },
+                            "updatedAt": {
+                                "type": "string",
+                                "description": "Comment last update timestamp"
+                            },
+                            "user": {
+                                "type": "object",
+                                "description": "Comment author details",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "User ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "User display name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "User email"
+                                    },
+                                    "bio": {
+                                        "type": "string",
+                                        "description": "User bio"
+                                    },
+                                    "avatar": {
+                                        "type": "string",
+                                        "description": "User avatar URL"
+                                    },
+                                    "createdAt": {
+                                        "type": "string",
+                                        "description": "User creation timestamp"
+                                    }
+                                },
+                                "required": ["id", "name", "email"]
+                            }
+                        },
+                        "required": ["id", "content", "threadID", "authorID"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["comment", "result"]
+            }
+        },
+        "create_heartbeat_thread": {
+            "display_name": "Create Thread",
+            "description": "Create a new thread in a channel in the Heartbeat community",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {
+                        "type": "string",
+                        "description": "The ID of the channel to create the thread in"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The text content of the thread (supports Rich Text formatting)"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "description": "The ID of the admin user to create the thread as. Only admin users can be chosen. If not provided, will use the API key owner (optional)"
+                    }
+                },
+                "required": ["channel_id", "content"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "thread": {
+                        "type": "object",
+                        "description": "Created thread details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Thread ID"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Thread title"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Thread content"
+                            },
+                            "channelID": {
+                                "type": "string",
+                                "description": "Channel ID this thread belongs to"
+                            },
+                            "authorID": {
+                                "type": "string",
+                                "description": "User ID of the thread author"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "description": "Thread creation timestamp"
+                            },
+                            "updatedAt": {
+                                "type": "string",
+                                "description": "Thread last update timestamp"
+                            },
+                            "url": {
+                                "type": "string",
+                                "description": "Thread URL"
+                            },
+                            "comments": {
+                                "type": "array",
+                                "description": "Comments on the thread"
+                            },
+                            "user": {
+                                "type": "object",
+                                "description": "Thread author details",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "User ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "User display name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "User email"
+                                    },
+                                    "bio": {
+                                        "type": "string",
+                                        "description": "User bio"
+                                    },
+                                    "avatar": {
+                                        "type": "string",
+                                        "description": "User avatar URL"
+                                    },
+                                    "createdAt": {
+                                        "type": "string",
+                                        "description": "User creation timestamp"
+                                    }
+                                },
+                                "required": ["id", "name", "email"]
+                            }
+                        },
+                        "required": ["id", "title", "channelID", "authorID"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["thread", "result"]
+            }
+        }
+    }
+}
