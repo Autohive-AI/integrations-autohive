@@ -4,4 +4,4 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../dependencies")))
 
-from youtube_transcript import youtube_transcript
+from supadata_transcribe import supadata_transcribe

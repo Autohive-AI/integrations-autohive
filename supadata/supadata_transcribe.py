@@ -5,11 +5,11 @@ from typing import Dict, Any
 from supadata import Supadata, SupadataError
 
 # Create the integration using the config.json
-youtube_transcript = Integration.load()
+supadata_transcribe = Integration.load()
 
 # ---- Action Handlers ----
 
-@youtube_transcript.action("get_transcript")
+@supadata_transcribe.action("get_transcript")
 class GetTranscriptAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         video_url = inputs["video_url"]

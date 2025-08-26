@@ -1,8 +1,8 @@
 {
-  "name": "youtube_transcript",
+  "name": "Supadata - Transcribe",
   "version": "1.0.0",
   "description": "Get transcripts from YouTube, TikTok, Instagram, X (Twitter) videos using Supadata",
-  "entry_point": "youtube_transcript.py",
+  "entry_point": "supadata_transcribe.py",
   "auth": {
     "type": "custom",
     "title": "Supadata API Key",
@@ -21,7 +21,7 @@
   "actions": {
     "get_transcript": {
       "display_name": "Get Video Transcript",
-      "description": "Fetches the transcript for a video from YouTube, TikTok, Instagram, X (Twitter) or file URLs",
+      "description": "Fetches the transcript for a video from YouTube, TikTok, Instagram, or X (Twitter) URLs",
       "input_schema": {
         "type": "object",
         "properties": {

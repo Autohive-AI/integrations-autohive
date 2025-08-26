@@ -1,6 +1,6 @@
-# Testbed for youtube_transcript integration.
+# Testbed for supadata_transcribe integration.
 import asyncio
-from context import youtube_transcript
+from context import supadata_transcribe
 from autohive_integrations_sdk import ExecutionContext
 
 async def test_get_transcript():
@@ -15,7 +15,7 @@ async def test_get_transcript():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await youtube_transcript.execute_action("get_transcript", inputs, context)
+            result = await supadata_transcribe.execute_action("get_transcript", inputs, context)
             assert "transcript" in result
             assert "video_id" in result
             assert "language" in result
@@ -25,7 +25,7 @@ async def test_get_transcript():
             print(f"Error testing get_transcript: {str(e)}")
 
 async def main():
-    print("Testing YouTube Transcript Integration")
+    print("Testing Supadata Transcribe Integration")
     print("====================================")
 
     await test_get_transcript()
