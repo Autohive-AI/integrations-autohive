@@ -622,6 +622,423 @@
                     }
                 }
             }
+        },
+        "update_notion_block": {
+            "display_name": "Update Block",
+            "description": "Update the content of an existing block",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "block_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the block to update"
+                    },
+                    "paragraph": {
+                        "type": "object",
+                        "description": "Paragraph block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "heading_1": {
+                        "type": "object",
+                        "description": "Heading 1 block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "is_toggleable": {
+                                "type": "boolean",
+                                "description": "Whether heading can be toggled"
+                            }
+                        }
+                    },
+                    "heading_2": {
+                        "type": "object",
+                        "description": "Heading 2 block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "is_toggleable": {
+                                "type": "boolean",
+                                "description": "Whether heading can be toggled"
+                            }
+                        }
+                    },
+                    "heading_3": {
+                        "type": "object",
+                        "description": "Heading 3 block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "is_toggleable": {
+                                "type": "boolean",
+                                "description": "Whether heading can be toggled"
+                            }
+                        }
+                    },
+                    "bulleted_list_item": {
+                        "type": "object",
+                        "description": "Bulleted list item content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "numbered_list_item": {
+                        "type": "object",
+                        "description": "Numbered list item content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "to_do": {
+                        "type": "object",
+                        "description": "To-do item content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "checked": {
+                                "type": "boolean",
+                                "description": "Whether the to-do item is checked"
+                            }
+                        }
+                    },
+                    "code": {
+                        "type": "object",
+                        "description": "Code block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "language": {
+                                "type": "string",
+                                "description": "Programming language for syntax highlighting"
+                            }
+                        }
+                    },
+                    "quote": {
+                        "type": "object",
+                        "description": "Quote block content",
+                        "properties": {
+                            "rich_text": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["text"]
+                                        },
+                                        "text": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": ["block_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of object (always 'block')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier of the updated block"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Type of the block"
+                    },
+                    "last_edited_time": {
+                        "type": "string",
+                        "description": "ISO 8601 timestamp when the block was last edited"
+                    }
+                }
+            }
+        },
+        "delete_notion_block": {
+            "display_name": "Delete Block",
+            "description": "Delete (archive) a block by moving it to trash",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "block_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the block to delete"
+                    }
+                },
+                "required": ["block_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of object (always 'block')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier of the deleted block"
+                    },
+                    "archived": {
+                        "type": "boolean",
+                        "description": "Whether the block is archived (always true after deletion)"
+                    },
+                    "last_edited_time": {
+                        "type": "string",
+                        "description": "ISO 8601 timestamp when the block was deleted"
+                    }
+                }
+            }
+        },
+        "update_notion_page": {
+            "display_name": "Update Page Properties",
+            "description": "Update properties of a page (for database pages)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "page_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the page to update"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Page properties to update",
+                        "additionalProperties": true
+                    },
+                    "icon": {
+                        "type": "object",
+                        "description": "Page icon (emoji or external URL)",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["emoji", "external"]
+                            },
+                            "emoji": {
+                                "type": "string",
+                                "description": "Emoji character (if type is emoji)"
+                            },
+                            "external": {
+                                "type": "object",
+                                "description": "External icon URL (if type is external)",
+                                "properties": {
+                                    "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "URL of the external icon"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "cover": {
+                        "type": "object",
+                        "description": "Page cover image",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["external"]
+                            },
+                            "external": {
+                                "type": "object",
+                                "properties": {
+                                    "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "URL of the cover image"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "archived": {
+                        "type": "boolean",
+                        "description": "Whether to archive/restore the page"
+                    }
+                },
+                "required": ["page_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of object (always 'page')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier of the updated page"
+                    },
+                    "last_edited_time": {
+                        "type": "string",
+                        "description": "ISO 8601 timestamp when the page was last edited"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Updated page properties"
+                    },
+                    "archived": {
+                        "type": "boolean",
+                        "description": "Whether the page is archived"
+                    }
+                }
+            }
         }
     }
 }

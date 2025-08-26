@@ -31,6 +31,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features tenant lookup by company name, contact search by name, and retrieval of accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.
 
+### Reddit
+
+[reddit](reddit): Connect workflows to Reddit with automated engagement capabilities. Search posts across subreddits with customizable filtering options and automatically post comments to join conversations. Includes authentication via Reddit OAuth with read and submit permissions, comprehensive post data extraction, and support for brand monitoring and community engagement workflows.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
