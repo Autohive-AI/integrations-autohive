@@ -108,6 +108,32 @@
             },
             "output_schema": {
                 "type": "object",
+                "properties": {
+                    "reports": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "report_id": {
+                                    "type": "string",
+                                    "description": "Report identifier"
+                                },
+                                "report_name": {
+                                    "type": "string",
+                                    "description": "Report name"
+                                },
+                                "report_date": {
+                                    "type": "string",
+                                    "description": "Report date"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Report data rows"
+                                }
+                            }
+                        }
+                    }
+                },
                 "description": "Raw Xero API response for Aged Payables report"
             }
         },
@@ -135,6 +161,32 @@
             },
             "output_schema": {
                 "type": "object",
+                "properties": {
+                    "reports": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "report_id": {
+                                    "type": "string",
+                                    "description": "Report identifier"
+                                },
+                                "report_name": {
+                                    "type": "string",
+                                    "description": "Report name"
+                                },
+                                "report_date": {
+                                    "type": "string",
+                                    "description": "Report date"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Report data rows"
+                                }
+                            }
+                        }
+                    }
+                },
                 "description": "Raw Xero API response for Aged Receivables report"
             }
         },
@@ -164,6 +216,32 @@
             },
             "output_schema": {
                 "type": "object",
+                "properties": {
+                    "reports": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "report_id": {
+                                    "type": "string",
+                                    "description": "Report identifier"
+                                },
+                                "report_name": {
+                                    "type": "string",
+                                    "description": "Report name"
+                                },
+                                "report_date": {
+                                    "type": "string",
+                                    "description": "Report date"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Report data rows"
+                                }
+                            }
+                        }
+                    }
+                },
                 "description": "Raw Xero API response for Balance Sheet report"
             }
         },
@@ -208,6 +286,32 @@
             },
             "output_schema": {
                 "type": "object",
+                "properties": {
+                    "reports": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "report_id": {
+                                    "type": "string",
+                                    "description": "Report identifier"
+                                },
+                                "report_name": {
+                                    "type": "string",
+                                    "description": "Report name"
+                                },
+                                "report_date": {
+                                    "type": "string",
+                                    "description": "Report date"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Report data rows"
+                                }
+                            }
+                        }
+                    }
+                },
                 "description": "Raw Xero API response for Profit and Loss statement"
             }
         },
@@ -235,6 +339,32 @@
             },
             "output_schema": {
                 "type": "object",
+                "properties": {
+                    "reports": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "report_id": {
+                                    "type": "string",
+                                    "description": "Report identifier"
+                                },
+                                "report_name": {
+                                    "type": "string",
+                                    "description": "Report name"
+                                },
+                                "report_date": {
+                                    "type": "string",
+                                    "description": "Report date"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Report data rows"
+                                }
+                            }
+                        }
+                    }
+                },
                 "description": "Raw Xero API response for Trial Balance report"
             }
         }

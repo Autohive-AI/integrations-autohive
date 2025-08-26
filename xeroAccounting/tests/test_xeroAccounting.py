@@ -35,12 +35,13 @@ async def test_get_aged_payables_with_specific_tenant():
 
     auth = {}
     inputs = {
+        "company_name": "Test Company",
         "contact_id": "test-contact-id-123"  # Replace with actual contact ID
     }
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await xeroaccounting.execute_action("get_aged_payables_by_contact", inputs, context)
+            result = await xeroaccounting.execute_action("get_aged_payables", inputs, context)
             print(f"Success: Retrieved aged payables report")
             return result
         except Exception as e:
