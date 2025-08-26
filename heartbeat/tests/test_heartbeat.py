@@ -1,14 +1,10 @@
 # Testbed for the Heartbeat integration.
 # The IUT (integration under test) is the heartbeat.py file
 import asyncio
-import sys
-import os
 
-# Add the parent directory to the path so we can import heartbeat
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autohive_integrations_sdk import ExecutionContext
 
 import heartbeat
-from autohive_integrations_sdk import ExecutionContext
 
 # Global credentials object
 CREDENTIALS = {
