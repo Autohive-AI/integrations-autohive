@@ -21,7 +21,7 @@
   "actions": {
     "get_transcript": {
       "display_name": "Get Video Transcript",
-      "description": "Fetches the transcript for a video from YouTube, TikTok, Instagram, or X (Twitter) URLs",
+      "description": "Fetches the timestamped transcript for a video from YouTube, TikTok, Instagram, or X (Twitter) URLs in SRT format",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -38,7 +38,7 @@
         "properties": {
           "transcript": {
             "type": "string",
-            "description": "The video transcript text"
+            "description": "The video transcript text formatted with timestamps in SRT format"
           },
           "language": {
             "type": "string",

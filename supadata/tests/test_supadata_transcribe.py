@@ -6,7 +6,9 @@ from autohive_integrations_sdk import ExecutionContext
 async def test_get_transcript():
     # Setup auth with test API key
     auth = {
-        "api_key": "test_api_key"
+        "credentials" : { 
+            "api_key": "test_api_key"
+        }
     }
 
     inputs = {
