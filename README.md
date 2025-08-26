@@ -23,6 +23,22 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Gong
+
+[gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
+
+### Xero
+
+[xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features tenant lookup by company name, contact search by name, and retrieval of accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.
+
+### Reddit
+
+[reddit](reddit): Connect workflows to Reddit with automated engagement capabilities. Search posts across subreddits with customizable filtering options and automatically post comments to join conversations. Includes authentication via Reddit OAuth with read and submit permissions, comprehensive post data extraction, and support for brand monitoring and community engagement workflows.
+
+### Supadata
+
+[supadata](supadata): Video transcription integration that extracts text transcripts from social media videos using the Supadata API. Supports YouTube, TikTok, Instagram, and X (Twitter) platforms with timestamped SRT-format output. Ideal for content analysis, accessibility features, and creating searchable text archives from video content.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.

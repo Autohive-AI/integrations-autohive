@@ -4,10 +4,10 @@ from autohive_integrations_sdk import (
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta, timezone
 import json
-import base64
-from pathlib import Path
 
-gong = Integration.load(config_path=Path(__file__).resolve().parent / "config.json")
+
+
+gong = Integration.load()
 
 class GongAPIClient:
     """Client for interacting with the Gong API"""
@@ -15,28 +15,16 @@ class GongAPIClient:
     def __init__(self, context: ExecutionContext):
         self.context = context
         self.base_url = "https://us-10552.api.gong.io/v2"
-        # Load credentials from context.auth (no secrets in code)
-        auth_config = context.auth or {}
-        nested_credentials = auth_config.get("credentials", {}) if isinstance(auth_config, dict) else {}
-        self.api_key = auth_config.get("api_key") or nested_credentials.get("api_key")
-        self.api_secret = auth_config.get("api_secret") or nested_credentials.get("api_secret")
-        if not self.api_key or not self.api_secret:
-            raise ValueError("Missing Gong API credentials: expected 'api_key' and 'api_secret' in context.auth")
     
     async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict] = None, data: Optional[Dict] = None):
         """Make an authenticated request to the Gong API"""
         url = f"{self.base_url}/{endpoint}"
         
-        # Gong API uses Basic Auth: API Key as username, API Secret as password
-        credentials = f"{self.api_key}:{self.api_secret}"
-        encoded_credentials = base64.b64encode(credentials.encode()).decode()
-        
         headers = {
-            "Authorization": f"Basic {encoded_credentials}",
             "Content-Type": "application/json"
         }
         
-        # Use the context's fetch method for authenticated requests
+        # Use the context's fetch method for authenticated requests (OAuth handled by SDK)
         if method == "GET": 
             return await self.context.fetch(url, params=params, headers=headers)
         elif method == "POST":
@@ -87,6 +75,9 @@ class ListCallsAction(ActionHandler):
             
             calls = []
             for call in response.get("calls", []):
+                # Filter out private calls
+                if bool(call.get("isPrivate", False)):
+                    continue
                 calls.append({
                     "id": call.get("id"),
                     "title": call.get("title", ""),
@@ -132,9 +123,17 @@ class GetCallTranscriptAction(ActionHandler):
             }
             call_response = await client._make_request("calls/extensive", method="POST", data=call_data)
             
+            # Block access to private calls
+            calls = call_response.get("calls", [])
+            if calls and bool(calls[0].get("isPrivate", False)):
+                return {
+                    "call_id": call_id,
+                    "transcript": [],
+                    "error": "private_call_filtered"
+                }
+
             # Build speaker mapping from call data
             speaker_map = {}
-            calls = call_response.get("calls", [])
             if calls:
                 call_data = calls[0]
                 # Check multiple possible locations for participant data
@@ -219,6 +218,18 @@ class GetCallDetailsAction(ActionHandler):
             calls = response.get("calls", [])
             if calls:
                 call = calls[0]
+                # Block access to private calls
+                if bool(call.get("isPrivate", False)):
+                    return {
+                        "id": call_id,
+                        "title": "",
+                        "started": "",
+                        "duration": 0,
+                        "participants": [],
+                        "outcome": "",
+                        "crm_data": {},
+                        "error": "private_call_filtered"
+                    }
                 return {
                     "id": call.get("id", call_id),
                     "title": call.get("title", "Unknown Call"),
@@ -296,6 +307,9 @@ class SearchCallsAction(ActionHandler):
             results = []
             
             for call in response.get("calls", []):
+                # Skip private calls
+                if bool(call.get("isPrivate", False)):
+                    continue
                 # Check if query appears in call content/highlights/topics
                 content_match = False
                 matched_segments = []

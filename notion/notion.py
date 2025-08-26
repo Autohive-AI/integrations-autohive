@@ -424,5 +424,136 @@ class NotionGetPagePropertyHandler(ActionHandler):
             raise Exception(f"Failed to get property {property_id} from page {page_id}: {str(e)}")
 
 
+@notion.action("update_notion_block")
+class NotionUpdateBlockHandler(ActionHandler):
+    """Handler for updating existing blocks"""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        """
+        Update the content of an existing block
+        
+        Args:
+            inputs: Dictionary containing 'block_id' and block content (paragraph, heading_1, etc.)
+            context: Execution context with auth and network capabilities
+            
+        Returns:
+            Dictionary containing updated block from Notion API
+        """
+        block_id = inputs["block_id"]
+        
+        # Valid block types that can be updated
+        valid_block_types = {
+            "paragraph", "heading_1", "heading_2", "heading_3",
+            "bulleted_list_item", "numbered_list_item", "to_do", 
+            "code", "quote", "callout", "toggle", "embed", "bookmark",
+            "image", "video", "pdf", "file", "audio", "equation",
+            "divider", "breadcrumb", "table_of_contents", "link_to_page",
+            "table_row", "table", "column", "synced_block", "template"
+        }
+        
+        # Prepare the update request body (only include valid block type fields, exclude internal fields)
+        update_body = {key: value for key, value in inputs.items() 
+                      if key in valid_block_types and value is not None and not key.startswith("NOTION_")}
+        
+        # Prepare headers for Notion API
+        headers = {
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json"
+        }
+        
+        # Make the update block request to Notion API
+        try:
+            response = await context.fetch(
+                url=f"https://api.notion.com/v1/blocks/{block_id}",
+                method="PATCH",
+                headers=headers,
+                json=update_body
+            )
+            
+            return response
+            
+        except Exception as e:
+            raise Exception(f"Failed to update block {block_id}: {str(e)}")
 
 
+@notion.action("delete_notion_block")
+class NotionDeleteBlockHandler(ActionHandler):
+    """Handler for deleting (archiving) blocks"""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        """
+        Delete (archive) a block by moving it to trash
+        
+        Args:
+            inputs: Dictionary containing 'block_id'
+            context: Execution context with auth and network capabilities
+            
+        Returns:
+            Dictionary containing deleted block from Notion API
+        """
+        block_id = inputs["block_id"]
+        
+        # Prepare headers for Notion API
+        headers = {
+            "Notion-Version": "2022-06-28"
+        }
+        
+        # Make the delete block request to Notion API
+        try:
+            response = await context.fetch(
+                url=f"https://api.notion.com/v1/blocks/{block_id}",
+                method="DELETE",
+                headers=headers
+            )
+            
+            return response
+            
+        except Exception as e:
+            raise Exception(f"Failed to delete block {block_id}: {str(e)}")
+
+
+@notion.action("update_notion_page")
+class NotionUpdatePageHandler(ActionHandler):
+    """Handler for updating page properties"""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        """
+        Update properties of a page (for database pages)
+        
+        Args:
+            inputs: Dictionary containing 'page_id' and optional 'properties', 'icon', 'cover', 'archived'
+            context: Execution context with auth and network capabilities
+            
+        Returns:
+            Dictionary containing updated page from Notion API
+        """
+        page_id = inputs["page_id"]
+        
+        # Valid page update fields
+        valid_page_fields = {
+            "properties", "icon", "cover", "archived"
+        }
+        
+        # Prepare the update request body (only include valid page fields, exclude internal fields)
+        update_body = {key: value for key, value in inputs.items() 
+                      if key in valid_page_fields and value is not None and not key.startswith("NOTION_")}
+        
+        # Prepare headers for Notion API
+        headers = {
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json"
+        }
+        
+        # Make the update page request to Notion API
+        try:
+            response = await context.fetch(
+                url=f"https://api.notion.com/v1/pages/{page_id}",
+                method="PATCH",
+                headers=headers,
+                json=update_body
+            )
+            
+            return response
+            
+        except Exception as e:
+            raise Exception(f"Failed to update page {page_id}: {str(e)}")
