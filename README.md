@@ -27,6 +27,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
 
+### Xero
+
+[xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features tenant lookup by company name, contact search by name, and retrieval of accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
