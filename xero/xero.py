@@ -6,13 +6,16 @@ from datetime import datetime
 
 # Create the integration using the config.json
 xero = Integration.load("config.json")
+Xero = Integration.load("config.json")
 
 # ---- Helper Functions ----
 
 
 async def get_tenant_by_company_name(context: ExecutionContext, company_name: str) -> Dict[str, str]:
+async def get_all_connections(context: ExecutionContext) -> list:
     """
     Gets tenant ID and name by company name from Xero connections API
+    Gets all tenant connections from Xero connections API
     """
     try:
         response = await context.fetch(
@@ -36,18 +39,23 @@ async def get_tenant_by_company_name(context: ExecutionContext, company_name: st
                     }
         
         raise ValueError(f"No tenant found with company name: {company_name}")
+        return response
         
     except Exception as e:
         raise Exception(f"Failed to get tenant by company name: {str(e)}")
+        raise Exception(f"Failed to get connections: {str(e)}")
 
 # ---- Action Handlers ----
 
 
 @xero.action("get_tenant_by_company_name")
 class GetTenantByCompanyNameAction(ActionHandler):
+@Xero.action("get_available_connections")
+class GetAvailableConnectionsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
         Fetches tenant information (ID and name) by company name from Xero connections
+        Gets all available Xero tenant connections and returns company names
         """
         # Validate required inputs
         company_name = inputs.get("company_name")
@@ -58,23 +66,52 @@ class GetTenantByCompanyNameAction(ActionHandler):
             # Get tenant information by company name
             tenant_info = await get_tenant_by_company_name(context, company_name)
             return tenant_info
+            # Get all connections from Xero
+            connections = await get_all_connections(context)
+            
+            # Extract company information
+            companies = []
+            for connection in connections:
+                tenant_name = connection.get("tenantName")
+                tenant_id = connection.get("tenantId")
+                if tenant_name and tenant_id:
+                    companies.append({
+                        "tenant_id": tenant_id,
+                        "company_name": tenant_name
+                    })
+            
+            return {
+                "success": True,
+                "companies": companies
+            }
                 
         except Exception as e:
             raise Exception(f"Failed to get tenant by company name: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Failed to get connections: {str(e)}",
+                "companies": []
+            }
+
+
 
 
 @xero.action("find_contact_by_name")
+@Xero.action("find_contact_by_name")
 class FindContactByNameAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
         Finds contact ID by searching for contacts with matching name in Xero
+        Finds contact ID by filtering contacts with matching name in Xero
         """
         # Validate required inputs
         company_name = inputs.get("company_name")
+        tenant_id = inputs.get("tenant_id")
         contact_name = inputs.get("contact_name")
         
         if not company_name:
             raise ValueError("company_name is required")
+            raise ValueError("tenant_id is required")
         if not contact_name:
             raise ValueError("contact_name is required")
         
@@ -119,6 +156,7 @@ class FindContactByNameAction(ActionHandler):
 
 
 @xero.action("get_aged_payables")
+@Xero.action("get_aged_payables")
 class GetAgedPayablesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -126,10 +164,13 @@ class GetAgedPayablesAction(ActionHandler):
         """
         # Validate required inputs
         company_name = inputs.get("company_name")
+        tenant_id = inputs.get("tenant_id")
         contact_id = inputs.get("contact_id")
         
         if not company_name:
             raise ValueError("company_name is required")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
         if not contact_id:
             raise ValueError("contact_id is required")
         
@@ -170,6 +211,7 @@ class GetAgedPayablesAction(ActionHandler):
 
 
 @xero.action("get_aged_receivables")
+@Xero.action("get_aged_receivables")
 class GetAgedReceivablesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -177,10 +219,13 @@ class GetAgedReceivablesAction(ActionHandler):
         """
         # Validate required inputs
         company_name = inputs.get("company_name")
+        tenant_id = inputs.get("tenant_id")
         contact_id = inputs.get("contact_id")
         
         if not company_name:
             raise ValueError("company_name is required")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
         if not contact_id:
             raise ValueError("contact_id is required")
         
@@ -221,6 +266,7 @@ class GetAgedReceivablesAction(ActionHandler):
 
 
 @xero.action("get_balance_sheet")
+@Xero.action("get_balance_sheet")
 class GetBalanceSheetAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -230,6 +276,9 @@ class GetBalanceSheetAction(ActionHandler):
         company_name = inputs.get("company_name")
         if not company_name:
             raise ValueError("company_name is required")
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
         
         try:
             # Get tenant information by company name
@@ -270,6 +319,7 @@ class GetBalanceSheetAction(ActionHandler):
 
 
 @xero.action("get_profit_and_loss")
+@Xero.action("get_profit_and_loss")
 class GetProfitAndLossAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -279,11 +329,11 @@ class GetProfitAndLossAction(ActionHandler):
         company_name = inputs.get("company_name")
         if not company_name:
             raise ValueError("company_name is required")
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
         
         try:
-            # Get tenant information by company name
-            tenant_info = await get_tenant_by_company_name(context, company_name)
-            tenant_id = tenant_info["tenant_id"]
             
             # Build URL with parameters
             url = "https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss"
@@ -331,6 +381,7 @@ class GetProfitAndLossAction(ActionHandler):
 
 
 @xero.action("get_trial_balance")
+@Xero.action("get_trial_balance")
 class GetTrialBalanceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -340,6 +391,9 @@ class GetTrialBalanceAction(ActionHandler):
         company_name = inputs.get("company_name")
         if not company_name:
             raise ValueError("company_name is required")
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
         
         try:
             # Get tenant information by company name

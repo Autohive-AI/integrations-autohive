@@ -1,5 +1,6 @@
 {
     "name": "xero",
+    "name": "Xero",
     "version": "1.0.0",
     "description": "Xero accounting integration for aged payables and receivables reporting",
     "entry_point": "xero.py",
@@ -12,6 +13,9 @@
         "get_tenant_by_company_name": {
             "display_name": "Get Tenant by Company Name",
             "description": "Fetches tenant information (ID and name) by company name from Xero connections",
+        "get_available_connections": {
+            "display_name": "Get Available Connections",
+            "description": "Gets all available Xero tenant connections and returns company names with tenant IDs",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -21,6 +25,8 @@
                     }
                 },
                 "required": ["company_name"]
+                "properties": {},
+                "required": []
             },
             "output_schema": {
                 "type": "object",
@@ -28,13 +34,36 @@
                     "tenant_id": {
                         "type": "string",
                         "description": "Xero tenant ID"
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
                     },
                     "tenant_name": {
+                    "companies": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "tenant_id": {
+                                    "type": "string",
+                                    "description": "Xero tenant ID"
+                                },
+                                "company_name": {
+                                    "type": "string",
+                                    "description": "Xero tenant/company name"
+                                }
+                            },
+                            "required": ["tenant_id", "company_name"]
+                        }
+                    },
+                    "message": {
                         "type": "string",
                         "description": "Xero tenant name"
+                        "description": "Error message if success is false"
                     }
                 },
                 "required": ["tenant_id", "tenant_name"]
+                "required": ["success", "companies"]
             }
         },
         "find_contact_by_name": {
@@ -44,8 +73,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "contact_name": {
                         "type": "string",
@@ -53,6 +84,7 @@
                     }
                 },
                 "required": ["company_name", "contact_name"]
+                "required": ["tenant_id", "contact_name"]
             },
             "output_schema": {
                 "type": "object",
@@ -89,8 +121,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "contact_id": {
                         "type": "string",
@@ -103,6 +137,7 @@
                     }
                 },
                 "required": ["company_name", "contact_id"]
+                "required": ["tenant_id", "contact_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -142,8 +177,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "contact_id": {
                         "type": "string",
@@ -156,6 +193,7 @@
                     }
                 },
                 "required": ["company_name", "contact_id"]
+                "required": ["tenant_id", "contact_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -195,8 +233,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "date": {
                         "type": "string",
@@ -211,6 +251,7 @@
                     }
                 },
                 "required": ["company_name"]
+                "required": ["tenant_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -250,8 +291,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "date": {
                         "type": "string",
@@ -281,6 +324,7 @@
                     }
                 },
                 "required": ["company_name"]
+                "required": ["tenant_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -320,8 +364,10 @@
                 "type": "object",
                 "properties": {
                     "company_name": {
+                    "tenant_id": {
                         "type": "string",
                         "description": "Company name to identify the correct Xero tenant"
+                        "description": "Xero tenant ID"
                     },
                     "date": {
                         "type": "string",
@@ -334,6 +380,7 @@
                     }
                 },
                 "required": ["company_name"]
+                "required": ["tenant_id"]
             },
             "output_schema": {
                 "type": "object",
