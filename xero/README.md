@@ -24,7 +24,7 @@ The integration uses Xero's OAuth 2.0 authentication:
    - Note your Client ID and Client Secret
 
 2. **Configure Integration**:
-   - Set authentication provider to "xero" 
+   - Set authentication provider to "Xero" 
    - Complete OAuth flow through the platform's auth system
    - Grant necessary permissions to access accounting data
 

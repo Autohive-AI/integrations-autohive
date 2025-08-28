@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Create the integration using the config.json
-Xero = Integration.load("config.json")
+xero = Integration.load("config.json")
 
 # ---- Helper Functions ----
 
@@ -29,10 +29,12 @@ async def get_all_connections(context: ExecutionContext) -> list:
     except Exception as e:
         raise Exception(f"Failed to get connections: {str(e)}")
 
+
+
 # ---- Action Handlers ----
 
 
-@Xero.action("get_available_connections")
+@xero.action("get_available_connections")
 class GetAvailableConnectionsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -68,7 +70,7 @@ class GetAvailableConnectionsAction(ActionHandler):
 
 
 
-@Xero.action("find_contact_by_name")
+@xero.action("find_contact_by_name")
 class FindContactByNameAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -78,6 +80,7 @@ class FindContactByNameAction(ActionHandler):
         tenant_id = inputs.get("tenant_id")
         contact_name = inputs.get("contact_name")
         
+        if not tenant_id:
             raise ValueError("tenant_id is required")
         if not contact_name:
             raise ValueError("contact_name is required")
@@ -119,7 +122,7 @@ class FindContactByNameAction(ActionHandler):
             raise Exception(f"Failed to find contact by name: {str(e)}")
 
 
-@Xero.action("get_aged_payables")
+@xero.action("get_aged_payables")
 class GetAgedPayablesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -167,7 +170,7 @@ class GetAgedPayablesAction(ActionHandler):
             raise Exception(f"Failed to fetch aged payables report: {str(e)}")
 
 
-@Xero.action("get_aged_receivables")
+@xero.action("get_aged_receivables")
 class GetAgedReceivablesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -215,7 +218,7 @@ class GetAgedReceivablesAction(ActionHandler):
             raise Exception(f"Failed to fetch aged receivables report: {str(e)}")
 
 
-@Xero.action("get_balance_sheet")
+@xero.action("get_balance_sheet")
 class GetBalanceSheetAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -261,7 +264,7 @@ class GetBalanceSheetAction(ActionHandler):
             raise Exception(f"Failed to fetch balance sheet report: {str(e)}")
 
 
-@Xero.action("get_profit_and_loss")
+@xero.action("get_profit_and_loss")
 class GetProfitAndLossAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
@@ -319,7 +322,7 @@ class GetProfitAndLossAction(ActionHandler):
             raise Exception(f"Failed to fetch profit and loss report: {str(e)}")
 
 
-@Xero.action("get_trial_balance")
+@xero.action("get_trial_balance")
 class GetTrialBalanceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
