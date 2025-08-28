@@ -5,13 +5,6 @@ A comprehensive integration for accessing Xero accounting data including financi
 ## Features
 
 ### Actions
-- **Get Tenant by Company Name** - Find tenant information by company name from Xero connections
-- **Find Contact by Name** - Search for contacts by name within a specific tenant
-- **Get Aged Payables** - Retrieve aged payables report for specific contacts
-- **Get Aged Receivables** - Retrieve aged receivables report for specific contacts
-- **Get Balance Sheet** - Access balance sheet reports with optional period comparisons
-- **Get Profit and Loss** - Retrieve P&L statements with flexible date ranges and timeframes
-- **Get Trial Balance** - Access trial balance reports with optional payment filtering
 - **Get Available Connections** - Retrieve all available Xero tenant connections with company names and IDs
 - **Find Contact by Name** - Search for contacts by name within a specific tenant using tenant ID
 - **Get Aged Payables** - Retrieve aged payables report for specific contacts using tenant ID and contact ID
@@ -48,18 +41,11 @@ The integration requires these OAuth scopes:
 
 ## Usage Examples
 
-### Get Tenant Information
 ### Get Available Connections
 ```python
-# Find tenant by company name
-result = await integration.execute_action("get_tenant_by_company_name", {
-    "company_name": "My Company Pty Ltd"
-})
 # Get all available tenant connections
 result = await integration.execute_action("get_available_connections", {})
 
-print(f"Tenant ID: {result['tenant_id']}")
-print(f"Tenant Name: {result['tenant_name']}")
 if result['success']:
     for company in result['companies']:
         print(f"Tenant ID: {company['tenant_id']}")
@@ -68,10 +54,8 @@ if result['success']:
 
 ### Find Contact
 ```python
-# Search for contacts by name
 # Search for contacts by name using tenant ID
 result = await integration.execute_action("find_contact_by_name", {
-    "company_name": "My Company Pty Ltd",
     "tenant_id": "tenant-guid-123",
     "contact_name": "ABC Suppliers"
 })
@@ -82,11 +66,8 @@ for contact in result["contacts"]:
 
 ### Get Aged Payables Report
 ```python
-# Get aged payables for a specific contact
 # Get aged payables for a specific contact using tenant ID
 result = await integration.execute_action("get_aged_payables", {
-    "company_name": "My Company Pty Ltd",
-    "contact_id": "contact-guid-123",
     "tenant_id": "tenant-guid-123",
     "contact_id": "contact-guid-456",
     "date": "2025-01-31"
@@ -98,10 +79,8 @@ for report in result["reports"]:
 
 ### Get Balance Sheet
 ```python
-# Get current balance sheet with 3-month comparison
 # Get current balance sheet with 3-month comparison using tenant ID
 result = await integration.execute_action("get_balance_sheet", {
-    "company_name": "My Company Pty Ltd",
     "tenant_id": "tenant-guid-123",
     "date": "2025-01-31",
     "periods": 3
@@ -113,10 +92,8 @@ for report in result["reports"]:
 
 ### Get Profit & Loss Statement
 ```python
-# Get P&L for specific date range
 # Get P&L for specific date range using tenant ID
 result = await integration.execute_action("get_profit_and_loss", {
-    "company_name": "My Company Pty Ltd",
     "tenant_id": "tenant-guid-123",
     "from_date": "2025-01-01",
     "to_date": "2025-01-31",
@@ -163,18 +140,12 @@ python test_xero.py
 
 ### Test Structure
 ```python
-# Example test for tenant lookup
-async def test_get_tenant_by_company_name():
 # Example test for getting available connections
 async def test_get_available_connections():
     auth = {}  # OAuth tokens handled automatically
-    inputs = {"company_name": "Test Company"}
     inputs = {}
     
     async with ExecutionContext(auth=auth) as context:
-        result = await xero.execute_action("get_tenant_by_company_name", inputs, context)
-        assert "tenant_id" in result
-        assert "tenant_name" in result
         result = await xero.execute_action("get_available_connections", inputs, context)
         assert result["success"] == True
         assert "companies" in result
@@ -184,18 +155,13 @@ async def test_get_available_connections():
 
 ### Actions
 
-#### `get_tenant_by_company_name`
-Find tenant information by company name.
 #### `get_available_connections`
 Get all available Xero tenant connections with company names and IDs.
 
 **Input:**
-- `company_name` (required): Company name to search for
 - No input parameters required
 
 **Output:**
-- `tenant_id`: Xero tenant ID (GUID)
-- `tenant_name`: Company name as registered in Xero
 - `success`: Boolean indicating if request was successful
 - `companies`: Array of company objects with tenant_id and company_name
 - `message`: Error message if success is false
@@ -204,7 +170,6 @@ Get all available Xero tenant connections with company names and IDs.
 Search for contacts by name within a tenant.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `contact_name` (required): Contact name to search for
 
@@ -215,7 +180,6 @@ Search for contacts by name within a tenant.
 Retrieve aged payables report for a specific contact.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `contact_id` (required): Contact ID (GUID)
 - `date` (optional): Report date (YYYY-MM-DD format)
@@ -227,7 +191,6 @@ Retrieve aged payables report for a specific contact.
 Retrieve aged receivables report for a specific contact.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `contact_id` (required): Contact ID (GUID)
 - `date` (optional): Report date (YYYY-MM-DD format)
@@ -239,7 +202,6 @@ Retrieve aged receivables report for a specific contact.
 Access balance sheet report with optional period comparisons.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `date` (optional): Report date (YYYY-MM-DD format)
 - `periods` (optional): Number of periods to compare (1-12)
@@ -251,7 +213,6 @@ Access balance sheet report with optional period comparisons.
 Retrieve profit and loss statement with flexible parameters.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `date` (optional): Report date (YYYY-MM-DD format)
 - `from_date` (optional): Period start date
@@ -266,7 +227,6 @@ Retrieve profit and loss statement with flexible parameters.
 Access trial balance report with payment filtering options.
 
 **Input:**
-- `company_name` (required): Company name to identify tenant
 - `tenant_id` (required): Xero tenant ID
 - `date` (optional): Report date (defaults to last month end)
 - `payments_only` (optional): Include only payments (boolean)

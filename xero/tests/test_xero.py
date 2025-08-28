@@ -3,24 +3,17 @@ import asyncio
 from context import xero
 from autohive_integrations_sdk import ExecutionContext
 
-async def test_get_tenant_by_company_name():
 async def test_get_available_connections():
     """
-    Test the get_tenant_by_company_name action
     Test the get_available_connections action
     """
     # Setup mock auth object (platform auth for Xero)
     auth = {}  # Platform auth tokens are handled automatically by ExecutionContext
 
-    inputs = {
-        "company_name": "Test Company"
-    }
     inputs = {}  # No inputs required for get_available_connections
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await xero.execute_action("get_tenant_by_company_name", inputs, context)
-            print(f"Success: Found tenant - ID: {result.get('tenant_id')}, Name: {result.get('tenant_name')}")
             result = await xero.execute_action("get_available_connections", inputs, context)
             print(f"Success: Retrieved {len(result.get('companies', []))} available connections")
             if result.get('companies'):
@@ -28,18 +21,13 @@ async def test_get_available_connections():
                     print(f"  - ID: {company.get('tenant_id')}, Name: {company.get('company_name')}")
             return result
         except Exception as e:
-            print(f"Error testing get_tenant_by_company_name: {str(e)}")
             print(f"Error testing get_available_connections: {str(e)}")
             return None
 
 async def test_get_aged_payables_with_specific_tenant():
     """
-    Test fetching aged payables with a specific company's tenant
     Test fetching aged payables with a specific tenant ID
     """
-    # First get tenant info
-    tenant_result = await test_get_tenant_by_company_name()
-    if not tenant_result:
     # First get available connections
     connections_result = await test_get_available_connections()
     if not connections_result or not connections_result.get('companies'):
@@ -52,7 +40,6 @@ async def test_get_aged_payables_with_specific_tenant():
 
     auth = {}
     inputs = {
-        "company_name": "Test Company",
         "tenant_id": tenant_id,
         "contact_id": "test-contact-id-123"  # Replace with actual contact ID
     }
@@ -70,12 +57,9 @@ async def main():
     print("Testing Xero Integration")
     print("==================================")
     
-    print("\n1. Testing get_tenant_by_company_name...")
-    await test_get_tenant_by_company_name()
     print("\n1. Testing get_available_connections...")
     await test_get_available_connections()
     
-    print("\n2. Testing aged payables with tenant...")
     print("\n2. Testing aged payables with tenant ID...")
     await test_get_aged_payables_with_specific_tenant()
 
