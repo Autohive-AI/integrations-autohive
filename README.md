@@ -29,7 +29,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Xero
 
-[xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features tenant lookup by company name, contact search by name, and retrieval of accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.
+[xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features retrieving available tenant connections, contact search by name within tenants, and retrieval of comprehensive accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.
 
 ### Reddit
 
