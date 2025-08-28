@@ -1,5 +1,5 @@
 {
-    "name": "xero",
+    "name": "Xero",
     "version": "1.0.0",
     "description": "Xero accounting integration for aged payables and receivables reporting",
     "entry_point": "xero.py",
