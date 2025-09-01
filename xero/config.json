@@ -390,11 +390,11 @@
                     },
                     "where": {
                         "type": "string",
-                        "description": "Optional where clause for filtering accounts"
+                        "description": "Optional Xero where filter clause. Filter by any element using Xero syntax. Examples: Status=\"ACTIVE\", Type=\"REVENUE\", Code>=\"4000\". Use range operators (>, >=, <, <=) and combine with AND/OR operators."
                     },
                     "order": {
                         "type": "string",
-                        "description": "Optional order parameter for sorting"
+                        "description": "Optional Xero orderby parameter. Order by any element returned. Examples: \"Code ASC\", \"Name DESC\", \"Type ASC\". Multi-field sorting: \"Type ASC, Code ASC\". Note: Some fields are optimized for better performance."
                     }
                 },
                 "required": ["tenant_id"]
@@ -422,11 +422,19 @@
                     },
                     "where": {
                         "type": "string",
-                        "description": "Optional where clause for date filtering"
+                        "description": "Optional Xero where filter clause. Optimized fields include PaymentType, Status, Date, Invoice.InvoiceId, Reference. Examples: PaymentType=\"ACCRECPAYMENT\", Status=\"AUTHORISED\", Date>=DateTime(2020,01,01), Reference=\"INV-0001\". Date ranges: Date>=DateTime(2020,01,01) AND Date<DateTime(2020,02,01). Use AND/OR operators and range operators (>, >=, <, <=)."
                     },
                     "order": {
                         "type": "string",
-                        "description": "Optional order parameter for sorting"
+                        "description": "Optional Xero orderby parameter. Optimized fields for ordering: UpdatedDateUTC, Date, PaymentId. Examples: \"UpdatedDateUTC ASC\", \"Date DESC\", \"PaymentId ASC\". Multi-field sorting: \"Date DESC, PaymentId ASC\". Default order is UpdatedDateUTC ASC, PaymentId ASC."
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Optional page number for pagination. Default is 100 payments per page when used alone."
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "Optional page size for pagination (1-1000). Used with page parameter. Examples: page=1&pageSize=250."
                     }
                 },
                 "required": ["tenant_id"]
@@ -454,11 +462,11 @@
                     },
                     "where": {
                         "type": "string",
-                        "description": "Optional where clause for date filtering"
+                        "description": "Optional Xero where filter clause. Optimized fields include Type, Status, Date, Contact.ContactID. Examples: Type=\"RECEIVE\", Status=\"AUTHORISED\", Date>=DateTime(2020,01,01), Contact.ContactID=guid(\"96988e67-ecf9-466d-bfbf-0afa1725a649\"). Date ranges: Date>=DateTime(2020,01,01) AND Date<DateTime(2020,02,01). Use AND/OR operators and range operators (>, >=, <, <=)."
                     },
                     "order": {
                         "type": "string",
-                        "description": "Optional order parameter for sorting"
+                        "description": "Optional Xero orderby parameter. Optimized fields for ordering: BankTransactionID, UpdatedDateUTC, Date. Examples: \"Date ASC\", \"UpdatedDateUTC DESC\", \"BankTransactionID ASC\". Multi-field sorting: \"Date DESC, BankTransactionID ASC\". Default order is UpdatedDateUTC ASC, BankTransactionID ASC."
                     },
                     "page": {
                         "type": "integer",
