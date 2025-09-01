@@ -12,6 +12,9 @@ A comprehensive integration for accessing Xero accounting data including financi
 - **Get Balance Sheet** - Access balance sheet reports with optional period comparisons using tenant ID
 - **Get Profit and Loss** - Retrieve P&L statements with flexible date ranges and timeframes using tenant ID
 - **Get Trial Balance** - Access trial balance reports with optional payment filtering using tenant ID
+- **Get Accounts** - Retrieve chart of accounts to classify line items (revenue, expenses, assets, etc.) using tenant ID
+- **Get Payments** - Fetch payment records for invoices/bills (customer receipts, supplier payments, refunds) using tenant ID
+- **Get Bank Transactions** - Access bank transactions not tied to invoices (CapEx, financing, operating expenses) using tenant ID
 
 ## Setup
 
@@ -103,6 +106,46 @@ result = await integration.execute_action("get_profit_and_loss", {
 
 for report in result["reports"]:
     print(f"P&L Report: {report['report_name']}")
+```
+
+### Get Accounts
+```python
+# Get chart of accounts for line item classification using tenant ID
+result = await integration.execute_action("get_accounts", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Status==\"ACTIVE\"",
+    "order": "Code ASC"
+})
+
+for account in result["Accounts"]:
+    print(f"Account: {account['Name']} ({account['Code']}) - Type: {account['Type']}")
+```
+
+### Get Payments
+```python
+# Get payment records with date filtering using tenant ID
+result = await integration.execute_action("get_payments", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Date>=DateTime(2025,01,01) AND Date<=DateTime(2025,01,31)",
+    "order": "Date DESC"
+})
+
+for payment in result["Payments"]:
+    print(f"Payment: {payment['Amount']} on {payment['Date']} - Status: {payment['Status']}")
+```
+
+### Get Bank Transactions
+```python
+# Get bank transactions not tied to invoices using tenant ID
+result = await integration.execute_action("get_bank_transactions", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Date>=DateTime(2025,01,01)",
+    "order": "Date DESC",
+    "page": 1
+})
+
+for transaction in result["BankTransactions"]:
+    print(f"Transaction: {transaction['Total']} - {transaction['Reference']}")
 ```
 
 ## Testing
@@ -233,6 +276,40 @@ Access trial balance report with payment filtering options.
 
 **Output:**
 - `reports`: Array containing trial balance report data
+
+#### `get_accounts`
+Retrieve chart of accounts to classify line items by type (revenue, expenses, assets, etc.).
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `where` (optional): Filter clause for accounts (e.g., Status=="ACTIVE")
+- `order` (optional): Sort parameter (e.g., Code ASC)
+
+**Output:**
+- `accounts`: Array containing Xero account objects with ID, name, code, type, and status
+
+#### `get_payments`
+Fetch payment records for invoices and bills including customer receipts and supplier payments.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `where` (optional): Filter clause for date ranges (e.g., Date>=DateTime(2025,01,01))
+- `order` (optional): Sort parameter (e.g., Date DESC)
+
+**Output:**
+- `payments`: Array containing Xero payment objects with amount, date, status, and references
+
+#### `get_bank_transactions`
+Access bank transactions not tied to invoices, covering CapEx, financing, and other operating expenses.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `where` (optional): Filter clause for date ranges
+- `order` (optional): Sort parameter
+- `page` (optional): Page number for pagination
+
+**Output:**
+- `bank_transactions`: Array containing Xero bank transaction objects with amounts, references, and line items
 
 ## Error Handling
 

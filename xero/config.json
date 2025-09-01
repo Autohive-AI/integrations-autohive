@@ -6,7 +6,7 @@
     "auth": {
         "type": "platform",
         "provider": "Xero",
-        "scopes": ["accounting.reports.read","accounting.contacts.read", "offline_access"]
+        "scopes": ["accounting.reports.read", "accounting.contacts.read", "accounting.settings.read", "accounting.transactions.read", "offline_access"]
     },
     "actions": {
         "get_available_connections": {
@@ -376,6 +376,106 @@
                     }
                 },
                 "description": "Raw Xero API response for Trial Balance report"
+            }
+        },
+        "get_accounts": {
+            "display_name": "Get Accounts",
+            "description": "Retrieves accounts from Xero to classify line items (revenue, expenses, fixed assets, loans, equity/dividends, GST)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional where clause for filtering accounts"
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional order parameter for sorting"
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "accounts": {
+                        "type": "array",
+                        "description": "Array of Xero accounts"
+                    }
+                },
+                "description": "Raw Xero API response for Accounts"
+            }
+        },
+        "get_payments": {
+            "display_name": "Get Payments",
+            "description": "Retrieves payments from Xero for cash on invoices/bills (customer receipts, supplier payments, cash refunds)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional where clause for date filtering"
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional order parameter for sorting"
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "payments": {
+                        "type": "array",
+                        "description": "Array of Xero payments"
+                    }
+                },
+                "description": "Raw Xero API response for Payments"
+            }
+        },
+        "get_bank_transactions": {
+            "display_name": "Get Bank Transactions",
+            "description": "Retrieves bank transactions from Xero for Receive/Spend Money not tied to invoices (CapEx, financing, other operating)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional where clause for date filtering"
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional order parameter for sorting"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Optional page number for pagination"
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "bank_transactions": {
+                        "type": "array",
+                        "description": "Array of Xero bank transactions"
+                    }
+                },
+                "description": "Raw Xero API response for Bank Transactions"
             }
         }
     }
