@@ -1,0 +1,470 @@
+{
+    "name": "GoogleLooker",
+    "version": "1.0.0",
+    "description": "Looker integration with custom authentication",
+    "entry_point": "google_looker.py",
+    "auth": {
+        "type": "custom",
+        "title": "Looker API Configuration",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string",
+                    "label": "Base URL",
+                    "help_text": "Please enter your Looker instance base URL (e.g., https://your-company.looker.com)"
+                },
+                "client_id": {
+                    "type": "string",
+                    "label": "Client ID",
+                    "help_text": "Please enter your Looker API client ID"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "Client Secret",
+                    "help_text": "Please enter your Looker API client secret"
+                }
+            }
+        }
+    },
+    "actions": {
+        "test_connection": {
+            "display_name": "Test Connection",
+            "description": "Test the connection to Looker API",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Connection status"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Status message"
+                    }
+                }
+            }
+        },
+        "list_dashboards": {
+            "display_name": "List Dashboards",
+            "description": "List all dashboards from Looker",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboards": {
+                        "type": "array",
+                        "description": "List of dashboards",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "get_dashboard": {
+            "display_name": "Get Dashboard",
+            "description": "Get a specific dashboard by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboard_id": {
+                        "type": "string",
+                        "description": "Dashboard ID"
+                    },
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": ["dashboard_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboard": {
+                        "type": "object",
+                        "description": "Dashboard data"
+                    }
+                }
+            }
+        },
+        "run_query": {
+            "display_name": "Run Query",
+            "description": "Run a query and get results",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query_id": {
+                        "type": "string",
+                        "description": "Query ID"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "description": "Result format (json, csv, etc.)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Result limit"
+                    },
+                    "apply_formatting": {
+                        "type": "boolean",
+                        "description": "Apply formatting"
+                    },
+                    "apply_vis": {
+                        "type": "boolean",
+                        "description": "Apply visualization"
+                    }
+                },
+                "required": ["query_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "query_results": {
+                        "type": "array",
+                        "description": "Query results",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "create_query": {
+            "display_name": "Create Query",
+            "description": "Create a new query",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "string",
+                        "description": "Model name"
+                    },
+                    "explore": {
+                        "type": "string",
+                        "description": "Explore name"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "description": "Dimensions",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "measures": {
+                        "type": "array",
+                        "description": "Measures",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "filters": {
+                        "type": "object",
+                        "description": "Query filters as key-value pairs"
+                    },
+                    "sorts": {
+                        "type": "array",
+                        "description": "Sort orders",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Result limit"
+                    }
+                },
+                "required": ["model", "explore"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "object",
+                        "description": "Created query"
+                    }
+                }
+            }
+        },
+        "list_looks": {
+            "display_name": "List Looks",
+            "description": "List all looks",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Page number"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "description": "Results per page"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "looks": {
+                        "type": "array",
+                        "description": "List of looks",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "get_look": {
+            "display_name": "Get Look",
+            "description": "Get a specific look by ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "look_id": {
+                        "type": "string",
+                        "description": "Look ID"
+                    },
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": ["look_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "look": {
+                        "type": "object",
+                        "description": "Look data"
+                    }
+                }
+            }
+        },
+        "run_look": {
+            "display_name": "Run Look",
+            "description": "Run a look and get results",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "look_id": {
+                        "type": "string",
+                        "description": "Look ID"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "description": "Result format (json, csv, etc.)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Result limit"
+                    },
+                    "apply_formatting": {
+                        "type": "boolean",
+                        "description": "Apply formatting"
+                    },
+                    "apply_vis": {
+                        "type": "boolean",
+                        "description": "Apply visualization"
+                    }
+                },
+                "required": ["look_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "look_results": {
+                        "type": "array",
+                        "description": "Look results",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "list_models": {
+            "display_name": "List Models",
+            "description": "List all LookML models",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "models": {
+                        "type": "array",
+                        "description": "List of models",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "get_model": {
+            "display_name": "Get Model",
+            "description": "Get a specific LookML model",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Model name"
+                    },
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": ["model_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "object",
+                        "description": "Model data"
+                    }
+                }
+            }
+        },
+        "create_sql_query": {
+            "display_name": "Create SQL Query",
+            "description": "Create a SQL Runner Query using platform-provided LLM settings.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "sql": {
+                        "type": "string",
+                        "description": "SQL query string"
+                    },
+                    "vis_config": {
+                        "type": "object",
+                        "description": "Optional visualization configuration object"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "description": "Slug for the SQL query"
+                    }
+                },
+                "required": ["sql"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "sql_query": {
+                        "type": "object",
+                        "description": "Created SQL query object with all Looker API response fields"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                }
+            }
+        },
+        "run_sql_query": {
+            "display_name": "Run SQL Query",
+            "description": "Execute a SQL Runner query in a given result format",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "Slug of the SQL query to run"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "description": "Format of result, options are: inline_json, json, json_detail, json_fe, json_bi, csv, html, md, txt, xlsx, gsxml, sql, odc, json_label",
+                        "default": "json"
+                    },
+                    "download": {
+                        "type": "string",
+                        "description": "Set to true to make HTTP response behave as downloadable attachment instead of inline content"
+                    }
+                },
+                "required": ["slug"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "query_results": {
+                        "type": "string",
+                        "description": "Query execution results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                }
+            }
+        },
+        "list_connections": {
+            "display_name": "List Connections",
+            "description": "List all database connections in Looker",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "connections": {
+                        "type": "array",
+                        "description": "List of database connections",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                }
+            }
+        }
+    }
+}
