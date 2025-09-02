@@ -366,3 +366,147 @@ class GetTrialBalanceAction(ActionHandler):
                 
         except Exception as e:
             raise Exception(f"Failed to fetch trial balance report: {str(e)}")
+
+
+@xero.action("get_accounts")
+class GetAccountsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Fetches accounts from Xero API to classify line items (revenue, expenses, fixed assets, loans, equity/dividends, GST)
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        
+        try:
+            
+            # Build URL with parameters
+            url = "https://api.xero.com/api.xro/2.0/Accounts"
+            params = {}
+            
+            # Add optional where parameter for filtering
+            if inputs.get("where"):
+                params["where"] = inputs["where"]
+            
+            # Add optional order parameter
+            if inputs.get("order"):
+                params["order"] = inputs["order"]
+            
+            # Make authenticated request to Xero API
+            response = await context.fetch(
+                url,
+                method="GET",
+                params=params,
+                headers={
+                    "Accept": "application/json",
+                    "xero-tenant-id": tenant_id
+                }
+            )
+            
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+            
+            return response
+                
+        except Exception as e:
+            raise Exception(f"Failed to fetch accounts: {str(e)}")
+
+
+@xero.action("get_payments")
+class GetPaymentsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Fetches payments from Xero API for cash on invoices/bills (customer receipts, supplier payments, cash refunds)
+        Supports date filtering with where clause
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        
+        try:
+            
+            # Build URL with parameters
+            url = "https://api.xero.com/api.xro/2.0/Payments"
+            params = {}
+            
+            # Add optional where parameter for date filtering
+            if inputs.get("where"):
+                params["where"] = inputs["where"]
+            
+            # Add optional order parameter
+            if inputs.get("order"):
+                params["order"] = inputs["order"]
+            
+            # Make authenticated request to Xero API
+            response = await context.fetch(
+                url,
+                method="GET",
+                params=params,
+                headers={
+                    "Accept": "application/json",
+                    "xero-tenant-id": tenant_id
+                }
+            )
+            
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+            
+            return response
+                
+        except Exception as e:
+            raise Exception(f"Failed to fetch payments: {str(e)}")
+
+
+@xero.action("get_bank_transactions")
+class GetBankTransactionsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Fetches bank transactions from Xero API for Receive/Spend Money not tied to invoices (CapEx, financing, other operating)
+        Supports date filtering with where clause and pagination
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        
+        try:
+            
+            # Build URL with parameters
+            url = "https://api.xero.com/api.xro/2.0/BankTransactions"
+            params = {}
+            
+            # Add optional where parameter for date filtering
+            if inputs.get("where"):
+                params["where"] = inputs["where"]
+            
+            # Add optional order parameter
+            if inputs.get("order"):
+                params["order"] = inputs["order"]
+            
+            # Add optional page parameter for pagination
+            if inputs.get("page"):
+                params["page"] = str(inputs["page"])
+            
+            # Make authenticated request to Xero API
+            response = await context.fetch(
+                url,
+                method="GET",
+                params=params,
+                headers={
+                    "Accept": "application/json",
+                    "xero-tenant-id": tenant_id
+                }
+            )
+            
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+            
+            return response
+                
+        except Exception as e:
+            raise Exception(f"Failed to fetch bank transactions: {str(e)}")

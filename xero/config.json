@@ -6,7 +6,7 @@
     "auth": {
         "type": "platform",
         "provider": "Xero",
-        "scopes": ["accounting.reports.read","accounting.contacts.read", "offline_access"]
+        "scopes": ["accounting.reports.read", "accounting.contacts.read", "accounting.settings.read", "accounting.transactions.read", "offline_access"]
     },
     "actions": {
         "get_available_connections": {
@@ -376,6 +376,114 @@
                     }
                 },
                 "description": "Raw Xero API response for Trial Balance report"
+            }
+        },
+        "get_accounts": {
+            "display_name": "Get Accounts",
+            "description": "Retrieves accounts from Xero to classify line items (revenue, expenses, fixed assets, loans, equity/dividends, GST)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional Xero where filter clause. Filter by any element using Xero syntax. Examples: Status=\"ACTIVE\", Type=\"REVENUE\", Code>=\"4000\". Use range operators (>, >=, <, <=) and combine with AND/OR operators."
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional Xero orderby parameter. Order by any element returned. Examples: \"Code ASC\", \"Name DESC\", \"Type ASC\". Multi-field sorting: \"Type ASC, Code ASC\". Note: Some fields are optimized for better performance."
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "accounts": {
+                        "type": "array",
+                        "description": "Array of Xero accounts"
+                    }
+                },
+                "description": "Raw Xero API response for Accounts"
+            }
+        },
+        "get_payments": {
+            "display_name": "Get Payments",
+            "description": "Retrieves payments from Xero for cash on invoices/bills (customer receipts, supplier payments, cash refunds)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional Xero where filter clause. Optimized fields include PaymentType, Status, Date, Invoice.InvoiceId, Reference. Examples: PaymentType=\"ACCRECPAYMENT\", Status=\"AUTHORISED\", Date>=DateTime(2020,01,01), Reference=\"INV-0001\". Date ranges: Date>=DateTime(2020,01,01) AND Date<DateTime(2020,02,01). Use AND/OR operators and range operators (>, >=, <, <=)."
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional Xero orderby parameter. Optimized fields for ordering: UpdatedDateUTC, Date, PaymentId. Examples: \"UpdatedDateUTC ASC\", \"Date DESC\", \"PaymentId ASC\". Multi-field sorting: \"Date DESC, PaymentId ASC\". Default order is UpdatedDateUTC ASC, PaymentId ASC."
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Optional page number for pagination. Default is 100 payments per page when used alone."
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "Optional page size for pagination (1-1000). Used with page parameter. Examples: page=1&pageSize=250."
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "payments": {
+                        "type": "array",
+                        "description": "Array of Xero payments"
+                    }
+                },
+                "description": "Raw Xero API response for Payments"
+            }
+        },
+        "get_bank_transactions": {
+            "display_name": "Get Bank Transactions",
+            "description": "Retrieves bank transactions from Xero for Receive/Spend Money not tied to invoices (CapEx, financing, other operating)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "where": {
+                        "type": "string",
+                        "description": "Optional Xero where filter clause. Optimized fields include Type, Status, Date, Contact.ContactID. Examples: Type=\"RECEIVE\", Status=\"AUTHORISED\", Date>=DateTime(2020,01,01), Contact.ContactID=guid(\"96988e67-ecf9-466d-bfbf-0afa1725a649\"). Date ranges: Date>=DateTime(2020,01,01) AND Date<DateTime(2020,02,01). Use AND/OR operators and range operators (>, >=, <, <=)."
+                    },
+                    "order": {
+                        "type": "string",
+                        "description": "Optional Xero orderby parameter. Optimized fields for ordering: BankTransactionID, UpdatedDateUTC, Date. Examples: \"Date ASC\", \"UpdatedDateUTC DESC\", \"BankTransactionID ASC\". Multi-field sorting: \"Date DESC, BankTransactionID ASC\". Default order is UpdatedDateUTC ASC, BankTransactionID ASC."
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Optional page number for pagination"
+                    }
+                },
+                "required": ["tenant_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "bank_transactions": {
+                        "type": "array",
+                        "description": "Array of Xero bank transactions"
+                    }
+                },
+                "description": "Raw Xero API response for Bank Transactions"
             }
         }
     }
