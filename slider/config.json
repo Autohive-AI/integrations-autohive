@@ -695,13 +695,9 @@
                     },
                     "color_set": {
                         "description": "The color that was applied"
-                    },
-                    "follow_master_background": {
-                        "type": "boolean",
-                        "description": "Whether the slide follows master background"
                     }
                 },
-                "required": ["success", "color_set", "follow_master_background"]
+                "required": ["success", "color_set"]
             }
         },
         "set_slide_background_gradient": {
@@ -782,13 +778,9 @@
                     "gradient_stops_applied": {
                         "type": "integer",
                         "description": "Number of gradient stops applied"
-                    },
-                    "follow_master_background": {
-                        "type": "boolean",
-                        "description": "Whether the slide follows master background"
                     }
                 },
-                "required": ["success", "gradient_angle", "gradient_stops_applied", "follow_master_background"]
+                "required": ["success", "gradient_angle", "gradient_stops_applied"]
             }
         },
         "add_background_image_workaround": {
