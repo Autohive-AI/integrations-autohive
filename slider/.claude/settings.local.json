@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:python-pptx.readthedocs.io)",
+      "Read(C:\\Users\\Onil\\Repos\\integrations\\google-drive/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
