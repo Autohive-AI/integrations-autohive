@@ -34,727 +34,348 @@ LAYOUT_MAP = {
     "picture_with_caption": 8
 }
 
-# Chart type mapping
-CHART_TYPE_MAP = {
-    "column_clustered": XL_CHART_TYPE.COLUMN_CLUSTERED,
-    "line": XL_CHART_TYPE.LINE,
-    "pie": XL_CHART_TYPE.PIE,
-    "bar_clustered": XL_CHART_TYPE.BAR_CLUSTERED,
-    "area": XL_CHART_TYPE.AREA,
-    "xy_scatter": XL_CHART_TYPE.XY_SCATTER
-}
-
-def hex_to_rgb(hex_color: str) -> tuple:
+def get_rgb_from_hex(hex_color):
     """Convert hex color to RGB tuple"""
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
+def hex_to_rgb(hex_color):
+    """Convert hex color to RGB tuple"""
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
 # ---- Action Handlers ----
 
-@slider.action("create_presentation")
+@slider.action("create_complete_presentation")
 class CreatePresentationAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        template_path = inputs.get("template_path")
-        title = inputs.get("title")
-        subtitle = inputs.get("subtitle")
+        import time
+        start_time = time.time()
         
-        # Create presentation from template or blank
+        # Extract main inputs
+        presentation_metadata = inputs.get("presentation_metadata", {})
+        slides_data = inputs.get("slides", [])
+        global_settings = inputs.get("global_settings", {})
+        processing_options = inputs.get("processing_options", {})
+        
+        # Create presentation
+        template_path = presentation_metadata.get("template_path")
         if template_path and os.path.exists(template_path):
             prs = Presentation(template_path)
         else:
             prs = Presentation()
         
-        # Add title slide if title is provided
-        if title:
-            if len(prs.slides) == 0:
-                # Add title slide
-                title_slide_layout = prs.slide_layouts[0]
-                slide = prs.slides.add_slide(title_slide_layout)
-            else:
-                slide = prs.slides[0]
-            
-            # Set title
-            if slide.shapes.title:
-                slide.shapes.title.text = title
-            
-            # Set subtitle if provided
-            if subtitle and len(slide.placeholders) > 1:
-                slide.placeholders[1].text = subtitle
-        
-        # Generate unique ID and store presentation
+        # Generate unique presentation ID
         presentation_id = str(uuid.uuid4())
         presentations[presentation_id] = prs
         
+        slides_created = 0
+        elements_created = 0
+        warnings = []
+        
+        # Create slides
+        for slide_data in slides_data:
+            try:
+                # Always use blank layout (layout index 6)
+                slide_layout = prs.slide_layouts[6]  # Force blank layout
+                slide = prs.slides.add_slide(slide_layout)
+                slides_created += 1
+                
+                # Apply background if specified
+                background = slide_data.get("background")
+                if background:
+                    try:
+                        self._apply_background(slide, background, prs)
+                    except Exception as e:
+                        warnings.append(f"Failed to apply background to slide {slides_created}: {str(e)}")
+                
+                # Add elements
+                elements = slide_data.get("elements", [])
+                for element in elements:
+                    try:
+                        element_type = element.get("element_type")
+                        
+                        if element_type == "text":
+                            self._add_text_element(slide, element)
+                        elif element_type == "chart":
+                            self._add_chart_element(slide, element)
+                        elif element_type == "table":
+                            self._add_table_element(slide, element)
+                        elif element_type == "image":
+                            self._add_image_element(slide, element)
+                        elif element_type == "bullet_list":
+                            self._add_bullet_list_element(slide, element)
+                        
+                        elements_created += 1
+                    except Exception as e:
+                        warnings.append(f"Failed to add element {element_type} to slide {slides_created}: {str(e)}")
+                        
+            except Exception as e:
+                warnings.append(f"Failed to create slide {len(slides_data)}: {str(e)}")
+        
+        # Save presentation to memory and encode as base64
+        from io import BytesIO
+        buffer = BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        file_content = buffer.getvalue()
+        content_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        processing_time = time.time() - start_time
+        
+        # Determine filename
+        title = presentation_metadata.get("title", "presentation")
+        safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f"{safe_title}.pptx" if safe_title else "presentation.pptx"
+        
         return {
+            "success": True,
             "presentation_id": presentation_id,
-            "slide_count": len(prs.slides)
+            "file": {
+                "content": content_base64,
+                "name": filename,
+                "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            },
+            "slides_created": slides_created,
+            "elements_created": elements_created,
+            "processing_time": processing_time,
+            "warnings": warnings
         }
-
-@slider.action("add_slide")
-class AddSlideAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        layout = inputs.get("layout", "blank")
-        title = inputs.get("title")
-        content = inputs.get("content")
+    
+    def _apply_background(self, slide, background, prs):
+        """Apply background to slide"""
+        bg_type = background.get("type")
+        slide_bg = slide.background
         
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
+        if bg_type == "solid":
+            fill = slide_bg.fill
+            fill.solid()
+            color = background.get("color")
+            
+            if isinstance(color, str) and color.startswith("#"):
+                # Hex color
+                r, g, b = hex_to_rgb(color[1:])
+                fill.fore_color.rgb = RGBColor(r, g, b)
+            elif isinstance(color, dict):
+                if "rgb" in color:
+                    r, g, b = color["rgb"]
+                    fill.fore_color.rgb = RGBColor(r, g, b)
+                elif "theme_color" in color:
+                    theme_map = {
+                        "ACCENT_1": MSO_THEME_COLOR.ACCENT_1,
+                        "ACCENT_2": MSO_THEME_COLOR.ACCENT_2,
+                        "ACCENT_3": MSO_THEME_COLOR.ACCENT_3,
+                        "ACCENT_4": MSO_THEME_COLOR.ACCENT_4,
+                        "ACCENT_5": MSO_THEME_COLOR.ACCENT_5,
+                        "ACCENT_6": MSO_THEME_COLOR.ACCENT_6,
+                    }
+                    theme_color = color.get("theme_color")
+                    if theme_color in theme_map:
+                        fill.fore_color.theme_color = theme_map[theme_color]
+                        
+        elif bg_type == "gradient":
+            fill = slide_bg.fill
+            fill.gradient()
+            
+            angle = background.get("angle", 90)
+            fill.gradient_angle = angle
+            
+        elif bg_type == "image":
+            # Add background image as full-slide picture
+            image_data = background.get("image_data")
+            if image_data:
+                from io import BytesIO
+                image_bytes = base64.b64decode(image_data)
+                image_stream = BytesIO(image_bytes)
+                slide.shapes.add_picture(image_stream, 0, 0, prs.slide_width, prs.slide_height)
+    
+    def _add_text_element(self, slide, element):
+        """Add text element to slide"""
+        text = element.get("text", "")
+        position = element.get("position", {})
+        formatting = element.get("formatting", {})
         
-        prs = presentations[presentation_id]
-        layout_index = LAYOUT_MAP.get(layout, 6)  # Default to blank
-        slide_layout = prs.slide_layouts[layout_index]
-        slide = prs.slides.add_slide(slide_layout)
+        left = Inches(position.get("left", 1))
+        top = Inches(position.get("top", 1))
+        width = Inches(position.get("width", 4))
+        height = Inches(position.get("height", 1))
         
-        # Set title if provided and slide has title placeholder
-        if title and slide.shapes.title:
-            slide.shapes.title.text = title
-        
-        # Set content if provided and slide has content placeholder
-        if content and len(slide.placeholders) > 1:
-            slide.placeholders[1].text = content
-        
-        return {
-            "slide_index": len(prs.slides) - 1,
-            "slide_count": len(prs.slides)
-        }
-
-@slider.action("add_text")
-class AddTextAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        text = inputs["text"]
-        position = inputs["position"]
-        formatting = inputs.get("formatting", {})
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        
-        # Create text box
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
-        
-        txBox = slide.shapes.add_textbox(left, top, width, height)
-        tf = txBox.text_frame
-        tf.text = text
+        # Add text box
+        textbox = slide.shapes.add_textbox(left, top, width, height)
+        text_frame = textbox.text_frame
+        text_frame.text = text
         
         # Apply formatting
-        p = tf.paragraphs[0]
-        if formatting.get("font_size"):
-            p.font.size = Pt(formatting["font_size"])
-        if formatting.get("bold"):
-            p.font.bold = True
-        if formatting.get("italic"):
-            p.font.italic = True
-        if formatting.get("color"):
-            rgb = hex_to_rgb(formatting["color"])
-            p.font.color.rgb = RGBColor(*rgb)
-        
-        return {
-            "shape_id": str(txBox.shape_id)
-        }
-
-@slider.action("add_image")
-class AddImageAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        image_path = inputs["image_path"]
-        position = inputs["position"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        if not os.path.exists(image_path):
-            raise ValueError(f"Image file {image_path} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        
-        # Add image
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        
-        if "width" in position and "height" in position:
-            width = Inches(position["width"])
-            height = Inches(position["height"])
-            pic = slide.shapes.add_picture(image_path, left, top, width, height)
+        if formatting:
+            paragraph = text_frame.paragraphs[0]
+            
+            if "font_size" in formatting:
+                paragraph.font.size = Pt(formatting["font_size"])
+            if "bold" in formatting:
+                paragraph.font.bold = formatting["bold"]
+            if "italic" in formatting:
+                paragraph.font.italic = formatting["italic"]
+            if "color" in formatting and formatting["color"].startswith("#"):
+                r, g, b = hex_to_rgb(formatting["color"][1:])
+                paragraph.font.color.rgb = RGBColor(r, g, b)
+            
+            # Text containment features
+            if "autosize_type" in formatting:
+                autosize_map = {
+                    "NONE": MSO_AUTO_SIZE.NONE,
+                    "SHAPE_TO_FIT_TEXT": MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT,
+                    "TEXT_TO_FIT_SHAPE": MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+                }
+                autosize_type = formatting["autosize_type"]
+                if autosize_type in autosize_map:
+                    text_frame.auto_size = autosize_map[autosize_type]
+            
+            if "word_wrap" in formatting:
+                text_frame.word_wrap = formatting["word_wrap"]
+            
+            if "vertical_anchor" in formatting:
+                anchor_map = {
+                    "TOP": MSO_ANCHOR.TOP,
+                    "MIDDLE": MSO_ANCHOR.MIDDLE,
+                    "BOTTOM": MSO_ANCHOR.BOTTOM
+                }
+                anchor = formatting["vertical_anchor"]
+                if anchor in anchor_map:
+                    text_frame.vertical_anchor = anchor_map[anchor]
+            
+            # Text margins to prevent edge overflow
+            margins = formatting.get("margins", {})
+            if margins:
+                if "left" in margins:
+                    text_frame.margin_left = Inches(margins["left"])
+                if "right" in margins:
+                    text_frame.margin_right = Inches(margins["right"])
+                if "top" in margins:
+                    text_frame.margin_top = Inches(margins["top"])
+                if "bottom" in margins:
+                    text_frame.margin_bottom = Inches(margins["bottom"])
+            else:
+                # Set default margins to prevent text touching edges
+                text_frame.margin_left = Inches(0.1)
+                text_frame.margin_right = Inches(0.1)
+                text_frame.margin_top = Inches(0.05)
+                text_frame.margin_bottom = Inches(0.05)
+            
+            # Auto-fit text to shape if specified
+            fit_text = formatting.get("fit_text", {})
+            if fit_text and "max_size" in fit_text:
+                max_size = fit_text["max_size"]
+                text_frame.fit_text(max_size=max_size)
+            
         else:
-            pic = slide.shapes.add_picture(image_path, left, top)
-        
-        return {
-            "shape_id": str(pic.shape_id)
+            # Even without formatting, set default margins and word wrap
+            text_frame.word_wrap = True
+            text_frame.margin_left = Inches(0.1)
+            text_frame.margin_right = Inches(0.1)
+            text_frame.margin_top = Inches(0.05)
+            text_frame.margin_bottom = Inches(0.05)
+    
+    def _add_chart_element(self, slide, element):
+        """Add chart element to slide"""
+        chart_type_map = {
+            "column_clustered": XL_CHART_TYPE.COLUMN_CLUSTERED,
+            "line": XL_CHART_TYPE.LINE,
+            "pie": XL_CHART_TYPE.PIE,
+            "bar_clustered": XL_CHART_TYPE.BAR_CLUSTERED
         }
-
-@slider.action("add_table")
-class AddTableAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        rows = inputs["rows"]
-        cols = inputs["cols"]
-        position = inputs["position"]
-        data = inputs.get("data", [])
         
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
+        chart_type = element.get("chart_type", "column_clustered")
+        position = element.get("position", {})
+        data = element.get("data", {})
         
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+        left = Inches(position.get("left", 1))
+        top = Inches(position.get("top", 1))
+        width = Inches(position.get("width", 6))
+        height = Inches(position.get("height", 4))
         
-        slide = prs.slides[slide_index]
-        
-        # Create table
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
-        
-        table = slide.shapes.add_table(rows, cols, left, top, width, height).table
-        
-        # Fill table with data if provided
-        for row_idx, row_data in enumerate(data[:rows]):
-            for col_idx, cell_value in enumerate(row_data[:cols]):
-                table.cell(row_idx, col_idx).text = str(cell_value)
-        
-        return {
-            "table_id": f"table_{slide_index}_{len(slide.shapes)}"
-        }
-
-@slider.action("add_chart")
-class AddChartAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        chart_type = inputs["chart_type"]
-        position = inputs["position"]
-        data = inputs["data"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        
-        # Create chart data
+        # Prepare chart data
         chart_data = CategoryChartData()
-        chart_data.categories = data["categories"]
+        categories = data.get("categories", [])
+        series_list = data.get("series", [])
         
-        for series in data["series"]:
+        chart_data.categories = categories
+        for series in series_list:
             chart_data.add_series(series["name"], series["values"])
         
         # Add chart
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
+        slide.shapes.add_chart(
+            chart_type_map.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED),
+            left, top, width, height, chart_data
+        )
+    
+    def _add_table_element(self, slide, element):
+        """Add table element to slide"""
+        rows = element.get("rows", 2)
+        cols = element.get("cols", 2)
+        position = element.get("position", {})
+        data = element.get("data", [])
         
-        chart_type_enum = CHART_TYPE_MAP.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED)
-        chart_shape = slide.shapes.add_chart(chart_type_enum, left, top, width, height, chart_data)
+        left = Inches(position.get("left", 1))
+        top = Inches(position.get("top", 1))
+        width = Inches(position.get("width", 6))
+        height = Inches(position.get("height", 3))
         
-        return {
-            "chart_id": str(chart_shape.shape_id)
-        }
-
-@slider.action("extract_text")
-class ExtractTextAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        file_path = inputs["file_path"]
+        # Add table
+        table_shape = slide.shapes.add_table(rows, cols, left, top, width, height)
+        table = table_shape.table
         
-        if not os.path.exists(file_path):
-            raise ValueError(f"File {file_path} not found")
+        # Populate data
+        for row_idx, row_data in enumerate(data[:rows]):
+            for col_idx, cell_data in enumerate(row_data[:cols]):
+                if row_idx < len(table.rows) and col_idx < len(table.columns):
+                    table.cell(row_idx, col_idx).text = str(cell_data)
+    
+    def _add_image_element(self, slide, element):
+        """Add image element to slide"""
+        image_source = element.get("image_source", {})
+        position = element.get("position", {})
         
-        prs = Presentation(file_path)
-        slides_text = []
-        all_text_parts = []
+        left = Inches(position.get("left", 1))
+        top = Inches(position.get("top", 1))
+        width = Inches(position.get("width", 4)) if "width" in position else None
+        height = Inches(position.get("height", 3)) if "height" in position else None
         
-        for slide_idx, slide in enumerate(prs.slides):
-            slide_text = []
-            
-            for shape in slide.shapes:
-                if not shape.has_text_frame:
-                    continue
-                    
-                for paragraph in shape.text_frame.paragraphs:
-                    text_run = ''.join(run.text for run in paragraph.runs)
-                    if text_run.strip():
-                        slide_text.append(text_run.strip())
-                        all_text_parts.append(text_run.strip())
-            
-            slides_text.append({
-                "slide_index": slide_idx,
-                "text_content": slide_text
-            })
-        
-        return {
-            "slides": slides_text,
-            "all_text": "\n".join(all_text_parts)
-        }
-
-@slider.action("modify_slide")
-class ModifySlideAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        updates = inputs["updates"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        modified = False
-        
-        # Update title if provided
-        if "title" in updates and slide.shapes.title:
-            slide.shapes.title.text = updates["title"]
-            modified = True
-        
-        # Perform text replacements
-        if "replace_text" in updates:
-            for shape in slide.shapes:
-                if not shape.has_text_frame:
-                    continue
-                    
-                for paragraph in shape.text_frame.paragraphs:
-                    for replacement in updates["replace_text"]:
-                        old_text = replacement["old_text"]
-                        new_text = replacement["new_text"]
-                        
-                        paragraph_text = ''.join(run.text for run in paragraph.runs)
-                        if old_text in paragraph_text:
-                            # Replace text in the paragraph
-                            new_paragraph_text = paragraph_text.replace(old_text, new_text)
-                            
-                            # Clear existing runs and add new text
-                            paragraph.clear()
-                            paragraph.text = new_paragraph_text
-                            modified = True
-        
-        return {
-            "modified": modified
-        }
-
-@slider.action("save_presentation")
-class SavePresentationAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        file_path = inputs["file_path"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        
-        # Save presentation to memory buffer instead of disk
-        try:
-            from io import BytesIO
-            buffer = BytesIO()
-            prs.save(buffer)
-            buffer.seek(0)
-            file_content = buffer.getvalue()
-            
-            # Encode as base64
-            content_base64 = base64.b64encode(file_content).decode('utf-8')
-            
-            # Get file name from path
-            file_name = os.path.basename(file_path)
-            
-            return {
-                "saved": True,
-                "file_path": file_path,
-                "file": {
-                    "content": content_base64,
-                    "name": file_name,
-                    "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                }
-            }
-        except Exception as e:
-            return {
-                "saved": False,
-                "file_path": file_path,
-                "file": {
-                    "content": "",
-                    "name": os.path.basename(file_path),
-                    "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                },
-                "error": f"Could not generate presentation for streaming: {str(e)}"
-            }
-
-@slider.action("set_text_autosize")
-class SetTextAutosizeAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        shape_index = inputs["shape_index"]
-        autosize_type = inputs["autosize_type"]
-        word_wrap = inputs.get("word_wrap", None)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
-        
-        shape = slide.shapes[shape_index]
-        if not shape.has_text_frame:
-            raise ValueError("Shape does not have a text frame")
-        
-        text_frame = shape.text_frame
-        
-        # Map string values to MSO_AUTO_SIZE constants
-        autosize_map = {
-            "NONE": MSO_AUTO_SIZE.NONE,
-            "SHAPE_TO_FIT_TEXT": MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT,
-            "TEXT_TO_FIT_SHAPE": MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
-        }
-        
-        if autosize_type not in autosize_map:
-            raise ValueError(f"Invalid autosize_type. Must be one of: {list(autosize_map.keys())}")
-        
-        # Set autosize
-        text_frame.auto_size = autosize_map[autosize_type]
-        
-        # Set word wrap if provided
-        if word_wrap is not None:
-            text_frame.word_wrap = word_wrap
-            
-        return {
-            "success": True,
-            "autosize_type": autosize_type,
-            "word_wrap": text_frame.word_wrap
-        }
-
-@slider.action("fit_text_to_shape")
-class FitTextToShapeAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        shape_index = inputs["shape_index"]
-        max_size = inputs.get("max_size", 48)  # Maximum font size in points
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
-        
-        shape = slide.shapes[shape_index]
-        if not shape.has_text_frame:
-            raise ValueError("Shape does not have a text frame")
-        
-        text_frame = shape.text_frame
-        
-        # Use the fit_text method to automatically size text to fit shape
-        text_frame.fit_text(max_size=max_size)
-        
-        return {
-            "success": True,
-            "max_size": max_size,
-            "auto_size": "TEXT_TO_FIT_SHAPE"
-        }
-
-@slider.action("set_text_margins")
-class SetTextMarginsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        shape_index = inputs["shape_index"]
-        margins = inputs["margins"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
-        
-        shape = slide.shapes[shape_index]
-        if not shape.has_text_frame:
-            raise ValueError("Shape does not have a text frame")
-        
-        text_frame = shape.text_frame
-        
-        # Set margins (values in inches)
-        if "left" in margins:
-            text_frame.margin_left = Inches(margins["left"])
-        if "right" in margins:
-            text_frame.margin_right = Inches(margins["right"])
-        if "top" in margins:
-            text_frame.margin_top = Inches(margins["top"])
-        if "bottom" in margins:
-            text_frame.margin_bottom = Inches(margins["bottom"])
-            
-        return {
-            "success": True,
-            "margins_set": margins
-        }
-
-@slider.action("set_text_alignment")
-class SetTextAlignmentAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        shape_index = inputs["shape_index"]
-        vertical_anchor = inputs.get("vertical_anchor", None)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
-        
-        shape = slide.shapes[shape_index]
-        if not shape.has_text_frame:
-            raise ValueError("Shape does not have a text frame")
-        
-        text_frame = shape.text_frame
-        
-        # Map string values to MSO_ANCHOR constants
-        anchor_map = {
-            "TOP": MSO_ANCHOR.TOP,
-            "MIDDLE": MSO_ANCHOR.MIDDLE,
-            "BOTTOM": MSO_ANCHOR.BOTTOM
-        }
-        
-        if vertical_anchor and vertical_anchor in anchor_map:
-            text_frame.vertical_anchor = anchor_map[vertical_anchor]
-            
-        return {
-            "success": True,
-            "vertical_anchor": vertical_anchor
-        }
-
-@slider.action("set_slide_background_color")
-class SetSlideBackgroundColorAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        color = inputs["color"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        background = slide.background
-        
-        # Set solid color background (this will automatically override master inheritance)
-        fill = background.fill
-        fill.solid()
-        
-        # Handle different color input formats
-        if isinstance(color, dict):
-            if "rgb" in color:
-                # RGB format: {"rgb": [255, 0, 0]}
-                r, g, b = color["rgb"]
-                fill.fore_color.rgb = RGBColor(r, g, b)
-            elif "theme_color" in color:
-                # Theme color format: {"theme_color": "ACCENT_1"}
-                theme_map = {
-                    "ACCENT_1": MSO_THEME_COLOR.ACCENT_1,
-                    "ACCENT_2": MSO_THEME_COLOR.ACCENT_2,
-                    "ACCENT_3": MSO_THEME_COLOR.ACCENT_3,
-                    "ACCENT_4": MSO_THEME_COLOR.ACCENT_4,
-                    "ACCENT_5": MSO_THEME_COLOR.ACCENT_5,
-                    "ACCENT_6": MSO_THEME_COLOR.ACCENT_6,
-                    "BACKGROUND_1": MSO_THEME_COLOR.BACKGROUND_1,
-                    "BACKGROUND_2": MSO_THEME_COLOR.BACKGROUND_2,
-                    "DARK_1": MSO_THEME_COLOR.DARK_1,
-                    "DARK_2": MSO_THEME_COLOR.DARK_2,
-                    "LIGHT_1": MSO_THEME_COLOR.LIGHT_1,
-                    "LIGHT_2": MSO_THEME_COLOR.LIGHT_2
-                }
-                theme_color = color["theme_color"]
-                if theme_color in theme_map:
-                    fill.fore_color.theme_color = theme_map[theme_color]
+        if image_source.get("type") == "base64":
+            image_data = image_source.get("image_data")
+            if image_data:
+                from io import BytesIO
+                image_bytes = base64.b64decode(image_data)
+                image_stream = BytesIO(image_bytes)
+                
+                if width and height:
+                    slide.shapes.add_picture(image_stream, left, top, width, height)
                 else:
-                    raise ValueError(f"Invalid theme color: {theme_color}")
-        elif isinstance(color, str):
-            # Hex format: "#FF0000"
-            if color.startswith("#"):
-                hex_color = color[1:]
-                r = int(hex_color[0:2], 16)
-                g = int(hex_color[2:4], 16)
-                b = int(hex_color[4:6], 16)
-                fill.fore_color.rgb = RGBColor(r, g, b)
+                    slide.shapes.add_picture(image_stream, left, top)
+    
+    def _add_bullet_list_element(self, slide, element):
+        """Add bullet list element to slide"""
+        bullet_items = element.get("bullet_items", [])
+        position = element.get("position", {})
+        
+        left = Inches(position.get("left", 1))
+        top = Inches(position.get("top", 1))
+        width = Inches(position.get("width", 6))
+        height = Inches(position.get("height", 4))
+        
+        # Add text box for bullet list
+        textbox = slide.shapes.add_textbox(left, top, width, height)
+        text_frame = textbox.text_frame
+        text_frame.clear()
+        
+        # Add bullet items
+        for i, item in enumerate(bullet_items):
+            text = item.get("text", "")
+            level = item.get("level", 0)
+            
+            if i == 0:
+                p = text_frame.paragraphs[0]
             else:
-                raise ValueError("String color must be in hex format (e.g., '#FF0000')")
-        else:
-            raise ValueError("Color must be dict with 'rgb'/'theme_color' or hex string")
+                p = text_frame.add_paragraph()
             
-        return {
-            "success": True,
-            "color_set": color
-        }
-
-@slider.action("set_slide_background_gradient")
-class SetSlideBackgroundGradientAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        angle = inputs.get("angle", 90)  # Default 90 degrees (bottom to top)
-        gradient_stops = inputs.get("gradient_stops", [])
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        background = slide.background
-        
-        # Set gradient background (this will automatically override master inheritance)
-        fill = background.fill
-        fill.gradient()
-        
-        # Set gradient angle
-        fill.gradient_angle = angle
-        
-        # Set gradient stops if provided
-        if gradient_stops:
-            stops = fill.gradient_stops
-            # Clear existing stops except first two (minimum required)
-            while len(stops) > 2:
-                stops[-1].remove()
-            
-            for i, stop_info in enumerate(gradient_stops[:len(stops)]):
-                stop = stops[i]
-                if "position" in stop_info:
-                    stop.position = stop_info["position"]
-                if "color" in stop_info:
-                    color_info = stop_info["color"]
-                    if isinstance(color_info, dict) and "rgb" in color_info:
-                        r, g, b = color_info["rgb"]
-                        stop.color.rgb = RGBColor(r, g, b)
-                    elif isinstance(color_info, dict) and "theme_color" in color_info:
-                        theme_map = {
-                            "ACCENT_1": MSO_THEME_COLOR.ACCENT_1,
-                            "ACCENT_2": MSO_THEME_COLOR.ACCENT_2,
-                            "ACCENT_3": MSO_THEME_COLOR.ACCENT_3,
-                            "ACCENT_4": MSO_THEME_COLOR.ACCENT_4,
-                            "ACCENT_5": MSO_THEME_COLOR.ACCENT_5,
-                            "ACCENT_6": MSO_THEME_COLOR.ACCENT_6
-                        }
-                        theme_color = color_info["theme_color"]
-                        if theme_color in theme_map:
-                            stop.color.theme_color = theme_map[theme_color]
-            
-        return {
-            "success": True,
-            "gradient_angle": angle,
-            "gradient_stops_applied": len(gradient_stops) if gradient_stops else 2
-        }
-
-@slider.action("add_background_image_workaround")
-class AddBackgroundImageWorkaroundAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        image_data = inputs["image_data"]  # base64 encoded image
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        
-        # Workaround: Add a picture that covers the entire slide
-        # This simulates a background image since python-pptx doesn't support image fills yet
-        from io import BytesIO
-        import base64
-        
-        # Decode base64 image data
-        image_bytes = base64.b64decode(image_data)
-        image_stream = BytesIO(image_bytes)
-        
-        # Get slide dimensions
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
-        
-        # Add picture that covers entire slide (position at 0,0)
-        picture = slide.shapes.add_picture(image_stream, 0, 0, slide_width, slide_height)
-        
-        # Send picture to back so other elements appear on top
-        # Note: python-pptx doesn't have a direct "send to back" method
-        # The picture will be behind elements added after it
-        
-        return {
-            "success": True,
-            "method": "workaround_full_slide_picture",
-            "picture_width": slide_width,
-            "picture_height": slide_height,
-            "note": "Image added as full-slide picture. Add other elements after this for proper layering."
-        }
-
-@slider.action("reset_slide_background")
-class ResetSlideBackgroundAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
-        
-        slide = prs.slides[slide_index]
-        
-        # Reset to inherit background from master/layout
-        slide.follow_master_background = True
-        
-        return {
-            "success": True,
-            "follow_master_background": True,
-            "note": "Slide background reset to inherit from master/layout"
-        }
-
-
+            p.text = text
+            p.level = min(max(level, 0), 8)
+            p.alignment = PP_ALIGN.LEFT
