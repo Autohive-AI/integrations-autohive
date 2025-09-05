@@ -55,16 +55,13 @@ class SendEmailAction(ActionHandler):
             )
             
             return {
-                "message_id": "sent",  # Graph API doesn't return message ID for sendMail
-                "status": "sent",
                 "result": True
             }
             
         except Exception as e:
             return {
                 "result": False,
-                "error": str(e),
-                "status": "failed"
+                "error": str(e)
             }
 
 @microsoft365.action("create_calendar_event")

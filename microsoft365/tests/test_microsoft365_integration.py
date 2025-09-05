@@ -31,7 +31,6 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         # Verify result
         self.assertTrue(result["result"])
-        self.assertEqual(result["status"], "sent")
         
         # Verify API call
         self.mock_context.fetch.assert_called_once()

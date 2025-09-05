@@ -60,14 +60,6 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "message_id": {
-                        "type": "string",
-                        "description": "The ID of the sent message"
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "Status of the operation"
-                    },
                     "result": {
                         "type": "boolean",
                         "description": "Whether the operation was successful"
