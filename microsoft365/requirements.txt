@@ -1,2 +1,1 @@
-aiohttp>=3.8.0
 autohive_integrations_sdk

@@ -174,7 +174,6 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 
 ## Requirements
 
-*   `aiohttp>=3.8.0`
 *   `autohive_integrations_sdk`
 
 ## Usage Examples
