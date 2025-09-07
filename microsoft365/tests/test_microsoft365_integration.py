@@ -98,11 +98,9 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         handler = microsoft365.UploadFileAction()
         inputs = {
-            "file": {
-                "name": "test.txt",
-                "content": "VGVzdCBjb250ZW50",  # base64 encoded "Test content"
-                "contentType": "text/plain"
-            },
+            "filename": "test.txt",
+            "content": "Test content",
+            "content_type": "text/plain",
             "folder_path": "/Documents"
         }
         
