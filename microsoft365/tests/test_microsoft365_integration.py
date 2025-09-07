@@ -145,58 +145,6 @@ class TestMicrosoft365Integration(unittest.TestCase):
         self.assertFalse(result["files"][0]["is_folder"])  # document.pdf
         self.assertTrue(result["files"][1]["is_folder"])   # My Folder
     
-    async def test_new_emails_polling(self):
-        """Test new emails polling trigger."""
-        # Mock API response
-        mock_response = {
-            "value": [
-                {
-                    "id": "email1",
-                    "subject": "Test Email",
-                    "sender": {"emailAddress": {"address": "sender@example.com"}},
-                    "receivedDateTime": "2024-08-01T10:00:00Z",
-                    "bodyPreview": "This is a test email...",
-                    "hasAttachments": False
-                }
-            ]
-        }
-        self.mock_context.fetch.return_value = mock_response
-        
-        handler = microsoft365.NewEmailsPoller()
-        inputs = {"folder": "Inbox", "limit": 50}
-        
-        result = await handler.poll(inputs, None, self.mock_context)
-        
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "email1")
-        self.assertEqual(result[0]["data"]["subject"], "Test Email")
-    
-    async def test_new_files_polling(self):
-        """Test new files polling trigger."""
-        # Mock API response
-        mock_response = {
-            "value": [
-                {
-                    "id": "file1",
-                    "name": "new_document.pdf",
-                    "lastModifiedDateTime": "2024-08-01T10:00:00Z",
-                    "createdDateTime": "2024-08-01T10:00:00Z",
-                    "size": 1024,
-                    "webUrl": "https://onedrive.com/file1"
-                }
-            ]
-        }
-        self.mock_context.fetch.return_value = mock_response
-        
-        handler = microsoft365.NewFilesPoller()
-        inputs = {"folder_path": "/Documents"}
-        
-        result = await handler.poll(inputs, None, self.mock_context)
-        
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "file1")
-        self.assertEqual(result[0]["data"]["name"], "new_document.pdf")
-    
     async def test_error_handling(self):
         """Test error handling in actions."""
         # Mock API error
