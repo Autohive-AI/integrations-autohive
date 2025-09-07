@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 import json
-from .context import microsoft365
+from context import microsoft365
 
 class TestMicrosoft365Integration(unittest.TestCase):
     
