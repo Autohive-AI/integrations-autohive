@@ -185,9 +185,9 @@ class ListFilesAction(ActionHandler):
                     "id": item["id"],
                     "name": item["name"],
                     "size": item.get("size", 0),
-                    "modified_time": item["lastModifiedDateTime"],
-                    "web_url": item["webUrl"],
-                    "is_folder": "folder" in item
+                    "lastModifiedDateTime": item["lastModifiedDateTime"],
+                    "webUrl": item["webUrl"],
+                    "folder": item.get("folder")
                 })
             
             return {
@@ -320,14 +320,14 @@ class ListCalendarEventsAction(ActionHandler):
                 events.append({
                     "id": event["id"],
                     "subject": event.get("subject", ""),
-                    "start_time": event["start"]["dateTime"],
-                    "end_time": event["end"]["dateTime"],
+                    "start": event["start"],
+                    "end": event["end"],
                     "location": event.get("location", {}).get("displayName", ""),
-                    "body_preview": event.get("bodyPreview", ""),
+                    "bodyPreview": event.get("bodyPreview", ""),
                     "organizer": organizer_email,
                     "attendees": attendees,
-                    "web_link": event["webLink"],
-                    "is_all_day": event.get("isAllDay", False)
+                    "webLink": event["webLink"],
+                    "isAllDay": event.get("isAllDay", False)
                 })
             
             return {
@@ -384,13 +384,12 @@ class ListEmailsAction(ActionHandler):
                 emails.append({
                     "id": email["id"],
                     "subject": email.get("subject", ""),
-                    "sender": email["sender"]["emailAddress"]["address"],
-                    "sender_name": email["sender"]["emailAddress"]["name"],
-                    "received_time": email["receivedDateTime"],
-                    "body_preview": email.get("bodyPreview", ""),
-                    "body_content": email.get("body", {}).get("content", ""),
-                    "has_attachments": email.get("hasAttachments", False),
-                    "is_read": email.get("isRead", False),
+                    "sender": email["sender"],
+                    "receivedDateTime": email["receivedDateTime"],
+                    "bodyPreview": email.get("bodyPreview", ""),
+                    "body": email.get("body", {}),
+                    "hasAttachments": email.get("hasAttachments", False),
+                    "isRead": email.get("isRead", False),
                     "importance": email.get("importance", "normal")
                 })
             
@@ -432,13 +431,12 @@ class ListEmailsFromContactAction(ActionHandler):
                 emails.append({
                     "id": email["id"],
                     "subject": email.get("subject", ""),
-                    "sender": email["sender"]["emailAddress"]["address"],
-                    "sender_name": email["sender"]["emailAddress"]["name"],
-                    "received_time": email["receivedDateTime"],
-                    "body_preview": email.get("bodyPreview", ""),
-                    "body_content": email.get("body", {}).get("content", ""),
-                    "has_attachments": email.get("hasAttachments", False),
-                    "is_read": email.get("isRead", False),
+                    "sender": email["sender"],
+                    "receivedDateTime": email["receivedDateTime"],
+                    "bodyPreview": email.get("bodyPreview", ""),
+                    "body": email.get("body", {}),
+                    "hasAttachments": email.get("hasAttachments", False),
+                    "isRead": email.get("isRead", False),
                     "importance": email.get("importance", "normal")
                 })
             
@@ -537,16 +535,15 @@ class ReadEmailAction(ActionHandler):
             email_details = {
                 "id": email_response["id"],
                 "subject": email_response.get("subject", ""),
-                "sender": email_response["sender"]["emailAddress"]["address"],
-                "sender_name": email_response["sender"]["emailAddress"]["name"],
-                "received_time": email_response["receivedDateTime"],
-                "body_content": email_response.get("body", {}).get("content", ""),
-                "has_attachments": email_response.get("hasAttachments", False)
+                "sender": email_response["sender"],
+                "receivedDateTime": email_response["receivedDateTime"],
+                "body": email_response.get("body", {}),
+                "hasAttachments": email_response.get("hasAttachments", False)
             }
             
             attachments = []
             
-            if include_attachments and email_details["has_attachments"]:
+            if include_attachments and email_details["hasAttachments"]:
                 # Get attachments
                 attachments_response = await context.fetch(
                     f"{GRAPH_API_BASE}/me/messages/{email_id}/attachments"
@@ -563,7 +560,7 @@ class ReadEmailAction(ActionHandler):
                         "id": attachment_id,
                         "name": attachment_name,
                         "size": attachment_size,
-                        "content_type": content_type,
+                        "contentType": content_type,
                         "message": "Attachment metadata only. Content extraction not supported for this file type."
                     }
                     
@@ -643,13 +640,15 @@ class ReadContactsAction(ActionHandler):
                 
                 contacts.append({
                     "id": contact.get("id", ""),
-                    "display_name": contact.get("displayName", ""),
-                    "given_name": contact.get("givenName", ""),
+                    "displayName": contact.get("displayName", ""),
+                    "givenName": contact.get("givenName", ""),
                     "surname": contact.get("surname", ""),
-                    "email_addresses": email_addresses,
-                    "phone_numbers": phone_numbers,
-                    "company_name": contact.get("companyName", ""),
-                    "job_title": contact.get("jobTitle", "")
+                    "emailAddresses": email_addresses,
+                    "businessPhones": contact.get("businessPhones", []),
+                    "homePhones": contact.get("homePhones", []),
+                    "mobilePhone": contact.get("mobilePhone", ""),
+                    "companyName": contact.get("companyName", ""),
+                    "jobTitle": contact.get("jobTitle", "")
                 })
             
             return {

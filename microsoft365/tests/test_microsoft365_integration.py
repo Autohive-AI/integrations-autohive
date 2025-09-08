@@ -140,8 +140,8 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         self.assertTrue(result["result"])
         self.assertEqual(len(result["files"]), 2)
-        self.assertFalse(result["files"][0]["is_folder"])  # document.pdf
-        self.assertTrue(result["files"][1]["is_folder"])   # My Folder
+        self.assertIsNone(result["files"][0]["folder"])     # document.pdf (no folder facet)
+        self.assertIsNotNone(result["files"][1]["folder"]) # My Folder (has folder facet)
     
     async def test_error_handling(self):
         """Test error handling in actions."""

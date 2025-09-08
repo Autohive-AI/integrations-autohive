@@ -146,7 +146,9 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 
 *   **Description:** Upload files to OneDrive with folder support
 *   **Inputs:**
-    *   `file`: File object with name, content (base64), and contentType
+    *   `filename`: Name of the file to upload
+    *   `content`: Base64 encoded file content
+    *   `content_type`: MIME type of the file
     *   `folder_path`: Target folder path in OneDrive (optional)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
@@ -211,11 +213,9 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 
 ```json
 {
-  "file": {
-    "name": "document.pdf",
-    "content": "base64-encoded-file-content",
-    "contentType": "application/pdf"
-  },
+  "filename": "document.pdf",
+  "content": "base64-encoded-file-content",
+  "content_type": "application/pdf",
   "folder_path": "/Documents"
 }
 ```

@@ -224,17 +224,17 @@
                                     "type": "integer",
                                     "description": "File size in bytes"
                                 },
-                                "modified_time": {
+                                "lastModifiedDateTime": {
                                     "type": "string",
                                     "description": "Last modified time"
                                 },
-                                "web_url": {
+                                "webUrl": {
                                     "type": "string",
                                     "description": "Web URL to the file"
                                 },
-                                "is_folder": {
-                                    "type": "boolean",
-                                    "description": "Whether this is a folder"
+                                "folder": {
+                                    "type": "object",
+                                    "description": "Folder facet (present if item is a folder)"
                                 }
                             }
                         }
@@ -364,19 +364,19 @@
                                     "type": "string",
                                     "description": "Event title"
                                 },
-                                "start_time": {
-                                    "type": "string",
-                                    "description": "Event start time"
+                                "start": {
+                                    "type": "object",
+                                    "description": "Event start time and timezone"
                                 },
-                                "end_time": {
-                                    "type": "string",
-                                    "description": "Event end time"
+                                "end": {
+                                    "type": "object",
+                                    "description": "Event end time and timezone"
                                 },
                                 "location": {
                                     "type": "string",
                                     "description": "Event location"
                                 },
-                                "body_preview": {
+                                "bodyPreview": {
                                     "type": "string",
                                     "description": "Preview of event description"
                                 },
@@ -405,11 +405,11 @@
                                         }
                                     }
                                 },
-                                "web_link": {
+                                "webLink": {
                                     "type": "string",
                                     "description": "Web link to the event"
                                 },
-                                "is_all_day": {
+                                "isAllDay": {
                                     "type": "boolean",
                                     "description": "Whether this is an all-day event"
                                 }
@@ -480,30 +480,26 @@
                                     "description": "Email subject"
                                 },
                                 "sender": {
-                                    "type": "string",
-                                    "description": "Sender email address"
+                                    "type": "object",
+                                    "description": "Sender information"
                                 },
-                                "sender_name": {
-                                    "type": "string",
-                                    "description": "Sender display name"
-                                },
-                                "received_time": {
+                                "receivedDateTime": {
                                     "type": "string",
                                     "description": "Time email was received"
                                 },
-                                "body_preview": {
+                                "bodyPreview": {
                                     "type": "string",
                                     "description": "Preview of email body"
                                 },
-                                "body_content": {
-                                    "type": "string",
-                                    "description": "Full email body content"
+                                "body": {
+                                    "type": "object",
+                                    "description": "Email body with content and type"
                                 },
-                                "has_attachments": {
+                                "hasAttachments": {
                                     "type": "boolean",
                                     "description": "Whether email has attachments"
                                 },
-                                "is_read": {
+                                "isRead": {
                                     "type": "boolean",
                                     "description": "Whether email has been read"
                                 },
@@ -567,30 +563,26 @@
                                     "description": "Email subject"
                                 },
                                 "sender": {
-                                    "type": "string",
-                                    "description": "Sender email address"
+                                    "type": "object",
+                                    "description": "Sender information"
                                 },
-                                "sender_name": {
-                                    "type": "string",
-                                    "description": "Sender display name"
-                                },
-                                "received_time": {
+                                "receivedDateTime": {
                                     "type": "string",
                                     "description": "Time email was received"
                                 },
-                                "body_preview": {
+                                "bodyPreview": {
                                     "type": "string",
                                     "description": "Preview of email body"
                                 },
-                                "body_content": {
-                                    "type": "string",
-                                    "description": "Full email body content"
+                                "body": {
+                                    "type": "object",
+                                    "description": "Email body with content and type"
                                 },
-                                "has_attachments": {
+                                "hasAttachments": {
                                     "type": "boolean",
                                     "description": "Whether email has attachments"
                                 },
-                                "is_read": {
+                                "isRead": {
                                     "type": "boolean",
                                     "description": "Whether email has been read"
                                 },
@@ -728,11 +720,10 @@
                         "properties": {
                             "id": {"type": "string", "description": "Email ID"},
                             "subject": {"type": "string", "description": "Email subject"},
-                            "sender": {"type": "string", "description": "Sender email address"},
-                            "sender_name": {"type": "string", "description": "Sender display name"},
-                            "received_time": {"type": "string", "description": "Time email was received"},
-                            "body_content": {"type": "string", "description": "Full email body content"},
-                            "has_attachments": {"type": "boolean", "description": "Whether email has attachments"}
+                            "sender": {"type": "object", "description": "Sender information"},
+                            "receivedDateTime": {"type": "string", "description": "Time email was received"},
+                            "body": {"type": "object", "description": "Email body with content and type"},
+                            "hasAttachments": {"type": "boolean", "description": "Whether email has attachments"}
                         }
                     },
                     "attachments": {
@@ -744,7 +735,7 @@
                                 "id": {"type": "string", "description": "Attachment ID"},
                                 "name": {"type": "string", "description": "Attachment filename"},
                                 "size": {"type": "integer", "description": "Attachment size in bytes"},
-                                "content_type": {"type": "string", "description": "MIME type of attachment"},
+                                "contentType": {"type": "string", "description": "MIME type of attachment"},
                                 "message": {"type": "string", "description": "Information about attachment handling"}
                             }
                         }
@@ -785,11 +776,11 @@
                                     "type": "string",
                                     "description": "Contact ID"
                                 },
-                                "display_name": {
+                                "displayName": {
                                     "type": "string",
                                     "description": "Contact display name"
                                 },
-                                "given_name": {
+                                "givenName": {
                                     "type": "string",
                                     "description": "First name"
                                 },
@@ -797,7 +788,7 @@
                                     "type": "string",
                                     "description": "Last name"
                                 },
-                                "email_addresses": {
+                                "emailAddresses": {
                                     "type": "array",
                                     "description": "List of email addresses",
                                     "items": {
@@ -814,28 +805,29 @@
                                         }
                                     }
                                 },
-                                "phone_numbers": {
+                                "businessPhones": {
                                     "type": "array",
-                                    "description": "List of phone numbers",
+                                    "description": "List of business phone numbers",
                                     "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "number": {
-                                                "type": "string",
-                                                "description": "Phone number"
-                                            },
-                                            "type": {
-                                                "type": "string",
-                                                "description": "Phone number type"
-                                            }
-                                        }
+                                        "type": "string"
                                     }
                                 },
-                                "company_name": {
+                                "homePhones": {
+                                    "type": "array",
+                                    "description": "List of home phone numbers",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "mobilePhone": {
+                                    "type": "string",
+                                    "description": "Mobile phone number"
+                                },
+                                "companyName": {
                                     "type": "string",
                                     "description": "Company name"
                                 },
-                                "job_title": {
+                                "jobTitle": {
                                     "type": "string",
                                     "description": "Job title"
                                 }
