@@ -475,15 +475,14 @@ class MarkEmailReadAction(ActionHandler):
             )
             
             return {
-                "email_id": email_id,
-                "is_read": is_read,
+                "id": response["id"],
+                "isRead": response["isRead"],
+                "lastModifiedDateTime": response["lastModifiedDateTime"],
                 "result": True
             }
             
         except Exception as e:
             return {
-                "email_id": inputs.get("email_id", ""),
-                "is_read": inputs.get("is_read", False),
                 "result": False,
                 "error": str(e)
             }
@@ -506,20 +505,14 @@ class MoveEmailAction(ActionHandler):
                 json=move_data
             )
             
-            # The response contains the moved email with potentially new ID
-            new_email_id = response.get("id", email_id)
-            
             return {
-                "email_id": email_id,
-                "destination_folder": destination_folder,
-                "new_email_id": new_email_id,
+                "id": response["id"],
+                "parentFolderId": response["parentFolderId"],
                 "result": True
             }
             
         except Exception as e:
             return {
-                "email_id": inputs.get("email_id", ""),
-                "destination_folder": inputs.get("destination_folder", ""),
                 "result": False,
                 "error": str(e)
             }

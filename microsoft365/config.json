@@ -637,13 +637,17 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "email_id": {
+                    "id": {
                         "type": "string",
                         "description": "The ID of the email that was updated"
                     },
-                    "is_read": {
+                    "isRead": {
                         "type": "boolean",
-                        "description": "The new read status"
+                        "description": "The current read status"
+                    },
+                    "lastModifiedDateTime": {
+                        "type": "string",
+                        "description": "When the email was last modified"
                     },
                     "result": {
                         "type": "boolean",
@@ -654,7 +658,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result"]
+                "required": ["result", "id", "isRead", "lastModifiedDateTime"]
             }
         },
         "move_email": {
@@ -677,17 +681,13 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "email_id": {
+                    "id": {
                         "type": "string",
-                        "description": "The ID of the email that was moved"
+                        "description": "The ID of the moved email"
                     },
-                    "destination_folder": {
+                    "parentFolderId": {
                         "type": "string",
-                        "description": "The folder the email was moved to"
-                    },
-                    "new_email_id": {
-                        "type": "string",
-                        "description": "The new email ID after moving (if changed)"
+                        "description": "The ID of the folder the email was moved to"
                     },
                     "result": {
                         "type": "boolean",
@@ -698,7 +698,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result"]
+                "required": ["result", "id", "parentFolderId"]
             }
         },
         "read_email": {
