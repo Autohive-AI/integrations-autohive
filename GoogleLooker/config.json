@@ -1,5 +1,5 @@
 {
-    "name": "GoogleLooker",
+    "name": "Google Looker",
     "version": "1.0.0",
     "description": "Looker integration with custom authentication",
     "entry_point": "google_looker.py",
@@ -29,31 +29,9 @@
         }
     },
     "actions": {
-        "test_connection": {
-            "display_name": "Test Connection",
-            "description": "Test the connection to Looker API",
-            "input_schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "type": "string",
-                        "description": "Connection status"
-                    },
-                    "message": {
-                        "type": "string",
-                        "description": "Status message"
-                    }
-                }
-            }
-        },
         "list_dashboards": {
             "display_name": "List Dashboards",
-            "description": "List all dashboards from Looker",
+            "description": "Retrieve a list of all available dashboards in the Looker instance, including dashboard IDs, titles, and metadata",
             "input_schema": {
                 "type": "object",
                 "properties": {},
@@ -74,13 +52,13 @@
         },
         "get_dashboard": {
             "display_name": "Get Dashboard",
-            "description": "Get a specific dashboard by ID",
+            "description": "Retrieve detailed information about a specific dashboard including its elements, filters, and layout configuration",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "dashboard_id": {
                         "type": "string",
-                        "description": "Dashboard ID"
+                        "description": "The unique identifier of the dashboard to retrieve (obtained from list_dashboards action)"
                     },
                     "fields": {
                         "type": "string",
@@ -94,66 +72,24 @@
                 "properties": {
                     "dashboard": {
                         "type": "object",
-                        "description": "Dashboard data"
+                        "description": "Complete dashboard object containing title, description, elements, filters, layout, and other dashboard metadata"
                     }
                 }
             }
         },
-        "run_query": {
-            "display_name": "Run Query",
-            "description": "Run a query and get results",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "query_id": {
-                        "type": "string",
-                        "description": "Query ID"
-                    },
-                    "result_format": {
-                        "type": "string",
-                        "description": "Result format (json, csv, etc.)"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Result limit"
-                    },
-                    "apply_formatting": {
-                        "type": "boolean",
-                        "description": "Apply formatting"
-                    },
-                    "apply_vis": {
-                        "type": "boolean",
-                        "description": "Apply visualization"
-                    }
-                },
-                "required": ["query_id"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "query_results": {
-                        "type": "array",
-                        "description": "Query results",
-                        "items": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "create_query": {
-            "display_name": "Create Query",
-            "description": "Create a new query",
+        "execute_lookml_query": {
+            "display_name": "Execute LookML Query",
+            "description": "Create and execute a LookML query against a specified model and explore, returning the query results directly",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "model": {
                         "type": "string",
-                        "description": "Model name"
+                        "description": "The LookML model name (use list_models to find available models)"
                     },
                     "explore": {
                         "type": "string",
-                        "description": "Explore name"
+                        "description": "The explore name within the specified model (represents a data table/view to query)"
                     },
                     "dimensions": {
                         "type": "array",
@@ -183,98 +119,11 @@
                     "limit": {
                         "type": "integer",
                         "description": "Result limit"
-                    }
-                },
-                "required": ["model", "explore"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "object",
-                        "description": "Created query"
-                    }
-                }
-            }
-        },
-        "list_looks": {
-            "display_name": "List Looks",
-            "description": "List all looks",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "fields": {
-                        "type": "string",
-                        "description": "Comma-separated list of fields to return"
-                    },
-                    "page": {
-                        "type": "integer",
-                        "description": "Page number"
-                    },
-                    "per_page": {
-                        "type": "integer",
-                        "description": "Results per page"
-                    }
-                },
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "looks": {
-                        "type": "array",
-                        "description": "List of looks",
-                        "items": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "get_look": {
-            "display_name": "Get Look",
-            "description": "Get a specific look by ID",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "look_id": {
-                        "type": "string",
-                        "description": "Look ID"
-                    },
-                    "fields": {
-                        "type": "string",
-                        "description": "Comma-separated list of fields to return"
-                    }
-                },
-                "required": ["look_id"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "look": {
-                        "type": "object",
-                        "description": "Look data"
-                    }
-                }
-            }
-        },
-        "run_look": {
-            "display_name": "Run Look",
-            "description": "Run a look and get results",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "look_id": {
-                        "type": "string",
-                        "description": "Look ID"
                     },
                     "result_format": {
                         "type": "string",
-                        "description": "Result format (json, csv, etc.)"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Result limit"
+                        "description": "Result format (json, csv, etc.)",
+                        "default": "json"
                     },
                     "apply_formatting": {
                         "type": "boolean",
@@ -285,24 +134,29 @@
                         "description": "Apply visualization"
                     }
                 },
-                "required": ["look_id"]
+                "required": ["model", "explore"]
             },
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "look_results": {
-                        "type": "array",
-                        "description": "Look results",
-                        "items": {
-                            "type": "object"
-                        }
+                    "query_results": {
+                        "type": "string",
+                        "description": "Query results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
                     }
                 }
             }
         },
         "list_models": {
             "display_name": "List Models",
-            "description": "List all LookML models",
+            "description": "Retrieve a list of all available LookML models with their explores and dimensions/measures",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -328,7 +182,7 @@
         },
         "get_model": {
             "display_name": "Get Model",
-            "description": "Get a specific LookML model",
+            "description": "Retrieve detailed information about a specific LookML model including all its explores, dimensions, and measures",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -353,9 +207,9 @@
                 }
             }
         },
-        "create_sql_query": {
-            "display_name": "Create SQL Query",
-            "description": "Create a SQL Runner Query using platform-provided LLM settings.",
+        "execute_sql_query": {
+            "display_name": "Execute SQL Query",
+            "description": "Create and execute a raw SQL query against a database connection, returning the query results directly",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -363,44 +217,21 @@
                         "type": "string",
                         "description": "SQL query string"
                     },
+                    "connection_name": {
+                        "type": "string",
+                        "description": "The database connection name to execute the SQL against (use list_connections to find available connections)"
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "description": "Model name (alternative to connection_name)"
+                    },
                     "vis_config": {
                         "type": "object",
                         "description": "Optional visualization configuration object"
                     },
                     "slug": {
                         "type": "string",
-                        "description": "Slug for the SQL query"
-                    }
-                },
-                "required": ["sql"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "sql_query": {
-                        "type": "object",
-                        "description": "Created SQL query object with all Looker API response fields"
-                    },
-                    "result": {
-                        "type": "boolean",
-                        "description": "Operation success status"
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if operation failed"
-                    }
-                }
-            }
-        },
-        "run_sql_query": {
-            "display_name": "Run SQL Query",
-            "description": "Execute a SQL Runner query in a given result format",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "slug": {
-                        "type": "string",
-                        "description": "Slug of the SQL query to run"
+                        "description": "Optional slug for the SQL query"
                     },
                     "result_format": {
                         "type": "string",
@@ -412,11 +243,15 @@
                         "description": "Set to true to make HTTP response behave as downloadable attachment instead of inline content"
                     }
                 },
-                "required": ["slug"]
+                "required": ["sql"]
             },
             "output_schema": {
                 "type": "object",
                 "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "Created SQL query slug"
+                    },
                     "query_results": {
                         "type": "string",
                         "description": "Query execution results"
@@ -434,7 +269,7 @@
         },
         "list_connections": {
             "display_name": "List Connections",
-            "description": "List all database connections in Looker",
+            "description": "Retrieve a list of all available database connections that can be used for SQL queries",
             "input_schema": {
                 "type": "object",
                 "properties": {
