@@ -107,8 +107,8 @@ class CreateCalendarEventAction(ActionHandler):
             )
             
             return {
-                "event_id": response["id"],
-                "web_link": response["webLink"],
+                "id": response["id"],
+                "webLink": response["webLink"],
                 "result": True
             }
             
@@ -145,8 +145,8 @@ class UploadFileAction(ActionHandler):
             )
             
             return {
-                "file_id": response["id"],
-                "web_url": response["webUrl"],
+                "id": response["id"],
+                "webUrl": response["webUrl"],
                 "size": response["size"],
                 "result": True
             }
@@ -253,8 +253,8 @@ class UpdateCalendarEventAction(ActionHandler):
             )
             
             return {
-                "event_id": response["id"],
-                "web_link": response["webLink"],
+                "id": response["id"],
+                "webLink": response["webLink"],
                 "result": True
             }
             

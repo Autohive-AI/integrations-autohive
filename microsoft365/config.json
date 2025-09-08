@@ -111,11 +111,11 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "event_id": {
+                    "id": {
                         "type": "string",
                         "description": "The ID of the created event"
                     },
-                    "web_link": {
+                    "webLink": {
                         "type": "string",
                         "description": "Web link to the event"
                     },
@@ -161,11 +161,11 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "file_id": {
+                    "id": {
                         "type": "string",
                         "description": "The ID of the uploaded file"
                     },
-                    "web_url": {
+                    "webUrl": {
                         "type": "string",
                         "description": "Web URL to access the file"
                     },
@@ -294,11 +294,11 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "event_id": {
+                    "id": {
                         "type": "string",
                         "description": "The ID of the updated event"
                     },
-                    "web_link": {
+                    "webLink": {
                         "type": "string",
                         "description": "Web link to the event"
                     },
