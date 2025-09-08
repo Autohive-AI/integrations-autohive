@@ -82,7 +82,7 @@ class TestMicrosoft365Integration(unittest.TestCase):
         result = await handler.execute(inputs, self.mock_context)
         
         self.assertTrue(result["result"])
-        self.assertEqual(result["event_id"], "event123")
+        self.assertEqual(result["id"], "event123")
         self.assertIn("webLink", result)
     
     async def test_upload_file_success(self):
@@ -107,7 +107,7 @@ class TestMicrosoft365Integration(unittest.TestCase):
         result = await handler.execute(inputs, self.mock_context)
         
         self.assertTrue(result["result"])
-        self.assertEqual(result["file_id"], "file123")
+        self.assertEqual(result["id"], "file123")
         self.assertEqual(result["size"], 1024)
     
     async def test_list_files_success(self):

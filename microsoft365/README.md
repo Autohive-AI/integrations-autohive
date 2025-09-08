@@ -110,7 +110,8 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
     *   `attendees`: List of attendee email addresses (optional)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
-    *   `event_id`: Unique identifier of the created event
+    *   `id`: Unique identifier of the created event
+    *   `webLink`: Web link to the event
     *   `error`: Error message if operation failed
 
 ### Action: `update_calendar_event`
@@ -125,6 +126,8 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
     *   `attendees`: Updated list of attendee email addresses (optional)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
+    *   `id`: Unique identifier of the updated event
+    *   `webLink`: Web link to the event
     *   `error`: Error message if operation failed
 
 ### Action: `list_calendar_events`
@@ -147,7 +150,9 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
     *   `folder_path`: Target folder path in OneDrive (optional)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
-    *   `file_id`: Unique identifier of the uploaded file
+    *   `id`: Unique identifier of the uploaded file
+    *   `webUrl`: Web URL to access the file
+    *   `size`: File size in bytes
     *   `error`: Error message if operation failed
 
 ### Action: `list_files`
