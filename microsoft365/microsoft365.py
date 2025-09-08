@@ -147,7 +147,6 @@ class UploadFileAction(ActionHandler):
             return {
                 "file_id": response["id"],
                 "web_url": response["webUrl"],
-                "download_url": response.get("@microsoft.graph.downloadUrl", ""),
                 "size": response["size"],
                 "result": True
             }

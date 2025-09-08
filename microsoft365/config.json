@@ -169,10 +169,6 @@
                         "type": "string",
                         "description": "Web URL to access the file"
                     },
-                    "download_url": {
-                        "type": "string",
-                        "description": "Direct download URL"
-                    },
                     "size": {
                         "type": "integer",
                         "description": "File size in bytes"
