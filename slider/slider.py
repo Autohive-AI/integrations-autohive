@@ -14,12 +14,15 @@ from pptx.dml.color import RGBColor
 import uuid
 import os
 import base64
+from io import BytesIO
+from PIL import Image
 
 # Create the integration using the config.json
 slider = Integration.load()
 
-# Global dictionary to store presentations in memory
+# Global dictionaries to store presentations and uploaded images in memory
 presentations = {}
+uploaded_images = {}
 
 # Slide layout mapping
 LAYOUT_MAP = {
@@ -44,6 +47,25 @@ CHART_TYPE_MAP = {
     "xy_scatter": XL_CHART_TYPE.XY_SCATTER
 }
 
+def process_files(files: List[Dict[str, Any]]) -> Dict[str, BytesIO]:
+    """Process files from the files parameter and return streams by filename"""
+    processed_files = {}
+    if files:
+        for file_item in files:
+            # Decode base64 content similar to Gmail implementation
+            content_as_string = file_item['content']
+            
+            # Add necessary padding
+            padded_content_string = content_as_string + '=' * (-len(content_as_string) % 4)
+            
+            # Decode the file content
+            file_binary_data = base64.urlsafe_b64decode(padded_content_string.encode('ascii'))
+            file_stream = BytesIO(file_binary_data)
+            
+            processed_files[file_item['name']] = file_stream
+    
+    return processed_files
+
 def hex_to_rgb(hex_color: str) -> tuple:
     """Convert hex color to RGB tuple"""
     hex_color = hex_color.lstrip('#')
@@ -54,13 +76,22 @@ def hex_to_rgb(hex_color: str) -> tuple:
 @slider.action("create_presentation")
 class CreatePresentationAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        template_path = inputs.get("template_path")
         title = inputs.get("title")
         subtitle = inputs.get("subtitle")
+        files = inputs.get("files", [])
+        
+        # Process files to get template if provided
+        processed_files = process_files(files)
         
         # Create presentation from template or blank
-        if template_path and os.path.exists(template_path):
-            prs = Presentation(template_path)
+        template_file = None
+        for filename, file_stream in processed_files.items():
+            if filename.lower().endswith('.pptx'):
+                template_file = file_stream
+                break
+        
+        if template_file:
+            prs = Presentation(template_file)
         else:
             prs = Presentation()
         
@@ -137,15 +168,41 @@ class AddTextAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create text box
+        # Create text box with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
         height = Inches(position["height"])
         
+        # Validate text box doesn't exceed slide boundaries
+        slide_width = prs.slide_width
+        slide_height = prs.slide_height
+        
+        # Adjust if text box exceeds slide boundaries
+        if left + width > slide_width:
+            width = slide_width - left - Inches(0.1)  # Leave small margin
+        if top + height > slide_height:
+            height = slide_height - top - Inches(0.1)  # Leave small margin
+            
+        # Ensure minimum text box size
+        if width < Inches(0.5):
+            width = Inches(0.5)
+        if height < Inches(0.3):
+            height = Inches(0.3)
+        
         txBox = slide.shapes.add_textbox(left, top, width, height)
         tf = txBox.text_frame
         tf.text = text
+        
+        # Apply text containment features to prevent overflow
+        tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE  # Force text to fit shape
+        tf.word_wrap = True  # Enable word wrapping
+        
+        # Set default margins to prevent text touching edges
+        tf.margin_left = Inches(0.1)
+        tf.margin_right = Inches(0.1)
+        tf.margin_top = Inches(0.05)
+        tf.margin_bottom = Inches(0.05)
         
         # Apply formatting
         p = tf.paragraphs[0]
@@ -168,14 +225,22 @@ class AddImageAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
-        image_path = inputs["image_path"]
         position = inputs["position"]
+        files = inputs.get("files", [])
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
         
-        if not os.path.exists(image_path):
-            raise ValueError(f"Image file {image_path} not found")
+        # Process files to get the first image file
+        processed_files = process_files(files)
+        image_file = None
+        for filename, file_stream in processed_files.items():
+            if any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
+                image_file = file_stream
+                break
+        
+        if not image_file:
+            raise ValueError("No image file found in files parameter")
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
@@ -183,16 +248,39 @@ class AddImageAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Add image
+        # Add image with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
+        
+        # Get slide dimensions for boundary checking
+        slide_width = prs.slide_width
+        slide_height = prs.slide_height
         
         if "width" in position and "height" in position:
             width = Inches(position["width"])
             height = Inches(position["height"])
-            pic = slide.shapes.add_picture(image_path, left, top, width, height)
+            
+            # Validate image doesn't exceed slide boundaries
+            if left + width > slide_width:
+                width = slide_width - left - Inches(0.1)  # Leave small margin
+            if top + height > slide_height:
+                height = slide_height - top - Inches(0.1)  # Leave small margin
+                
+            # Ensure minimum image size
+            if width < Inches(0.5):
+                width = Inches(0.5)
+            if height < Inches(0.5):
+                height = Inches(0.5)
+                
+            pic = slide.shapes.add_picture(image_file, left, top, width, height)
         else:
-            pic = slide.shapes.add_picture(image_path, left, top)
+            # If no explicit size, add at original size but validate position
+            if left > slide_width - Inches(1):
+                left = slide_width - Inches(1)
+            if top > slide_height - Inches(1):
+                top = slide_height - Inches(1)
+                
+            pic = slide.shapes.add_picture(image_file, left, top)
         
         return {
             "shape_id": str(pic.shape_id)
@@ -217,11 +305,27 @@ class AddTableAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create table
+        # Create table with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
         height = Inches(position["height"])
+        
+        # Validate table doesn't exceed slide boundaries
+        slide_width = prs.slide_width
+        slide_height = prs.slide_height
+        
+        # Adjust if table exceeds slide boundaries
+        if left + width > slide_width:
+            width = slide_width - left - Inches(0.1)  # Leave small margin
+        if top + height > slide_height:
+            height = slide_height - top - Inches(0.1)  # Leave small margin
+            
+        # Ensure minimum table size
+        if width < Inches(1):
+            width = Inches(1)
+        if height < Inches(0.5):
+            height = Inches(0.5)
         
         table = slide.shapes.add_table(rows, cols, left, top, width, height).table
         
@@ -259,11 +363,27 @@ class AddChartAction(ActionHandler):
         for series in data["series"]:
             chart_data.add_series(series["name"], series["values"])
         
-        # Add chart
+        # Add chart with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
         height = Inches(position["height"])
+        
+        # Validate chart doesn't exceed slide boundaries
+        slide_width = prs.slide_width
+        slide_height = prs.slide_height
+        
+        # Adjust if chart exceeds slide boundaries
+        if left + width > slide_width:
+            width = slide_width - left - Inches(0.1)  # Leave small margin
+        if top + height > slide_height:
+            height = slide_height - top - Inches(0.1)  # Leave small margin
+            
+        # Ensure minimum chart size
+        if width < Inches(1):
+            width = Inches(1)
+        if height < Inches(1):
+            height = Inches(1)
         
         chart_type_enum = CHART_TYPE_MAP.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED)
         chart_shape = slide.shapes.add_chart(chart_type_enum, left, top, width, height, chart_data)
@@ -694,10 +814,21 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
-        image_data = inputs["image_data"]  # base64 encoded image
+        files = inputs.get("files", [])
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
+        
+        # Process files to get the first image file
+        processed_files = process_files(files)
+        image_file = None
+        for filename, file_stream in processed_files.items():
+            if any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
+                image_file = file_stream
+                break
+        
+        if not image_file:
+            raise ValueError("No image file found in files parameter")
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
@@ -705,21 +836,12 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Workaround: Add a picture that covers the entire slide
-        # This simulates a background image since python-pptx doesn't support image fills yet
-        from io import BytesIO
-        import base64
-        
-        # Decode base64 image data
-        image_bytes = base64.b64decode(image_data)
-        image_stream = BytesIO(image_bytes)
-        
         # Get slide dimensions
         slide_width = prs.slide_width
         slide_height = prs.slide_height
         
         # Add picture that covers entire slide (position at 0,0)
-        picture = slide.shapes.add_picture(image_stream, 0, 0, slide_width, slide_height)
+        picture = slide.shapes.add_picture(image_file, 0, 0, slide_width, slide_height)
         
         # Send picture to back so other elements appear on top
         # Note: python-pptx doesn't have a direct "send to back" method
@@ -755,6 +877,103 @@ class ResetSlideBackgroundAction(ActionHandler):
             "success": True,
             "follow_master_background": True,
             "note": "Slide background reset to inherit from master/layout"
+        }
+
+@slider.action("add_bullet_list")
+class AddBulletListAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        presentation_id = inputs["presentation_id"]
+        slide_index = inputs["slide_index"]
+        bullet_items = inputs["bullet_items"]
+        position = inputs["position"]
+        formatting = inputs.get("formatting", {})
+        
+        if presentation_id not in presentations:
+            raise ValueError(f"Presentation {presentation_id} not found")
+        
+        prs = presentations[presentation_id]
+        if slide_index >= len(prs.slides):
+            raise ValueError(f"Slide index {slide_index} out of range")
+        
+        slide = prs.slides[slide_index]
+        
+        # Create text box with size validation for bullet list
+        left = Inches(position["left"])
+        top = Inches(position["top"])
+        width = Inches(position["width"])
+        height = Inches(position["height"])
+        
+        # Validate bullet list doesn't exceed slide boundaries
+        slide_width = prs.slide_width
+        slide_height = prs.slide_height
+        
+        # Adjust if bullet list exceeds slide boundaries
+        if left + width > slide_width:
+            width = slide_width - left - Inches(0.1)  # Leave small margin
+        if top + height > slide_height:
+            height = slide_height - top - Inches(0.1)  # Leave small margin
+            
+        # Ensure minimum bullet list size
+        if width < Inches(1):
+            width = Inches(1)
+        if height < Inches(0.5):
+            height = Inches(0.5)
+        
+        # Always create a text box for consistent behavior and avoid double bullets
+        textbox = slide.shapes.add_textbox(left, top, width, height)
+        text_frame = textbox.text_frame
+        text_frame.clear()
+        bullet_placeholder = False  # We're not using a placeholder
+        
+        # Apply text containment features
+        text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+        text_frame.word_wrap = True
+        text_frame.margin_left = Inches(0.1)
+        text_frame.margin_right = Inches(0.1)
+        text_frame.margin_top = Inches(0.05)
+        text_frame.margin_bottom = Inches(0.05)
+        
+        # Add bullet items
+        for i, item in enumerate(bullet_items):
+            text = item.get("text", "")
+            level = item.get("level", 0)
+            
+            if i == 0:
+                p = text_frame.paragraphs[0]
+            else:
+                p = text_frame.add_paragraph()
+            
+            if bullet_placeholder:
+                # Use built-in bullet formatting from placeholder
+                p.text = text
+                p.level = min(max(level, 0), 8)
+            else:
+                # Create manual bullets with Unicode symbols only when no placeholder
+                bullet_symbols = ["•", "◦", "▪", "▫", "‣"]  # Different levels
+                bullet_symbol = bullet_symbols[min(level, len(bullet_symbols)-1)]
+                indent = "    " * level  # Manual indentation
+                p.text = f"{indent}{bullet_symbol} {text}"
+            
+            p.alignment = PP_ALIGN.LEFT
+        
+        # Apply formatting to all paragraphs
+        if formatting:
+            for paragraph in text_frame.paragraphs:
+                if formatting.get("font_size"):
+                    paragraph.font.size = Pt(formatting["font_size"])
+                if formatting.get("bold"):
+                    paragraph.font.bold = formatting["bold"]
+                if formatting.get("italic"):
+                    paragraph.font.italic = formatting["italic"]
+                if formatting.get("color"):
+                    rgb = hex_to_rgb(formatting["color"])
+                    paragraph.font.color.rgb = RGBColor(*rgb)
+        
+        shape_id = str(textbox.shape_id)
+        
+        return {
+            "shape_id": shape_id,
+            "items_count": len(bullet_items)
         }
 
 
