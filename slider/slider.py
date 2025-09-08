@@ -125,25 +125,14 @@ class CreatePresentationAction(ActionHandler):
 class AddSlideAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
-        layout = inputs.get("layout", "blank")
-        title = inputs.get("title")
-        content = inputs.get("content")
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
         
         prs = presentations[presentation_id]
-        layout_index = LAYOUT_MAP.get(layout, 6)  # Default to blank
-        slide_layout = prs.slide_layouts[layout_index]
+        # Always use blank layout (index 6)
+        slide_layout = prs.slide_layouts[6]
         slide = prs.slides.add_slide(slide_layout)
-        
-        # Set title if provided and slide has title placeholder
-        if title and slide.shapes.title:
-            slide.shapes.title.text = title
-        
-        # Set content if provided and slide has content placeholder
-        if content and len(slide.placeholders) > 1:
-            slide.placeholders[1].text = content
         
         return {
             "slide_index": len(prs.slides) - 1,
@@ -234,9 +223,18 @@ class AddImageAction(ActionHandler):
         # Process files to get the first image file
         processed_files = process_files(files)
         image_file = None
-        for filename, file_stream in processed_files.items():
-            if any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
-                image_file = file_stream
+        
+        # Check both filename extensions and content types
+        for file_item in files:
+            filename = file_item['name']
+            content_type = file_item.get('contentType', '')
+            
+            # Check if it's an image by extension or content type
+            is_image_by_extension = any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'])
+            is_image_by_content_type = content_type.startswith('image/')
+            
+            if is_image_by_extension or is_image_by_content_type:
+                image_file = processed_files[filename]
                 break
         
         if not image_file:
@@ -822,9 +820,18 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         # Process files to get the first image file
         processed_files = process_files(files)
         image_file = None
-        for filename, file_stream in processed_files.items():
-            if any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
-                image_file = file_stream
+        
+        # Check both filename extensions and content types
+        for file_item in files:
+            filename = file_item['name']
+            content_type = file_item.get('contentType', '')
+            
+            # Check if it's an image by extension or content type
+            is_image_by_extension = any(filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'])
+            is_image_by_content_type = content_type.startswith('image/')
+            
+            if is_image_by_extension or is_image_by_content_type:
+                image_file = processed_files[filename]
                 break
         
         if not image_file:

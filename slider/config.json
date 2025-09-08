@@ -6,7 +6,7 @@
     "actions": {
         "create_presentation": {
             "display_name": "Create PowerPoint Presentation",
-            "description": "Create a new PowerPoint presentation with optional template",
+            "description": "Create a new PowerPoint presentation with optional template. If template files (*.pptx) are provided in the 'files' parameter, the first template found will be used. Otherwise, a blank presentation is created. Returns a unique presentation_id for use with other actions.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -60,27 +60,13 @@
         },
         "add_slide": {
             "display_name": "Add Slide",
-            "description": "Add a new slide to an existing presentation",
+            "description": "Add a new blank slide to an existing presentation. This action only creates blank slides - use other actions like add_text, add_image, or add_bullet_list to add content to the slide.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "presentation_id": {
                         "type": "string",
                         "description": "ID of the presentation to modify"
-                    },
-                    "layout": {
-                        "type": "string",
-                        "enum": ["title", "title_content", "section_header", "two_content", "comparison", "title_only", "blank", "content_with_caption", "picture_with_caption"],
-                        "description": "Slide layout type",
-                        "default": "blank"
-                    },
-                    "title": {
-                        "type": "string",
-                        "description": "Title for the slide"
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Content text for the slide"
                     }
                 },
                 "required": ["presentation_id"]
@@ -102,7 +88,7 @@
         },
         "add_text": {
             "display_name": "Add Text",
-            "description": "Add formatted text to a slide",
+            "description": "Add formatted text to a slide in a text box at the specified position. Text automatically sizes to fit the shape and includes word wrapping to prevent overflow. Use the formatting parameter to control font size, style, and color.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -153,7 +139,7 @@
         },
         "add_image": {
             "display_name": "Add Image",
-            "description": "Insert an image into a slide",
+            "description": "Insert an image into a slide from uploaded files. Provide the image file in the 'files' parameter - the first image file found will be used. Supports PNG, JPG, JPEG, GIF, and BMP formats.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -422,7 +408,7 @@
         },
         "save_presentation": {
             "display_name": "Save Presentation",
-            "description": "Save a presentation to file",
+            "description": "Save a presentation and return it as a base64-encoded file for download. The presentation is saved to memory and returned as streaming content - no physical file is created on the server.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -477,7 +463,7 @@
         },
         "set_text_autosize": {
             "display_name": "Set Text Autosize",
-            "description": "Set automatic text sizing behavior for a text box or shape",
+            "description": "Set automatic text sizing behavior for a text box or shape. Use TEXT_TO_FIT_SHAPE to prevent text overflow by automatically reducing font size to fit within the shape boundaries. Use SHAPE_TO_FIT_TEXT to expand the shape to accommodate all text.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -526,7 +512,7 @@
         },
         "fit_text_to_shape": {
             "display_name": "Fit Text to Shape",
-            "description": "Automatically resize text to fit within the shape boundaries",
+            "description": "Automatically resize text to fit within the shape boundaries by reducing font size. This prevents text overflow and ensures all content is visible. Specify max_size to control the maximum font size allowed (default: 48pt).",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -821,7 +807,7 @@
         },
         "add_background_image_workaround": {
             "display_name": "Add Background Image (Workaround)",
-            "description": "Add an image as slide background using full-slide picture workaround",
+            "description": "Add an image as slide background using full-slide picture workaround. Since python-pptx doesn't support true background images, this adds a full-size image that covers the entire slide. Add other content AFTER using this action so elements appear on top of the background image.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -923,7 +909,7 @@
         },
         "add_bullet_list": {
             "display_name": "Add Bullet List",
-            "description": "Add a multi-level bullet list to a slide",
+            "description": "Add a multi-level bullet list to a slide. This action automatically adds bullet symbols (•, ◦, ▪, ▫, ‣) based on the level specified for each item. Do not include bullet symbols in your text - just provide the plain text content and specify the level (0-8) for proper indentation and bullet styling.",
             "input_schema": {
                 "type": "object",
                 "properties": {
