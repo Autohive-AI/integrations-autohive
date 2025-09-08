@@ -128,7 +128,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result"]
+                "required": ["result", "id", "webLink"]
             }
         },
         "upload_file": {
@@ -182,7 +182,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result"]
+                "required": ["result", "id", "webUrl", "size"]
             }
         },
         "list_files": {
@@ -311,7 +311,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result"]
+                "required": ["result", "id", "webLink"]
             }
         },
         "list_calendar_events": {
