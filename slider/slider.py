@@ -66,6 +66,47 @@ def process_files(files: List[Dict[str, Any]]) -> Dict[str, BytesIO]:
     
     return processed_files
 
+def load_presentation_from_files(presentation_id: str, files: List[Dict[str, Any]]) -> None:
+    """Load presentation from files parameter if not in memory"""
+    if presentation_id not in presentations and files:
+        processed_files = process_files(files)
+        
+        # Look for presentation file
+        for filename, file_stream in processed_files.items():
+            if filename.lower().endswith('.pptx'):
+                prs = Presentation(file_stream)
+                presentations[presentation_id] = prs
+                break
+
+async def save_and_return_presentation(original_result: Dict[str, Any], presentation_id: str, context: ExecutionContext, custom_filename: str = None) -> Dict[str, Any]:
+    """Helper to save presentation and return combined result"""
+    save_action = SavePresentationAction()
+    
+    # Use custom filename if provided, otherwise use presentation_id
+    if custom_filename:
+        # Ensure .pptx extension
+        if not custom_filename.lower().endswith('.pptx'):
+            custom_filename += '.pptx'
+        file_path = custom_filename
+    else:
+        file_path = f"{presentation_id}.pptx"
+    
+    save_inputs = {
+        "presentation_id": presentation_id,
+        "file_path": file_path
+    }
+    save_result = await save_action.execute(save_inputs, context)
+    
+    # Combine original result with save result
+    combined_result = original_result.copy()
+    combined_result.update({
+        "saved": save_result["saved"],
+        "file_path": save_result["file_path"],
+        "file": save_result["file"],
+        "error": save_result.get("error", "")
+    })
+    return combined_result
+
 def hex_to_rgb(hex_color: str) -> tuple:
     """Convert hex color to RGB tuple"""
     hex_color = hex_color.lstrip('#')
@@ -79,6 +120,7 @@ class CreatePresentationAction(ActionHandler):
         title = inputs.get("title")
         subtitle = inputs.get("subtitle")
         files = inputs.get("files", [])
+        custom_filename = inputs.get("custom_filename")
         
         # Process files to get template if provided
         processed_files = process_files(files)
@@ -116,15 +158,21 @@ class CreatePresentationAction(ActionHandler):
         presentation_id = str(uuid.uuid4())
         presentations[presentation_id] = prs
         
-        return {
+        result = {
             "presentation_id": presentation_id,
             "slide_count": len(prs.slides)
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context, custom_filename)
 
 @slider.action("add_slide")
 class AddSlideAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -134,10 +182,12 @@ class AddSlideAction(ActionHandler):
         slide_layout = prs.slide_layouts[6]
         slide = prs.slides.add_slide(slide_layout)
         
-        return {
+        # Save and return the updated presentation
+        original_result = {
             "slide_index": len(prs.slides) - 1,
             "slide_count": len(prs.slides)
         }
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("add_text")
 class AddTextAction(ActionHandler):
@@ -147,6 +197,10 @@ class AddTextAction(ActionHandler):
         text = inputs["text"]
         position = inputs["position"]
         formatting = inputs.get("formatting", {})
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -205,9 +259,9 @@ class AddTextAction(ActionHandler):
             rgb = hex_to_rgb(formatting["color"])
             p.font.color.rgb = RGBColor(*rgb)
         
-        return {
-            "shape_id": str(txBox.shape_id)
-        }
+        # Save and return the updated presentation
+        original_result = {"shape_id": str(txBox.shape_id)}
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("add_image")
 class AddImageAction(ActionHandler):
@@ -216,6 +270,9 @@ class AddImageAction(ActionHandler):
         slide_index = inputs["slide_index"]
         position = inputs["position"]
         files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -280,9 +337,9 @@ class AddImageAction(ActionHandler):
                 
             pic = slide.shapes.add_picture(image_file, left, top)
         
-        return {
-            "shape_id": str(pic.shape_id)
-        }
+        # Save and return the updated presentation
+        original_result = {"shape_id": str(pic.shape_id)}
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("add_table")
 class AddTableAction(ActionHandler):
@@ -293,6 +350,10 @@ class AddTableAction(ActionHandler):
         cols = inputs["cols"]
         position = inputs["position"]
         data = inputs.get("data", [])
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -332,9 +393,9 @@ class AddTableAction(ActionHandler):
             for col_idx, cell_value in enumerate(row_data[:cols]):
                 table.cell(row_idx, col_idx).text = str(cell_value)
         
-        return {
-            "table_id": f"table_{slide_index}_{len(slide.shapes)}"
-        }
+        # Save and return the updated presentation
+        original_result = {"table_id": f"table_{slide_index}_{len(slide.shapes)}"}
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("add_chart")
 class AddChartAction(ActionHandler):
@@ -344,6 +405,10 @@ class AddChartAction(ActionHandler):
         chart_type = inputs["chart_type"]
         position = inputs["position"]
         data = inputs["data"]
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -386,9 +451,9 @@ class AddChartAction(ActionHandler):
         chart_type_enum = CHART_TYPE_MAP.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED)
         chart_shape = slide.shapes.add_chart(chart_type_enum, left, top, width, height, chart_data)
         
-        return {
-            "chart_id": str(chart_shape.shape_id)
-        }
+        # Save and return the updated presentation
+        original_result = {"chart_id": str(chart_shape.shape_id)}
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("extract_text")
 class ExtractTextAction(ActionHandler):
@@ -431,6 +496,10 @@ class ModifySlideAction(ActionHandler):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
         updates = inputs["updates"]
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -468,9 +537,9 @@ class ModifySlideAction(ActionHandler):
                             paragraph.text = new_paragraph_text
                             modified = True
         
-        return {
-            "modified": modified
-        }
+        # Save and return the updated presentation
+        original_result = {"modified": modified}
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("save_presentation")
 class SavePresentationAction(ActionHandler):
@@ -526,6 +595,10 @@ class SetTextAutosizeAction(ActionHandler):
         shape_index = inputs["shape_index"]
         autosize_type = inputs["autosize_type"]
         word_wrap = inputs.get("word_wrap", None)
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -561,11 +634,27 @@ class SetTextAutosizeAction(ActionHandler):
         if word_wrap is not None:
             text_frame.word_wrap = word_wrap
             
-        return {
+        # Force recalculation by slightly adjusting text box size
+        if autosize_type != "NONE":
+            # Get original dimensions
+            original_width = shape.width
+            original_height = shape.height
+            
+            # Slightly adjust size (by 1 EMU - the smallest unit in PowerPoint)
+            shape.width = original_width + 1
+            shape.height = original_height + 1
+            
+            # Restore original dimensions
+            shape.width = original_width
+            shape.height = original_height
+            
+        # Save and return the updated presentation
+        original_result = {
             "success": True,
             "autosize_type": autosize_type,
             "word_wrap": text_frame.word_wrap
         }
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("fit_text_to_shape")
 class FitTextToShapeAction(ActionHandler):
@@ -574,6 +663,10 @@ class FitTextToShapeAction(ActionHandler):
         slide_index = inputs["slide_index"]
         shape_index = inputs["shape_index"]
         max_size = inputs.get("max_size", 48)  # Maximum font size in points
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -595,11 +688,26 @@ class FitTextToShapeAction(ActionHandler):
         # Use the fit_text method to automatically size text to fit shape
         text_frame.fit_text(max_size=max_size)
         
-        return {
+        # Force recalculation by slightly adjusting text box size
+        # Get original dimensions
+        original_width = shape.width
+        original_height = shape.height
+        
+        # Slightly adjust size (by 1 EMU - the smallest unit in PowerPoint)
+        shape.width = original_width + 1
+        shape.height = original_height + 1
+        
+        # Restore original dimensions
+        shape.width = original_width
+        shape.height = original_height
+        
+        # Save and return the updated presentation
+        original_result = {
             "success": True,
             "max_size": max_size,
             "auto_size": "TEXT_TO_FIT_SHAPE"
         }
+        return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slider.action("set_text_margins")
 class SetTextMarginsAction(ActionHandler):
@@ -608,6 +716,9 @@ class SetTextMarginsAction(ActionHandler):
         slide_index = inputs["slide_index"]
         shape_index = inputs["shape_index"]
         margins = inputs["margins"]
+        files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -636,10 +747,12 @@ class SetTextMarginsAction(ActionHandler):
         if "bottom" in margins:
             text_frame.margin_bottom = Inches(margins["bottom"])
             
-        return {
+        result = {
             "success": True,
             "margins_set": margins
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("set_text_alignment")
 class SetTextAlignmentAction(ActionHandler):
@@ -648,6 +761,9 @@ class SetTextAlignmentAction(ActionHandler):
         slide_index = inputs["slide_index"]
         shape_index = inputs["shape_index"]
         vertical_anchor = inputs.get("vertical_anchor", None)
+        files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -676,10 +792,12 @@ class SetTextAlignmentAction(ActionHandler):
         if vertical_anchor and vertical_anchor in anchor_map:
             text_frame.vertical_anchor = anchor_map[vertical_anchor]
             
-        return {
+        result = {
             "success": True,
             "vertical_anchor": vertical_anchor
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("set_slide_background_color")
 class SetSlideBackgroundColorAction(ActionHandler):
@@ -687,6 +805,9 @@ class SetSlideBackgroundColorAction(ActionHandler):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
         color = inputs["color"]
+        files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -742,10 +863,12 @@ class SetSlideBackgroundColorAction(ActionHandler):
         else:
             raise ValueError("Color must be dict with 'rgb'/'theme_color' or hex string")
             
-        return {
+        result = {
             "success": True,
             "color_set": color
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("set_slide_background_gradient")
 class SetSlideBackgroundGradientAction(ActionHandler):
@@ -754,6 +877,9 @@ class SetSlideBackgroundGradientAction(ActionHandler):
         slide_index = inputs["slide_index"]
         angle = inputs.get("angle", 90)  # Default 90 degrees (bottom to top)
         gradient_stops = inputs.get("gradient_stops", [])
+        files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -801,11 +927,13 @@ class SetSlideBackgroundGradientAction(ActionHandler):
                         if theme_color in theme_map:
                             stop.color.theme_color = theme_map[theme_color]
             
-        return {
+        result = {
             "success": True,
             "gradient_angle": angle,
             "gradient_stops_applied": len(gradient_stops) if gradient_stops else 2
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("add_background_image_workaround")
 class AddBackgroundImageWorkaroundAction(ActionHandler):
@@ -813,6 +941,8 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
         files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -854,19 +984,24 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         # Note: python-pptx doesn't have a direct "send to back" method
         # The picture will be behind elements added after it
         
-        return {
+        result = {
             "success": True,
             "method": "workaround_full_slide_picture",
             "picture_width": slide_width,
             "picture_height": slide_height,
             "note": "Image added as full-slide picture. Add other elements after this for proper layering."
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("reset_slide_background")
 class ResetSlideBackgroundAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
+        files = inputs.get("files", [])
+        
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -880,11 +1015,13 @@ class ResetSlideBackgroundAction(ActionHandler):
         # Reset to inherit background from master/layout
         slide.follow_master_background = True
         
-        return {
+        result = {
             "success": True,
             "follow_master_background": True,
             "note": "Slide background reset to inherit from master/layout"
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 @slider.action("add_bullet_list")
 class AddBulletListAction(ActionHandler):
@@ -894,6 +1031,10 @@ class AddBulletListAction(ActionHandler):
         bullet_items = inputs["bullet_items"]
         position = inputs["position"]
         formatting = inputs.get("formatting", {})
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
@@ -978,9 +1119,11 @@ class AddBulletListAction(ActionHandler):
         
         shape_id = str(textbox.shape_id)
         
-        return {
+        result = {
             "shape_id": shape_id,
             "items_count": len(bullet_items)
         }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 
