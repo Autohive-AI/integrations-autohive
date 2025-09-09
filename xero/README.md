@@ -40,6 +40,8 @@ pip install -r requirements.txt
 The integration requires these OAuth scopes:
 - `accounting.reports.read` - Access financial reports
 - `accounting.contacts.read` - Access contact information
+- `accounting.settings.read` - Access organization settings
+- `accounting.transactions.read` - Access transaction data
 - `offline_access` - Maintain token refresh capability
 
 ## Usage Examples
