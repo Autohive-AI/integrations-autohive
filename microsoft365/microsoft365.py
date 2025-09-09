@@ -181,14 +181,17 @@ class ListFilesAction(ActionHandler):
             # Format files
             files = []
             for item in response.get("value", []):
-                files.append({
+                file_item = {
                     "id": item["id"],
                     "name": item["name"],
                     "size": item.get("size", 0),
                     "lastModifiedDateTime": item["lastModifiedDateTime"],
-                    "webUrl": item["webUrl"],
-                    "folder": item.get("folder")
-                })
+                    "webUrl": item["webUrl"]
+                }
+                # Only include folder property if it exists (for folders only)
+                if "folder" in item:
+                    file_item["folder"] = item["folder"]
+                files.append(file_item)
             
             return {
                 "files": files,
