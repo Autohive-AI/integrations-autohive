@@ -31,6 +31,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [xero](xero): Comprehensive integration for accessing Xero accounting data through OAuth 2.0 authentication. Features retrieving available tenant connections, contact search by name within tenants, and retrieval of comprehensive accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Additionally supports accessing chart of accounts for line item classification, payment records for invoices and bills (customer receipts, supplier payments, refunds), and bank transactions not tied to invoices (CapEx, financing, operating expenses). Includes robust error handling, pagination support, and optional date parameters for flexible financial reporting.
 
+### Zoho CRM
+
+[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 33 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+
 ### Reddit
 
 [reddit](reddit): Connect workflows to Reddit with automated engagement capabilities. Search posts across subreddits with customizable filtering options and automatically post comments to join conversations. Includes authentication via Reddit OAuth with read and submit permissions, comprehensive post data extraction, and support for brand monitoring and community engagement workflows.
