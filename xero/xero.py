@@ -2,10 +2,157 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler
 )
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
+import asyncio
+import time
+from collections import defaultdict
 
 # Create the integration using the config.json
 xero = Integration.load("config.json")
+
+
+# ---- Rate Limiting Classes ----
+
+class TenantRateBucket:
+    def __init__(self, tenant_id: str):
+        self.tenant_id = tenant_id
+        self.requests_per_minute = 60
+        self.daily_limit = 5000
+        
+        # Current minute tracking
+        self.current_minute_count = 0
+        self.current_minute_start = time.time()
+        
+        # Daily tracking
+        self.daily_count = 0
+        self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        
+        # Request timestamps for sliding window
+        self.request_times = []
+        
+        self._lock = asyncio.Lock()
+    
+    async def can_make_request(self) -> bool:
+        """Check if we can make a request without violating limits"""
+        async with self._lock:
+            now = time.time()
+            
+            # Reset daily counter if new day
+            if datetime.now() >= self.daily_reset_time:
+                self.daily_count = 0
+                self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            
+            # Clean old request timestamps (older than 1 minute)
+            minute_ago = now - 60
+            self.request_times = [t for t in self.request_times if t > minute_ago]
+            
+            # Check limits
+            if self.daily_count >= self.daily_limit:
+                return False
+            
+            if len(self.request_times) >= self.requests_per_minute:
+                return False
+            
+            return True
+    
+    async def wait_for_availability(self):
+        """Wait until we can make a request"""
+        while not await self.can_make_request():
+            # Calculate wait time
+            now = time.time()
+            
+            # If we hit daily limit, wait until tomorrow
+            if self.daily_count >= self.daily_limit:
+                wait_time = (self.daily_reset_time - datetime.now()).total_seconds()
+                await asyncio.sleep(min(wait_time, 60))  # Sleep max 1 minute at a time
+                continue
+            
+            # If we hit minute limit, wait for the oldest request to expire
+            if self.request_times:
+                oldest_request = min(self.request_times)
+                wait_time = 61 - (now - oldest_request)  # Wait until it's been 61 seconds
+                if wait_time > 0:
+                    await asyncio.sleep(wait_time)
+            else:
+                await asyncio.sleep(1)
+    
+    async def record_request(self):
+        """Record that a request was made"""
+        async with self._lock:
+            now = time.time()
+            self.request_times.append(now)
+            self.daily_count += 1
+    
+    def update_from_headers(self, headers: dict):
+        """Update rate limits from Xero response headers"""
+        # Xero rate limit headers (if present)
+        if 'X-Rate-Limit-Daily-Limit' in headers:
+            try:
+                self.daily_limit = int(headers['X-Rate-Limit-Daily-Limit'])
+            except ValueError:
+                pass
+        
+        if 'X-Rate-Limit-Daily-Remaining' in headers:
+            try:
+                remaining = int(headers['X-Rate-Limit-Daily-Remaining'])
+                self.daily_count = self.daily_limit - remaining
+            except ValueError:
+                pass
+        
+        if 'X-Rate-Limit-Minute-Limit' in headers:
+            try:
+                self.requests_per_minute = int(headers['X-Rate-Limit-Minute-Limit'])
+            except ValueError:
+                pass
+
+
+class XeroRateLimiter:
+    def __init__(self):
+        self.tenant_buckets: Dict[str, TenantRateBucket] = {}
+        self._lock = asyncio.Lock()
+    
+    async def get_bucket(self, tenant_id: str) -> TenantRateBucket:
+        """Get or create a rate limiting bucket for a tenant"""
+        async with self._lock:
+            if tenant_id not in self.tenant_buckets:
+                self.tenant_buckets[tenant_id] = TenantRateBucket(tenant_id)
+            return self.tenant_buckets[tenant_id]
+    
+    async def make_request(self, context: ExecutionContext, url: str, tenant_id: str, **kwargs) -> Any:
+        """Make a rate-limited request to Xero API"""
+        bucket = await self.get_bucket(tenant_id)
+        
+        # Wait for rate limit availability
+        await bucket.wait_for_availability()
+        
+        # Record the request
+        await bucket.record_request()
+        
+        # Add tenant header to the request
+        headers = kwargs.get('headers', {})
+        headers['xero-tenant-id'] = tenant_id
+        kwargs['headers'] = headers
+        
+        try:
+            # Make the actual request
+            response = await context.fetch(url, **kwargs)
+            
+            # Update rate limits from response headers if available
+            if hasattr(response, 'headers') and response.headers:
+                bucket.update_from_headers(response.headers)
+            
+            return response
+        
+        except Exception as e:
+            # If it's a rate limit error, we might need to back off more
+            if '429' in str(e) or 'rate limit' in str(e).lower():
+                # Add extra delay for rate limit errors
+                await asyncio.sleep(60)  # Wait 1 minute
+            raise e
+
+
+# Global rate limiter instance
+rate_limiter = XeroRateLimiter()
 
 # ---- Helper Functions ----
 
@@ -93,15 +240,14 @@ class FindContactByNameAction(ActionHandler):
                 "where": f'Name.Contains("{contact_name}")'
             }
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             if not response or not response.get("Contacts"):
@@ -149,15 +295,14 @@ class GetAgedPayablesAction(ActionHandler):
             if inputs.get("date"):
                 params["date"] = inputs["date"]
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -197,15 +342,14 @@ class GetAgedReceivablesAction(ActionHandler):
             if inputs.get("date"):
                 params["date"] = inputs["date"]
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -243,15 +387,14 @@ class GetBalanceSheetAction(ActionHandler):
             if inputs.get("periods"):
                 params["periods"] = str(inputs["periods"])
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -301,15 +444,14 @@ class GetProfitAndLossAction(ActionHandler):
             if inputs.get("periods"):
                 params["periods"] = str(inputs["periods"])
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -347,15 +489,14 @@ class GetTrialBalanceAction(ActionHandler):
             if inputs.get("payments_only") is not None:
                 params["paymentsOnly"] = str(inputs["payments_only"]).lower()
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -393,15 +534,14 @@ class GetAccountsAction(ActionHandler):
             if inputs.get("order"):
                 params["order"] = inputs["order"]
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -440,15 +580,14 @@ class GetPaymentsAction(ActionHandler):
             if inputs.get("order"):
                 params["order"] = inputs["order"]
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response
@@ -491,15 +630,14 @@ class GetBankTransactionsAction(ActionHandler):
             if inputs.get("page"):
                 params["page"] = str(inputs["page"])
             
-            # Make authenticated request to Xero API
-            response = await context.fetch(
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
                 url,
+                tenant_id,
                 method="GET",
                 params=params,
-                headers={
-                    "Accept": "application/json",
-                    "xero-tenant-id": tenant_id
-                }
+                headers={"Accept": "application/json"}
             )
             
             # Return raw API response

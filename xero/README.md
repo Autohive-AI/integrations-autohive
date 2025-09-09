@@ -311,6 +311,22 @@ Access bank transactions not tied to invoices, covering CapEx, financing, and ot
 **Output:**
 - `bank_transactions`: Array containing Xero bank transaction objects with amounts, references, and line items
 
+## Rate Limiting
+
+The integration includes intelligent rate limiting to comply with Xero API limits:
+
+### Features
+- **Per-tenant rate limiting**: Each Xero tenant has separate rate limit tracking
+- **Automatic backoff**: Waits when limits are reached instead of failing requests
+- **Dynamic limit updates**: Updates limits based on Xero response headers
+- **Daily and per-minute limits**: Respects both 5,000 daily and 60 per-minute limits
+
+### Implementation
+- Requests are automatically queued when limits are reached
+- No configuration required - works transparently
+- Handles multiple tenants simultaneously without interference
+- Updates rate limits from `X-Rate-Limit-*` headers when available
+
 ## Error Handling
 
 The integration includes comprehensive error handling:
@@ -319,6 +335,7 @@ The integration includes comprehensive error handling:
 - Network issues are handled gracefully with informative errors
 - Authentication problems provide clear guidance for resolution
 - All API responses are validated before returning data
+- Rate limit errors trigger automatic retry with appropriate delays
 
 ## Development
 
