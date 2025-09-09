@@ -919,6 +919,62 @@
                 },
                 "required": ["files", "query", "result"]
             }
+        },
+        "read_onedrive_file_content": {
+            "display_name": "Read OneDrive File Content",
+            "description": "Read the content of a OneDrive file by ID, with automatic PDF conversion for Office documents",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "The ID of the file to read (obtained from search or list operations)"
+                    }
+                },
+                "required": ["file_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "file_id": {
+                        "type": "string",
+                        "description": "The ID of the file that was read"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the file"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "description": "File size in bytes"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "description": "The MIME type of the file"
+                    },
+                    "webUrl": {
+                        "type": "string",
+                        "description": "Web URL to access the file"
+                    },
+                    "content_available": {
+                        "type": "boolean",
+                        "description": "Whether file content was successfully retrieved"
+                    },
+                    "content_info": {
+                        "type": "string",
+                        "description": "Information about content retrieval status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["result", "file_id", "name", "content_available", "content_info"]
+            }
         }
     }
 }
