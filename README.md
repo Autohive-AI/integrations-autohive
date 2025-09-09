@@ -27,6 +27,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
 
+### Google Looker
+
+[google-looker](google-looker): Business intelligence integration with Looker API for accessing dashboards, executing queries, and managing data models. Supports listing and retrieving dashboards with full metadata, executing LookML queries against explores with dimensions and measures, running raw SQL queries against database connections, and browsing available models and connections. Features custom authentication and comprehensive error handling for enterprise analytics workflows.
+
 ### Xero
 
 [xero](xero): Integration for accessing Xero accounting reports and contact data through OAuth 2.0 authentication. Features retrieving available tenant connections, contact search by name within tenants, and retrieval of comprehensive accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Supports optional date parameters and period comparisons for financial reporting.

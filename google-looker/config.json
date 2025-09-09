@@ -5,7 +5,7 @@
     "entry_point": "google_looker.py",
     "auth": {
         "type": "custom",
-        "title": "Looker API Configuration",
+        "title": "Looker API Auth Configuration",
         "fields": {
             "type": "object",
             "properties": {
@@ -46,8 +46,17 @@
                         "items": {
                             "type": "object"
                         }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["dashboards", "result"]
             }
         },
         "get_dashboard": {
@@ -73,8 +82,17 @@
                     "dashboard": {
                         "type": "object",
                         "description": "Complete dashboard object containing title, description, elements, filters, layout, and other dashboard metadata"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["dashboard", "result"]
             }
         },
         "execute_lookml_query": {
@@ -151,7 +169,8 @@
                         "type": "string",
                         "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["query_results", "result"]
             }
         },
         "list_models": {
@@ -176,8 +195,17 @@
                         "items": {
                             "type": "object"
                         }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["models", "result"]
             }
         },
         "get_model": {
@@ -203,8 +231,17 @@
                     "model": {
                         "type": "object",
                         "description": "Model data"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["model", "result"]
             }
         },
         "execute_sql_query": {
@@ -264,7 +301,8 @@
                         "type": "string",
                         "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["slug", "query_results", "result"]
             }
         },
         "list_connections": {
@@ -298,7 +336,8 @@
                         "type": "string",
                         "description": "Error message if operation failed"
                     }
-                }
+                },
+                "required": ["connections", "result"]
             }
         }
     }
