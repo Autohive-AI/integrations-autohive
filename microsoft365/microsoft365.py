@@ -665,3 +665,54 @@ class ReadContactsAction(ActionHandler):
                 "result": False,
                 "error": str(e)
             }
+
+@microsoft365.action("search_onedrive_files")
+class SearchOneDriveFilesAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            search_query = inputs["query"]
+            limit = inputs.get("limit", 10)
+            
+            # Build search URL
+            # URL encode the search query to handle special characters
+            import urllib.parse
+            encoded_query = urllib.parse.quote(search_query)
+            
+            # Add query parameters
+            params = {
+                "$top": limit,
+                "$select": "id,name,size,lastModifiedDateTime,webUrl,folder,file"
+            }
+            
+            api_url = f"{GRAPH_API_BASE}/me/drive/root/search(q='{encoded_query}')"
+            response = await context.fetch(api_url, params=params)
+            
+            # Format search results
+            files = []
+            for item in response.get("value", []):
+                file_item = {
+                    "id": item["id"],
+                    "name": item["name"],
+                    "size": item.get("size", 0),
+                    "lastModifiedDateTime": item["lastModifiedDateTime"],
+                    "webUrl": item["webUrl"]
+                }
+                # Only include folder property if it exists (for folders only)
+                if "folder" in item:
+                    file_item["folder"] = item["folder"]
+                # Include file type information if available
+                if "file" in item:
+                    file_item["file"] = item["file"]
+                files.append(file_item)
+            
+            return {
+                "files": files,
+                "query": search_query,
+                "result": True
+            }
+            
+        except Exception as e:
+            return {
+                "result": False,
+                "error": str(e)
+            }

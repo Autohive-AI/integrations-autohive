@@ -845,6 +845,80 @@
                 },
                 "required": ["contacts", "result"]
             }
+        },
+        "search_onedrive_files": {
+            "display_name": "Search OneDrive Files",
+            "description": "Search for files in OneDrive using natural language query",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to find files (e.g., 'quarterly report', 'budget 2024', 'project documents')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of files to return",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "description": "List of matching files",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "File ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "File name"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "File size in bytes"
+                                },
+                                "lastModifiedDateTime": {
+                                    "type": "string",
+                                    "description": "Last modified time"
+                                },
+                                "webUrl": {
+                                    "type": "string",
+                                    "description": "Web URL to the file"
+                                },
+                                "folder": {
+                                    "type": "object",
+                                    "description": "Folder facet (present if item is a folder)"
+                                },
+                                "file": {
+                                    "type": "object",
+                                    "description": "File facet with metadata"
+                                }
+                            }
+                        }
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The search query that was executed"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["files", "query", "result"]
+            }
         }
     }
 }
