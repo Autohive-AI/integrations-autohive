@@ -313,19 +313,17 @@ Access bank transactions not tied to invoices, covering CapEx, financing, and ot
 
 ## Rate Limiting
 
-The integration includes intelligent rate limiting to comply with Xero API limits:
+The integration handles rate limit errors from the Xero API:
 
 ### Features
-- **Per-tenant rate limiting**: Each Xero tenant has separate rate limit tracking
-- **Automatic backoff**: Waits when limits are reached instead of failing requests
-- **Dynamic limit updates**: Updates limits based on Xero response headers
-- **Daily and per-minute limits**: Respects both 5,000 daily and 60 per-minute limits
+- **Automatic retry**: Retries requests on HTTP 429 errors
+- **Configurable delays**: Uses Retry-After headers or 60-second default
+- **Maximum retries**: Attempts up to 3 retries before failing
 
 ### Implementation
-- Requests are automatically queued when limits are reached
-- No configuration required - works transparently
-- Handles multiple tenants simultaneously without interference
-- Updates rate limits from `X-Rate-Limit-*` headers when available
+- Monitors API responses for rate limit errors
+- Automatically retries failed requests with delays
+- Non-rate-limit errors are passed through immediately
 
 ## Error Handling
 

@@ -2,153 +2,69 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler
 )
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
-import time
-from collections import defaultdict
 
 # Create the integration using the config.json
 xero = Integration.load("config.json")
 
 
-# ---- Rate Limiting Classes ----
-
-class TenantRateBucket:
-    def __init__(self, tenant_id: str):
-        self.tenant_id = tenant_id
-        self.requests_per_minute = 60
-        self.daily_limit = 5000
-        
-        # Current minute tracking
-        self.current_minute_count = 0
-        self.current_minute_start = time.time()
-        
-        # Daily tracking
-        self.daily_count = 0
-        self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        
-        # Request timestamps for sliding window
-        self.request_times = []
-        
-        self._lock = asyncio.Lock()
-    
-    async def can_make_request(self) -> bool:
-        """Check if we can make a request without violating limits"""
-        async with self._lock:
-            now = time.time()
-            
-            # Reset daily counter if new day
-            if datetime.now() >= self.daily_reset_time:
-                self.daily_count = 0
-                self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-            
-            # Clean old request timestamps (older than 1 minute)
-            minute_ago = now - 60
-            self.request_times = [t for t in self.request_times if t > minute_ago]
-            
-            # Check limits
-            if self.daily_count >= self.daily_limit:
-                return False
-            
-            if len(self.request_times) >= self.requests_per_minute:
-                return False
-            
-            return True
-    
-    async def wait_for_availability(self):
-        """Wait until we can make a request"""
-        while not await self.can_make_request():
-            # Calculate wait time
-            now = time.time()
-            
-            # If we hit daily limit, wait until tomorrow
-            if self.daily_count >= self.daily_limit:
-                wait_time = (self.daily_reset_time - datetime.now()).total_seconds()
-                await asyncio.sleep(min(wait_time, 60))  # Sleep max 1 minute at a time
-                continue
-            
-            # If we hit minute limit, wait for the oldest request to expire
-            if self.request_times:
-                oldest_request = min(self.request_times)
-                wait_time = 61 - (now - oldest_request)  # Wait until it's been 61 seconds
-                if wait_time > 0:
-                    await asyncio.sleep(wait_time)
-            else:
-                await asyncio.sleep(1)
-    
-    async def record_request(self):
-        """Record that a request was made"""
-        async with self._lock:
-            now = time.time()
-            self.request_times.append(now)
-            self.daily_count += 1
-    
-    def update_from_headers(self, headers: dict):
-        """Update rate limits from Xero response headers"""
-        # Xero rate limit headers (if present)
-        if 'X-Rate-Limit-Daily-Limit' in headers:
-            try:
-                self.daily_limit = int(headers['X-Rate-Limit-Daily-Limit'])
-            except ValueError:
-                pass
-        
-        if 'X-Rate-Limit-Daily-Remaining' in headers:
-            try:
-                remaining = int(headers['X-Rate-Limit-Daily-Remaining'])
-                self.daily_count = self.daily_limit - remaining
-            except ValueError:
-                pass
-        
-        if 'X-Rate-Limit-Minute-Limit' in headers:
-            try:
-                self.requests_per_minute = int(headers['X-Rate-Limit-Minute-Limit'])
-            except ValueError:
-                pass
-
+# ---- Rate Limiting ----
 
 class XeroRateLimiter:
-    def __init__(self):
-        self.tenant_buckets: Dict[str, TenantRateBucket] = {}
-        self._lock = asyncio.Lock()
+    def __init__(self, default_retry_delay: int = 60, max_retries: int = 3):
+        """
+        Handles Xero API rate limiting by retrying requests on 429 errors.
+        Lambda-friendly design with no persistent state required.
+        """
+        self.default_retry_delay = default_retry_delay
+        self.max_retries = max_retries
     
-    async def get_bucket(self, tenant_id: str) -> TenantRateBucket:
-        """Get or create a rate limiting bucket for a tenant"""
-        async with self._lock:
-            if tenant_id not in self.tenant_buckets:
-                self.tenant_buckets[tenant_id] = TenantRateBucket(tenant_id)
-            return self.tenant_buckets[tenant_id]
+    def _extract_retry_delay(self, error_response) -> int:
+        """Extract retry delay from error response headers"""
+        if hasattr(error_response, 'headers'):
+            retry_after = error_response.headers.get('Retry-After')
+            if retry_after:
+                try:
+                    return int(retry_after)
+                except ValueError:
+                    pass
+        return self.default_retry_delay
     
     async def make_request(self, context: ExecutionContext, url: str, tenant_id: str, **kwargs) -> Any:
-        """Make a rate-limited request to Xero API"""
-        bucket = await self.get_bucket(tenant_id)
-        
-        # Wait for rate limit availability
-        await bucket.wait_for_availability()
-        
-        # Record the request
-        await bucket.record_request()
-        
+        """Make request to Xero API with automatic retry on rate limit errors"""
         # Add tenant header to the request
         headers = kwargs.get('headers', {})
         headers['xero-tenant-id'] = tenant_id
         kwargs['headers'] = headers
         
-        try:
-            # Make the actual request
-            response = await context.fetch(url, **kwargs)
-            
-            # Update rate limits from response headers if available
-            if hasattr(response, 'headers') and response.headers:
-                bucket.update_from_headers(response.headers)
-            
-            return response
+        last_error = None
         
-        except Exception as e:
-            # If it's a rate limit error, we might need to back off more
-            if '429' in str(e) or 'rate limit' in str(e).lower():
-                # Add extra delay for rate limit errors
-                await asyncio.sleep(60)  # Wait 1 minute
-            raise e
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = await context.fetch(url, **kwargs)
+                return response
+                
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                
+                # Check if it's a rate limit error (HTTP 429)
+                if '429' in error_str or 'rate limit' in error_str or 'too many requests' in error_str:
+                    # Don't retry on the last attempt
+                    if attempt >= self.max_retries:
+                        break
+                        
+                    # Get delay from response headers or use default
+                    delay = self._extract_retry_delay(e)
+                    await asyncio.sleep(delay)
+                    continue
+                
+                # For non-rate-limit errors, fail immediately
+                raise e
+        
+        # All retries exhausted, raise the last error
+        raise last_error
 
 
 # Global rate limiter instance
