@@ -6,7 +6,7 @@ from datetime import datetime
 import asyncio
 
 # Create the integration using the config.json
-xero = Integration.load("config.json")
+xero = Integration.load()
 
 
 # ---- Rate Limiting ----
