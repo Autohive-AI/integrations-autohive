@@ -1,8 +1,8 @@
 {
-    "name": "slider",
+    "name": "Slide Maker",
     "version": "1.0.0",
     "description": "PowerPoint automation integration using python-pptx for creating, modifying, and extracting content from presentations",
-    "entry_point": "slider.py",
+    "entry_point": "slide_maker.py",
     "actions": {
         "create_presentation": {
             "display_name": "Create PowerPoint Presentation",
@@ -1530,6 +1530,170 @@
                     }
                 },
                 "required": ["shape_id", "items_count", "saved", "file_path", "file"]
+            }
+        },
+        "delete_element": {
+            "display_name": "Delete Element",
+            "description": "Remove a shape, text box, image, chart, or any other element from a slide by its index position. Requires the current presentation file in the 'files' parameter. Use this to delete unwanted elements like text boxes, pictures, charts, tables, or any other shapes that were previously added to the slide. Shape indices are 0-based and correspond to the order elements were added. Returns the updated presentation file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "presentation_id": {
+                        "type": "string",
+                        "description": "ID of the presentation"
+                    },
+                    "slide_index": {
+                        "type": "integer",
+                        "description": "Index of the slide (0-based)"
+                    },
+                    "shape_index": {
+                        "type": "integer",
+                        "description": "Index of the shape/element to delete (0-based). This corresponds to the order elements were added to the slide."
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current presentation file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "contentType": {"type": "string"},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["presentation_id", "slide_index", "shape_index"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "Whether the element was successfully deleted"
+                    },
+                    "element_type": {
+                        "type": "string",
+                        "description": "Type of element that was deleted (if identifiable)"
+                    },
+                    "remaining_shapes": {
+                        "type": "integer",
+                        "description": "Number of shapes remaining on the slide after deletion"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the presentation was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the presentation was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved presentation file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["deleted", "remaining_shapes", "saved", "file_path", "file"]
+            }
+        },
+        "get_slide_elements": {
+            "display_name": "Get Slide Elements",
+            "description": "Get detailed information about all elements (shapes, text boxes, images, charts, tables, etc.) on a slide, including their positions, sizes, types, and content. Requires the current presentation file in the 'files' parameter. Use this to inspect what elements are present on a slide before modifying or deleting them. Elements are listed in the order they appear on the slide, with index numbers that correspond to the delete_element action.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "presentation_id": {
+                        "type": "string",
+                        "description": "ID of the presentation"
+                    },
+                    "slide_index": {
+                        "type": "integer",
+                        "description": "Index of the slide (0-based)"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current presentation file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "contentType": {"type": "string"},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["presentation_id", "slide_index"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "slide_index": {
+                        "type": "integer",
+                        "description": "Index of the slide that was inspected"
+                    },
+                    "total_elements": {
+                        "type": "integer",
+                        "description": "Total number of elements on the slide"
+                    },
+                    "elements": {
+                        "type": "array",
+                        "description": "List of all elements on the slide",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {
+                                    "type": "integer",
+                                    "description": "0-based index of the element (use this with delete_element action)"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Type of element (text_box, image, chart, table, shape, text_element, etc.)"
+                                },
+                                "shape_id": {
+                                    "type": "string",
+                                    "description": "PowerPoint shape ID"
+                                },
+                                "position": {
+                                    "type": "object",
+                                    "properties": {
+                                        "left": {"type": "number", "description": "Left position in inches"},
+                                        "top": {"type": "number", "description": "Top position in inches"},
+                                        "width": {"type": "number", "description": "Width in inches"},
+                                        "height": {"type": "number", "description": "Height in inches"}
+                                    },
+                                    "required": ["left", "top", "width", "height"]
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "Text content if the element contains text, otherwise empty"
+                                },
+                                "has_text": {
+                                    "type": "boolean",
+                                    "description": "Whether this element contains text"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Element name if available"
+                                }
+                            },
+                            "required": ["index", "type", "shape_id", "position", "content", "has_text"]
+                        }
+                    }
+                },
+                "required": ["slide_index", "total_elements", "elements"]
             }
         }
     }

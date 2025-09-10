@@ -18,7 +18,7 @@ from io import BytesIO
 from PIL import Image
 
 # Create the integration using the config.json
-slider = Integration.load()
+slide_maker = Integration.load()
 
 # Global dictionaries to store presentations and uploaded images in memory
 presentations = {}
@@ -112,9 +112,72 @@ def hex_to_rgb(hex_color: str) -> tuple:
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
+def get_element_info(shape, index: int) -> dict:
+    """Extract detailed information about a shape/element"""
+    from pptx.util import Inches
+    
+    # Convert EMU to inches for positions and sizes
+    left_inches = shape.left / 914400 if shape.left is not None else 0
+    top_inches = shape.top / 914400 if shape.top is not None else 0
+    width_inches = shape.width / 914400 if shape.width is not None else 0
+    height_inches = shape.height / 914400 if shape.height is not None else 0
+    
+    # Determine element type
+    element_type = "unknown"
+    if hasattr(shape, 'shape_type'):
+        shape_type = shape.shape_type
+        if shape_type == 1:  # MSO_SHAPE_TYPE.AUTO_SHAPE
+            element_type = "shape"
+        elif shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
+            element_type = "image"
+        elif shape_type == 19:  # MSO_SHAPE_TYPE.TABLE
+            element_type = "table"
+        elif shape_type == 3:  # MSO_SHAPE_TYPE.CHART
+            element_type = "chart"
+        elif shape_type == 17:  # MSO_SHAPE_TYPE.TEXT_BOX
+            element_type = "text_box"
+        elif hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+            element_type = "text_element"
+    
+    # Extract text content if available
+    content = ""
+    has_text = False
+    if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+        has_text = True
+        try:
+            # Get all text from paragraphs
+            text_parts = []
+            for paragraph in shape.text_frame.paragraphs:
+                paragraph_text = ''.join(run.text for run in paragraph.runs)
+                if paragraph_text.strip():
+                    text_parts.append(paragraph_text.strip())
+            content = '\n'.join(text_parts)
+        except:
+            content = ""
+    
+    # Get shape name if available
+    name = ""
+    if hasattr(shape, 'name'):
+        name = shape.name or ""
+    
+    return {
+        "index": index,
+        "type": element_type,
+        "shape_id": str(shape.shape_id) if hasattr(shape, 'shape_id') else str(index),
+        "position": {
+            "left": round(left_inches, 3),
+            "top": round(top_inches, 3),
+            "width": round(width_inches, 3),
+            "height": round(height_inches, 3)
+        },
+        "content": content,
+        "has_text": has_text,
+        "name": name
+    }
+
 # ---- Action Handlers ----
 
-@slider.action("create_presentation")
+@slide_maker.action("create_presentation")
 class CreatePresentationAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         title = inputs.get("title")
@@ -165,7 +228,7 @@ class CreatePresentationAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context, custom_filename)
 
-@slider.action("add_slide")
+@slide_maker.action("add_slide")
 class AddSlideAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -189,7 +252,7 @@ class AddSlideAction(ActionHandler):
         }
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("add_text")
+@slide_maker.action("add_text")
 class AddTextAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -263,7 +326,7 @@ class AddTextAction(ActionHandler):
         original_result = {"shape_id": str(txBox.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("add_image")
+@slide_maker.action("add_image")
 class AddImageAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -341,7 +404,7 @@ class AddImageAction(ActionHandler):
         original_result = {"shape_id": str(pic.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("add_table")
+@slide_maker.action("add_table")
 class AddTableAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -397,7 +460,7 @@ class AddTableAction(ActionHandler):
         original_result = {"table_id": f"table_{slide_index}_{len(slide.shapes)}"}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("add_chart")
+@slide_maker.action("add_chart")
 class AddChartAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -455,7 +518,7 @@ class AddChartAction(ActionHandler):
         original_result = {"chart_id": str(chart_shape.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("extract_text")
+@slide_maker.action("extract_text")
 class ExtractTextAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         file_path = inputs["file_path"]
@@ -490,7 +553,7 @@ class ExtractTextAction(ActionHandler):
             "all_text": "\n".join(all_text_parts)
         }
 
-@slider.action("modify_slide")
+@slide_maker.action("modify_slide")
 class ModifySlideAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -541,7 +604,7 @@ class ModifySlideAction(ActionHandler):
         original_result = {"modified": modified}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("save_presentation")
+@slide_maker.action("save_presentation")
 class SavePresentationAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -587,7 +650,7 @@ class SavePresentationAction(ActionHandler):
                 "error": f"Could not generate presentation for streaming: {str(e)}"
             }
 
-@slider.action("set_text_autosize")
+@slide_maker.action("set_text_autosize")
 class SetTextAutosizeAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -656,7 +719,7 @@ class SetTextAutosizeAction(ActionHandler):
         }
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("fit_text_to_shape")
+@slide_maker.action("fit_text_to_shape")
 class FitTextToShapeAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -709,7 +772,7 @@ class FitTextToShapeAction(ActionHandler):
         }
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slider.action("set_text_margins")
+@slide_maker.action("set_text_margins")
 class SetTextMarginsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -754,7 +817,7 @@ class SetTextMarginsAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("set_text_alignment")
+@slide_maker.action("set_text_alignment")
 class SetTextAlignmentAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -799,7 +862,7 @@ class SetTextAlignmentAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("set_slide_background_color")
+@slide_maker.action("set_slide_background_color")
 class SetSlideBackgroundColorAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -870,7 +933,7 @@ class SetSlideBackgroundColorAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("set_slide_background_gradient")
+@slide_maker.action("set_slide_background_gradient")
 class SetSlideBackgroundGradientAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -935,7 +998,7 @@ class SetSlideBackgroundGradientAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("add_background_image_workaround")
+@slide_maker.action("add_background_image_workaround")
 class AddBackgroundImageWorkaroundAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -994,7 +1057,7 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("reset_slide_background")
+@slide_maker.action("reset_slide_background")
 class ResetSlideBackgroundAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -1023,7 +1086,7 @@ class ResetSlideBackgroundAction(ActionHandler):
         
         return await save_and_return_presentation(result, presentation_id, context)
 
-@slider.action("add_bullet_list")
+@slide_maker.action("add_bullet_list")
 class AddBulletListAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
@@ -1125,5 +1188,96 @@ class AddBulletListAction(ActionHandler):
         }
         
         return await save_and_return_presentation(result, presentation_id, context)
+
+@slide_maker.action("delete_element")
+class DeleteElementAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        presentation_id = inputs["presentation_id"]
+        slide_index = inputs["slide_index"]
+        shape_index = inputs["shape_index"]
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
+        
+        if presentation_id not in presentations:
+            raise ValueError(f"Presentation {presentation_id} not found")
+        
+        prs = presentations[presentation_id]
+        if slide_index >= len(prs.slides):
+            raise ValueError(f"Slide index {slide_index} out of range")
+        
+        slide = prs.slides[slide_index]
+        if shape_index >= len(slide.shapes):
+            raise ValueError(f"Shape index {shape_index} out of range. Slide has {len(slide.shapes)} shapes.")
+        
+        # Get shape information before deletion for reporting
+        shape = slide.shapes[shape_index]
+        element_type = "unknown"
+        
+        # Try to identify the element type
+        if hasattr(shape, 'shape_type'):
+            shape_type = shape.shape_type
+            if shape_type == 1:  # MSO_SHAPE_TYPE.AUTO_SHAPE
+                element_type = "shape"
+            elif shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
+                element_type = "image"
+            elif shape_type == 19:  # MSO_SHAPE_TYPE.TABLE
+                element_type = "table"
+            elif shape_type == 3:  # MSO_SHAPE_TYPE.CHART
+                element_type = "chart"
+            elif shape_type == 17:  # MSO_SHAPE_TYPE.TEXT_BOX
+                element_type = "text_box"
+            elif hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+                element_type = "text_element"
+        
+        # Delete the shape
+        # In python-pptx, we need to delete by getting the shape's element and removing it from its parent
+        shape_element = shape.element
+        shape_element.getparent().remove(shape_element)
+        
+        # Get remaining shape count after deletion
+        remaining_shapes = len(slide.shapes)
+        
+        result = {
+            "deleted": True,
+            "element_type": element_type,
+            "remaining_shapes": remaining_shapes
+        }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
+
+@slide_maker.action("get_slide_elements")
+class GetSlideElementsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        presentation_id = inputs["presentation_id"]
+        slide_index = inputs["slide_index"]
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
+        
+        if presentation_id not in presentations:
+            raise ValueError(f"Presentation {presentation_id} not found")
+        
+        prs = presentations[presentation_id]
+        if slide_index >= len(prs.slides):
+            raise ValueError(f"Slide index {slide_index} out of range")
+        
+        slide = prs.slides[slide_index]
+        
+        # Get information about all elements on the slide
+        elements = []
+        for i, shape in enumerate(slide.shapes):
+            element_info = get_element_info(shape, i)
+            elements.append(element_info)
+        
+        result = {
+            "slide_index": slide_index,
+            "total_elements": len(elements),
+            "elements": elements
+        }
+        
+        return result
 
 
