@@ -40,6 +40,8 @@ pip install -r requirements.txt
 The integration requires these OAuth scopes:
 - `accounting.reports.read` - Access financial reports
 - `accounting.contacts.read` - Access contact information
+- `accounting.settings.read` - Access organization settings
+- `accounting.transactions.read` - Access transaction data
 - `offline_access` - Maintain token refresh capability
 
 ## Usage Examples
@@ -311,6 +313,20 @@ Access bank transactions not tied to invoices, covering CapEx, financing, and ot
 **Output:**
 - `bank_transactions`: Array containing Xero bank transaction objects with amounts, references, and line items
 
+## Rate Limiting
+
+The integration handles rate limit errors from the Xero API:
+
+### Features
+- **Automatic retry**: Retries requests on HTTP 429 errors
+- **Configurable delays**: Uses Retry-After headers or 60-second default
+- **Maximum retries**: Attempts up to 3 retries before failing
+
+### Implementation
+- Monitors API responses for rate limit errors
+- Automatically retries failed requests with delays
+- Non-rate-limit errors are passed through immediately
+
 ## Error Handling
 
 The integration includes comprehensive error handling:
@@ -319,6 +335,7 @@ The integration includes comprehensive error handling:
 - Network issues are handled gracefully with informative errors
 - Authentication problems provide clear guidance for resolution
 - All API responses are validated before returning data
+- Rate limit errors trigger automatic retry with appropriate delays
 
 ## Development
 
