@@ -24,18 +24,8 @@ slide_maker = Integration.load()
 presentations = {}
 uploaded_images = {}
 
-# Slide layout mapping
-LAYOUT_MAP = {
-    "title": 0,
-    "title_content": 1,
-    "section_header": 2,
-    "two_content": 3,
-    "comparison": 4,
-    "title_only": 5,
-    "blank": 6,
-    "content_with_caption": 7,
-    "picture_with_caption": 8
-}
+# Only blank slides are supported (layout index 6)
+BLANK_LAYOUT_INDEX = 6
 
 # Chart type mapping
 CHART_TYPE_MAP = {
@@ -73,10 +63,21 @@ def load_presentation_from_files(presentation_id: str, files: List[Dict[str, Any
         
         # Look for presentation file
         for filename, file_stream in processed_files.items():
-            if filename.lower().endswith('.pptx'):
-                prs = Presentation(file_stream)
-                presentations[presentation_id] = prs
-                break
+            # Check for .pptx files or .bin files (which might be intercepted .pptx files)
+            if filename.lower().endswith('.pptx') or filename.lower().endswith('.bin'):
+                try:
+                    prs = Presentation(file_stream)
+                    presentations[presentation_id] = prs
+                    return
+                except Exception as e:
+                    # If this file fails to load as PowerPoint, try the next one
+                    continue
+        
+        # If no valid PowerPoint file found, provide better error message
+        available_files = list(processed_files.keys())
+        raise ValueError(f"No valid PowerPoint file found in files. Tried to load: {available_files}. Files may be corrupted or not PowerPoint format.")
+    elif presentation_id not in presentations:
+        raise ValueError(f"Presentation {presentation_id} not found and no files provided for loading")
 
 async def save_and_return_presentation(original_result: Dict[str, Any], presentation_id: str, context: ExecutionContext, custom_filename: str = None) -> Dict[str, Any]:
     """Helper to save presentation and return combined result"""
@@ -112,8 +113,8 @@ def hex_to_rgb(hex_color: str) -> tuple:
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
-def get_element_info(shape, index: int) -> dict:
-    """Extract detailed information about a shape/element"""
+def get_element_info(shape, index: int, slide_width_inches: float, slide_height_inches: float) -> dict:
+    """Extract detailed information about a shape/element including boundary checking"""
     from pptx.util import Inches
     
     # Convert EMU to inches for positions and sizes
@@ -121,6 +122,32 @@ def get_element_info(shape, index: int) -> dict:
     top_inches = shape.top / 914400 if shape.top is not None else 0
     width_inches = shape.width / 914400 if shape.width is not None else 0
     height_inches = shape.height / 914400 if shape.height is not None else 0
+    
+    # Calculate right and bottom edges
+    right_inches = left_inches + width_inches
+    bottom_inches = top_inches + height_inches
+    
+    # Check boundaries and generate warnings
+    warnings = []
+    boundary_status = "inside"
+    
+    if left_inches < 0:
+        warnings.append(f"Element extends {abs(left_inches):.3f} inches to the left of slide")
+        boundary_status = "outside"
+    
+    if top_inches < 0:
+        warnings.append(f"Element extends {abs(top_inches):.3f} inches above slide")
+        boundary_status = "outside"
+    
+    if right_inches > slide_width_inches:
+        overhang = right_inches - slide_width_inches
+        warnings.append(f"Element extends {overhang:.3f} inches to the right of slide")
+        boundary_status = "outside"
+    
+    if bottom_inches > slide_height_inches:
+        overhang = bottom_inches - slide_height_inches
+        warnings.append(f"Element extends {overhang:.3f} inches below slide")
+        boundary_status = "outside"
     
     # Determine element type
     element_type = "unknown"
@@ -139,19 +166,62 @@ def get_element_info(shape, index: int) -> dict:
         elif hasattr(shape, 'has_text_frame') and shape.has_text_frame:
             element_type = "text_element"
     
-    # Extract text content if available
+    # Extract text content and check for overflow
     content = ""
     has_text = False
+    text_overflow_detected = False
+    
     if hasattr(shape, 'has_text_frame') and shape.has_text_frame:
         has_text = True
         try:
+            text_frame = shape.text_frame
+            
             # Get all text from paragraphs
             text_parts = []
-            for paragraph in shape.text_frame.paragraphs:
+            for paragraph in text_frame.paragraphs:
                 paragraph_text = ''.join(run.text for run in paragraph.runs)
                 if paragraph_text.strip():
                     text_parts.append(paragraph_text.strip())
             content = '\n'.join(text_parts)
+            
+            # Check for text overflow indicators
+            if content:
+                # Check auto-sizing status
+                auto_size_disabled = (hasattr(text_frame, 'auto_size') and 
+                                    text_frame.auto_size == 0)  # MSO_AUTO_SIZE.NONE
+                
+                # Simple heuristics for text overflow detection
+                char_count = len(content)
+                line_count = len(text_parts)
+                avg_font_size = 12  # Default assumption
+                
+                # Try to get actual font size
+                try:
+                    if text_frame.paragraphs and text_frame.paragraphs[0].runs:
+                        first_run = text_frame.paragraphs[0].runs[0]
+                        if hasattr(first_run.font, 'size') and first_run.font.size:
+                            avg_font_size = first_run.font.size.pt
+                except:
+                    pass
+                
+                # Rough text overflow detection
+                if auto_size_disabled:
+                    # Estimate if text might overflow based on dimensions and content
+                    estimated_text_width = (char_count / line_count if line_count > 0 else char_count) * avg_font_size * 0.06  # Rough chars per inch
+                    estimated_text_height = line_count * avg_font_size * 0.014  # Rough lines per inch
+                    
+                    if estimated_text_width > width_inches * 0.8:  # 80% of box width
+                        text_overflow_detected = True
+                        warnings.append(f"Text may be too wide for text box (estimated {estimated_text_width:.1f}\" vs box {width_inches:.1f}\")")
+                    
+                    if estimated_text_height > height_inches * 0.8:  # 80% of box height
+                        text_overflow_detected = True
+                        warnings.append(f"Text may be too tall for text box (estimated {estimated_text_height:.1f}\" vs box {height_inches:.1f}\")")
+                        
+                    if avg_font_size > 24 and (width_inches < 2 or height_inches < 1):
+                        text_overflow_detected = True
+                        warnings.append(f"Large font size ({avg_font_size}pt) in small text box may cause overflow")
+                        
         except:
             content = ""
     
@@ -159,6 +229,10 @@ def get_element_info(shape, index: int) -> dict:
     name = ""
     if hasattr(shape, 'name'):
         name = shape.name or ""
+    
+    # Update boundary status if text overflow detected
+    if text_overflow_detected and boundary_status == "inside":
+        boundary_status = "text_overflow_risk"
     
     return {
         "index": index,
@@ -168,12 +242,18 @@ def get_element_info(shape, index: int) -> dict:
             "left": round(left_inches, 3),
             "top": round(top_inches, 3),
             "width": round(width_inches, 3),
-            "height": round(height_inches, 3)
+            "height": round(height_inches, 3),
+            "right": round(right_inches, 3),
+            "bottom": round(bottom_inches, 3)
         },
         "content": content,
         "has_text": has_text,
-        "name": name
+        "name": name,
+        "boundary_status": boundary_status,
+        "boundary_warnings": warnings,
+        "text_overflow_detected": text_overflow_detected
     }
+
 
 # ---- Action Handlers ----
 
@@ -200,22 +280,42 @@ class CreatePresentationAction(ActionHandler):
         else:
             prs = Presentation()
         
-        # Add title slide if title is provided
+        # Add blank slide if title is provided (only blank slides supported)
         if title:
             if len(prs.slides) == 0:
-                # Add title slide
-                title_slide_layout = prs.slide_layouts[0]
-                slide = prs.slides.add_slide(title_slide_layout)
+                # Add blank slide instead of title slide
+                blank_slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
+                slide = prs.slides.add_slide(blank_slide_layout)
             else:
                 slide = prs.slides[0]
             
-            # Set title
-            if slide.shapes.title:
-                slide.shapes.title.text = title
+            # Add title as a text box on the blank slide
+            title_left = 0.5  # inches from left
+            title_top = 0.5   # inches from top
+            title_width = prs.slide_width / 914400 - 1.0  # Convert EMU to inches, leave margin
+            title_height = 1.0  # 1 inch height for title
             
-            # Set subtitle if provided
-            if subtitle and len(slide.placeholders) > 1:
-                slide.placeholders[1].text = subtitle
+            title_box = slide.shapes.add_textbox(
+                Inches(title_left), Inches(title_top), 
+                Inches(title_width), Inches(title_height)
+            )
+            title_frame = title_box.text_frame
+            title_frame.text = title
+            title_frame.paragraphs[0].font.size = Pt(32)  # Large title font
+            title_frame.paragraphs[0].font.bold = True
+            
+            # Add subtitle if provided
+            if subtitle:
+                subtitle_top = title_top + title_height + 0.2  # Below title with spacing
+                subtitle_height = 0.8  # Smaller height for subtitle
+                
+                subtitle_box = slide.shapes.add_textbox(
+                    Inches(title_left), Inches(subtitle_top),
+                    Inches(title_width), Inches(subtitle_height)
+                )
+                subtitle_frame = subtitle_box.text_frame
+                subtitle_frame.text = subtitle
+                subtitle_frame.paragraphs[0].font.size = Pt(18)  # Smaller subtitle font
         
         # Generate unique ID and store presentation
         presentation_id = str(uuid.uuid4())
@@ -241,8 +341,8 @@ class AddSlideAction(ActionHandler):
             raise ValueError(f"Presentation {presentation_id} not found")
         
         prs = presentations[presentation_id]
-        # Always use blank layout (index 6)
-        slide_layout = prs.slide_layouts[6]
+        # Only blank slides are supported
+        slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
         slide = prs.slides.add_slide(slide_layout)
         
         # Save and return the updated presentation
@@ -312,8 +412,6 @@ class AddTextAction(ActionHandler):
         
         # Apply formatting
         p = tf.paragraphs[0]
-        if formatting.get("font_size"):
-            p.font.size = Pt(formatting["font_size"])
         if formatting.get("bold"):
             p.font.bold = True
         if formatting.get("italic"):
@@ -321,6 +419,26 @@ class AddTextAction(ActionHandler):
         if formatting.get("color"):
             rgb = hex_to_rgb(formatting["color"])
             p.font.color.rgb = RGBColor(*rgb)
+        
+        # Handle font size carefully with auto-sizing
+        if formatting.get("font_size"):
+            font_size = formatting["font_size"]
+            # If a specific font size is requested, disable auto-sizing first
+            tf.auto_size = MSO_AUTO_SIZE.NONE
+            p.font.size = Pt(font_size)
+        else:
+            # No specific font size - use auto-sizing with dimension workaround
+            # Force recalculation by slightly adjusting text box size
+            original_width = txBox.width
+            original_height = txBox.height
+            
+            # Slightly adjust size (by 1 EMU - the smallest unit in PowerPoint)
+            txBox.width = original_width + 1
+            txBox.height = original_height + 1
+            
+            # Restore original dimensions
+            txBox.width = original_width
+            txBox.height = original_height
         
         # Save and return the updated presentation
         original_result = {"shape_id": str(txBox.shape_id)}
@@ -1266,18 +1384,44 @@ class GetSlideElementsAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
+        # Get slide dimensions in inches
+        slide_width_inches = prs.slide_width / 914400
+        slide_height_inches = prs.slide_height / 914400
+        
         # Get information about all elements on the slide
         elements = []
+        elements_outside_boundary = 0
+        all_warnings = []
+        
         for i, shape in enumerate(slide.shapes):
-            element_info = get_element_info(shape, i)
+            element_info = get_element_info(shape, i, slide_width_inches, slide_height_inches)
             elements.append(element_info)
+            
+            # Track boundary violations
+            if element_info["boundary_status"] == "outside":
+                elements_outside_boundary += 1
+                for warning in element_info["boundary_warnings"]:
+                    all_warnings.append(f"Element {i} ({element_info['type']}): {warning}")
+        
+        # Create summary warning message
+        warning_message = ""
+        if elements_outside_boundary > 0:
+            warning_message = f"{elements_outside_boundary} element(s) extend beyond slide boundaries (slide size: {slide_width_inches:.1f}\" x {slide_height_inches:.1f}\")"
         
         result = {
             "slide_index": slide_index,
             "total_elements": len(elements),
+            "slide_dimensions": {
+                "width": round(slide_width_inches, 3),
+                "height": round(slide_height_inches, 3)
+            },
+            "elements_outside_boundary": elements_outside_boundary,
+            "boundary_warning": warning_message,
+            "detailed_warnings": all_warnings,
             "elements": elements
         }
         
         return result
+
 
 
