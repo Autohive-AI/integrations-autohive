@@ -6,7 +6,7 @@
     "actions": {
         "create_presentation": {
             "display_name": "Create PowerPoint Presentation",
-            "description": "Create a new PowerPoint presentation with optional template. If template files (*.pptx) are provided in the 'files' parameter, the first template found will be used. Otherwise, a blank presentation is created. Returns a unique presentation_id for use with other actions and the complete presentation file for stateless operation.",
+            "description": "Create a new PowerPoint presentation with optional template. If template files (*.pptx) are provided in the 'files' parameter, the first template found will be used. Otherwise, a blank presentation is created. If title/subtitle are provided, they will be added as text boxes on a blank slide (no title slide layouts are used). Only blank slides are supported - all slides are created without predefined layouts or placeholders. Returns a unique presentation_id for use with other actions and the complete presentation file for stateless operation.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -94,8 +94,8 @@
             }
         },
         "add_slide": {
-            "display_name": "Add Slide",
-            "description": "Add a new blank slide to an existing presentation. Requires the current presentation file in the 'files' parameter. This action only creates blank slides - use other actions like add_text, add_image, or add_bullet_list to add content to the slide. Returns the updated presentation file.",
+            "display_name": "Add Blank Slide",
+            "description": "Add a new blank slide to an existing presentation. Requires the current presentation file in the 'files' parameter. Only blank slides are supported - all slides are created without any predefined layout or placeholders. Use other actions like add_text, add_image, or add_bullet_list to add content to the slide. Returns the updated presentation file.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -1648,6 +1648,28 @@
                         "type": "integer",
                         "description": "Total number of elements on the slide"
                     },
+                    "slide_dimensions": {
+                        "type": "object",
+                        "description": "Slide dimensions in inches",
+                        "properties": {
+                            "width": {"type": "number", "description": "Slide width in inches"},
+                            "height": {"type": "number", "description": "Slide height in inches"}
+                        },
+                        "required": ["width", "height"]
+                    },
+                    "elements_outside_boundary": {
+                        "type": "integer",
+                        "description": "Number of elements that extend beyond the slide boundaries"
+                    },
+                    "boundary_warning": {
+                        "type": "string",
+                        "description": "Summary warning message if any elements are outside slide boundaries"
+                    },
+                    "detailed_warnings": {
+                        "type": "array",
+                        "description": "Detailed warning messages for each element that extends beyond boundaries",
+                        "items": {"type": "string"}
+                    },
                     "elements": {
                         "type": "array",
                         "description": "List of all elements on the slide",
@@ -1672,9 +1694,11 @@
                                         "left": {"type": "number", "description": "Left position in inches"},
                                         "top": {"type": "number", "description": "Top position in inches"},
                                         "width": {"type": "number", "description": "Width in inches"},
-                                        "height": {"type": "number", "description": "Height in inches"}
+                                        "height": {"type": "number", "description": "Height in inches"},
+                                        "right": {"type": "number", "description": "Right edge position in inches (left + width)"},
+                                        "bottom": {"type": "number", "description": "Bottom edge position in inches (top + height)"}
                                     },
-                                    "required": ["left", "top", "width", "height"]
+                                    "required": ["left", "top", "width", "height", "right", "bottom"]
                                 },
                                 "content": {
                                     "type": "string",
@@ -1687,13 +1711,27 @@
                                 "name": {
                                     "type": "string",
                                     "description": "Element name if available"
+                                },
+                                "boundary_status": {
+                                    "type": "string",
+                                    "enum": ["inside", "outside", "text_overflow_risk"],
+                                    "description": "Element boundary status: 'inside' = fully contained, 'outside' = extends beyond slide, 'text_overflow_risk' = inside slide but text may overflow the text box"
+                                },
+                                "boundary_warnings": {
+                                    "type": "array",
+                                    "description": "Specific warnings about boundary issues and text overflow problems",
+                                    "items": {"type": "string"}
+                                },
+                                "text_overflow_detected": {
+                                    "type": "boolean",
+                                    "description": "Whether text overflow issues were detected in this element"
                                 }
                             },
-                            "required": ["index", "type", "shape_id", "position", "content", "has_text"]
+                            "required": ["index", "type", "shape_id", "position", "content", "has_text", "boundary_status", "boundary_warnings", "text_overflow_detected"]
                         }
                     }
                 },
-                "required": ["slide_index", "total_elements", "elements"]
+                "required": ["slide_index", "total_elements", "slide_dimensions", "elements_outside_boundary", "boundary_warning", "detailed_warnings", "elements"]
             }
         }
     }
