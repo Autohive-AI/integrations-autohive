@@ -59,6 +59,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, and Calendar through Microsoft Graph API. Supports email management (send, list, read, organize), calendar operations (create, update, list events), file operations (upload to OneDrive, list files), and contact management. Features timezone-aware operations, folder management, HTML email support, and OAuth2 authentication with proper scope handling for enterprise-grade Microsoft 365 workflows.
 
+### Slide Maker
+
+[slide-maker](slide-maker): PowerPoint automation integration using python-pptx for creating, modifying, and extracting content from presentations. Supports creating presentations from templates or blank slides, adding text boxes with formatting, inserting images and charts, creating tables and bullet lists, and comprehensive slide element inspection with boundary and overlap detection. Features in-place element modification, background management, text auto-sizing controls, and stateless operation suitable for Lambda environments. Only creates blank slides for consistent behavior across PowerPoint versions.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
