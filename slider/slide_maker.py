@@ -113,6 +113,88 @@ def hex_to_rgb(hex_color: str) -> tuple:
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
+def calculate_overlap(element1_pos, element2_pos):
+    """Calculate overlap between two rectangular elements"""
+    # Extract positions
+    left1, top1, right1, bottom1 = element1_pos["left"], element1_pos["top"], element1_pos["right"], element1_pos["bottom"]
+    left2, top2, right2, bottom2 = element2_pos["left"], element2_pos["top"], element2_pos["right"], element2_pos["bottom"]
+    
+    # Calculate overlap area
+    overlap_left = max(left1, left2)
+    overlap_top = max(top1, top2)
+    overlap_right = min(right1, right2)
+    overlap_bottom = min(bottom1, bottom2)
+    
+    # Check if there's actually an overlap
+    if overlap_left < overlap_right and overlap_top < overlap_bottom:
+        overlap_width = overlap_right - overlap_left
+        overlap_height = overlap_bottom - overlap_top
+        overlap_area = overlap_width * overlap_height
+        
+        # Calculate percentages of overlap relative to each element
+        area1 = element1_pos["width"] * element1_pos["height"]
+        area2 = element2_pos["width"] * element2_pos["height"]
+        
+        overlap_percent1 = (overlap_area / area1 * 100) if area1 > 0 else 0
+        overlap_percent2 = (overlap_area / area2 * 100) if area2 > 0 else 0
+        
+        return {
+            "overlaps": True,
+            "overlap_area": round(overlap_area, 3),
+            "overlap_width": round(overlap_width, 3),
+            "overlap_height": round(overlap_height, 3),
+            "overlap_position": {
+                "left": round(overlap_left, 3),
+                "top": round(overlap_top, 3),
+                "right": round(overlap_right, 3),
+                "bottom": round(overlap_bottom, 3)
+            },
+            "overlap_percent_element1": round(overlap_percent1, 1),
+            "overlap_percent_element2": round(overlap_percent2, 1)
+        }
+    else:
+        return {"overlaps": False}
+
+def analyze_all_element_overlaps(elements):
+    """Analyze overlaps between ALL elements on the slide"""
+    overlaps = []
+    total_overlaps = 0
+    
+    # Check every element against every other element
+    for i in range(len(elements)):
+        for j in range(i + 1, len(elements)):
+            element1 = elements[i]
+            element2 = elements[j]
+            
+            overlap_info = calculate_overlap(element1["position"], element2["position"])
+            
+            if overlap_info["overlaps"]:
+                total_overlaps += 1
+                overlap_details = {
+                    "element1_index": element1["index"],
+                    "element1_type": element1["type"],
+                    "element1_name": element1.get("name", ""),
+                    "element2_index": element2["index"],
+                    "element2_type": element2["type"], 
+                    "element2_name": element2.get("name", ""),
+                    "overlap_area": overlap_info["overlap_area"],
+                    "overlap_dimensions": {
+                        "width": overlap_info["overlap_width"],
+                        "height": overlap_info["overlap_height"]
+                    },
+                    "overlap_position": overlap_info["overlap_position"],
+                    "overlap_percentages": {
+                        "element1_coverage": overlap_info["overlap_percent_element1"],
+                        "element2_coverage": overlap_info["overlap_percent_element2"]
+                    },
+                    "severity": "high" if max(overlap_info["overlap_percent_element1"], overlap_info["overlap_percent_element2"]) > 50 else 
+                              "medium" if max(overlap_info["overlap_percent_element1"], overlap_info["overlap_percent_element2"]) > 20 else "low",
+                    "description": f"{element1['type']} (#{element1['index']}) overlaps {element2['type']} (#{element2['index']}) by {overlap_info['overlap_area']:.2f} sq inches ({max(overlap_info['overlap_percent_element1'], overlap_info['overlap_percent_element2']):.1f}% coverage)"
+                }
+                overlaps.append(overlap_details)
+    
+    return overlaps, total_overlaps
+
 def get_element_info(shape, index: int, slide_width_inches: float, slide_height_inches: float) -> dict:
     """Extract detailed information about a shape/element including boundary checking"""
     from pptx.util import Inches
@@ -176,51 +258,60 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
         try:
             text_frame = shape.text_frame
             
-            # Get all text from paragraphs
+            # Get all text from paragraphs (including blank lines for content)
             text_parts = []
+            all_paragraphs = []  # Track ALL paragraphs including blank ones
+            
             for paragraph in text_frame.paragraphs:
                 paragraph_text = ''.join(run.text for run in paragraph.runs)
+                all_paragraphs.append(paragraph_text)  # Include blank paragraphs
+                
                 if paragraph_text.strip():
                     text_parts.append(paragraph_text.strip())
+                    
             content = '\n'.join(text_parts)
+            total_line_count = len(all_paragraphs)  # Count ALL paragraphs for height calculation
             
-            # Check for text overflow indicators
+            # Basic emoji and font detection (keep these working parts)
             if content:
-                # Check auto-sizing status
-                auto_size_disabled = (hasattr(text_frame, 'auto_size') and 
-                                    text_frame.auto_size == 0)  # MSO_AUTO_SIZE.NONE
+                # Count visual characters, treating emojis as single characters
+                import re
+                emoji_pattern = re.compile(
+                    "["
+                    "\U0001F600-\U0001F64F"  # emoticons
+                    "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                    "\U0001F680-\U0001F6FF"  # transport & map symbols
+                    "\U0001F1E0-\U0001F1FF"  # flags
+                    "\U00002700-\U000027BF"  # dingbats
+                    "\U0001F900-\U0001F9FF"  # supplemental symbols
+                    "\U00002600-\U000026FF"  # miscellaneous symbols
+                    "\U0001F170-\U0001F251"  # enclosed characters
+                    "]+", flags=re.UNICODE)
                 
-                # Simple heuristics for text overflow detection
-                char_count = len(content)
-                line_count = len(text_parts)
+                # Remove emojis from content and count them separately
+                content_without_emojis = emoji_pattern.sub('', content)
+                emoji_count = len(emoji_pattern.findall(content))
+                
+                # Enhanced font size detection - check all runs and paragraphs
                 avg_font_size = 12  # Default assumption
-                
-                # Try to get actual font size
+                font_sizes_found = []
                 try:
-                    if text_frame.paragraphs and text_frame.paragraphs[0].runs:
-                        first_run = text_frame.paragraphs[0].runs[0]
-                        if hasattr(first_run.font, 'size') and first_run.font.size:
-                            avg_font_size = first_run.font.size.pt
-                except:
-                    pass
-                
-                # Rough text overflow detection
-                if auto_size_disabled:
-                    # Estimate if text might overflow based on dimensions and content
-                    estimated_text_width = (char_count / line_count if line_count > 0 else char_count) * avg_font_size * 0.06  # Rough chars per inch
-                    estimated_text_height = line_count * avg_font_size * 0.014  # Rough lines per inch
+                    for paragraph in text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            if hasattr(run.font, 'size') and run.font.size is not None:
+                                font_sizes_found.append(run.font.size.pt)
+                            elif hasattr(paragraph.font, 'size') and paragraph.font.size is not None:
+                                font_sizes_found.append(paragraph.font.size.pt)
                     
-                    if estimated_text_width > width_inches * 0.8:  # 80% of box width
-                        text_overflow_detected = True
-                        warnings.append(f"Text may be too wide for text box (estimated {estimated_text_width:.1f}\" vs box {width_inches:.1f}\")")
-                    
-                    if estimated_text_height > height_inches * 0.8:  # 80% of box height
-                        text_overflow_detected = True
-                        warnings.append(f"Text may be too tall for text box (estimated {estimated_text_height:.1f}\" vs box {height_inches:.1f}\")")
+                    if font_sizes_found:
+                        avg_font_size = sum(font_sizes_found) / len(font_sizes_found)
+                    else:
+                        # If no font sizes found, check if there's a default from the text frame
+                        if hasattr(text_frame, 'font') and hasattr(text_frame.font, 'size') and text_frame.font.size:
+                            avg_font_size = text_frame.font.size.pt
                         
-                    if avg_font_size > 24 and (width_inches < 2 or height_inches < 1):
-                        text_overflow_detected = True
-                        warnings.append(f"Large font size ({avg_font_size}pt) in small text box may cause overflow")
+                except Exception as e:
+                    pass
                         
         except:
             content = ""
@@ -230,11 +321,9 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
     if hasattr(shape, 'name'):
         name = shape.name or ""
     
-    # Update boundary status if text overflow detected
-    if text_overflow_detected and boundary_status == "inside":
-        boundary_status = "text_overflow_risk"
+    # Boundary status is just for position boundaries now
     
-    return {
+    result = {
         "index": index,
         "type": element_type,
         "shape_id": str(shape.shape_id) if hasattr(shape, 'shape_id') else str(index),
@@ -250,9 +339,10 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
         "has_text": has_text,
         "name": name,
         "boundary_status": boundary_status,
-        "boundary_warnings": warnings,
-        "text_overflow_detected": text_overflow_detected
+        "boundary_warnings": warnings
     }
+    
+    return result
 
 
 # ---- Action Handlers ----
@@ -1370,6 +1460,7 @@ class GetSlideElementsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
+        include_content = inputs.get("include_content", False)
         files = inputs.get("files", [])
         
         # Load presentation from files if not in memory
@@ -1403,25 +1494,215 @@ class GetSlideElementsAction(ActionHandler):
                 for warning in element_info["boundary_warnings"]:
                     all_warnings.append(f"Element {i} ({element_info['type']}): {warning}")
         
-        # Create summary warning message
-        warning_message = ""
+        # Analyze element overlaps
+        overlaps, total_overlaps = analyze_all_element_overlaps(elements)
+        
+        # Create summary warning messages
+        boundary_warning = ""
         if elements_outside_boundary > 0:
-            warning_message = f"{elements_outside_boundary} element(s) extend beyond slide boundaries (slide size: {slide_width_inches:.1f}\" x {slide_height_inches:.1f}\")"
+            boundary_warning = f"{elements_outside_boundary} element(s) extend beyond slide boundaries (slide size: {slide_width_inches:.1f}\" x {slide_height_inches:.1f}\")"
+        
+        overlap_warning = ""
+        if total_overlaps > 0:
+            high_severity = len([o for o in overlaps if o["severity"] == "high"])
+            if high_severity > 0:
+                overlap_warning = f"{total_overlaps} element overlap(s) detected ({high_severity} high severity)"
+            else:
+                overlap_warning = f"{total_overlaps} element overlap(s) detected"
+        
+        # Combine all warnings
+        combined_warnings = []
+        if boundary_warning:
+            combined_warnings.append(boundary_warning)
+        if overlap_warning:
+            combined_warnings.append(overlap_warning)
+        
+        overall_warning = "; ".join(combined_warnings) if combined_warnings else ""
+        
+        # Create optimized result with minimal tokens
+        has_issues = elements_outside_boundary > 0 or total_overlaps > 0
         
         result = {
             "slide_index": slide_index,
             "total_elements": len(elements),
+            "layout_status": "issues_detected" if has_issues else "no_issues",
             "slide_dimensions": {
                 "width": round(slide_width_inches, 3),
                 "height": round(slide_height_inches, 3)
-            },
-            "elements_outside_boundary": elements_outside_boundary,
-            "boundary_warning": warning_message,
-            "detailed_warnings": all_warnings,
-            "elements": elements
+            }
         }
         
+        # Only include issue details if there are actual issues
+        if has_issues:
+            result["elements_outside_boundary"] = elements_outside_boundary
+            result["total_overlapping_pairs"] = total_overlaps
+            
+            if overlaps:
+                result["element_overlaps"] = overlaps
+        
+        # Optimize element data based on include_content parameter
+        optimized_elements = []
+        for element in elements:
+            optimized_element = {
+                "index": element["index"],
+                "type": element["type"],
+                "shape_id": element["shape_id"],
+                "position": {
+                    "left": element["position"]["left"],
+                    "top": element["position"]["top"], 
+                    "width": element["position"]["width"],
+                    "height": element["position"]["height"]
+                }
+            }
+            
+            # Include content if requested OR if there are issues with this element
+            has_element_issues = (element["boundary_status"] != "inside" or 
+                                element["boundary_warnings"])
+            
+            if include_content or has_element_issues:
+                if element["has_text"] and element["content"]:
+                    optimized_element["content"] = element["content"]
+            
+            # Only include problem indicators if there are actual problems
+            if element["boundary_status"] != "inside":
+                optimized_element["boundary_status"] = element["boundary_status"]
+            
+            if element["boundary_warnings"]:
+                optimized_element["boundary_warnings"] = element["boundary_warnings"]
+            
+            optimized_elements.append(optimized_element)
+        
+        result["elements"] = optimized_elements
+        
         return result
+
+@slide_maker.action("modify_element")
+class ModifyElementAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        presentation_id = inputs["presentation_id"]
+        slide_index = inputs["slide_index"]
+        element_index = inputs["element_index"]
+        new_position = inputs.get("position")
+        new_text_content = inputs.get("text_content")
+        formatting = inputs.get("formatting", {})
+        files = inputs.get("files", [])
+        
+        # Load presentation from files if not in memory
+        load_presentation_from_files(presentation_id, files)
+        
+        if presentation_id not in presentations:
+            raise ValueError(f"Presentation {presentation_id} not found")
+        
+        prs = presentations[presentation_id]
+        if slide_index >= len(prs.slides):
+            raise ValueError(f"Slide index {slide_index} out of range")
+        
+        slide = prs.slides[slide_index]
+        if element_index >= len(slide.shapes):
+            raise ValueError(f"Element index {element_index} out of range. Slide has {len(slide.shapes)} elements.")
+        
+        shape = slide.shapes[element_index]
+        changes_made = []
+        
+        # Get element type for reporting
+        element_type = "unknown"
+        if hasattr(shape, 'shape_type'):
+            shape_type = shape.shape_type
+            if shape_type == 1:
+                element_type = "shape"
+            elif shape_type == 13:
+                element_type = "image"
+            elif shape_type == 19:
+                element_type = "table"
+            elif shape_type == 3:
+                element_type = "chart"
+            elif shape_type == 17:
+                element_type = "text_box"
+            elif hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+                element_type = "text_element"
+        
+        # Modify position and size if provided
+        if new_position:
+            if "left" in new_position:
+                shape.left = Inches(new_position["left"])
+                changes_made.append(f"Updated left position to {new_position['left']} inches")
+            if "top" in new_position:
+                shape.top = Inches(new_position["top"])
+                changes_made.append(f"Updated top position to {new_position['top']} inches")
+            if "width" in new_position:
+                shape.width = Inches(new_position["width"])
+                changes_made.append(f"Updated width to {new_position['width']} inches")
+            if "height" in new_position:
+                shape.height = Inches(new_position["height"])
+                changes_made.append(f"Updated height to {new_position['height']} inches")
+        
+        # Modify text content if provided and element supports text
+        if new_text_content is not None and hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+            shape.text_frame.clear()
+            shape.text_frame.text = new_text_content
+            changes_made.append(f"Updated text content")
+        
+        # Apply text formatting if provided and element supports text
+        if formatting and hasattr(shape, 'has_text_frame') and shape.has_text_frame:
+            text_frame = shape.text_frame
+            
+            # Apply formatting to ALL levels: paragraphs AND runs
+            for paragraph in text_frame.paragraphs:
+                # Apply to paragraph level first
+                if formatting.get("font_size"):
+                    paragraph.font.size = Pt(formatting["font_size"])
+                if formatting.get("bold") is not None:
+                    paragraph.font.bold = formatting["bold"]
+                if formatting.get("italic") is not None:
+                    paragraph.font.italic = formatting["italic"]
+                if formatting.get("color"):
+                    rgb = hex_to_rgb(formatting["color"])
+                    paragraph.font.color.rgb = RGBColor(*rgb)
+                
+                # Apply to all runs to override any existing run-level formatting
+                for run in paragraph.runs:
+                    if formatting.get("font_size"):
+                        run.font.size = Pt(formatting["font_size"])
+                    if formatting.get("bold") is not None:
+                        run.font.bold = formatting["bold"]
+                    if formatting.get("italic") is not None:
+                        run.font.italic = formatting["italic"]
+                    if formatting.get("color"):
+                        rgb = hex_to_rgb(formatting["color"])
+                        run.font.color.rgb = RGBColor(*rgb)
+            
+            # Add change notifications
+            if formatting.get("font_size"):
+                changes_made.append(f"Updated font size to {formatting['font_size']}pt")
+            if formatting.get("bold") is not None:
+                changes_made.append(f"Set bold to {formatting['bold']}")
+            if formatting.get("italic") is not None:
+                changes_made.append(f"Set italic to {formatting['italic']}")
+            if formatting.get("color"):
+                changes_made.append(f"Updated text color to {formatting['color']}")
+        
+        # Get updated position information
+        new_left = shape.left / 914400 if shape.left is not None else 0
+        new_top = shape.top / 914400 if shape.top is not None else 0
+        new_width = shape.width / 914400 if shape.width is not None else 0
+        new_height = shape.height / 914400 if shape.height is not None else 0
+        
+        result = {
+            "modified": len(changes_made) > 0,
+            "element_index": element_index,
+            "element_type": element_type,
+            "changes_made": changes_made,
+            "new_position": {
+                "left": round(new_left, 3),
+                "top": round(new_top, 3),
+                "width": round(new_width, 3),
+                "height": round(new_height, 3),
+                "right": round(new_left + new_width, 3),
+                "bottom": round(new_top + new_height, 3)
+            }
+        }
+        
+        return await save_and_return_presentation(result, presentation_id, context)
 
 
 
