@@ -1609,7 +1609,7 @@
         },
         "get_slide_elements": {
             "display_name": "Get Slide Elements",
-            "description": "Get detailed information about all elements (shapes, text boxes, images, charts, tables, etc.) on a slide, including their positions, sizes, types, and content. Requires the current presentation file in the 'files' parameter. Use this to inspect what elements are present on a slide before modifying or deleting them. Elements are listed in the order they appear on the slide, with index numbers that correspond to the delete_element action.",
+            "description": "Get detailed information about all elements (shapes, text boxes, images, charts, tables, etc.) on a slide, including their positions, sizes, types, and boundary/overlap analysis. Content is automatically included for elements with detected problems (boundary violations, overlaps). Use the include_content parameter only when you need to see content for elements that have no issues. Requires the current presentation file in the 'files' parameter. Elements are listed in the order they appear on the slide, with index numbers that correspond to the delete_element action.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -1623,7 +1623,7 @@
                     },
                     "include_content": {
                         "type": "boolean",
-                        "description": "Whether to include text content for all elements in the response (default: false for minimal output)",
+                        "description": "Whether to include text content for elements with no detected issues. Content is automatically shown for problematic elements. Only use true when you need content for elements that have no boundary/overlap problems (default: false for minimal output)",
                         "default": false
                     },
                     "files": {
@@ -1656,7 +1656,7 @@
                     "layout_status": {
                         "type": "string",
                         "enum": ["no_issues", "issues_detected"],
-                        "description": "Overall layout status: 'no_issues' if all elements are properly positioned, 'issues_detected' if there are boundary, text overflow, or overlap problems"
+                        "description": "Overall layout status: 'no_issues' if all elements are properly positioned, 'issues_detected' if there are boundary or overlap problems"
                     },
                     "slide_dimensions": {
                         "type": "object",
@@ -1685,11 +1685,11 @@
                     },
                     "overall_warning": {
                         "type": "string",
-                        "description": "Combined summary of all layout issues (boundary, text overflow, and overlaps)"
+                        "description": "Combined summary of all layout issues (boundary and overlaps)"
                     },
                     "detailed_warnings": {
                         "type": "array",
-                        "description": "Detailed warning messages for boundary and text overflow issues",
+                        "description": "Detailed warning messages for boundary issues",
                         "items": {"type": "string"}
                     },
                     "element_overlaps": {

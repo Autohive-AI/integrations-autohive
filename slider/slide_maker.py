@@ -17,17 +17,14 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-# Create the integration using the config.json
 slide_maker = Integration.load()
 
-# Global dictionaries to store presentations and uploaded images in memory
 presentations = {}
 uploaded_images = {}
 
 # Only blank slides are supported (layout index 6)
 BLANK_LAYOUT_INDEX = 6
 
-# Chart type mapping
 CHART_TYPE_MAP = {
     "column_clustered": XL_CHART_TYPE.COLUMN_CLUSTERED,
     "line": XL_CHART_TYPE.LINE,
@@ -42,13 +39,10 @@ def process_files(files: List[Dict[str, Any]]) -> Dict[str, BytesIO]:
     processed_files = {}
     if files:
         for file_item in files:
-            # Decode base64 content similar to Gmail implementation
             content_as_string = file_item['content']
             
-            # Add necessary padding
             padded_content_string = content_as_string + '=' * (-len(content_as_string) % 4)
             
-            # Decode the file content
             file_binary_data = base64.urlsafe_b64decode(padded_content_string.encode('ascii'))
             file_stream = BytesIO(file_binary_data)
             
@@ -61,16 +55,13 @@ def load_presentation_from_files(presentation_id: str, files: List[Dict[str, Any
     if presentation_id not in presentations and files:
         processed_files = process_files(files)
         
-        # Look for presentation file
         for filename, file_stream in processed_files.items():
-            # Check for .pptx files or .bin files (which might be intercepted .pptx files)
             if filename.lower().endswith('.pptx') or filename.lower().endswith('.bin'):
                 try:
                     prs = Presentation(file_stream)
                     presentations[presentation_id] = prs
                     return
                 except Exception as e:
-                    # If this file fails to load as PowerPoint, try the next one
                     continue
         
         # If no valid PowerPoint file found, provide better error message
@@ -83,9 +74,7 @@ async def save_and_return_presentation(original_result: Dict[str, Any], presenta
     """Helper to save presentation and return combined result"""
     save_action = SavePresentationAction()
     
-    # Use custom filename if provided, otherwise use presentation_id
     if custom_filename:
-        # Ensure .pptx extension
         if not custom_filename.lower().endswith('.pptx'):
             custom_filename += '.pptx'
         file_path = custom_filename
@@ -98,7 +87,6 @@ async def save_and_return_presentation(original_result: Dict[str, Any], presenta
     }
     save_result = await save_action.execute(save_inputs, context)
     
-    # Combine original result with save result
     combined_result = original_result.copy()
     combined_result.update({
         "saved": save_result["saved"],
@@ -115,17 +103,15 @@ def hex_to_rgb(hex_color: str) -> tuple:
 
 def calculate_overlap(element1_pos, element2_pos):
     """Calculate overlap between two rectangular elements"""
-    # Extract positions
     left1, top1, right1, bottom1 = element1_pos["left"], element1_pos["top"], element1_pos["right"], element1_pos["bottom"]
     left2, top2, right2, bottom2 = element2_pos["left"], element2_pos["top"], element2_pos["right"], element2_pos["bottom"]
     
-    # Calculate overlap area
     overlap_left = max(left1, left2)
     overlap_top = max(top1, top2)
     overlap_right = min(right1, right2)
     overlap_bottom = min(bottom1, bottom2)
     
-    # Check if there's actually an overlap
+    # Check if there's an overlap
     if overlap_left < overlap_right and overlap_top < overlap_bottom:
         overlap_width = overlap_right - overlap_left
         overlap_height = overlap_bottom - overlap_top
@@ -160,7 +146,6 @@ def analyze_all_element_overlaps(elements):
     overlaps = []
     total_overlaps = 0
     
-    # Check every element against every other element
     for i in range(len(elements)):
         for j in range(i + 1, len(elements)):
             element1 = elements[i]
@@ -205,11 +190,9 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
     width_inches = shape.width / 914400 if shape.width is not None else 0
     height_inches = shape.height / 914400 if shape.height is not None else 0
     
-    # Calculate right and bottom edges
     right_inches = left_inches + width_inches
     bottom_inches = top_inches + height_inches
     
-    # Check boundaries and generate warnings
     warnings = []
     boundary_status = "inside"
     
@@ -248,7 +231,7 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
         elif hasattr(shape, 'has_text_frame') and shape.has_text_frame:
             element_type = "text_element"
     
-    # Extract text content and check for overflow
+    # Extract text content
     content = ""
     has_text = False
     text_overflow_detected = False
@@ -258,60 +241,13 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
         try:
             text_frame = shape.text_frame
             
-            # Get all text from paragraphs (including blank lines for content)
             text_parts = []
-            all_paragraphs = []  # Track ALL paragraphs including blank ones
-            
             for paragraph in text_frame.paragraphs:
                 paragraph_text = ''.join(run.text for run in paragraph.runs)
-                all_paragraphs.append(paragraph_text)  # Include blank paragraphs
-                
                 if paragraph_text.strip():
                     text_parts.append(paragraph_text.strip())
                     
             content = '\n'.join(text_parts)
-            total_line_count = len(all_paragraphs)  # Count ALL paragraphs for height calculation
-            
-            # Basic emoji and font detection (keep these working parts)
-            if content:
-                # Count visual characters, treating emojis as single characters
-                import re
-                emoji_pattern = re.compile(
-                    "["
-                    "\U0001F600-\U0001F64F"  # emoticons
-                    "\U0001F300-\U0001F5FF"  # symbols & pictographs
-                    "\U0001F680-\U0001F6FF"  # transport & map symbols
-                    "\U0001F1E0-\U0001F1FF"  # flags
-                    "\U00002700-\U000027BF"  # dingbats
-                    "\U0001F900-\U0001F9FF"  # supplemental symbols
-                    "\U00002600-\U000026FF"  # miscellaneous symbols
-                    "\U0001F170-\U0001F251"  # enclosed characters
-                    "]+", flags=re.UNICODE)
-                
-                # Remove emojis from content and count them separately
-                content_without_emojis = emoji_pattern.sub('', content)
-                emoji_count = len(emoji_pattern.findall(content))
-                
-                # Enhanced font size detection - check all runs and paragraphs
-                avg_font_size = 12  # Default assumption
-                font_sizes_found = []
-                try:
-                    for paragraph in text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            if hasattr(run.font, 'size') and run.font.size is not None:
-                                font_sizes_found.append(run.font.size.pt)
-                            elif hasattr(paragraph.font, 'size') and paragraph.font.size is not None:
-                                font_sizes_found.append(paragraph.font.size.pt)
-                    
-                    if font_sizes_found:
-                        avg_font_size = sum(font_sizes_found) / len(font_sizes_found)
-                    else:
-                        # If no font sizes found, check if there's a default from the text frame
-                        if hasattr(text_frame, 'font') and hasattr(text_frame.font, 'size') and text_frame.font.size:
-                            avg_font_size = text_frame.font.size.pt
-                        
-                except Exception as e:
-                    pass
                         
         except:
             content = ""
@@ -320,9 +256,8 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
     name = ""
     if hasattr(shape, 'name'):
         name = shape.name or ""
-    
-    # Boundary status is just for position boundaries now
-    
+
+
     result = {
         "index": index,
         "type": element_type,
@@ -355,10 +290,8 @@ class CreatePresentationAction(ActionHandler):
         files = inputs.get("files", [])
         custom_filename = inputs.get("custom_filename")
         
-        # Process files to get template if provided
         processed_files = process_files(files)
         
-        # Create presentation from template or blank
         template_file = None
         for filename, file_stream in processed_files.items():
             if filename.lower().endswith('.pptx'):
@@ -370,7 +303,6 @@ class CreatePresentationAction(ActionHandler):
         else:
             prs = Presentation()
         
-        # Add blank slide if title is provided (only blank slides supported)
         if title:
             if len(prs.slides) == 0:
                 # Add blank slide instead of title slide
@@ -380,10 +312,10 @@ class CreatePresentationAction(ActionHandler):
                 slide = prs.slides[0]
             
             # Add title as a text box on the blank slide
-            title_left = 0.5  # inches from left
-            title_top = 0.5   # inches from top
-            title_width = prs.slide_width / 914400 - 1.0  # Convert EMU to inches, leave margin
-            title_height = 1.0  # 1 inch height for title
+            title_left = 0.5 
+            title_top = 0.5   
+            title_width = prs.slide_width / 914400 - 1.0 
+            title_height = 1.0 
             
             title_box = slide.shapes.add_textbox(
                 Inches(title_left), Inches(title_top), 
@@ -391,13 +323,13 @@ class CreatePresentationAction(ActionHandler):
             )
             title_frame = title_box.text_frame
             title_frame.text = title
-            title_frame.paragraphs[0].font.size = Pt(32)  # Large title font
+            title_frame.paragraphs[0].font.size = Pt(32)
             title_frame.paragraphs[0].font.bold = True
             
             # Add subtitle if provided
             if subtitle:
-                subtitle_top = title_top + title_height + 0.2  # Below title with spacing
-                subtitle_height = 0.8  # Smaller height for subtitle
+                subtitle_top = title_top + title_height + 0.2  
+                subtitle_height = 0.8
                 
                 subtitle_box = slide.shapes.add_textbox(
                     Inches(title_left), Inches(subtitle_top),
@@ -405,7 +337,7 @@ class CreatePresentationAction(ActionHandler):
                 )
                 subtitle_frame = subtitle_box.text_frame
                 subtitle_frame.text = subtitle
-                subtitle_frame.paragraphs[0].font.size = Pt(18)  # Smaller subtitle font
+                subtitle_frame.paragraphs[0].font.size = Pt(18)
         
         # Generate unique ID and store presentation
         presentation_id = str(uuid.uuid4())
@@ -424,18 +356,15 @@ class AddSlideAction(ActionHandler):
         presentation_id = inputs["presentation_id"]
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
         
         prs = presentations[presentation_id]
-        # Only blank slides are supported
         slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
         slide = prs.slides.add_slide(slide_layout)
         
-        # Save and return the updated presentation
         original_result = {
             "slide_index": len(prs.slides) - 1,
             "slide_count": len(prs.slides)
@@ -452,7 +381,6 @@ class AddTextAction(ActionHandler):
         formatting = inputs.get("formatting", {})
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -464,7 +392,6 @@ class AddTextAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create text box with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
@@ -476,9 +403,9 @@ class AddTextAction(ActionHandler):
         
         # Adjust if text box exceeds slide boundaries
         if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)  # Leave small margin
+            width = slide_width - left - Inches(0.1)  
         if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)  # Leave small margin
+            height = slide_height - top - Inches(0.1)
             
         # Ensure minimum text box size
         if width < Inches(0.5):
@@ -491,10 +418,9 @@ class AddTextAction(ActionHandler):
         tf.text = text
         
         # Apply text containment features to prevent overflow
-        tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE  # Force text to fit shape
-        tf.word_wrap = True  # Enable word wrapping
+        tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+        tf.word_wrap = True
         
-        # Set default margins to prevent text touching edges
         tf.margin_left = Inches(0.1)
         tf.margin_right = Inches(0.1)
         tf.margin_top = Inches(0.05)
@@ -517,7 +443,6 @@ class AddTextAction(ActionHandler):
             tf.auto_size = MSO_AUTO_SIZE.NONE
             p.font.size = Pt(font_size)
         else:
-            # No specific font size - use auto-sizing with dimension workaround
             # Force recalculation by slightly adjusting text box size
             original_width = txBox.width
             original_height = txBox.height
@@ -530,7 +455,6 @@ class AddTextAction(ActionHandler):
             txBox.width = original_width
             txBox.height = original_height
         
-        # Save and return the updated presentation
         original_result = {"shape_id": str(txBox.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -542,17 +466,14 @@ class AddImageAction(ActionHandler):
         position = inputs["position"]
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
         
-        # Process files to get the first image file
         processed_files = process_files(files)
         image_file = None
         
-        # Check both filename extensions and content types
         for file_item in files:
             filename = file_item['name']
             content_type = file_item.get('contentType', '')
@@ -574,7 +495,6 @@ class AddImageAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Add image with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         
@@ -588,11 +508,10 @@ class AddImageAction(ActionHandler):
             
             # Validate image doesn't exceed slide boundaries
             if left + width > slide_width:
-                width = slide_width - left - Inches(0.1)  # Leave small margin
+                width = slide_width - left - Inches(0.1)
             if top + height > slide_height:
-                height = slide_height - top - Inches(0.1)  # Leave small margin
+                height = slide_height - top - Inches(0.1)
                 
-            # Ensure minimum image size
             if width < Inches(0.5):
                 width = Inches(0.5)
             if height < Inches(0.5):
@@ -608,7 +527,6 @@ class AddImageAction(ActionHandler):
                 
             pic = slide.shapes.add_picture(image_file, left, top)
         
-        # Save and return the updated presentation
         original_result = {"shape_id": str(pic.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -623,7 +541,6 @@ class AddTableAction(ActionHandler):
         data = inputs.get("data", [])
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -635,13 +552,11 @@ class AddTableAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create table with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
         height = Inches(position["height"])
         
-        # Validate table doesn't exceed slide boundaries
         slide_width = prs.slide_width
         slide_height = prs.slide_height
         
@@ -651,7 +566,6 @@ class AddTableAction(ActionHandler):
         if top + height > slide_height:
             height = slide_height - top - Inches(0.1)  # Leave small margin
             
-        # Ensure minimum table size
         if width < Inches(1):
             width = Inches(1)
         if height < Inches(0.5):
@@ -664,7 +578,6 @@ class AddTableAction(ActionHandler):
             for col_idx, cell_value in enumerate(row_data[:cols]):
                 table.cell(row_idx, col_idx).text = str(cell_value)
         
-        # Save and return the updated presentation
         original_result = {"table_id": f"table_{slide_index}_{len(slide.shapes)}"}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -678,7 +591,6 @@ class AddChartAction(ActionHandler):
         data = inputs["data"]
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -690,14 +602,12 @@ class AddChartAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create chart data
         chart_data = CategoryChartData()
         chart_data.categories = data["categories"]
         
         for series in data["series"]:
             chart_data.add_series(series["name"], series["values"])
         
-        # Add chart with size validation
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
@@ -709,11 +619,10 @@ class AddChartAction(ActionHandler):
         
         # Adjust if chart exceeds slide boundaries
         if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)  # Leave small margin
+            width = slide_width - left - Inches(0.1)  
         if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)  # Leave small margin
+            height = slide_height - top - Inches(0.1)  
             
-        # Ensure minimum chart size
         if width < Inches(1):
             width = Inches(1)
         if height < Inches(1):
@@ -722,7 +631,6 @@ class AddChartAction(ActionHandler):
         chart_type_enum = CHART_TYPE_MAP.get(chart_type, XL_CHART_TYPE.COLUMN_CLUSTERED)
         chart_shape = slide.shapes.add_chart(chart_type_enum, left, top, width, height, chart_data)
         
-        # Save and return the updated presentation
         original_result = {"chart_id": str(chart_shape.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -769,7 +677,6 @@ class ModifySlideAction(ActionHandler):
         updates = inputs["updates"]
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -808,7 +715,6 @@ class ModifySlideAction(ActionHandler):
                             paragraph.text = new_paragraph_text
                             modified = True
         
-        # Save and return the updated presentation
         original_result = {"modified": modified}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -868,7 +774,6 @@ class SetTextAutosizeAction(ActionHandler):
         word_wrap = inputs.get("word_wrap", None)
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -898,28 +803,22 @@ class SetTextAutosizeAction(ActionHandler):
         if autosize_type not in autosize_map:
             raise ValueError(f"Invalid autosize_type. Must be one of: {list(autosize_map.keys())}")
         
-        # Set autosize
         text_frame.auto_size = autosize_map[autosize_type]
         
-        # Set word wrap if provided
         if word_wrap is not None:
             text_frame.word_wrap = word_wrap
             
         # Force recalculation by slightly adjusting text box size
         if autosize_type != "NONE":
-            # Get original dimensions
             original_width = shape.width
             original_height = shape.height
             
-            # Slightly adjust size (by 1 EMU - the smallest unit in PowerPoint)
             shape.width = original_width + 1
             shape.height = original_height + 1
             
-            # Restore original dimensions
             shape.width = original_width
             shape.height = original_height
             
-        # Save and return the updated presentation
         original_result = {
             "success": True,
             "autosize_type": autosize_type,
@@ -933,10 +832,9 @@ class FitTextToShapeAction(ActionHandler):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]
         shape_index = inputs["shape_index"]
-        max_size = inputs.get("max_size", 48)  # Maximum font size in points
+        max_size = inputs.get("max_size", 48)
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -960,19 +858,15 @@ class FitTextToShapeAction(ActionHandler):
         text_frame.fit_text(max_size=max_size)
         
         # Force recalculation by slightly adjusting text box size
-        # Get original dimensions
         original_width = shape.width
         original_height = shape.height
         
-        # Slightly adjust size (by 1 EMU - the smallest unit in PowerPoint)
         shape.width = original_width + 1
         shape.height = original_height + 1
         
-        # Restore original dimensions
         shape.width = original_width
         shape.height = original_height
         
-        # Save and return the updated presentation
         original_result = {
             "success": True,
             "max_size": max_size,
@@ -1166,7 +1060,6 @@ class SetSlideBackgroundGradientAction(ActionHandler):
         fill = background.fill
         fill.gradient()
         
-        # Set gradient angle
         fill.gradient_angle = angle
         
         # Set gradient stops if provided
@@ -1218,7 +1111,6 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         if presentation_id not in presentations:
             raise ValueError(f"Presentation {presentation_id} not found")
         
-        # Process files to get the first image file
         processed_files = process_files(files)
         image_file = None
         
@@ -1244,7 +1136,6 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Get slide dimensions
         slide_width = prs.slide_width
         slide_height = prs.slide_height
         
@@ -1304,7 +1195,6 @@ class AddBulletListAction(ActionHandler):
         formatting = inputs.get("formatting", {})
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -1316,7 +1206,6 @@ class AddBulletListAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Create text box with size validation for bullet list
         left = Inches(position["left"])
         top = Inches(position["top"])
         width = Inches(position["width"])
@@ -1328,11 +1217,10 @@ class AddBulletListAction(ActionHandler):
         
         # Adjust if bullet list exceeds slide boundaries
         if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)  # Leave small margin
+            width = slide_width - left - Inches(0.1)
         if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)  # Leave small margin
+            height = slide_height - top - Inches(0.1)
             
-        # Ensure minimum bullet list size
         if width < Inches(1):
             width = Inches(1)
         if height < Inches(0.5):
@@ -1342,7 +1230,7 @@ class AddBulletListAction(ActionHandler):
         textbox = slide.shapes.add_textbox(left, top, width, height)
         text_frame = textbox.text_frame
         text_frame.clear()
-        bullet_placeholder = False  # We're not using a placeholder
+        bullet_placeholder = False
         
         # Apply text containment features
         text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
@@ -1405,7 +1293,6 @@ class DeleteElementAction(ActionHandler):
         shape_index = inputs["shape_index"]
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -1463,7 +1350,6 @@ class GetSlideElementsAction(ActionHandler):
         include_content = inputs.get("include_content", False)
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
@@ -1510,7 +1396,6 @@ class GetSlideElementsAction(ActionHandler):
             else:
                 overlap_warning = f"{total_overlaps} element overlap(s) detected"
         
-        # Combine all warnings
         combined_warnings = []
         if boundary_warning:
             combined_warnings.append(boundary_warning)
@@ -1587,7 +1472,6 @@ class ModifyElementAction(ActionHandler):
         formatting = inputs.get("formatting", {})
         files = inputs.get("files", [])
         
-        # Load presentation from files if not in memory
         load_presentation_from_files(presentation_id, files)
         
         if presentation_id not in presentations:
