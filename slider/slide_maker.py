@@ -303,13 +303,15 @@ class CreatePresentationAction(ActionHandler):
         else:
             prs = Presentation()
         
+        # Always ensure at least one slide exists
+        if len(prs.slides) == 0:
+            blank_slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
+            slide = prs.slides.add_slide(blank_slide_layout)
+        else:
+            slide = prs.slides[0]
+        
+        # Add title and subtitle as text boxes if provided
         if title:
-            if len(prs.slides) == 0:
-                # Add blank slide instead of title slide
-                blank_slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
-                slide = prs.slides.add_slide(blank_slide_layout)
-            else:
-                slide = prs.slides[0]
             
             # Add title as a text box on the blank slide
             title_left = 0.5 
@@ -1174,8 +1176,26 @@ class ResetSlideBackgroundAction(ActionHandler):
         
         slide = prs.slides[slide_index]
         
-        # Reset to inherit background from master/layout
-        slide.follow_master_background = True
+        # Reset background by removing custom background fill
+        # This will cause the slide to inherit from master/layout
+        background = slide.background
+        fill = background.fill
+        
+        # Clear the background fill to revert to master
+        try:
+            # Remove any custom background by setting it to no fill
+            if hasattr(fill, '_fill') and fill._fill is not None:
+                fill._fill.clear()
+        except:
+            # Alternative approach: set background to inherit from master
+            try:
+                slide._element.cSld.attrib.pop('showMasterSp', None)
+                if hasattr(slide._element.cSld, 'bg'):
+                    bg_element = slide._element.cSld.bg
+                    if bg_element is not None:
+                        slide._element.cSld.remove(bg_element)
+            except:
+                pass  # If reset fails, continue
         
         result = {
             "success": True,
