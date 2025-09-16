@@ -40,6 +40,9 @@ async def test_basic_text():
         
         print(f"✅ Added basic text:")
         print(f"   Shape ID: {result['shape_id']}")
+        print(f"   Text added: \"{inputs['text']}\"")
+        print(f"   Position: {inputs['position']['left']}\", {inputs['position']['top']}\"")
+        print(f"   Size: {inputs['position']['width']}\" x {inputs['position']['height']}\"")
         print(f"   Saved: {result['saved']}")
         
         return result
@@ -75,7 +78,10 @@ async def test_formatted_text():
         
         print(f"✅ Added formatted text:")
         print(f"   Shape ID: {result['shape_id']}")
-        print(f"   Font: 24pt, bold, orange color")
+        print(f"   Text added: \"{inputs['text']}\"")
+        print(f"   Position: {inputs['position']['left']}\", {inputs['position']['top']}\"")
+        print(f"   Size: {inputs['position']['width']}\" x {inputs['position']['height']}\"")
+        print(f"   Font: 24pt, bold, orange color (#FF5733)")
         print(f"   Auto-sizing disabled due to specific font size")
         
         return result
@@ -109,8 +115,11 @@ async def test_auto_sized_text():
         
         print(f"✅ Added auto-sized text:")
         print(f"   Shape ID: {result['shape_id']}")
+        print(f"   Text added: \"{inputs['text'][:60]}...\"")
+        print(f"   Position: {inputs['position']['left']}\", {inputs['position']['top']}\"")
+        print(f"   Size: {inputs['position']['width']}\" x {inputs['position']['height']}\"")
         print(f"   Auto-sizing enabled with dimension workaround")
-        print(f"   Bold formatting applied")
+        print(f"   Bold formatting applied, blue color (#2E86AB)")
         
         return result
 

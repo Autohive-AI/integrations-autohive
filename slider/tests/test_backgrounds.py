@@ -142,6 +142,60 @@ async def test_theme_color_background():
         
         return result
 
+async def test_add_background_image_workaround():
+    """Test adding background image using workaround method"""
+    print("\nTesting background image workaround...")
+    
+    presentation_id, file_data = await create_test_presentation()
+    
+    # Create test background image
+    from PIL import Image
+    import base64
+    from io import BytesIO
+    
+    # Create a gradient-like background image
+    img = Image.new('RGB', (800, 600))
+    pixels = img.load()
+    
+    for x in range(800):
+        for y in range(600):
+            # Create a blue to green gradient
+            blue_component = int(52 + (103 * x / 800))  # 52 to 155
+            green_component = int(152 + (52 * y / 600))  # 152 to 204
+            pixels[x, y] = (blue_component, green_component, 219)
+    
+    # Convert to base64
+    img_buffer = BytesIO()
+    img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+    
+    background_image = {
+        "name": "background_gradient.png",
+        "contentType": "image/png", 
+        "content": img_base64
+    }
+    
+    auth = {}
+    async with ExecutionContext(auth=auth) as context:
+        inputs = {
+            "presentation_id": presentation_id,
+            "slide_index": 0,
+            "files": [file_data, background_image]
+        }
+        
+        result = await slide_maker.execute_action("add_background_image_workaround", inputs, context)
+        
+        print(f"✅ Added background image:")
+        print(f"   Success: {result['success']}")
+        print(f"   Method: {result['method']}")
+        print(f"   Picture width: {result['picture_width']} EMU")
+        print(f"   Picture height: {result['picture_height']} EMU")
+        print(f"   Note: {result['note']}")
+        print(f"   Added full-slide gradient image as background")
+        
+        return result
+
 async def main():
     print("Testing Background Actions")
     print("==========================")
@@ -151,6 +205,7 @@ async def main():
         await test_gradient_background()
         await test_reset_background()
         await test_theme_color_background()
+        await test_add_background_image_workaround()
         print("\n✅ All background tests passed!")
         
     except Exception as e:

@@ -381,9 +381,35 @@ To run the tests:
 
 1. Navigate to the integration's directory: `cd slider`
 2. Install dependencies: `pip install -r requirements.txt -t dependencies`
-3. Run element inspection tests: `python tests/test_inspection.py "path/to/presentation.pptx"`
+3. Navigate to tests directory: `cd tests`
 
-The test suite includes local presentation inspection tools that help debug element positioning, boundary violations, and overlap detection.
+**Run all tests:**
+```bash
+python test_all_actions.py
+```
+
+**Run individual action tests:**
+```bash
+python test_create_presentation.py    # Test presentation creation
+python test_add_text.py              # Test text addition with formatting
+python test_add_image.py             # Test image insertion
+python test_add_bullet_list.py       # Test bullet lists
+python test_get_slide_elements.py    # Test element inspection
+python test_modify_element.py        # Test in-place element modifications
+python test_modify_slide.py          # Test slide content updates
+python test_delete_element.py        # Test element deletion
+python test_backgrounds.py           # Test background colors, gradients, images
+python test_text_controls.py         # Test auto-sizing, margins, alignment
+python test_tables_charts.py         # Test tables and charts
+python test_save_extract.py          # Test saving and text extraction
+```
+
+**Legacy inspection tool:**
+```bash
+python test_inspection.py "path/to/presentation.pptx"  # Inspect external files
+```
+
+The test suite is completely self-contained - it generates its own presentations and content for testing, requiring no external PowerPoint files. Each test covers realistic scenarios including boundary violations, element overlaps, emoji handling, and error conditions.
 
 ## Key Features
 
