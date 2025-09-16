@@ -390,7 +390,10 @@ class AddTextAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -493,7 +496,10 @@ class AddImageAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -550,7 +556,10 @@ class AddTableAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -600,7 +609,10 @@ class AddChartAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -686,7 +698,10 @@ class ModifySlideAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         modified = False
@@ -783,11 +798,17 @@ class SetTextAutosizeAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         shape = slide.shapes[shape_index]
         if not shape.has_text_frame:
@@ -844,11 +865,17 @@ class FitTextToShapeAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         shape = slide.shapes[shape_index]
         if not shape.has_text_frame:
@@ -892,11 +919,17 @@ class SetTextMarginsAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         shape = slide.shapes[shape_index]
         if not shape.has_text_frame:
@@ -937,11 +970,17 @@ class SetTextAlignmentAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         shape = slide.shapes[shape_index]
         if not shape.has_text_frame:
@@ -981,7 +1020,10 @@ class SetSlideBackgroundColorAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         background = slide.background
@@ -1053,7 +1095,10 @@ class SetSlideBackgroundGradientAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         background = slide.background
@@ -1134,7 +1179,10 @@ class AddBackgroundImageWorkaroundAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -1172,7 +1220,10 @@ class ResetSlideBackgroundAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -1222,7 +1273,10 @@ class AddBulletListAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -1320,11 +1374,17 @@ class DeleteElementAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if shape_index >= len(slide.shapes):
-            raise ValueError(f"Shape index {shape_index} out of range. Slide has {len(slide.shapes)} shapes.")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         # Get shape information before deletion for reporting
         shape = slide.shapes[shape_index]
@@ -1377,7 +1437,10 @@ class GetSlideElementsAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         
@@ -1499,11 +1562,17 @@ class ModifyElementAction(ActionHandler):
         
         prs = presentations[presentation_id]
         if slide_index >= len(prs.slides):
-            raise ValueError(f"Slide index {slide_index} out of range")
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
         
         slide = prs.slides[slide_index]
         if element_index >= len(slide.shapes):
-            raise ValueError(f"Element index {element_index} out of range. Slide has {len(slide.shapes)} elements.")
+            if len(slide.shapes) == 0:
+                raise ValueError(f"Element index {element_index} out of range. Slide has no elements.")
+            else:
+                raise ValueError(f"Element index {element_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
         
         shape = slide.shapes[element_index]
         changes_made = []

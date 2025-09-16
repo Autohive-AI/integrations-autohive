@@ -45,7 +45,8 @@ async def main():
         ("test_backgrounds.py", "Background Tests"),
         ("test_text_controls.py", "Text Controls Tests"),
         ("test_tables_charts.py", "Tables and Charts Tests"),
-        ("test_save_extract.py", "Save and Extract Tests")
+        ("test_save_extract.py", "Save and Extract Tests"),
+        ("test_error_messages.py", "Error Message Tests")
     ]
     
     passed_tests = 0
