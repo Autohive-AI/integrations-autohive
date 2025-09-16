@@ -212,7 +212,8 @@ class TestMicrosoft365Integration(unittest.TestCase):
         api_url = call_args[0][0]
         self.assertIn("search(q='quarterly%20report')", api_url)
     
-    async def test_read_onedrive_file_content_success(self):
+    @patch('microsoft365.microsoft365.fetch_binary_content')
+    async def test_read_onedrive_file_content_success(self, mock_fetch_binary):
         """Test successful OneDrive file content reading."""
         # Mock metadata response
         mock_metadata = {
@@ -222,37 +223,39 @@ class TestMicrosoft365Integration(unittest.TestCase):
             "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "webUrl": "https://onedrive.com/file123"
         }
-        
+
         # Mock content response (PDF conversion)
         mock_content = b"%PDF-1.4\n%fake PDF content for testing"
-        
-        # Set up multiple return values for the two API calls
-        self.mock_context.fetch.side_effect = [mock_metadata, mock_content]
-        
+
+        # Mock context.fetch for metadata and fetch_binary_content for content
+        self.mock_context.fetch.return_value = mock_metadata
+        mock_fetch_binary.return_value = mock_content
+
         handler = microsoft365.ReadOneDriveFileContentAction()
         inputs = {"file_id": "file123"}
-        
+
         result = await handler.execute(inputs, self.mock_context)
-        
+
         self.assertTrue(result["result"])
         self.assertEqual(result["metadata"]["id"], "file123")
         self.assertEqual(result["file"]["name"], "document.docx")
         self.assertEqual(result["metadata"]["size"], 2048)
         self.assertEqual(result["file"]["contentType"], "application/pdf")
         self.assertIsNotNone(result["file"]["content"])  # Should have base64 encoded PDF
-        
-        # Verify both API calls were made
-        self.assertEqual(self.mock_context.fetch.call_count, 2)
-        
+
+        # Verify API calls
+        self.mock_context.fetch.assert_called_once()  # Metadata call
+        mock_fetch_binary.assert_called_once()        # Binary content call
+
         # Check metadata call
-        metadata_call = self.mock_context.fetch.call_args_list[0]
+        metadata_call = self.mock_context.fetch.call_args
         self.assertIn("/drive/items/file123", metadata_call[0][0])
         self.assertIn("$select", metadata_call[1]["params"])
-        
-        # Check content call (PDF conversion for Office doc)
-        content_call = self.mock_context.fetch.call_args_list[1]
-        self.assertIn("/drive/items/file123/content", content_call[0][0])
-        self.assertIn("format=pdf", content_call[0][0])
+
+        # Check binary content call (PDF conversion for Office doc)
+        binary_call_args = mock_fetch_binary.call_args[0]
+        self.assertIn("/drive/items/file123/content", binary_call_args[0])
+        self.assertIn("format=pdf", binary_call_args[0])
     
     async def test_read_onedrive_file_content_non_office_file(self):
         """Test file content reading for non-Office files (no PDF conversion)."""

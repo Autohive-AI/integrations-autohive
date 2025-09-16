@@ -787,13 +787,8 @@ class ReadOneDriveFileContentAction(ActionHandler):
                 # For Office documents, use Microsoft's PDF conversion API
                 if any(ext in file_name.lower() for ext in ['.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls']):
                     content_url = f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content?format=pdf"
-                    content_response = await context.fetch(content_url, method="GET")
-
-                    # Ensure content_response is bytes before base64 encoding
-                    if isinstance(content_response, str):
-                        content_bytes = content_response.encode('latin-1')  # Preserve raw bytes
-                    else:
-                        content_bytes = content_response
+                    # Use binary fetch to avoid SDK text parsing for converted PDFs
+                    content_bytes = await fetch_binary_content(content_url, context)
 
                     # Encode as base64 for JSON serialization
                     content = base64.b64encode(content_bytes).decode('utf-8')
