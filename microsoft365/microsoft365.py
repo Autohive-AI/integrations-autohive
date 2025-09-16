@@ -3,12 +3,28 @@ from autohive_integrations_sdk import (
 )
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+import base64
+import aiohttp
+import urllib.parse
 
 # Create the integration using the config.json
 microsoft365 = Integration.load()
 
 # Microsoft Graph API Base URL
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
+
+async def fetch_binary_content(url: str, context: ExecutionContext) -> bytes:
+    """Fetch binary content directly without SDK text parsing"""
+    headers = {}
+    if context.auth and "credentials" in context.auth:
+        access_token = context.auth["credentials"]["access_token"]
+        headers["Authorization"] = f"Bearer {access_token}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            if not response.ok:
+                raise Exception(f"HTTP {response.status}: {await response.text()}")
+            return await response.read()  # Returns bytes directly
 
 # ---- Action Handlers ----
 
@@ -599,15 +615,27 @@ class ReadContactsAction(ActionHandler):
                 "$select": "id,displayName,givenName,surname,emailAddresses,businessPhones,homePhones,mobilePhone,companyName,jobTitle"
             }
             
-            # Add search filter if provided
-            if search:
-                params["$filter"] = f"startswith(displayName,'{search}') or startswith(givenName,'{search}') or startswith(surname,'{search}')"
-            
             response = await context.fetch(api_url, params=params)
-            
-            # Format contacts
+
+            # Format and filter contacts
+            all_contacts = response.get("value", [])
             contacts = []
-            for contact in response.get("value", []):
+
+            for contact in all_contacts:
+                # Client-side search filtering if search term provided
+                if search:
+                    search_lower = search.lower()
+                    display_name = contact.get("displayName", "").lower()
+                    given_name = contact.get("givenName", "").lower()
+                    surname = contact.get("surname", "").lower()
+                    company = contact.get("companyName", "").lower()
+
+                    # Check if search term appears anywhere in name or company
+                    if not (search_lower in display_name or
+                           search_lower in given_name or
+                           search_lower in surname or
+                           search_lower in company):
+                        continue  # Skip this contact
                 # Process email addresses
                 email_addresses = []
                 for email in contact.get("emailAddresses", []):
@@ -654,10 +682,27 @@ class ReadContactsAction(ActionHandler):
                     "jobTitle": contact.get("jobTitle", "")
                 })
             
-            return {
-                "contacts": contacts,
-                "result": True
-            }
+            # Provide better result messaging
+            if search:
+                if contacts:
+                    message = f"Found {len(contacts)} contact(s) matching '{search}'"
+                else:
+                    message = f"No contacts found matching '{search}'"
+
+                return {
+                    "contacts": contacts,
+                    "result": True,
+                    "message": message,
+                    "search_term": search,
+                    "total_searched": len(all_contacts)
+                }
+            else:
+                return {
+                    "contacts": contacts,
+                    "result": True,
+                    "message": f"Retrieved {len(contacts)} contacts",
+                    "total_contacts": len(contacts)
+                }
             
         except Exception as e:
             return {
@@ -675,7 +720,6 @@ class SearchOneDriveFilesAction(ActionHandler):
             
             # Build search URL
             # URL encode the search query to handle special characters
-            import urllib.parse
             encoded_query = urllib.parse.quote(search_query)
             
             # Add query parameters
@@ -737,42 +781,455 @@ class ReadOneDriveFileContentAction(ActionHandler):
             mime_type = metadata_response.get("mimeType", "")
             web_url = metadata_response.get("webUrl", "")
             
-            # Try to get file content as PDF for better text extraction
+            # Try to get file content
+            content = None
             try:
-                # For Office documents, try PDF conversion
+                # For Office documents, use Microsoft's PDF conversion API
                 if any(ext in file_name.lower() for ext in ['.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls']):
                     content_url = f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content?format=pdf"
-                else:
-                    # For other files, get raw content
+                    content_response = await context.fetch(content_url, method="GET")
+
+                    # Ensure content_response is bytes before base64 encoding
+                    if isinstance(content_response, str):
+                        content_bytes = content_response.encode('latin-1')  # Preserve raw bytes
+                    else:
+                        content_bytes = content_response
+
+                    # Encode as base64 for JSON serialization
+                    content = base64.b64encode(content_bytes).decode('utf-8')
+                    content_type = "application/pdf"
+                    content_available = True
+                    content_info = "Office document converted to PDF and encoded for LLM processing"
+                elif file_name.lower().endswith('.pdf'):
+                    # For native PDF files, get content directly (no conversion needed)
                     content_url = f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content"
-                
-                # Note: Microsoft Graph returns 302 redirect for file content
-                # The SDK should handle redirects automatically
-                content_response = await context.fetch(content_url, method="GET")
-                
-                # If we get here, content was retrieved successfully
-                # For now, we indicate content is available for LLM processing
-                content_available = True
-                content_info = "File content retrieved and available for processing"
+                    # Use binary fetch to avoid SDK text parsing for PDFs
+                    content_bytes = await fetch_binary_content(content_url, context)
+
+                    # Encode as base64 for JSON serialization
+                    content = base64.b64encode(content_bytes).decode('utf-8')
+                    content_type = "application/pdf"
+                    content_available = True
+                    content_info = "PDF content retrieved and encoded for LLM processing"
+                else:
+                    # For text files, get raw content
+                    content_url = f"{GRAPH_API_BASE}/me/drive/items/{file_id}/content"
+                    content_response = await context.fetch(content_url, method="GET")
+
+                    # Encode as base64 for consistent handling
+                    if isinstance(content_response, bytes):
+                        content = base64.b64encode(content_response).decode('utf-8')
+                    elif isinstance(content_response, str):
+                        # Use latin-1 encoding to preserve binary data in string
+                        content = base64.b64encode(content_response.encode('latin-1')).decode('utf-8')
+                    else:
+                        content = base64.b64encode(str(content_response).encode('latin-1')).decode('utf-8')
+
+                    content_type = mime_type or "text/plain"
+                    content_available = True
+                    content_info = "Text content retrieved and encoded successfully"
                 
             except Exception as content_error:
                 # If content retrieval fails, still return file metadata
+                content = None
                 content_available = False
                 content_info = f"Content retrieval failed: {str(content_error)}"
             
+            # Determine content type based on file extension if mime_type is empty
+            if not mime_type:
+                if file_name.lower().endswith('.pdf'):
+                    mime_type = "application/pdf"
+                elif any(ext in file_name.lower() for ext in ['.docx', '.doc']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                elif any(ext in file_name.lower() for ext in ['.xlsx', '.xls']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                elif any(ext in file_name.lower() for ext in ['.pptx', '.ppt']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                else:
+                    mime_type = "application/octet-stream"
+
+            # Return in Google Drive format for consistency
+            if content_available and content:
+                return {
+                    "file": {
+                        "content": content,
+                        "name": file_name,
+                        "contentType": content_type
+                    },
+                    "metadata": {
+                        "id": file_id,
+                        "name": file_name,
+                        "size": file_size,
+                        "mimeType": mime_type,
+                        "webUrl": web_url
+                    },
+                    "result": True
+                }
+            else:
+                # Set fallback content type for failed cases
+                fallback_content_type = mime_type
+                if file_name.lower().endswith('.pdf'):
+                    fallback_content_type = "application/pdf"
+
+                return {
+                    "file": {
+                        "content": "",
+                        "name": file_name,
+                        "contentType": fallback_content_type
+                    },
+                    "metadata": {
+                        "id": file_id,
+                        "name": file_name,
+                        "size": file_size,
+                        "mimeType": mime_type,
+                        "webUrl": web_url
+                    },
+                    "result": False,
+                    "error": content_info
+                }
+
+        except Exception as e:
+            return {
+                "file": {
+                    "content": "",
+                    "name": "",
+                    "contentType": "application/octet-stream"
+                },
+                "metadata": {},
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("create_draft_email")
+class CreateDraftEmailAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Build email message according to Microsoft Graph API spec
+            message = {
+                "subject": inputs["subject"],
+                "body": {
+                    "contentType": inputs.get("body_type", "Text"),
+                    "content": inputs["body"]
+                },
+                "toRecipients": []
+            }
+
+            # Add to recipients (required)
+            for recipient in inputs["to_recipients"]:
+                if isinstance(recipient, str):
+                    message["toRecipients"].append({
+                        "emailAddress": {"address": recipient}
+                    })
+                else:
+                    message["toRecipients"].append({
+                        "emailAddress": {
+                            "address": recipient.get("address", recipient.get("email")),
+                            "name": recipient.get("name", "")
+                        }
+                    })
+
+            # Add CC recipients if provided
+            if inputs.get("cc_recipients"):
+                message["ccRecipients"] = []
+                for recipient in inputs["cc_recipients"]:
+                    if isinstance(recipient, str):
+                        message["ccRecipients"].append({
+                            "emailAddress": {"address": recipient}
+                        })
+                    else:
+                        message["ccRecipients"].append({
+                            "emailAddress": {
+                                "address": recipient.get("address", recipient.get("email")),
+                                "name": recipient.get("name", "")
+                            }
+                        })
+
+            # Add BCC recipients if provided
+            if inputs.get("bcc_recipients"):
+                message["bccRecipients"] = []
+                for recipient in inputs["bcc_recipients"]:
+                    if isinstance(recipient, str):
+                        message["bccRecipients"].append({
+                            "emailAddress": {"address": recipient}
+                        })
+                    else:
+                        message["bccRecipients"].append({
+                            "emailAddress": {
+                                "address": recipient.get("address", recipient.get("email")),
+                                "name": recipient.get("name", "")
+                            }
+                        })
+
+            # Add importance if specified
+            if inputs.get("importance"):
+                message["importance"] = inputs["importance"]
+
+            # Create draft using Microsoft Graph API
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages",
+                method="POST",
+                json=message
+            )
+
             return {
                 "result": True,
-                "file_id": file_id,
-                "name": file_name,
-                "size": file_size,
-                "mimeType": mime_type,
-                "webUrl": web_url,
-                "content_available": content_available,
-                "content_info": content_info
+                "draft_id": response["id"],
+                "subject": response.get("subject", ""),
+                "created_datetime": response.get("createdDateTime", ""),
+                "is_draft": response.get("isDraft", True)
             }
-            
+
         except Exception as e:
             return {
                 "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("send_draft_email")
+class SendDraftEmailAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            draft_id = inputs["draft_id"]
+
+            # Send draft using Microsoft Graph API
+            # API requires Content-Length: 0 header and no body
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{draft_id}/send",
+                method="POST",
+                headers={"Content-Length": "0"}
+            )
+
+            return {
+                "result": True,
+                "draft_id": draft_id,
+                "status": "sent"
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "draft_id": inputs.get("draft_id", ""),
+                "error": str(e)
+            }
+
+@microsoft365.action("reply_to_email")
+class ReplyToEmailAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            message_id = inputs["message_id"]
+
+            # Build reply request according to Microsoft Graph API spec
+            reply_data = {}
+            if inputs.get("comment"):
+                reply_data["comment"] = inputs["comment"]
+
+            # Reply to message using Microsoft Graph API
+            # API returns HTTP 202 Accepted with no body
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{message_id}/reply",
+                method="POST",
+                json=reply_data
+            )
+
+            return {
+                "result": True,
+                "message_id": message_id,
+                "operation": "reply",
+                "status": "sent"
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "message_id": inputs.get("message_id", ""),
+                "operation": "reply",
+                "error": str(e)
+            }
+
+@microsoft365.action("forward_email")
+class ForwardEmailAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            message_id = inputs["message_id"]
+
+            # Build forward request according to Microsoft Graph API spec
+            forward_data = {
+                "toRecipients": []
+            }
+
+            # Add to recipients (required)
+            for recipient in inputs["to_recipients"]:
+                if isinstance(recipient, str):
+                    forward_data["toRecipients"].append({
+                        "emailAddress": {"address": recipient}
+                    })
+                else:
+                    forward_data["toRecipients"].append({
+                        "emailAddress": {
+                            "address": recipient.get("address", recipient.get("email")),
+                            "name": recipient.get("name", "")
+                        }
+                    })
+
+            # Add comment if provided
+            if inputs.get("comment"):
+                forward_data["comment"] = inputs["comment"]
+
+            # Forward message using Microsoft Graph API
+            # API returns HTTP 202 Accepted with no body
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{message_id}/forward",
+                method="POST",
+                json=forward_data
+            )
+
+            return {
+                "result": True,
+                "message_id": message_id,
+                "operation": "forward",
+                "status": "sent"
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "message_id": inputs.get("message_id", ""),
+                "operation": "forward",
+                "error": str(e)
+            }
+
+@microsoft365.action("download_email_attachment")
+class DownloadEmailAttachmentAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            message_id = inputs["message_id"]
+            attachment_id = inputs["attachment_id"]
+            include_content = inputs.get("include_content", True)
+
+            # Get attachment metadata using Microsoft Graph API
+            attachment_response = await context.fetch(
+                f"{GRAPH_API_BASE}/me/messages/{message_id}/attachments/{attachment_id}",
+                method="GET"
+            )
+
+            attachment_data = {
+                "id": attachment_response["id"],
+                "name": attachment_response.get("name", ""),
+                "content_type": attachment_response.get("contentType", ""),
+                "size": attachment_response.get("size", 0),
+                "is_inline": attachment_response.get("isInline", False),
+                "content": ""
+            }
+
+            # Get attachment content if requested
+            if include_content:
+                try:
+                    # Use binary fetch helper for /$value endpoint to get raw content
+                    content_url = f"{GRAPH_API_BASE}/me/messages/{message_id}/attachments/{attachment_id}/$value"
+                    content_bytes = await fetch_binary_content(content_url, context)
+
+                    # Base64 encode for JSON serialization
+                    attachment_data["content"] = base64.b64encode(content_bytes).decode('utf-8')
+
+                except Exception as content_error:
+                    # If binary content fails, try getting content from attachment object
+                    if "contentBytes" in attachment_response:
+                        attachment_data["content"] = attachment_response["contentBytes"]
+                    else:
+                        attachment_data["content"] = ""
+                        attachment_data["content_error"] = f"Content retrieval failed: {str(content_error)}"
+
+            return {
+                "result": True,
+                "attachment": attachment_data
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "attachment": {
+                    "id": inputs.get("attachment_id", ""),
+                    "name": "",
+                    "content_type": "",
+                    "size": 0,
+                    "content": "",
+                    "is_inline": False
+                },
+                "error": str(e)
+            }
+
+@microsoft365.action("search_emails")
+class SearchEmailsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            query = inputs["query"]
+            limit = inputs.get("limit", 25)
+            enable_top_results = inputs.get("enable_top_results", False)
+
+            # Build search request according to Microsoft Graph Search API spec
+            search_request = {
+                "entityTypes": ["message"],
+                "query": {
+                    "queryString": query
+                },
+                "from": 0,
+                "size": min(limit, 1000)  # API max is 1000
+            }
+
+            if enable_top_results:
+                search_request["enableTopResults"] = True
+
+            # Use Microsoft Graph Search API
+            response = await context.fetch(
+                "https://graph.microsoft.com/v1.0/search/query",
+                method="POST",
+                json={"requests": [search_request]}
+            )
+
+            # Process search results
+            messages = []
+            total_results = 0
+
+            if response.get("value") and len(response["value"]) > 0:
+                search_result = response["value"][0]
+                hits = search_result.get("hitsContainers", [])
+
+                if hits:
+                    hits_container = hits[0]
+                    total_results = hits_container.get("total", 0)
+
+                    for hit in hits_container.get("hits", []):
+                        message_data = hit.get("resource", {})
+
+                        # Extract sender information
+                        sender = {}
+                        if message_data.get("from"):
+                            sender = {
+                                "emailAddress": message_data["from"].get("emailAddress", {}),
+                                "name": message_data["from"].get("emailAddress", {}).get("name", "")
+                            }
+
+                        messages.append({
+                            "message_id": message_data.get("id", ""),
+                            "subject": message_data.get("subject", ""),
+                            "sender": sender,
+                            "received_datetime": message_data.get("receivedDateTime", ""),
+                            "body_preview": message_data.get("bodyPreview", ""),
+                            "has_attachments": message_data.get("hasAttachments", False)
+                        })
+
+            return {
+                "result": True,
+                "query": query,
+                "total_results": total_results,
+                "messages": messages
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "query": inputs.get("query", ""),
+                "total_results": 0,
+                "messages": [],
                 "error": str(e)
             }
