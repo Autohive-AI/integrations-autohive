@@ -55,6 +55,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-calendar](google-calendar): Integrates with Google Calendar API for comprehensive calendar and event management within Autohive workflows. Supports listing accessible calendars, creating and managing calendar events (both timed and all-day), attendee management, and event lifecycle operations. Features secure OAuth2 authentication and pagination support for large event datasets.
 
+### Google Business Profile
+
+[google-business-profile](google-business-profile): Connects to Google My Business API for comprehensive business profile and review management. Supports listing business accounts and locations, reading customer reviews with ratings and comments, replying to customer reviews professionally, and managing review interactions. Features secure OAuth2 authentication with Google Maps Reviews provider and comprehensive error handling for reputation management workflows.
+
 ### Microsoft 365
 
 [microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, and Calendar through Microsoft Graph API. Supports email management (send, list, read, organize), calendar operations (create, update, list events), file operations (upload to OneDrive, list files), and contact management. Features timezone-aware operations, folder management, HTML email support, and OAuth2 authentication with proper scope handling for enterprise-grade Microsoft 365 workflows.
