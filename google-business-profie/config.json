@@ -5,7 +5,7 @@
     "entry_point": "reviews.py",
     "auth": {
         "type": "platform",
-        "provider": "Google Maps Reviews",
+        "provider": "Google Business Profile",
         "scopes": [
             "https://www.googleapis.com/auth/business.manage"
         ]
