@@ -20,7 +20,6 @@ Authentication uses Google OAuth (Platform auth) with the following scopes:
 - `https://www.googleapis.com/auth/spreadsheets`
 - `https://www.googleapis.com/auth/drive.metadata.readonly`
 - `https://www.googleapis.com/auth/drive.file`
-- `https://www.googleapis.com/auth/drive.readonly`
 
 No additional configuration fields are required beyond the OAuth connection.
 
