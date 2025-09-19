@@ -1,0 +1,344 @@
+{
+    "name": "Google Looker",
+    "version": "1.0.0",
+    "description": "Looker integration with custom authentication",
+    "entry_point": "google_looker.py",
+    "auth": {
+        "type": "custom",
+        "title": "Looker API Auth Configuration",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string",
+                    "label": "Base URL",
+                    "help_text": "Please enter your Looker instance base URL (e.g., https://your-company.looker.com)"
+                },
+                "client_id": {
+                    "type": "string",
+                    "label": "Client ID",
+                    "help_text": "Please enter your Looker API client ID"
+                },
+                "client_secret": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "Client Secret",
+                    "help_text": "Please enter your Looker API client secret"
+                }
+            }
+        }
+    },
+    "actions": {
+        "list_dashboards": {
+            "display_name": "List Dashboards",
+            "description": "Retrieve a list of all available dashboards in the Looker instance, including dashboard IDs, titles, and metadata",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboards": {
+                        "type": "array",
+                        "description": "List of dashboards",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["dashboards", "result"]
+            }
+        },
+        "get_dashboard": {
+            "display_name": "Get Dashboard",
+            "description": "Retrieve detailed information about a specific dashboard including its elements, filters, and layout configuration",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboard_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the dashboard to retrieve (obtained from list_dashboards action)"
+                    },
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": ["dashboard_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "dashboard": {
+                        "type": "object",
+                        "description": "Complete dashboard object containing title, description, elements, filters, layout, and other dashboard metadata"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["dashboard", "result"]
+            }
+        },
+        "execute_lookml_query": {
+            "display_name": "Execute LookML Query",
+            "description": "Create and execute a LookML query against a specified model and explore, returning the query results directly",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "string",
+                        "description": "The LookML model name (use list_models to find available models)"
+                    },
+                    "explore": {
+                        "type": "string",
+                        "description": "The explore name within the specified model (represents a data table/view to query)"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "description": "Dimensions",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "measures": {
+                        "type": "array",
+                        "description": "Measures",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "filters": {
+                        "type": "object",
+                        "description": "Query filters as key-value pairs"
+                    },
+                    "sorts": {
+                        "type": "array",
+                        "description": "Sort orders",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Result limit"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "description": "Result format (json, csv, etc.)",
+                        "default": "json"
+                    },
+                    "apply_formatting": {
+                        "type": "boolean",
+                        "description": "Apply formatting"
+                    },
+                    "apply_vis": {
+                        "type": "boolean",
+                        "description": "Apply visualization"
+                    }
+                },
+                "required": ["model", "explore"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "query_results": {
+                        "type": "string",
+                        "description": "Query results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["query_results", "result"]
+            }
+        },
+        "list_models": {
+            "display_name": "List Models",
+            "description": "Retrieve a list of all available LookML models with their explores and dimensions/measures",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "models": {
+                        "type": "array",
+                        "description": "List of models",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["models", "result"]
+            }
+        },
+        "get_model": {
+            "display_name": "Get Model",
+            "description": "Retrieve detailed information about a specific LookML model including all its explores, dimensions, and measures",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Model name"
+                    },
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": ["model_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "object",
+                        "description": "Model data"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["model", "result"]
+            }
+        },
+        "execute_sql_query": {
+            "display_name": "Execute SQL Query",
+            "description": "Create and execute a raw SQL query against a database connection, returning the query results directly",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "sql": {
+                        "type": "string",
+                        "description": "SQL query string"
+                    },
+                    "connection_name": {
+                        "type": "string",
+                        "description": "The database connection name to execute the SQL against (use list_connections to find available connections)"
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "description": "Model name (alternative to connection_name)"
+                    },
+                    "vis_config": {
+                        "type": "object",
+                        "description": "Optional visualization configuration object"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "description": "Optional slug for the SQL query"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "description": "Format of result, options are: inline_json, json, json_detail, json_fe, json_bi, csv, html, md, txt, xlsx, gsxml, sql, odc, json_label",
+                        "default": "json"
+                    },
+                    "download": {
+                        "type": "string",
+                        "description": "Set to true to make HTTP response behave as downloadable attachment instead of inline content"
+                    }
+                },
+                "required": ["sql"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "Created SQL query slug"
+                    },
+                    "query_results": {
+                        "type": "string",
+                        "description": "Query execution results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["slug", "query_results", "result"]
+            }
+        },
+        "list_connections": {
+            "display_name": "List Connections",
+            "description": "Retrieve a list of all available database connections that can be used for SQL queries",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "connections": {
+                        "type": "array",
+                        "description": "List of database connections",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Operation success status"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["connections", "result"]
+            }
+        }
+    }
+}
