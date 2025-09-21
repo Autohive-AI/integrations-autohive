@@ -61,7 +61,7 @@ def build_account_data(inputs: Dict[str, Any]) -> Dict[str, Any]:
         "Account_Type": "Account_Type",
         "Industry": "Industry",
         "Annual_Revenue": "Annual_Revenue",
-        "No_of_Employees": "No_of_Employees",
+        "No_of_Employees": "Employees",
         "Phone": "Phone",
         "Fax": "Fax",
         "Website": "Website",
@@ -154,8 +154,8 @@ def build_account_query_params(inputs: Dict[str, Any]) -> Dict[str, str]:
     else:
         # Default account fields when none specified
         default_fields = [
-            'Account_Name', 'Account_Type', 'Industry', 'Annual_Revenue', 
-            'Phone', 'Website', 'Owner'
+            'Account_Name', 'Account_Type', 'Industry', 'Annual_Revenue',
+            'Employees', 'Phone', 'Website', 'Owner'
         ]
         params['fields'] = ','.join(default_fields)
     
@@ -243,7 +243,7 @@ def build_lead_data(inputs: Dict[str, Any]) -> Dict[str, Any]:
         "Lead_Status": "Lead_Status",
         "Industry": "Industry",
         "Annual_Revenue": "Annual_Revenue",
-        "No_of_Employees": "No_of_Employees",
+        "No_of_Employees": "Employees",
         "Website": "Website",
         "Street": "Street",
         "City": "City",
@@ -899,8 +899,8 @@ class GetAccount(ActionHandler):
             else:
                 # Default account fields
                 default_fields = [
-                    'Account_Name', 'Account_Type', 'Industry', 'Annual_Revenue', 
-                    'Phone', 'Website', 'Owner', 'Created_Time', 'Modified_Time'
+                    'Account_Name', 'Account_Type', 'Industry', 'Annual_Revenue',
+                    'Employees', 'Phone', 'Website', 'Owner', 'Created_Time', 'Modified_Time'
                 ]
                 params['fields'] = ','.join(default_fields)
             
