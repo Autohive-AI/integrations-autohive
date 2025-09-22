@@ -146,7 +146,8 @@
                                 },
                                 "starRating": {
                                     "type": "string",
-                                    "description": "Star rating (ONE, TWO, THREE, FOUR, FIVE)"
+                                    "enum": ["ONE", "TWO", "THREE", "FOUR", "FIVE"],
+                                    "description": "Star rating value"
                                 },
                                 "comment": {
                                     "type": "string",

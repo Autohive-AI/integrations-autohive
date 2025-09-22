@@ -62,16 +62,6 @@ def format_address(storefront_address: Dict[str, Any]) -> str:
 
     return ', '.join(parts)
 
-def convert_star_rating(rating: str) -> int:
-    """Convert Google's star rating enum to number."""
-    rating_map = {
-        'ONE': 1,
-        'TWO': 2,
-        'THREE': 3,
-        'FOUR': 4,
-        'FIVE': 5
-    }
-    return rating_map.get(rating, 0)
 
 # ---- Action Handlers ----
 
