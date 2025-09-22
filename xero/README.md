@@ -7,6 +7,7 @@ A comprehensive integration for accessing Xero accounting data including financi
 ### Actions
 - **Get Available Connections** - Retrieve all available Xero tenant connections with company names and IDs
 - **Find Contact by Name** - Search for contacts by name within a specific tenant using tenant ID
+- **Get Invoices** - Retrieve invoices (sales/purchase) with optimized filtering, pagination, and specific invoice lookup using tenant ID
 - **Get Aged Payables** - Retrieve aged payables report for specific contacts using tenant ID and contact ID
 - **Get Aged Receivables** - Retrieve aged receivables report for specific contacts using tenant ID and contact ID
 - **Get Balance Sheet** - Access balance sheet reports with optional period comparisons using tenant ID
@@ -80,6 +81,29 @@ result = await integration.execute_action("get_aged_payables", {
 
 for report in result["reports"]:
     print(f"Report: {report['report_name']} - {report['report_date']}")
+```
+
+### Get Invoices
+```python
+# Get all authorized invoices for a specific date range using tenant ID
+result = await integration.execute_action("get_invoices", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Status==\"AUTHORISED\" AND Date>=DateTime(2025,01,01)",
+    "order": "Date DESC",
+    "pageSize": 50
+})
+
+for invoice in result["Invoices"]:
+    print(f"Invoice: {invoice['InvoiceNumber']} - {invoice['Total']} - {invoice['Contact']['Name']}")
+
+# Get a specific invoice by ID
+result = await integration.execute_action("get_invoices", {
+    "tenant_id": "tenant-guid-123",
+    "invoice_id": "243216c5-369e-4056-ac67-05388f86dc81"
+})
+
+invoice = result["Invoices"][0]
+print(f"Invoice Details: {invoice['InvoiceNumber']} - Status: {invoice['Status']}")
 ```
 
 ### Get Balance Sheet
@@ -210,6 +234,23 @@ Get all available Xero tenant connections with company names and IDs.
 - `success`: Boolean indicating if request was successful
 - `companies`: Array of company objects with tenant_id and company_name
 - `message`: Error message if success is false
+
+#### `get_invoices`
+Retrieve invoices from Xero API with optimized filtering and pagination.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `invoice_id` (optional): Specific invoice ID (GUID) to fetch
+- `where` (optional): Filter clause with optimized fields (Status=="AUTHORISED", Date>=DateTime(2020,01,01), Contact.ContactID==guid("id"), Type=="ACCREC", Total>=100.00)
+- `order` (optional): Sort parameter (InvoiceNumber ASC, Date DESC, Total DESC,Date ASC)
+- `page` (optional): Page number for pagination
+- `pageSize` (optional): Page size for pagination (max 100)
+- `statuses` (optional): Comma-separated status list (DRAFT,SUBMITTED,AUTHORISED)
+- `invoice_numbers` (optional): Comma-separated invoice numbers for bulk retrieval
+- `contact_ids` (optional): Comma-separated contact IDs for filtering
+
+**Output:**
+- `invoices`: Array containing Xero invoice objects with invoice details, line items, and contact information
 
 #### `find_contact_by_name`
 Search for contacts by name within a tenant.

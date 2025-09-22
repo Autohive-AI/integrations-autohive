@@ -33,7 +33,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Xero
 
-[xero](xero): Comprehensive integration for accessing Xero accounting data through OAuth 2.0 authentication. Features retrieving available tenant connections, contact search by name within tenants, and retrieval of comprehensive accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Additionally supports accessing chart of accounts for line item classification, payment records for invoices and bills (customer receipts, supplier payments, refunds), and bank transactions not tied to invoices (CapEx, financing, operating expenses). Includes robust error handling, pagination support, and optional date parameters for flexible financial reporting.
+[xero](xero): Comprehensive Xero accounting integration with OAuth 2.0 authentication. Features retrieving available tenant connections, creating and updating sales invoices and purchase bills, attaching files to invoices/bills, contact search, and comprehensive financial reporting (aged payables/receivables, balance sheet, P&L, trial balance). Includes chart of accounts access, payment records, bank transactions, robust error handling, and rate limiting.
 
 ### Zoho CRM
 
