@@ -12,7 +12,6 @@
         "api_key": {
           "type": "string",
           "format": "password",
-          "label": "Supadata API Key",
           "help_text": "Your Supadata API key for video transcript extraction"
         }
       }
@@ -27,8 +26,7 @@
         "properties": {
           "video_url": {
             "type": "string",
-            "description": "Video URL from YouTube, TikTok, Instagram, X (Twitter) or public file URL",
-            "label": "Video URL"
+            "description": "Video URL from YouTube, TikTok, Instagram, X (Twitter) or public file URL"
           }
         },
         "required": ["video_url"]
