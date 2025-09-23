@@ -235,11 +235,10 @@ class ListConversationMessagesAction(ActionHandler):
 class CreateMessageReplyAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
+            conversation_id = inputs["conversation_id"]
+
             # Build message payload for reply
             message_data = {
-                "type": "reply",
-                "conversation_id": inputs["conversation_id"],
-                "author_id": inputs["author_id"],
                 "body": inputs["body"]
             }
 
@@ -250,12 +249,26 @@ class CreateMessageReplyAction(ActionHandler):
                 message_data["cc"] = inputs["cc"]
             if inputs.get("bcc"):
                 message_data["bcc"] = inputs["bcc"]
+            if inputs.get("sender_name"):
+                message_data["sender_name"] = inputs["sender_name"]
             if inputs.get("subject"):
                 message_data["subject"] = inputs["subject"]
+            if inputs.get("author_id"):
+                message_data["author_id"] = inputs["author_id"]
+            if inputs.get("channel_id"):
+                message_data["channel_id"] = inputs["channel_id"]
+            if inputs.get("text"):
+                message_data["text"] = inputs["text"]
+            if inputs.get("quote_body"):
+                message_data["quote_body"] = inputs["quote_body"]
+            if inputs.get("signature_id"):
+                message_data["signature_id"] = inputs["signature_id"]
+            if inputs.get("should_add_default_signature") is not None:
+                message_data["should_add_default_signature"] = inputs["should_add_default_signature"]
 
             # Create message reply using Front API
             response = await context.fetch(
-                f"{FRONT_API_BASE}/messages",
+                f"{FRONT_API_BASE}/conversations/{conversation_id}/messages",
                 method="POST",
                 json=message_data
             )
@@ -323,7 +336,6 @@ class CreateMessageAction(ActionHandler):
 
             # Build message payload for new message
             message_data = {
-                "author_id": inputs["author_id"],
                 "body": inputs["body"],
                 "to": inputs["to"]
             }
@@ -335,6 +347,16 @@ class CreateMessageAction(ActionHandler):
                 message_data["bcc"] = inputs["bcc"]
             if inputs.get("subject"):
                 message_data["subject"] = inputs["subject"]
+            if inputs.get("author_id"):
+                message_data["author_id"] = inputs["author_id"]
+            if inputs.get("sender_name"):
+                message_data["sender_name"] = inputs["sender_name"]
+            if inputs.get("text"):
+                message_data["text"] = inputs["text"]
+            if inputs.get("signature_id"):
+                message_data["signature_id"] = inputs["signature_id"]
+            if inputs.get("should_add_default_signature") is not None:
+                message_data["should_add_default_signature"] = inputs["should_add_default_signature"]
 
             # Create new message using correct Front API endpoint
             response = await context.fetch(
@@ -707,6 +729,103 @@ class ListInboxesAction(ActionHandler):
                 "inboxes": [],
                 "result": False,
                 "error": f"Error listing inboxes: {str(e)}"
+            }
+
+@front.action("list_teammates")
+class ListTeammatesAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            limit = inputs.get("limit", 50)
+
+            # Make API call
+            response = await context.fetch(
+                f"{FRONT_API_BASE}/teammates",
+                params={"limit": min(limit, 100)}
+            )
+
+            # Check for API errors
+            if "error" in response:
+                return {
+                    "teammates": [],
+                    "result": False,
+                    "error": f"API request failed: {response.get('error', 'Unknown error')}"
+                }
+
+            # Parse teammates
+            teammates = []
+            raw_teammates = response.get("_results", [])
+
+            for raw_teammate in raw_teammates:
+                teammate = {
+                    "id": raw_teammate.get("id", ""),
+                    "email": raw_teammate.get("email", ""),
+                    "username": raw_teammate.get("username", ""),
+                    "first_name": raw_teammate.get("first_name", ""),
+                    "last_name": raw_teammate.get("last_name", ""),
+                    "is_admin": raw_teammate.get("is_admin", False),
+                    "is_available": raw_teammate.get("is_available", True),
+                    "is_blocked": raw_teammate.get("is_blocked", False),
+                    "type": raw_teammate.get("type", "user"),
+                    "custom_fields": raw_teammate.get("custom_fields", {})
+                }
+
+                teammates.append(teammate)
+
+            return {
+                "teammates": teammates,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "teammates": [],
+                "result": False,
+                "error": f"Error listing teammates: {str(e)}"
+            }
+
+@front.action("get_teammate")
+class GetTeammateAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            teammate_id = inputs["teammate_id"]
+
+            # Make API call
+            response = await context.fetch(
+                f"{FRONT_API_BASE}/teammates/{teammate_id}"
+            )
+
+            # Check for API errors
+            if "error" in response:
+                return {
+                    "teammate": {},
+                    "result": False,
+                    "error": f"API request failed: {response.get('error', 'Unknown error')}"
+                }
+
+            # Parse teammate
+            teammate = {
+                "id": response.get("id", ""),
+                "email": response.get("email", ""),
+                "username": response.get("username", ""),
+                "first_name": response.get("first_name", ""),
+                "last_name": response.get("last_name", ""),
+                "is_admin": response.get("is_admin", False),
+                "is_available": response.get("is_available", True),
+                "is_blocked": response.get("is_blocked", False),
+                "type": response.get("type", "user"),
+                "custom_fields": response.get("custom_fields", {})
+            }
+
+            return {
+                "teammate": teammate,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "teammate": {},
+                "result": False,
+                "error": f"Error getting teammate: {str(e)}"
             }
 
 

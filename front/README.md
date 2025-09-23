@@ -14,6 +14,7 @@ Key features:
 - Access message templates for consistent responses
 - Manage conversation assignments and status updates
 - Support for CC/BCC messaging and conversation updates
+- Optional author assignment using teammate IDs for message authorship control
 
 ## Setup & Authentication
 
@@ -108,12 +109,16 @@ No additional configuration fields are required as authentication is handled thr
 - **Description:** Create a new message (starts new conversation) via a channel
 - **Inputs:**
   - `channel_id`: Channel ID to send from
-  - `author_id`: ID of the teammate creating the message
   - `body`: Message body content
   - `to`: Array of recipient email addresses
-  - `subject`: Message subject (optional)
   - `cc`: Array of CC email addresses (optional)
   - `bcc`: Array of BCC email addresses (optional)
+  - `sender_name`: Name used for the sender info of the message (optional)
+  - `subject`: Message subject for email messages (optional)
+  - `author_id`: ID of the teammate on behalf of whom the message is sent (optional)
+  - `text`: Text version of the body for email messages (optional)
+  - `signature_id`: ID of the signature to attach to this message (optional)
+  - `should_add_default_signature`: Whether to add the default signature (optional)
 - **Outputs:**
   - `message_uid`: Temporary message UID for async processing
   - `result`: Success status boolean
@@ -123,12 +128,18 @@ No additional configuration fields are required as authentication is handled thr
 - **Description:** Reply to an existing conversation
 - **Inputs:**
   - `conversation_id`: The conversation ID to reply to
-  - `author_id`: ID of the teammate sending the reply
   - `body`: Message body content
   - `to`: Array of recipient email addresses (optional)
-  - `subject`: Message subject (optional)
   - `cc`: Array of CC email addresses (optional)
   - `bcc`: Array of BCC email addresses (optional)
+  - `sender_name`: Name used for the sender info of the message (optional)
+  - `subject`: Message subject for email messages (optional)
+  - `author_id`: ID of the teammate on behalf of whom the message is sent (optional)
+  - `channel_id`: Channel ID the message is sent from (optional)
+  - `text`: Text version of the body for email messages (optional)
+  - `quote_body`: Body for the quote that the message is referencing (email channels only) (optional)
+  - `signature_id`: ID of the signature to attach to this message (optional)
+  - `should_add_default_signature`: Whether to add the default signature (optional)
 - **Outputs:**
   - `message_uid`: Temporary message UID for async processing
   - `result`: Success status boolean
@@ -211,19 +222,34 @@ Step 2 - List conversations from billing inbox:
 }
 ```
 
-**Example 2: Reply to a customer conversation**
+**Example 2: Reply to a customer conversation with specific author**
 
+Step 1 - List teammates to get author ID:
 ```json
 {
-  "conversation_id": "cnv_456",
-  "author_id": "tea_789",
-  "body": "Thank you for reaching out! I'll help you resolve this issue right away."
+  "limit": 25
 }
 ```
 
-**Example 3: Create new message using a channel**
+Step 2 - Reply with specific teammate as author:
+```json
+{
+  "conversation_id": "cnv_456",
+  "body": "Thank you for reaching out! I'll help you resolve this issue right away.",
+  "author_id": "tea_789"
+}
+```
 
-Step 1 - Get inbox channels:
+**Example 3: Create new message using a channel with specific author**
+
+Step 1 - List teammates to get author ID:
+```json
+{
+  "limit": 25
+}
+```
+
+Step 2 - Get inbox channels:
 ```json
 {
   "inbox_id": "inb_billing123",
@@ -231,14 +257,14 @@ Step 1 - Get inbox channels:
 }
 ```
 
-Step 2 - Create message via channel:
+Step 3 - Create message via channel with specific author:
 ```json
 {
   "channel_id": "cha_email123",
-  "author_id": "tea_789",
   "body": "Hello! We received your inquiry and will get back to you shortly.",
   "to": ["customer@example.com"],
-  "subject": "Re: Your Support Request"
+  "subject": "Re: Your Support Request",
+  "author_id": "tea_789"
 }
 ```
 
