@@ -1,0 +1,1119 @@
+{
+    "name": "Front",
+    "display_name": "Front",
+    "version": "1.0.0",
+    "description": "Front integration for customer communication, inbox management, and team collaboration",
+    "entry_point": "front.py",
+    "auth": {
+        "type": "platform",
+        "provider": "Front",
+        "scopes": [
+            "Shared resources"
+        ]
+    },
+    "actions": {
+        "get_inbox": {
+            "display_name": "Get Inbox",
+            "description": "Get details of a specific inbox",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox_id": {
+                        "type": "string",
+                        "description": "The inbox ID to retrieve"
+                    }
+                },
+                "required": ["inbox_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox": {
+                        "type": "object",
+                        "description": "Inbox details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Inbox ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Inbox name"
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Inbox email address"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Inbox type"
+                            },
+                            "send_as": {
+                                "type": "string",
+                                "description": "Send as email address"
+                            },
+                            "is_private": {
+                                "type": "boolean",
+                                "description": "Whether inbox is private"
+                            }
+                        },
+                        "required": ["id", "name", "address"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["inbox", "result"]
+            }
+        },
+        "list_inbox_conversations": {
+            "display_name": "List Inbox Conversations",
+            "description": "List conversations from a specific inbox",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox_id": {
+                        "type": "string",
+                        "description": "The inbox ID to get conversations from"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter by conversation status",
+                        "enum": ["archived", "deleted", "open", "assigned", "unassigned"]
+                    },
+                    "tag_id": {
+                        "type": "string",
+                        "description": "Filter by tag ID (optional)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of conversations to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": ["inbox_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "conversations": {
+                        "type": "array",
+                        "description": "List of conversations",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Conversation ID"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Conversation subject"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Conversation status"
+                                },
+                                "assignee": {
+                                    "type": "object",
+                                    "description": "Assigned teammate"
+                                },
+                                "recipient": {
+                                    "type": "object",
+                                    "description": "Conversation recipient"
+                                },
+                                "tags": {
+                                    "type": "array",
+                                    "description": "Conversation tags"
+                                },
+                                "last_message": {
+                                    "type": "object",
+                                    "description": "Last message in conversation"
+                                }
+                            },
+                            "required": ["id", "subject", "status"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["conversations", "result"]
+            }
+        },
+        "get_conversation": {
+            "display_name": "Get Conversation",
+            "description": "Get details of a specific conversation",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "description": "The conversation ID to retrieve"
+                    }
+                },
+                "required": ["conversation_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation": {
+                        "type": "object",
+                        "description": "Conversation details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Conversation ID"
+                            },
+                            "subject": {
+                                "type": "string",
+                                "description": "Conversation subject"
+                            },
+                            "status": {
+                                "type": "string",
+                                "description": "Conversation status"
+                            },
+                            "assignee": {
+                                "type": "object",
+                                "description": "Assigned teammate"
+                            },
+                            "recipient": {
+                                "type": "object",
+                                "description": "Conversation recipient"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "description": "Conversation tags"
+                            },
+                            "created_at": {
+                                "type": "integer",
+                                "description": "Creation timestamp"
+                            },
+                            "is_private": {
+                                "type": "boolean",
+                                "description": "Whether conversation is private"
+                            }
+                        },
+                        "required": ["id", "subject", "status"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["conversation", "result"]
+            }
+        },
+        "list_conversation_messages": {
+            "display_name": "List Conversation Messages",
+            "description": "List messages in a conversation",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "description": "The conversation ID to get messages from"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of messages to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": ["conversation_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "messages": {
+                        "type": "array",
+                        "description": "List of messages",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Message ID"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Message type (email, sms, etc.)"
+                                },
+                                "is_inbound": {
+                                    "type": "boolean",
+                                    "description": "Whether message is inbound"
+                                },
+                                "author": {
+                                    "type": "object",
+                                    "description": "Message author"
+                                },
+                                "recipients": {
+                                    "type": "array",
+                                    "description": "Message recipients"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Message subject"
+                                },
+                                "body": {
+                                    "type": "string",
+                                    "description": "Message body"
+                                },
+                                "created_at": {
+                                    "type": "integer",
+                                    "description": "Message timestamp"
+                                }
+                            },
+                            "required": ["id", "type", "is_inbound", "author"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["messages", "result"]
+            }
+        },
+        "create_message": {
+            "display_name": "Create Message",
+            "description": "Create a new message (starts new conversation)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {
+                        "type": "string",
+                        "description": "Channel ID to send from"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Message body content"
+                    },
+                    "to": {
+                        "type": "array",
+                        "description": "List of recipient email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "cc": {
+                        "type": "array",
+                        "description": "List of CC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "bcc": {
+                        "type": "array",
+                        "description": "List of BCC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "sender_name": {
+                        "type": "string",
+                        "description": "Name used for the sender info of the message"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Message subject for email messages"
+                    },
+                    "author_id": {
+                        "type": "string",
+                        "description": "ID of the teammate on behalf of whom the message is sent"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Text version of the body for email messages"
+                    },
+                    "signature_id": {
+                        "type": "string",
+                        "description": "ID of the signature to attach to this message"
+                    },
+                    "should_add_default_signature": {
+                        "type": "boolean",
+                        "description": "Whether to add the default signature"
+                    }
+                },
+                "required": ["channel_id", "body", "to"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "message_uid": {
+                        "type": "string",
+                        "description": "Temporary message UID (async processing)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["message_uid", "result"]
+            }
+        },
+        "create_message_reply": {
+            "display_name": "Create Message Reply",
+            "description": "Reply to an existing conversation",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "description": "The conversation ID to reply to"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Message body content"
+                    },
+                    "to": {
+                        "type": "array",
+                        "description": "List of recipient email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "cc": {
+                        "type": "array",
+                        "description": "List of CC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "bcc": {
+                        "type": "array",
+                        "description": "List of BCC email addresses",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "sender_name": {
+                        "type": "string",
+                        "description": "Name used for the sender info of the message"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Message subject for email messages"
+                    },
+                    "author_id": {
+                        "type": "string",
+                        "description": "ID of the teammate on behalf of whom the message is sent"
+                    },
+                    "channel_id": {
+                        "type": "string",
+                        "description": "Channel ID the message is sent from"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "Text version of the body for email messages"
+                    },
+                    "quote_body": {
+                        "type": "string",
+                        "description": "Body for the quote that the message is referencing (email channels only)"
+                    },
+                    "signature_id": {
+                        "type": "string",
+                        "description": "ID of the signature to attach to this message"
+                    },
+                    "should_add_default_signature": {
+                        "type": "boolean",
+                        "description": "Whether to add the default signature"
+                    }
+                },
+                "required": ["conversation_id", "body"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "message_uid": {
+                        "type": "string",
+                        "description": "Temporary message UID (async processing)"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["message_uid", "result"]
+            }
+        },
+        "get_message": {
+            "display_name": "Get Message",
+            "description": "Get details of a specific message",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "message_id": {
+                        "type": "string",
+                        "description": "The message ID to retrieve"
+                    }
+                },
+                "required": ["message_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "object",
+                        "description": "Message details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Message ID"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Message type"
+                            },
+                            "is_inbound": {
+                                "type": "boolean",
+                                "description": "Whether message is inbound"
+                            },
+                            "author": {
+                                "type": "object",
+                                "description": "Message author"
+                            },
+                            "recipients": {
+                                "type": "array",
+                                "description": "Message recipients"
+                            },
+                            "subject": {
+                                "type": "string",
+                                "description": "Message subject"
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body"
+                            },
+                            "created_at": {
+                                "type": "integer",
+                                "description": "Message timestamp"
+                            }
+                        },
+                        "required": ["id", "type", "is_inbound", "author"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["message", "result"]
+            }
+        },
+        "list_channels": {
+            "display_name": "List Channels",
+            "description": "List all channels in the account",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of channels to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channels": {
+                        "type": "array",
+                        "description": "List of channels",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Channel ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Channel name"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Channel type (smtp, imap, etc.)"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "description": "Channel email address"
+                                },
+                                "send_as": {
+                                    "type": "string",
+                                    "description": "Send as email address"
+                                }
+                            },
+                            "required": ["id", "name", "type"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["channels", "result"]
+            }
+        },
+        "list_inbox_channels": {
+            "display_name": "List Inbox Channels",
+            "description": "List channels for a specific inbox",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox_id": {
+                        "type": "string",
+                        "description": "The inbox ID to get channels from"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of channels to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": ["inbox_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channels": {
+                        "type": "array",
+                        "description": "List of channels",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Channel ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Channel name"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Channel type (smtp, imap, etc.)"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "description": "Channel email address"
+                                },
+                                "send_as": {
+                                    "type": "string",
+                                    "description": "Send as email address"
+                                }
+                            },
+                            "required": ["id", "name", "type"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["channels", "result"]
+            }
+        },
+        "get_channel": {
+            "display_name": "Get Channel",
+            "description": "Get details of a specific channel",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {
+                        "type": "string",
+                        "description": "The channel ID to retrieve"
+                    }
+                },
+                "required": ["channel_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "channel": {
+                        "type": "object",
+                        "description": "Channel details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Channel ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Channel name"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Channel type"
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Channel email address"
+                            },
+                            "send_as": {
+                                "type": "string",
+                                "description": "Send as email address"
+                            },
+                            "is_private": {
+                                "type": "boolean",
+                                "description": "Whether channel is private"
+                            }
+                        },
+                        "required": ["id", "name", "type"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["channel", "result"]
+            }
+        },
+        "list_message_templates": {
+            "display_name": "List Message Templates",
+            "description": "List all message templates available",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of templates to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "templates": {
+                        "type": "array",
+                        "description": "List of message templates",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Template ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Template name"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Template subject"
+                                },
+                                "body": {
+                                    "type": "string",
+                                    "description": "Template body content"
+                                },
+                                "attachments": {
+                                    "type": "array",
+                                    "description": "Template attachments"
+                                },
+                                "metadata": {
+                                    "type": "object",
+                                    "description": "Template metadata"
+                                }
+                            },
+                            "required": ["id", "name", "subject", "body", "attachments", "metadata"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["templates", "result"]
+            }
+        },
+        "get_message_template": {
+            "display_name": "Get Message Template",
+            "description": "Get details of a specific message template",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "message_template_id": {
+                        "type": "string",
+                        "description": "The message template ID to retrieve"
+                    }
+                },
+                "required": ["message_template_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "template": {
+                        "type": "object",
+                        "description": "Message template details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Template ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Template name"
+                            },
+                            "subject": {
+                                "type": "string",
+                                "description": "Template subject"
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Template body content"
+                            },
+                            "attachments": {
+                                "type": "array",
+                                "description": "Template attachments"
+                            },
+                            "metadata": {
+                                "type": "object",
+                                "description": "Template metadata including inbox availability"
+                            }
+                        },
+                        "required": ["id", "name", "subject", "body", "attachments", "metadata"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["template", "result"]
+            }
+        },
+        "update_conversation": {
+            "display_name": "Update Conversation",
+            "description": "Update conversation properties like assignee, tags, or status",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation_id": {
+                        "type": "string",
+                        "description": "The conversation ID to update"
+                    },
+                    "assignee_id": {
+                        "type": "string",
+                        "description": "ID of teammate to assign conversation to"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "New conversation status",
+                        "enum": ["archived", "deleted", "open"]
+                    },
+                    "tags": {
+                        "type": "array",
+                        "description": "List of tag IDs to apply",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["conversation_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "conversation": {
+                        "type": "object",
+                        "description": "Updated conversation details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Conversation ID"
+                            },
+                            "status": {
+                                "type": "string",
+                                "description": "Updated status"
+                            },
+                            "assignee": {
+                                "type": "object",
+                                "description": "Assigned teammate"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "description": "Applied tags"
+                            }
+                        },
+                        "required": ["id"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["conversation", "result"]
+            }
+        },
+        "list_inboxes": {
+            "display_name": "List Inboxes",
+            "description": "List all accessible inboxes",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of inboxes to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "inboxes": {
+                        "type": "array",
+                        "description": "List of inboxes",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Inbox ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Inbox name"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "description": "Inbox email address"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Inbox type"
+                                },
+                                "send_as": {
+                                    "type": "string",
+                                    "description": "Send as email address"
+                                }
+                            },
+                            "required": ["id", "name", "address"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["inboxes", "result"]
+            }
+        },
+        "list_teammates": {
+            "display_name": "List Teammates",
+            "description": "List all teammates in the company",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of teammates to return (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "teammates": {
+                        "type": "array",
+                        "description": "List of teammates",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Teammate ID (use as author_id for messages)"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Teammate email address"
+                                },
+                                "username": {
+                                    "type": "string",
+                                    "description": "Teammate username (used for @ mentions)"
+                                },
+                                "first_name": {
+                                    "type": "string",
+                                    "description": "Teammate first name"
+                                },
+                                "last_name": {
+                                    "type": "string",
+                                    "description": "Teammate last name"
+                                },
+                                "is_admin": {
+                                    "type": "boolean",
+                                    "description": "Whether teammate is admin"
+                                },
+                                "is_available": {
+                                    "type": "boolean",
+                                    "description": "Whether teammate is available"
+                                },
+                                "is_blocked": {
+                                    "type": "boolean",
+                                    "description": "Whether teammate is blocked"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Type of teammate (user, visitor, rule, macro, API, integration, CSAT)",
+                                    "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"]
+                                },
+                                "custom_fields": {
+                                    "type": "object",
+                                    "description": "Custom fields for this teammate"
+                                }
+                            },
+                            "required": ["id", "email", "username", "first_name", "last_name", "is_admin", "is_available", "is_blocked", "type", "custom_fields"]
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["teammates", "result"]
+            }
+        },
+        "get_teammate": {
+            "display_name": "Get Teammate",
+            "description": "Get details of a specific teammate by their ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "teammate_id": {
+                        "type": "string",
+                        "description": "The teammate ID to retrieve"
+                    }
+                },
+                "required": ["teammate_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "teammate": {
+                        "type": "object",
+                        "description": "Teammate details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Teammate ID (use as author_id for messages)"
+                            },
+                            "email": {
+                                "type": "string",
+                                "description": "Teammate email address"
+                            },
+                            "username": {
+                                "type": "string",
+                                "description": "Teammate username (used for @ mentions)"
+                            },
+                            "first_name": {
+                                "type": "string",
+                                "description": "Teammate first name"
+                            },
+                            "last_name": {
+                                "type": "string",
+                                "description": "Teammate last name"
+                            },
+                            "is_admin": {
+                                "type": "boolean",
+                                "description": "Whether teammate is admin"
+                            },
+                            "is_available": {
+                                "type": "boolean",
+                                "description": "Whether teammate is available"
+                            },
+                            "is_blocked": {
+                                "type": "boolean",
+                                "description": "Whether teammate is blocked"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Type of teammate (user, visitor, rule, macro, API, integration, CSAT)",
+                                "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"]
+                            },
+                            "custom_fields": {
+                                "type": "object",
+                                "description": "Custom fields for this teammate"
+                            }
+                        },
+                        "required": ["id", "email", "username", "first_name", "last_name", "is_admin", "is_available", "is_blocked", "type", "custom_fields"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["teammate", "result"]
+            }
+        }
+    }
+}
