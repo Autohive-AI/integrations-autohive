@@ -8,9 +8,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../d
 
 # Now we can import the doc-maker module
 try:
-    # Import from the doc-maker module (note: file is doc-maker.py but module name needs to be importable)
+    # Import from the doc_maker module
     import importlib.util
-    spec = importlib.util.spec_from_file_location("doc_maker", os.path.join(os.path.dirname(__file__), '..', 'doc-maker.py'))
+    spec = importlib.util.spec_from_file_location("doc_maker", os.path.join(os.path.dirname(__file__), '..', 'doc_maker.py'))
     doc_maker_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(doc_maker_module)
 
