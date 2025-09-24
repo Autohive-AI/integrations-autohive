@@ -1,0 +1,453 @@
+{
+    "name": "Doc Maker",
+    "version": "1.0.0",
+    "description": "Word document automation integration using python-docx with markdown-first content creation. AI agents should use markdown syntax for most content creation - headings (#), paragraphs, lists (- or 1.), formatting (**bold**, *italic*), tables, blockquotes (>), and code blocks. Only use non-markdown actions for images, page breaks, or when you need direct table creation with structured data arrays.",
+    "entry_point": "doc-maker.py",
+    "actions": {
+        "create_document": {
+            "display_name": "Create Word Document",
+            "description": "Create a new Word document with markdown content. This is the primary action for document creation. Use standard markdown syntax: # for headings (# H1, ## H2, ### H3, etc.), plain text for paragraphs, - for bullet lists, 1. for numbered lists, **bold**, *italic*, `code`, > for blockquotes, and markdown tables (| col1 | col2 |). The markdown is automatically converted to properly formatted Word elements with appropriate styles. Returns a unique document_id for use with other actions and the complete document file for stateless operation.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "markdown_content": {
+                        "type": "string",
+                        "description": "Markdown content to convert to Word document format. Use standard markdown: # for headings, **bold**, *italic*, - for bullets, 1. for numbers, | tables |, > blockquotes, ```code blocks```"
+                    },
+                    "custom_filename": {
+                        "type": "string",
+                        "description": "Custom filename for the returned document file (optional, will auto-add .docx extension if missing)"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "Optional template Word files to use as base",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the file"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The MIME type of the file"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "The file content encoded as base64"
+                                }
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "Unique identifier for the created document"
+                    },
+                    "paragraph_count": {
+                        "type": "integer",
+                        "description": "Number of paragraphs in the document"
+                    },
+                    "markdown_processed": {
+                        "type": "boolean",
+                        "description": "Whether markdown content was processed"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["document_id", "paragraph_count", "markdown_processed", "saved", "file_path", "file"]
+            }
+        },
+        "add_markdown_content": {
+            "display_name": "Add Markdown Content",
+            "description": "Parse and add markdown content to an existing Word document. Requires the current document file in the 'files' parameter. Use this to append additional content to documents created with create_document. All markdown syntax is supported: headings (#), formatting (**bold**, *italic*), lists (- bullets, 1. numbers), tables, blockquotes (>), code blocks (```), etc. Content is appended to the end of the document. Returns the updated document file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to modify"
+                    },
+                    "markdown_content": {
+                        "type": "string",
+                        "description": "Markdown content to parse and add to the document. Use standard markdown syntax: # headings, **bold**, *italic*, - bullets, 1. numbers, | tables |, > blockquotes"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current document file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the file"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The MIME type of the file"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "The file content encoded as base64"
+                                }
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["document_id", "markdown_content"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "markdown_processed": {
+                        "type": "boolean",
+                        "description": "Whether markdown was successfully processed"
+                    },
+                    "elements_added": {
+                        "type": "integer",
+                        "description": "Number of elements added from markdown"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["markdown_processed", "elements_added", "saved", "file_path", "file"]
+            }
+        },
+        "add_table": {
+            "display_name": "Add Structured Table",
+            "description": "Create a table in the document using structured data arrays. Requires the current document file in the 'files' parameter. Use this as an alternative to markdown tables when you have structured data in array format or need precise control over table dimensions. The data parameter should be a 2D array where each sub-array represents a row. First row is typically headers. Returns the updated document file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to modify"
+                    },
+                    "rows": {
+                        "type": "integer",
+                        "description": "Number of table rows",
+                        "minimum": 1
+                    },
+                    "cols": {
+                        "type": "integer",
+                        "description": "Number of table columns",
+                        "minimum": 1
+                    },
+                    "data": {
+                        "type": "array",
+                        "description": "2D array of table data where each sub-array is a row",
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current document file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "contentType": {"type": "string"},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["document_id", "rows", "cols"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "table_rows": {
+                        "type": "integer",
+                        "description": "Number of rows in the created table"
+                    },
+                    "table_cols": {
+                        "type": "integer",
+                        "description": "Number of columns in the created table"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["table_rows", "table_cols", "saved", "file_path", "file"]
+            }
+        },
+        "add_image": {
+            "display_name": "Add Image",
+            "description": "Insert an image into the document from uploaded files. Requires the current document file and image file in the 'files' parameter. The first image file found will be used. Supports PNG, JPG, JPEG, GIF, BMP, and WebP formats. Images cannot be added via markdown, so use this action for any image insertion. Specify width and/or height in inches to control sizing, or omit both for original size.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to modify"
+                    },
+                    "width": {
+                        "type": "number",
+                        "description": "Image width in inches (optional)"
+                    },
+                    "height": {
+                        "type": "number",
+                        "description": "Image height in inches (optional)"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current document file and image file to add",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the file"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The MIME type of the file"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "The file content encoded as base64"
+                                }
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["document_id", "files"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "image_added": {
+                        "type": "boolean",
+                        "description": "Whether image was successfully added"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["image_added", "saved", "file_path", "file"]
+            }
+        },
+        "add_page_break": {
+            "display_name": "Add Page Break",
+            "description": "Insert a page break into the document to force content onto the next page. Requires the current document file in the 'files' parameter. Page breaks cannot be represented in standard markdown, so use this action when you need to control page layout. Returns the updated document file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to modify"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current document file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "contentType": {"type": "string"},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["document_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "page_break_added": {
+                        "type": "boolean",
+                        "description": "Whether page break was successfully added"
+                    },
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
+                },
+                "required": ["page_break_added", "saved", "file_path", "file"]
+            }
+        },
+        "save_document": {
+            "display_name": "Save Document",
+            "description": "Save a document and return it as a base64-encoded file for download. The document is saved to memory and returned as streaming content - no physical file is created on the server. This is typically called automatically by other actions, but can be used standalone if needed.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to save"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where to save the document"
+                    }
+                },
+                "required": ["document_id", "file_path"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the document was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the document was saved"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if save failed"
+                    }
+                },
+                "required": ["saved", "file_path", "file"]
+            }
+        }
+    }
+}
