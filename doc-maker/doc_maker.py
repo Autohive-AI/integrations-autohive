@@ -576,8 +576,17 @@ class FindAndReplaceAction(ActionHandler):
 
         for replacement in replacements:
             find_text = replacement["find"]
-            replace_text = replacement["replace"]
+            replace_text = replacement.get("replace", "")  # Default to empty string if not provided
             replace_all = replacement.get("replace_all", False)
+
+            # Validation
+            if not find_text or len(find_text.strip()) == 0:
+                warnings.append(f"Skipped replacement: 'find' text cannot be empty")
+                continue
+
+            # Handle space-as-delete (convert single space to empty for deletion)
+            if replace_text == " ":
+                replace_text = ""
 
             # First, scan for all matches to check for multiple occurrences
             matches_found = []
