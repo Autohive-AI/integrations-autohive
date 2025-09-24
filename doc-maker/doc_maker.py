@@ -571,34 +571,101 @@ class FindAndReplaceAction(ActionHandler):
 
         doc = documents[document_id]
         total_replacements = 0
+        warnings = []
+        skipped_replacements = []
 
         for replacement in replacements:
             find_text = replacement["find"]
             replace_text = replacement["replace"]
+            replace_all = replacement.get("replace_all", False)
+
+            # First, scan for all matches to check for multiple occurrences
+            matches_found = []
+
+            # Scan paragraphs for matches
+            for para_idx, paragraph in enumerate(doc.paragraphs):
+                if case_sensitive:
+                    if find_text in paragraph.text:
+                        matches_found.append({
+                            "type": "paragraph",
+                            "index": para_idx,
+                            "content": paragraph.text[:100] + "..." if len(paragraph.text) > 100 else paragraph.text,
+                            "context": f"Paragraph {para_idx}"
+                        })
+                else:
+                    if find_text.lower() in paragraph.text.lower():
+                        matches_found.append({
+                            "type": "paragraph",
+                            "index": para_idx,
+                            "content": paragraph.text[:100] + "..." if len(paragraph.text) > 100 else paragraph.text,
+                            "context": f"Paragraph {para_idx}"
+                        })
+
+            # Scan tables for matches
+            for table_idx, table in enumerate(doc.tables):
+                for row_idx, row in enumerate(table.rows):
+                    for col_idx, cell in enumerate(row.cells):
+                        if case_sensitive:
+                            if find_text in cell.text:
+                                matches_found.append({
+                                    "type": "table_cell",
+                                    "table_index": table_idx,
+                                    "row": row_idx,
+                                    "col": col_idx,
+                                    "content": cell.text,
+                                    "context": f"Table {table_idx}, Row {row_idx}, Col {col_idx}"
+                                })
+                        else:
+                            if find_text.lower() in cell.text.lower():
+                                matches_found.append({
+                                    "type": "table_cell",
+                                    "table_index": table_idx,
+                                    "row": row_idx,
+                                    "col": col_idx,
+                                    "content": cell.text,
+                                    "context": f"Table {table_idx}, Row {row_idx}, Col {col_idx}"
+                                })
+
+            # Safety check for multiple matches
+            if len(matches_found) > 1 and not replace_all:
+                skipped_replacement = {
+                    "find_text": find_text,
+                    "matches_count": len(matches_found),
+                    "matches_found": matches_found,
+                    "safety_message": f"MULTIPLE MATCHES DETECTED: '{find_text}' found in {len(matches_found)} locations. Use more specific context or set replace_all=true to replace all instances."
+                }
+                skipped_replacements.append(skipped_replacement)
+                warnings.append(f"Skipped '{find_text}': {len(matches_found)} matches found - be more specific or use replace_all=true")
+                continue  # Skip this replacement
+
+            elif len(matches_found) == 0:
+                warnings.append(f"No matches found for '{find_text}'")
+                continue
+
+            # Proceed with replacement
             replacements_count = 0
 
-            # Search and replace in paragraphs
+            # Perform replacements in paragraphs
             for paragraph in doc.paragraphs:
                 if case_sensitive:
                     if find_text in paragraph.text:
                         paragraph.text = paragraph.text.replace(find_text, replace_text)
-                        replacements_count += paragraph.text.count(replace_text)
+                        replacements_count += 1
                 else:
-                    # Case-insensitive replacement
                     original_text = paragraph.text
                     new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
                     if new_text != original_text:
                         paragraph.text = new_text
                         replacements_count += 1
 
-            # Search and replace in tables
+            # Perform replacements in tables
             for table in doc.tables:
                 for row in table.rows:
                     for cell in row.cells:
                         if case_sensitive:
                             if find_text in cell.text:
                                 cell.text = cell.text.replace(find_text, replace_text)
-                                replacements_count += cell.text.count(replace_text)
+                                replacements_count += 1
                         else:
                             original_text = cell.text
                             new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
@@ -610,7 +677,10 @@ class FindAndReplaceAction(ActionHandler):
 
         original_result = {
             "total_replacements": total_replacements,
-            "replacements_processed": len(replacements)
+            "replacements_processed": len(replacements),
+            "skipped_replacements": skipped_replacements,
+            "warnings": warnings,
+            "safety_checks_performed": True
         }
         return await save_and_return_document(original_result, document_id, context)
 

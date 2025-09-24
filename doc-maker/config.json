@@ -506,7 +506,7 @@
         },
         "find_and_replace": {
             "display_name": "Find and Replace Text",
-            "description": "Search for text patterns and replace them throughout the document. Works on both paragraphs and table cells. Supports case-sensitive and case-insensitive matching. Perfect for replacing natural language placeholders like 'data here', 'insert name', 'company info', etc.",
+            "description": "Search for exact text phrases and replace them throughout the document. CRITICAL SAFETY RULE: Always provide sufficient context in your find phrases to avoid unintended replacements in content text. SAFE EXAMPLES: 'Date: ___' → 'Date: January 15, 2025', 'Project Name: placeholder text' → 'Project Name: Q4 Integration', 'Total Amount: $amount' → 'Total Amount: $15,000'. UNSAFE EXAMPLES: 'date' → 'January 15' (will corrupt sentences like 'the update date'), 'name' → 'John' (will corrupt 'filename'). Include surrounding context words for precision. If you need to replace content text (not placeholders), be extremely specific with full sentence context to avoid affecting other content. Works on paragraphs and table cells with exact string matching - what you specify is exactly what gets replaced.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -520,8 +520,13 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "find": {"type": "string", "description": "Text to find"},
-                                "replace": {"type": "string", "description": "Text to replace with"}
+                                "find": {"type": "string", "description": "Exact text phrase to find (include context for safety: 'Date: ___' not just 'date')"},
+                                "replace": {"type": "string", "description": "Text to replace the entire found phrase with"},
+                                "replace_all": {
+                                    "type": "boolean",
+                                    "description": "Replace all matches (default: false). If false and multiple matches found, operation will be skipped with warning showing all match locations",
+                                    "default": false
+                                }
                             },
                             "required": ["find", "replace"]
                         }
@@ -552,16 +557,56 @@
                 "properties": {
                     "total_replacements": {"type": "integer", "description": "Total number of replacements made"},
                     "replacements_processed": {"type": "integer", "description": "Number of replacement operations processed"},
+                    "skipped_replacements": {
+                        "type": "array",
+                        "description": "Replacements that were skipped due to multiple matches (when replace_all=false)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "find_text": {"type": "string", "description": "The text that had multiple matches"},
+                                "matches_count": {"type": "integer", "description": "Number of matches found"},
+                                "matches_found": {
+                                    "type": "array",
+                                    "description": "Details of all matches found",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {"type": "string", "enum": ["paragraph", "table_cell"]},
+                                            "context": {"type": "string", "description": "Location description"},
+                                            "content": {"type": "string", "description": "Content preview"}
+                                        }
+                                    }
+                                },
+                                "safety_message": {"type": "string", "description": "Safety guidance message"}
+                            }
+                        }
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Warning messages about skipped or failed replacements"
+                    },
+                    "safety_checks_performed": {"type": "boolean", "description": "Whether safety checks were performed"},
                     "saved": {"type": "boolean"},
                     "file_path": {"type": "string"},
-                    "file": {"type": "object"}
+                    "file": {
+                        "type": "object",
+                        "description": "The saved document file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {"type": "string", "description": "Error message if operation failed"}
                 },
-                "required": ["total_replacements", "replacements_processed", "saved", "file_path", "file"]
+                "required": ["total_replacements", "replacements_processed", "skipped_replacements", "warnings", "safety_checks_performed", "saved", "file_path", "file"]
             }
         },
         "fill_template_fields": {
             "display_name": "Fill Template Fields",
-            "description": "Comprehensive template filling that supports multiple approaches: placeholder replacement ({{field}}), position-based updates, and search/replace for natural language placeholders. Works with any template format - rigid placeholders or natural language hints like 'data here', 'company name', etc. Use get_document_elements first to analyze the template structure.",
+            "description": "Comprehensive template filling with multiple safe approaches. SAFETY FIRST: Use context-specific phrases to avoid corrupting content text. Supports: 1) Exact placeholder replacement ({{FIELD}} → value), 2) Position-based updates (safer for complex templates), 3) Context-aware search/replace (include surrounding words). EXAMPLES: Use 'Project Name: placeholder' not 'name', 'Total Amount: $amount' not 'amount'. For critical documents, use get_document_elements first to analyze structure, then use position-based updates for maximum safety.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -583,12 +628,12 @@
                             },
                             "search_replace": {
                                 "type": "array",
-                                "description": "Find and replace operations for natural language placeholders",
+                                "description": "Context-aware find and replace operations. CRITICAL: Include surrounding context for safety",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "find": {"type": "string", "description": "Text to find (e.g., 'data here')"},
-                                        "replace": {"type": "string", "description": "Text to replace with"}
+                                        "find": {"type": "string", "description": "Exact phrase with context (e.g., 'Project Name: data here', 'Total Amount: $amount', 'Date: date placeholder')"},
+                                        "replace": {"type": "string", "description": "Complete replacement text for the entire found phrase"}
                                     },
                                     "required": ["find", "replace"]
                                 }
