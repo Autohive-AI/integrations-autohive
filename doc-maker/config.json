@@ -505,7 +505,7 @@
         },
         "find_and_replace": {
             "display_name": "Find and Replace Text",
-            "description": "Search for exact text phrases and replace them throughout the document. CRITICAL SAFETY RULE: Always provide sufficient context in your find phrases to avoid unintended replacements in content text. SAFE EXAMPLES: 'Date: ___' → 'Date: January 15, 2025', 'Project Name: placeholder text' → 'Project Name: Q4 Integration', 'Total Amount: $amount' → 'Total Amount: $15,000'. UNSAFE EXAMPLES: 'date' → 'January 15' (will corrupt sentences like 'the update date'), 'name' → 'John' (will corrupt 'filename'). Include surrounding context words for precision. If you need to replace content text (not placeholders), be extremely specific with full sentence context to avoid affecting other content. Works on paragraphs and table cells with exact string matching - what you specify is exactly what gets replaced.",
+            "description": "Search for exact text phrases and replace them throughout the document with advanced safety features and spacing control. CRITICAL SAFETY RULE: Always provide sufficient context in your find phrases to avoid unintended replacements. SAFE EXAMPLES: 'Date: ___' → 'Date: January 15, 2025', 'Project Name: placeholder text' → 'Project Name: Q4 Integration'. UNSAFE EXAMPLES: 'date' → 'January 15' (will corrupt 'the update date'). SPACING CONTROL: Use remove_paragraph=true to eliminate gaps when deleting instruction paragraphs like '(Note: Delete this instruction)' → ' '. Use remove_paragraph=false (default) to preserve intentional document spacing. System prevents multiple unintended matches by showing all match locations when replace_all=false.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -524,6 +524,10 @@
                                 "replace_all": {
                                     "type": "boolean",
                                     "description": "Replace all matches (default: false). If false and multiple matches found, operation will be skipped with warning showing all match locations"
+                                },
+                                "remove_paragraph": {
+                                    "type": "boolean",
+                                    "description": "Remove entire paragraph if it becomes empty after replacement (default: false). Use this to eliminate gaps when deleting instruction text or placeholder paragraphs. Preserves intentional spacing when false."
                                 }
                             },
                             "required": ["find", "replace"]

@@ -148,6 +148,7 @@ def detect_placeholder_patterns(text: str) -> bool:
 
     return False
 
+
 def analyze_document_structure(doc: Document) -> dict:
     """Analyze document structure and identify fillable elements"""
     elements = []
@@ -578,6 +579,7 @@ class FindAndReplaceAction(ActionHandler):
             find_text = replacement["find"]
             replace_text = replacement.get("replace", "")  # Default to empty string if not provided
             replace_all = replacement.get("replace_all", False)
+            remove_paragraph = replacement.get("remove_paragraph", False)
 
             # Validation
             if not find_text or len(find_text.strip()) == 0:
@@ -654,20 +656,41 @@ class FindAndReplaceAction(ActionHandler):
             # Proceed with replacement
             replacements_count = 0
 
-            # Perform replacements in paragraphs
+            # Perform replacements in paragraphs with spacing control
+            paragraphs_to_remove = []
             for paragraph in doc.paragraphs:
+                text_matches = False
                 if case_sensitive:
-                    if find_text in paragraph.text:
-                        paragraph.text = paragraph.text.replace(find_text, replace_text)
-                        replacements_count += 1
+                    text_matches = find_text in paragraph.text
                 else:
+                    text_matches = find_text.lower() in paragraph.text.lower()
+
+                if text_matches:
                     original_text = paragraph.text
-                    new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
-                    if new_text != original_text:
-                        paragraph.text = new_text
+                    is_full_paragraph_match = original_text.strip() == find_text.strip()
+
+                    if is_full_paragraph_match and replace_text.strip() == "" and remove_paragraph:
+                        # Mark paragraph for removal to eliminate spacing
+                        paragraphs_to_remove.append(paragraph)
+                        replacements_count += 1
+                    else:
+                        # Normal text replacement (preserves spacing)
+                        if case_sensitive:
+                            paragraph.text = original_text.replace(find_text, replace_text)
+                        else:
+                            paragraph.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
                         replacements_count += 1
 
-            # Perform replacements in tables
+            # Remove marked paragraphs
+            for paragraph in paragraphs_to_remove:
+                try:
+                    p = paragraph._element
+                    p.getparent().remove(p)
+                except:
+                    # Fallback: just clear the text
+                    paragraph.clear()
+
+            # Perform replacements in tables (cells don't get removed, just content cleared)
             for table in doc.tables:
                 for row in table.rows:
                     for cell in row.cells:
