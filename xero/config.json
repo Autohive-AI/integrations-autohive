@@ -1155,6 +1155,98 @@
                 },
                 "description": "Raw Xero API response for file attachment"
             }
+        },
+        "get_attachments": {
+            "display_name": "Get Attachments",
+            "description": "Gets all attachments for a specific invoice, bill, or bank transaction from Xero API",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "description": "The endpoint type (e.g., 'Invoices', 'Bills', 'BankTransactions')",
+                        "enum": ["Invoices", "Bills", "BankTransactions"]
+                    },
+                    "guid": {
+                        "type": "string",
+                        "description": "The GUID of the invoice/bill/transaction"
+                    }
+                },
+                "required": ["tenant_id", "endpoint", "guid"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "Attachments": {
+                        "type": "array",
+                        "description": "Array of attachment metadata including file names, IDs, sizes, and MIME types"
+                    }
+                },
+                "description": "Raw Xero API response for attachments list"
+            }
+        },
+        "get_attachment_content": {
+            "display_name": "Get Attachment Content",
+            "description": "Downloads the actual content of a specific attachment from Xero API for agent analysis",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "description": "The endpoint type (e.g., 'Invoices', 'Bills', 'BankTransactions')",
+                        "enum": ["Invoices", "Bills", "BankTransactions"]
+                    },
+                    "guid": {
+                        "type": "string",
+                        "description": "The GUID of the invoice/bill/transaction"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The filename of the attachment to download"
+                    }
+                },
+                "required": ["tenant_id", "endpoint", "guid", "file_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "File name"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Base64 encoded file content for agent analysis"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "MIME type of the file"
+                            }
+                        },
+                        "required": ["name", "content", "contentType"]
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the download was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if download failed"
+                    }
+                },
+                "required": ["file", "success"]
+            }
         }
     }
 }
