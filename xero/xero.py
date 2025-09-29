@@ -1329,3 +1329,157 @@ class AttachFileToBillAction(ActionHandler):
             }
         except Exception as e:
             raise Exception(f"Failed to attach file to bill: {str(e)}")
+
+
+@xero.action("get_attachments")
+class GetAttachmentsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Gets all attachments for a specific invoice or bill from Xero API
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - endpoint: The endpoint type (e.g., "Invoices", "Bills", "BankTransactions")
+        - guid: The GUID of the invoice/bill/transaction
+
+        Returns attachment metadata including:
+        - attachment_id: Unique ID of the attachment
+        - file_name: Name of the attached file
+        - url: URL to retrieve the attachment content
+        - mime_type: MIME type of the attachment
+        - content_length: Size of the attachment in bytes
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        endpoint = inputs.get("endpoint")
+        guid = inputs.get("guid")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not endpoint:
+            raise ValueError("endpoint is required (e.g., 'Invoices', 'Bills')")
+        if not guid:
+            raise ValueError("guid is required")
+
+        try:
+            # Build URL for getting attachments list
+            url = f"https://api.xero.com/api.xro/2.0/{endpoint}/{guid}/Attachments"
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                tenant_id,
+                method="GET",
+                headers={"Accept": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to get attachments: {str(e)}")
+
+
+@xero.action("get_attachment_content")
+class GetAttachmentContentAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Downloads the actual content of a specific attachment from Xero API
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - endpoint: The endpoint type (e.g., "Invoices", "Bills", "BankTransactions")
+        - guid: The GUID of the invoice/bill/transaction
+        - file_name: The filename of the attachment to download
+
+        Returns:
+        - file: Object containing content (base64), contentType, and name
+        - success: Boolean indicating if the download was successful
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        endpoint = inputs.get("endpoint")
+        guid = inputs.get("guid")
+        file_name = inputs.get("file_name")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not endpoint:
+            raise ValueError("endpoint is required (e.g., 'Invoices', 'Bills')")
+        if not guid:
+            raise ValueError("guid is required")
+        if not file_name:
+            raise ValueError("file_name is required")
+
+        try:
+            # Build URL for getting attachment content
+            url = f"https://api.xero.com/api.xro/2.0/{endpoint}/{guid}/Attachments/{file_name}"
+
+            # For attachment content download, we need to handle binary data manually
+            # Similar to how Box integration handles file content
+            headers = {
+                "Accept": "application/octet-stream",
+                "xero-tenant-id": tenant_id
+            }
+
+            # Add authorization header if available
+            async with context:  # Use context as async context manager
+                session = context._session
+
+                # Copy auth headers from context
+                if context.auth and "credentials" in context.auth:
+                    credentials = context.auth["credentials"]
+                    if "access_token" in credentials:
+                        headers["Authorization"] = f"Bearer {credentials['access_token']}"
+
+                async with session.get(url, headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        return {
+                            "file": {"name": file_name, "content": "", "contentType": ""},
+                            "success": False,
+                            "error": f"Xero API error getting attachment content: {response.status} - {error_text}"
+                        }
+
+                    # Read binary content and encode as base64
+                    file_content = await response.read()
+                    content_base64 = base64.b64encode(file_content).decode('utf-8')
+
+                    # Determine content type from response headers
+                    content_type = response.headers.get('content-type', 'application/octet-stream')
+
+            return {
+                "file": {
+                    "name": file_name,
+                    "content": content_base64,
+                    "contentType": content_type
+                },
+                "success": True
+            }
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            return {
+                "file": {"name": file_name, "content": "", "contentType": ""},
+                "success": False,
+                "error": str(e)
+            }
