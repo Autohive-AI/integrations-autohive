@@ -703,5 +703,478 @@ class TestSearchEmailsAction(unittest.TestCase):
         self.assertEqual(len(result["messages"]), 0)
 
 
+class TestSearchSharePointSitesAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint sites search tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_search_sharepoint_sites_success(self):
+        """Test successful SharePoint sites search."""
+        # Mock API response
+        mock_response = {
+            "value": [
+                {
+                    "id": "contoso.sharepoint.com,da60e844-ba1d-49bc-b4d4-d5e36bae9019,712a596e-90a1-49e3-9b48-bfa80bee8740",
+                    "name": "Team A Site",
+                    "displayName": "Team A Collaboration Site",
+                    "description": "Site for Team A projects",
+                    "webUrl": "https://contoso.sharepoint.com/sites/siteA",
+                    "createdDateTime": "2024-01-15T10:00:00Z",
+                    "lastModifiedDateTime": "2024-08-20T14:30:00Z"
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.SearchSharePointSitesAction()
+        inputs = {"query": "Team A"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["query"], "Team A")
+        self.assertEqual(len(result["sites"]), 1)
+        self.assertEqual(result["total_sites"], 1)
+        self.assertEqual(result["sites"][0]["name"], "Team A Site")
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/sites", call_args[0][0])
+        self.assertEqual(call_args[1]["params"]["search"], "Team A")
+
+
+class TestGetSharePointSiteDetailsAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint site details tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_get_sharepoint_site_details_success(self):
+        """Test successful SharePoint site details retrieval."""
+        # Mock API response
+        mock_response = {
+            "id": "contoso.sharepoint.com,da60e844-ba1d-49bc-b4d4-d5e36bae9019,712a596e-90a1-49e3-9b48-bfa80bee8740",
+            "displayName": "Team A Collaboration Site",
+            "name": "Team A Site",
+            "description": "Site for Team A projects and documentation",
+            "webUrl": "https://contoso.sharepoint.com/sites/siteA",
+            "createdDateTime": "2024-01-15T10:00:00Z",
+            "lastModifiedDateTime": "2024-08-20T14:30:00Z",
+            "isPersonalSite": False
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.GetSharePointSiteDetailsAction()
+        inputs = {"site_id": "contoso.sharepoint.com,da60e844-ba1d-49bc-b4d4-d5e36bae9019,712a596e-90a1-49e3-9b48-bfa80bee8740"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["site"]["name"], "Team A Site")
+        self.assertEqual(result["site"]["display_name"], "Team A Collaboration Site")
+        self.assertFalse(result["site"]["is_personal_site"])
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/sites/contoso.sharepoint.com", call_args[0][0])
+
+
+class TestListSharePointLibrariesAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint libraries tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_list_sharepoint_libraries_success(self):
+        """Test successful SharePoint libraries listing."""
+        # Mock API response
+        mock_response = {
+            "value": [
+                {
+                    "id": "b!-RIj2DuyvEyV1T4NlOaMHk8XkS_I8MdFlUCq1BlcjgmhRfAj3-Z8RY2VpuvV_tpd",
+                    "name": "Documents",
+                    "description": "Shared Documents",
+                    "driveType": "documentLibrary",
+                    "webUrl": "https://contoso.sharepoint.com/sites/siteA/Shared Documents",
+                    "createdDateTime": "2024-01-15T10:00:00Z",
+                    "lastModifiedDateTime": "2024-08-20T14:30:00Z",
+                    "owner": {
+                        "user": {
+                            "displayName": "Site Owner",
+                            "email": "owner@contoso.com"
+                        }
+                    },
+                    "quota": {
+                        "total": 1099511627776,
+                        "remaining": 1099217021300,
+                        "used": 294606476,
+                        "deleted": 0,
+                        "state": "normal"
+                    }
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListSharePointLibrariesAction()
+        inputs = {"site_id": "test-site-id"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["site_id"], "test-site-id")
+        self.assertEqual(len(result["libraries"]), 1)
+        self.assertEqual(result["total_libraries"], 1)
+
+        library = result["libraries"][0]
+        self.assertEqual(library["name"], "Documents")
+        self.assertEqual(library["drive_type"], "documentLibrary")
+        self.assertIn("quota", library)
+        self.assertIn("owner", library)
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/sites/test-site-id/drives", call_args[0][0])
+
+
+class TestSearchSharePointDocumentsAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint documents search tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_search_sharepoint_documents_success(self):
+        """Test successful SharePoint documents search across multiple drives."""
+        # Mock drives response (Step 1: Get all drives)
+        mock_drives_response = {
+            "value": [
+                {
+                    "id": "drive1",
+                    "name": "Documents",
+                    "driveType": "documentLibrary"
+                },
+                {
+                    "id": "drive2",
+                    "name": "HRDocumentLibrary",
+                    "driveType": "documentLibrary"
+                }
+            ]
+        }
+
+        # Mock search results for each drive (Step 2: Search each drive)
+        mock_search_response_drive1 = {
+            "value": [
+                {
+                    "id": "doc123",
+                    "name": "Project Plan.docx",
+                    "size": 45678,
+                    "lastModifiedDateTime": "2024-08-20T10:00:00Z",
+                    "webUrl": "https://contoso.sharepoint.com/sites/siteA/Documents/Project Plan.docx",
+                    "file": {
+                        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    }
+                }
+            ]
+        }
+
+        mock_search_response_drive2 = {
+            "value": [
+                {
+                    "id": "doc456",
+                    "name": "HR Policy.pdf",
+                    "size": 23456,
+                    "lastModifiedDateTime": "2024-08-19T15:30:00Z",
+                    "webUrl": "https://contoso.sharepoint.com/sites/siteA/HRDocumentLibrary/HR Policy.pdf",
+                    "file": {
+                        "mimeType": "application/pdf"
+                    }
+                }
+            ]
+        }
+
+        # Configure mock to return different responses for different calls
+        self.mock_context.fetch.side_effect = [
+            mock_drives_response,           # First call: GET /sites/{site-id}/drives
+            mock_search_response_drive1,    # Second call: GET /drives/drive1/root/search
+            mock_search_response_drive2     # Third call: GET /drives/drive2/root/search
+        ]
+
+        handler = microsoft365.SearchSharePointDocumentsAction()
+        inputs = {
+            "site_id": "test-site-id",
+            "query": "project plan",
+            "limit": 10
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        # Verify the result
+        self.assertTrue(result["result"])
+        self.assertEqual(result["site_id"], "test-site-id")
+        self.assertEqual(result["query"], "project plan")
+        self.assertEqual(len(result["files"]), 2)
+        self.assertEqual(result["total_files"], 2)
+        self.assertEqual(result["drives_searched"], 2)
+        self.assertEqual(result["total_drives"], 2)
+
+        # Verify file details include drive information
+        files = result["files"]
+        self.assertEqual(files[0]["name"], "Project Plan.docx")
+        self.assertEqual(files[0]["drive_id"], "drive1")
+        self.assertEqual(files[0]["drive_name"], "Documents")
+        self.assertEqual(files[1]["name"], "HR Policy.pdf")
+        self.assertEqual(files[1]["drive_id"], "drive2")
+        self.assertEqual(files[1]["drive_name"], "HRDocumentLibrary")
+
+        # Verify the API calls were made correctly
+        self.assertEqual(self.mock_context.fetch.call_count, 3)
+        call_args_list = self.mock_context.fetch.call_args_list
+
+        # First call: Get drives
+        self.assertIn("/sites/test-site-id/drives", call_args_list[0][0])
+
+        # Second call: Search first drive
+        self.assertIn("/drives/drive1/root/search", call_args_list[1][0])
+        self.assertIn("project%20plan", call_args_list[1][0])
+
+        # Third call: Search second drive
+        self.assertIn("/drives/drive2/root/search", call_args_list[2][0])
+        self.assertIn("project%20plan", call_args_list[2][0])
+
+
+class TestListSharePointPagesAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint pages tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_list_sharepoint_pages_success(self):
+        """Test successful SharePoint pages listing."""
+        # Mock API response
+        mock_response = {
+            "value": [
+                {
+                    "id": "page123",
+                    "name": "Home.aspx",
+                    "title": "Welcome to Team A",
+                    "webUrl": "https://contoso.sharepoint.com/sites/siteA/SitePages/Home.aspx",
+                    "pageLayout": "home",
+                    "createdDateTime": "2024-01-15T10:00:00Z",
+                    "lastModifiedDateTime": "2024-08-20T14:30:00Z",
+                    "createdBy": {
+                        "user": {
+                            "displayName": "John Doe",
+                            "email": "john@contoso.com"
+                        }
+                    }
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListSharePointPagesAction()
+        inputs = {"site_id": "test-site-id"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["site_id"], "test-site-id")
+        self.assertEqual(len(result["pages"]), 1)
+        self.assertEqual(result["total_pages"], 1)
+
+        page = result["pages"][0]
+        self.assertEqual(page["name"], "Home.aspx")
+        self.assertEqual(page["title"], "Welcome to Team A")
+        self.assertEqual(page["page_layout"], "home")
+        self.assertIn("created_by", page)
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/sites/test-site-id/pages/microsoft.graph.sitePage", call_args[0][0])
+
+
+class TestReadSharePointDocumentAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint document reading tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    @patch('microsoft365.microsoft365.fetch_binary_content')
+    async def test_read_sharepoint_document_success(self, mock_fetch_binary):
+        """Test successful SharePoint document reading."""
+        # Mock metadata response
+        mock_metadata = {
+            "id": "doc123",
+            "name": "SharePoint_Report.docx",
+            "size": 3072,
+            "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "webUrl": "https://contoso.sharepoint.com/sites/siteA/Documents/SharePoint_Report.docx"
+        }
+
+        # Mock PDF content from conversion
+        mock_content = b"%PDF-1.4\n%SharePoint document converted to PDF"
+
+        self.mock_context.fetch.return_value = mock_metadata
+        mock_fetch_binary.return_value = mock_content
+
+        handler = microsoft365.ReadSharePointDocumentAction()
+        inputs = {"site_id": "test-site-id", "file_id": "doc123"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["file"]["name"], "SharePoint_Report.docx")
+        self.assertEqual(result["file"]["contentType"], "application/pdf")
+        self.assertEqual(result["metadata"]["site_id"], "test-site-id")
+        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded PDF
+
+        # Verify API calls
+        self.mock_context.fetch.assert_called_once()  # Metadata call
+        mock_fetch_binary.assert_called_once()        # Binary content call
+
+        # Check binary content call includes format=pdf for Office docs
+        binary_call_args = mock_fetch_binary.call_args[0]
+        self.assertIn("/sites/test-site-id/drive/items/doc123/content", binary_call_args[0])
+        self.assertIn("format=pdf", binary_call_args[0])
+
+    @patch('microsoft365.microsoft365.fetch_binary_content')
+    async def test_read_sharepoint_document_with_drive_id_success(self, mock_fetch_binary):
+        """Test successful SharePoint document reading with specific drive ID."""
+        # Mock metadata response
+        mock_metadata = {
+            "id": "doc456",
+            "name": "HR_Policy.pdf",
+            "size": 4096,
+            "mimeType": "application/pdf",
+            "webUrl": "https://contoso.sharepoint.com/sites/siteA/HRDocumentLibrary/HR_Policy.pdf"
+        }
+        # Mock PDF content
+        mock_content = b"%PDF-1.4\n%HR Policy document"
+        self.mock_context.fetch.return_value = mock_metadata
+        mock_fetch_binary.return_value = mock_content
+
+        handler = microsoft365.ReadSharePointDocumentAction()
+        inputs = {
+            "site_id": "test-site-id",
+            "file_id": "doc456",
+            "drive_id": "drive123"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["file"]["name"], "HR_Policy.pdf")
+        self.assertEqual(result["file"]["contentType"], "application/pdf")
+        self.assertEqual(result["metadata"]["site_id"], "test-site-id")
+        self.assertEqual(result["metadata"]["drive_id"], "drive123")
+        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded PDF
+
+        # Verify API calls use drive-specific endpoints
+        metadata_call_args = self.mock_context.fetch.call_args[0]
+        self.assertIn("/drives/drive123/items/doc456", metadata_call_args[0])
+
+        # Check binary content call uses drive-specific endpoint
+        binary_call_args = mock_fetch_binary.call_args[0]
+        self.assertIn("/drives/drive123/items/doc456/content", binary_call_args[0])
+
+
+class TestReadSharePointPageContentAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for SharePoint page content tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_read_sharepoint_page_content_success(self):
+        """Test successful SharePoint page content reading."""
+        # Mock API response with canvasLayout
+        mock_response = {
+            "id": "page123",
+            "name": "Home.aspx",
+            "title": "Welcome to SharePoint",
+            "webUrl": "https://contoso.sharepoint.com/sites/siteA/SitePages/Home.aspx",
+            "pageLayout": "home",
+            "createdDateTime": "2024-01-15T10:00:00Z",
+            "lastModifiedDateTime": "2024-08-20T14:30:00Z",
+            "createdBy": {
+                "user": {
+                    "displayName": "Page Creator",
+                    "email": "creator@contoso.com"
+                }
+            },
+            "canvasLayout": {
+                "horizontalSections": [
+                    {
+                        "layout": "oneColumn",
+                        "columns": [
+                            {
+                                "webparts": [
+                                    {
+                                        "@odata.type": "#oneDrive.textWebPart",
+                                        "innerHtml": "<h1>Welcome</h1><p>This is the home page content.</p>"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ReadSharePointPageContentAction()
+        inputs = {
+            "site_id": "test-site-id",
+            "page_id": "page123",
+            "include_content": True
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["site_id"], "test-site-id")
+        self.assertEqual(result["page"]["name"], "Home.aspx")
+        self.assertEqual(result["page"]["title"], "Welcome to SharePoint")
+        self.assertEqual(result["page"]["page_layout"], "home")
+        self.assertIn("content", result["page"])  # canvasLayout content
+        self.assertIn("created_by", result["page"])
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/sites/test-site-id/pages/page123/microsoft.graph.sitePage", call_args[0][0])
+        self.assertIn("$expand", call_args[1]["params"])
+        self.assertEqual(call_args[1]["params"]["$expand"], "canvasLayout")
+
+    async def test_read_sharepoint_page_content_metadata_only(self):
+        """Test SharePoint page metadata retrieval without content."""
+        mock_response = {
+            "id": "page456",
+            "name": "About.aspx",
+            "title": "About Us",
+            "webUrl": "https://contoso.sharepoint.com/sites/siteA/SitePages/About.aspx",
+            "pageLayout": "article"
+        }
+
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ReadSharePointPageContentAction()
+        inputs = {
+            "site_id": "test-site-id",
+            "page_id": "page456",
+            "include_content": False
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["page"]["title"], "About Us")
+        self.assertNotIn("content", result["page"])  # No content when include_content=False
+
+        # Verify API call doesn't include $expand
+        call_args = self.mock_context.fetch.call_args
+        self.assertNotIn("$expand", call_args[1]["params"])
+
+
 if __name__ == '__main__':
     unittest.main()

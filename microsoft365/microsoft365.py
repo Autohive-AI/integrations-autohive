@@ -1228,3 +1228,567 @@ class SearchEmailsAction(ActionHandler):
                 "messages": [],
                 "error": str(e)
             }
+
+@microsoft365.action("search_sharepoint_sites")
+class SearchSharePointSitesAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            search_query = inputs["query"]
+
+            # Build search URL according to Microsoft Graph API spec
+            # GET /sites?search={query}
+            params = {
+                "search": search_query
+            }
+
+            # Add optional sorting by createdDateTime if specified
+            if inputs.get("order_by_created"):
+                params["$orderby"] = "createdDateTime desc"
+
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites",
+                params=params
+            )
+
+            # Process search results according to API response format
+            sites = []
+            for site in response.get("value", []):
+                sites.append({
+                    "id": site.get("id", ""),
+                    "name": site.get("name", ""),
+                    "display_name": site.get("displayName", ""),
+                    "description": site.get("description", ""),
+                    "web_url": site.get("webUrl", ""),
+                    "created_datetime": site.get("createdDateTime", ""),
+                    "last_modified_datetime": site.get("lastModifiedDateTime", "")
+                })
+
+            return {
+                "result": True,
+                "query": search_query,
+                "sites": sites,
+                "total_sites": len(sites)
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "query": inputs.get("query", ""),
+                "sites": [],
+                "total_sites": 0,
+                "error": str(e)
+            }
+
+@microsoft365.action("get_sharepoint_site_details")
+class GetSharePointSiteDetailsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+
+            # Get site details according to Microsoft Graph API spec
+            # GET /sites/{site-id}
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites/{site_id}"
+            )
+
+            # Process response according to API documentation
+            site_details = {
+                "id": response.get("id", ""),
+                "display_name": response.get("displayName", ""),
+                "name": response.get("name", ""),
+                "description": response.get("description", ""),
+                "web_url": response.get("webUrl", ""),
+                "created_datetime": response.get("createdDateTime", ""),
+                "last_modified_datetime": response.get("lastModifiedDateTime", ""),
+                "is_personal_site": response.get("isPersonalSite", False)
+            }
+
+            # Add additional metadata if available
+            if "siteCollection" in response:
+                site_details["site_collection"] = response["siteCollection"]
+
+            return {
+                "result": True,
+                "site": site_details
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "site": {},
+                "error": str(e)
+            }
+
+@microsoft365.action("list_sharepoint_libraries")
+class ListSharePointLibrariesAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+
+            # Add optional query parameters
+            params = {}
+            if inputs.get("limit"):
+                params["$top"] = inputs["limit"]
+            if inputs.get("select_fields"):
+                # Filter out invalid field names that don't exist on Drive resource
+                valid_drive_fields = {
+                    "id", "name", "description", "driveType", "webUrl",
+                    "createdDateTime", "lastModifiedDateTime", "createdBy",
+                    "lastModifiedBy", "owner", "quota", "sharepointIds", "system"
+                }
+                requested_fields = [f.strip() for f in inputs["select_fields"].split(",")]
+                valid_fields = [f for f in requested_fields if f in valid_drive_fields]
+
+                if valid_fields:
+                    params["$select"] = ",".join(valid_fields)
+
+            # List drives (document libraries) according to Microsoft Graph API spec
+            # GET /sites/{site-id}/drives
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites/{site_id}/drives",
+                params=params
+            )
+
+            # Process response according to API documentation
+            libraries = []
+            for drive in response.get("value", []):
+                library_data = {
+                    "id": drive.get("id", ""),
+                    "name": drive.get("name", ""),
+                    "description": drive.get("description", ""),
+                    "drive_type": drive.get("driveType", ""),
+                    "web_url": drive.get("webUrl", ""),
+                    "created_datetime": drive.get("createdDateTime", ""),
+                    "last_modified_datetime": drive.get("lastModifiedDateTime", "")
+                }
+
+                # Add quota information if available
+                if "quota" in drive:
+                    library_data["quota"] = {
+                        "total": drive["quota"].get("total", 0),
+                        "remaining": drive["quota"].get("remaining", 0),
+                        "used": drive["quota"].get("used", 0),
+                        "deleted": drive["quota"].get("deleted", 0),
+                        "state": drive["quota"].get("state", "")
+                    }
+
+                # Add owner information if available
+                if "owner" in drive and "user" in drive["owner"]:
+                    library_data["owner"] = {
+                        "display_name": drive["owner"]["user"].get("displayName", ""),
+                        "email": drive["owner"]["user"].get("email", "")
+                    }
+
+                libraries.append(library_data)
+
+            return {
+                "result": True,
+                "site_id": site_id,
+                "libraries": libraries,
+                "total_libraries": len(libraries)
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "site_id": inputs.get("site_id", ""),
+                "libraries": [],
+                "total_libraries": 0,
+                "error": str(e)
+            }
+
+@microsoft365.action("search_sharepoint_documents")
+class SearchSharePointDocumentsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+            search_query = inputs["query"]
+            limit = inputs.get("limit", 10)
+
+            # Step 1: Get all drives (document libraries) for the site
+            # GET /sites/{site-id}/drives
+            drives_response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites/{site_id}/drives"
+            )
+
+            drives = drives_response.get("value", [])
+            if not drives:
+                return {
+                    "result": True,
+                    "site_id": site_id,
+                    "query": search_query,
+                    "files": [],
+                    "total_files": 0,
+                    "drives_searched": 0,
+                    "message": "No document libraries found in this site"
+                }
+
+            # Step 2: Search each drive individually
+            # GET /drives/{drive-id}/root/search(q='{query}')
+            encoded_query = urllib.parse.quote(search_query)
+            all_files = []
+            drives_searched = 0
+            search_errors = []
+
+            for drive in drives:
+                try:
+                    drive_id = drive["id"]
+                    drive_name = drive.get("name", "Unknown")
+                    drives_searched += 1
+
+                    # Search within this specific drive
+                    params = {
+                        "$top": limit,
+                        "$select": "id,name,size,lastModifiedDateTime,webUrl,folder,file"
+                    }
+                    api_url = f"{GRAPH_API_BASE}/drives/{drive_id}/root/search(q='{encoded_query}')"
+                    drive_response = await context.fetch(api_url, params=params)
+
+                    # Process files from this drive
+                    for item in drive_response.get("value", []):
+                        file_item = {
+                            "id": item["id"],
+                            "name": item["name"],
+                            "size": item.get("size", 0),
+                            "lastModifiedDateTime": item["lastModifiedDateTime"],
+                            "webUrl": item["webUrl"],
+                            "drive_id": drive_id,
+                            "drive_name": drive_name
+                        }
+                        # Only include folder property if it exists (for folders only)
+                        if "folder" in item:
+                            file_item["folder"] = item["folder"]
+                        # Include file type information if available
+                        if "file" in item:
+                            file_item["file"] = item["file"]
+                        all_files.append(file_item)
+
+                        # Stop if we've reached the limit
+                        if len(all_files) >= limit:
+                            break
+
+                except Exception as drive_error:
+                    search_errors.append(f"Drive '{drive.get('name', drive.get('id'))}': {str(drive_error)}")
+                    continue
+
+                # Stop if we've reached the limit
+                if len(all_files) >= limit:
+                    break
+
+            # Truncate to limit if necessary
+            if len(all_files) > limit:
+                all_files = all_files[:limit]
+
+            result = {
+                "result": True,
+                "site_id": site_id,
+                "query": search_query,
+                "files": all_files,
+                "total_files": len(all_files),
+                "drives_searched": drives_searched,
+                "total_drives": len(drives)
+            }
+
+            if search_errors:
+                result["search_errors"] = search_errors
+
+            return result
+
+        except Exception as e:
+            return {
+                "result": False,
+                "site_id": inputs.get("site_id", ""),
+                "query": inputs.get("query", ""),
+                "files": [],
+                "total_files": 0,
+                "error": str(e)
+            }
+
+@microsoft365.action("read_sharepoint_document")
+class ReadSharePointDocumentAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+            file_id = inputs["file_id"]
+            drive_id = inputs.get("drive_id")  # Optional: specific drive ID
+
+            # Get file metadata - use drive-specific endpoint if drive_id provided
+            # GET /drives/{drive-id}/items/{file-id} OR /sites/{site-id}/drive/items/{file-id}
+            metadata_params = {
+                "$select": "id,name,size,mimeType,file,webUrl"
+            }
+
+            if drive_id:
+                # Use specific drive endpoint for files from non-default libraries
+                metadata_url = f"{GRAPH_API_BASE}/drives/{drive_id}/items/{file_id}"
+            else:
+                # Fallback to site default drive for backward compatibility
+                metadata_url = f"{GRAPH_API_BASE}/sites/{site_id}/drive/items/{file_id}"
+
+            metadata_response = await context.fetch(metadata_url, params=metadata_params)
+
+            file_name = metadata_response["name"]
+            file_size = metadata_response.get("size", 0)
+            mime_type = metadata_response.get("mimeType", "")
+            web_url = metadata_response.get("webUrl", "")
+
+            # Try to get file content (reuse OneDrive logic)
+            content = None
+            try:
+                # For Office documents, use Microsoft's PDF conversion API
+                if any(ext in file_name.lower() for ext in ['.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls']):
+                    if drive_id:
+                        content_url = f"{GRAPH_API_BASE}/drives/{drive_id}/items/{file_id}/content?format=pdf"
+                    else:
+                        content_url = f"{GRAPH_API_BASE}/sites/{site_id}/drive/items/{file_id}/content?format=pdf"
+                    # Use binary fetch to avoid SDK text parsing for converted PDFs
+                    content_bytes = await fetch_binary_content(content_url, context)
+
+                    # Encode as base64 for JSON serialization
+                    content = base64.b64encode(content_bytes).decode('utf-8')
+                    content_type = "application/pdf"
+                    content_available = True
+                    content_info = "Office document converted to PDF and encoded for LLM processing"
+                elif file_name.lower().endswith('.pdf'):
+                    # For native PDF files, get content directly (no conversion needed)
+                    if drive_id:
+                        content_url = f"{GRAPH_API_BASE}/drives/{drive_id}/items/{file_id}/content"
+                    else:
+                        content_url = f"{GRAPH_API_BASE}/sites/{site_id}/drive/items/{file_id}/content"
+                    # Use binary fetch to avoid SDK text parsing for PDFs
+                    content_bytes = await fetch_binary_content(content_url, context)
+
+                    # Encode as base64 for JSON serialization
+                    content = base64.b64encode(content_bytes).decode('utf-8')
+                    content_type = "application/pdf"
+                    content_available = True
+                    content_info = "PDF content retrieved and encoded for LLM processing"
+                else:
+                    # For text files, get raw content
+                    if drive_id:
+                        content_url = f"{GRAPH_API_BASE}/drives/{drive_id}/items/{file_id}/content"
+                    else:
+                        content_url = f"{GRAPH_API_BASE}/sites/{site_id}/drive/items/{file_id}/content"
+                    content_response = await context.fetch(content_url, method="GET")
+
+                    # Encode as base64 for consistent handling
+                    if isinstance(content_response, bytes):
+                        content = base64.b64encode(content_response).decode('utf-8')
+                    elif isinstance(content_response, str):
+                        # Use latin-1 encoding to preserve binary data in string
+                        content = base64.b64encode(content_response.encode('latin-1')).decode('utf-8')
+                    else:
+                        content = base64.b64encode(str(content_response).encode('latin-1')).decode('utf-8')
+
+                    content_type = mime_type or "text/plain"
+                    content_available = True
+                    content_info = "Text content retrieved and encoded successfully"
+
+            except Exception as content_error:
+                # If content retrieval fails, still return file metadata
+                content = None
+                content_available = False
+                content_info = f"Content retrieval failed: {str(content_error)}"
+
+            # Determine content type based on file extension if mime_type is empty
+            if not mime_type:
+                if file_name.lower().endswith('.pdf'):
+                    mime_type = "application/pdf"
+                elif any(ext in file_name.lower() for ext in ['.docx', '.doc']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                elif any(ext in file_name.lower() for ext in ['.xlsx', '.xls']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                elif any(ext in file_name.lower() for ext in ['.pptx', '.ppt']):
+                    mime_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                else:
+                    mime_type = "application/octet-stream"
+
+            # Return in same format as OneDrive for consistency
+            if content_available and content:
+                return {
+                    "file": {
+                        "content": content,
+                        "name": file_name,
+                        "contentType": content_type
+                    },
+                    "metadata": {
+                        "id": file_id,
+                        "name": file_name,
+                        "size": file_size,
+                        "mimeType": mime_type,
+                        "webUrl": web_url,
+                        "site_id": site_id,
+                        "drive_id": drive_id
+                    },
+                    "result": True
+                }
+            else:
+                # Set fallback content type for failed cases
+                fallback_content_type = mime_type
+                if file_name.lower().endswith('.pdf'):
+                    fallback_content_type = "application/pdf"
+
+                return {
+                    "file": {
+                        "content": "",
+                        "name": file_name,
+                        "contentType": fallback_content_type
+                    },
+                    "metadata": {
+                        "id": file_id,
+                        "name": file_name,
+                        "size": file_size,
+                        "mimeType": mime_type,
+                        "webUrl": web_url,
+                        "site_id": site_id,
+                        "drive_id": drive_id
+                    },
+                    "result": False,
+                    "error": content_info
+                }
+
+        except Exception as e:
+            return {
+                "file": {
+                    "content": "",
+                    "name": "",
+                    "contentType": "application/octet-stream"
+                },
+                "metadata": {
+                    "id": inputs.get("file_id", ""),
+                    "name": "",
+                    "site_id": inputs.get("site_id", "")
+                },
+                "result": False,
+                "error": str(e)
+            }
+
+@microsoft365.action("list_sharepoint_pages")
+class ListSharePointPagesAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+
+            # Build request according to Microsoft Graph API spec
+            # GET /sites/{site-id}/pages/microsoft.graph.sitePage
+            params = {}
+
+            # Add optional query parameters
+            if inputs.get("limit"):
+                params["$top"] = inputs["limit"]
+            if inputs.get("order_by"):
+                params["$orderby"] = inputs["order_by"]
+            if inputs.get("select_fields"):
+                params["$select"] = inputs["select_fields"]
+            else:
+                # Default selection for useful page metadata
+                params["$select"] = "id,name,webUrl,title,pageLayout,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy"
+
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites/{site_id}/pages/microsoft.graph.sitePage",
+                params=params
+            )
+
+            # Process response according to API documentation
+            pages = []
+            for page in response.get("value", []):
+                page_data = {
+                    "id": page.get("id", ""),
+                    "name": page.get("name", ""),
+                    "title": page.get("title", ""),
+                    "web_url": page.get("webUrl", ""),
+                    "page_layout": page.get("pageLayout", ""),
+                    "created_datetime": page.get("createdDateTime", ""),
+                    "last_modified_datetime": page.get("lastModifiedDateTime", "")
+                }
+
+                # Add creator information if available
+                if "createdBy" in page and "user" in page["createdBy"]:
+                    page_data["created_by"] = {
+                        "display_name": page["createdBy"]["user"].get("displayName", ""),
+                        "email": page["createdBy"]["user"].get("email", "")
+                    }
+
+                # Add last modifier information if available
+                if "lastModifiedBy" in page and "user" in page["lastModifiedBy"]:
+                    page_data["last_modified_by"] = {
+                        "display_name": page["lastModifiedBy"]["user"].get("displayName", ""),
+                        "email": page["lastModifiedBy"]["user"].get("email", "")
+                    }
+
+                pages.append(page_data)
+
+            return {
+                "result": True,
+                "site_id": site_id,
+                "pages": pages,
+                "total_pages": len(pages)
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "site_id": inputs.get("site_id", ""),
+                "pages": [],
+                "total_pages": 0,
+                "error": str(e)
+            }
+
+@microsoft365.action("read_sharepoint_page_content")
+class ReadSharePointPageContentAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            site_id = inputs["site_id"]
+            page_id = inputs["page_id"]
+            include_content = inputs.get("include_content", True)
+
+            # Build request according to Microsoft Graph API spec
+            # GET /sites/{site-id}/pages/{page-id}/microsoft.graph.sitePage
+            params = {
+                "$select": "id,name,webUrl,title,pageLayout,createdDateTime,lastModifiedDateTime,createdBy,lastModifiedBy"
+            }
+
+            # Include page content if requested
+            if include_content:
+                params["$expand"] = "canvasLayout"
+
+            response = await context.fetch(
+                f"{GRAPH_API_BASE}/sites/{site_id}/pages/{page_id}/microsoft.graph.sitePage",
+                params=params
+            )
+
+            # Process response according to API documentation
+            page_data = {
+                "id": response.get("id", ""),
+                "name": response.get("name", ""),
+                "title": response.get("title", ""),
+                "web_url": response.get("webUrl", ""),
+                "page_layout": response.get("pageLayout", ""),
+                "created_datetime": response.get("createdDateTime", ""),
+                "last_modified_datetime": response.get("lastModifiedDateTime", "")
+            }
+
+            # Add creator information if available
+            if "createdBy" in response and "user" in response["createdBy"]:
+                page_data["created_by"] = {
+                    "display_name": response["createdBy"]["user"].get("displayName", ""),
+                    "email": response["createdBy"]["user"].get("email", "")
+                }
+
+            # Add page content if available
+            if include_content and "canvasLayout" in response:
+                page_data["content"] = response["canvasLayout"]
+
+            return {
+                "result": True,
+                "site_id": site_id,
+                "page": page_data
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "site_id": inputs.get("site_id", ""),
+                "page": {},
+                "error": str(e)
+            }
