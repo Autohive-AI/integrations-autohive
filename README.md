@@ -23,13 +23,25 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Front
+
+[front](front): Customer service integration for Front's communication platform. Supports comprehensive inbox and conversation management, including listing and accessing inboxes, managing conversations and messages, creating new messages and replies through channels, accessing message templates for consistent responses, and managing conversation assignments and tags. Features channel-based message creation, conversation filtering, teammate and tag management, and complete message lifecycle operations for customer support workflows.
+
 ### Gong
 
 [gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
 
+### Google Looker
+
+[google-looker](google-looker): Business intelligence integration with Looker API for accessing dashboards, executing queries, and managing data models. Supports listing and retrieving dashboards with full metadata, executing LookML queries against explores with dimensions and measures, running raw SQL queries against database connections, and browsing available models and connections. Features custom authentication and comprehensive error handling for enterprise analytics workflows.
+
 ### Xero
 
-[xero](xero): Comprehensive integration for accessing Xero accounting data through OAuth 2.0 authentication. Features retrieving available tenant connections, contact search by name within tenants, and retrieval of comprehensive accounting reports including aged payables, aged receivables, balance sheets, profit & loss statements, and trial balances. Additionally supports accessing chart of accounts for line item classification, payment records for invoices and bills (customer receipts, supplier payments, refunds), and bank transactions not tied to invoices (CapEx, financing, operating expenses). Includes robust error handling, pagination support, and optional date parameters for flexible financial reporting.
+[xero](xero): Comprehensive Xero accounting integration with OAuth 2.0 authentication. Features retrieving available tenant connections, creating and updating sales invoices and purchase bills, attaching files to invoices/bills, contact search, and comprehensive financial reporting (aged payables/receivables, balance sheet, P&L, trial balance). Includes chart of accounts access, payment records, bank transactions, robust error handling, and rate limiting.
+
+### Zoho CRM
+
+[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 33 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
 
 ### Reddit
 
@@ -46,6 +58,14 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Google Calendar
 
 [google-calendar](google-calendar): Integrates with Google Calendar API for comprehensive calendar and event management within Autohive workflows. Supports listing accessible calendars, creating and managing calendar events (both timed and all-day), attendee management, and event lifecycle operations. Features secure OAuth2 authentication and pagination support for large event datasets.
+
+### Google Sheets
+
+[google-sheets](google-sheets): Connects to Google Sheets and Drive APIs to list accessible spreadsheets, read and write A1 ranges, append rows, apply formatting, freeze panes, run batch updates, and duplicate spreadsheets. Uses Google OAuth2 platform authentication with appropriate scopes for Sheets and Drive.
+
+### Google Business Profile
+
+[google-business-profile](google-business-profile): Connects to Google My Business API for comprehensive business profile and review management. Supports listing business accounts and locations, reading customer reviews with ratings and comments, replying to customer reviews professionally, and managing review interactions. Features secure OAuth2 authentication with Google Maps Reviews provider and comprehensive error handling for reputation management workflows.
 
 ### Microsoft 365
 
