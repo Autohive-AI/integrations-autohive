@@ -1,12 +1,12 @@
 # Microsoft 365 Integration for Autohive
 
-Connects Autohive to Microsoft 365 services including Outlook, OneDrive, and Calendar through the Microsoft Graph API.
+Connects Autohive to Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through the Microsoft Graph API.
 
 ## Description
 
-This integration provides comprehensive access to Microsoft 365 services, enabling users to manage emails, calendar events, contacts, and files through a unified interface. It interacts with the Microsoft Graph API to deliver seamless integration with Outlook email, OneDrive file storage, and Calendar management.
+This integration provides comprehensive access to Microsoft 365 services, enabling users to manage emails, calendar events, contacts, files, and SharePoint sites through a unified interface. It interacts with the Microsoft Graph API to deliver seamless integration with Outlook email, OneDrive file storage, Calendar management, and SharePoint collaboration.
 
-Key capabilities include sending and managing emails, creating and updating calendar events, uploading and accessing files, and reading contact information. The integration supports advanced features like HTML email content, file attachments, timezone-aware operations, and folder management.
+Key capabilities include sending and managing emails, creating and updating calendar events, uploading and accessing files, reading contact information, and accessing SharePoint sites and document libraries. The integration supports advanced features like HTML email content, file attachments, timezone-aware operations, folder management, PDF conversion for Office documents, and multi-drive SharePoint document access.
 
 ## Setup & Authentication
 
@@ -16,10 +16,11 @@ This integration uses Microsoft Graph OAuth2 authentication through the Autohive
 
 Required Microsoft Graph API permissions:
 - `Mail.ReadWrite` - Read and send emails
-- `Mail.Send` - Send emails on behalf of user  
+- `Mail.Send` - Send emails on behalf of user
 - `Files.ReadWrite` - Access OneDrive files
 - `Calendars.ReadWrite` - Manage calendar events
 - `Contacts.Read` - Read user contacts
+- `Sites.Read.All` - Access SharePoint sites and document libraries
 
 **Authentication Fields:**
 
@@ -297,6 +298,105 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
     *   `metadata`: File metadata including ID, size, and web URL
     *   `error`: Error message if operation failed
 
+### Action: `search_sharepoint_sites`
+
+*   **Description:** Search for SharePoint sites across your organization
+*   **Inputs:**
+    *   `query`: Search query to find sites
+    *   `order_by_created`: Sort by creation date (optional)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `query`: The search query that was executed
+    *   `sites`: List of matching SharePoint sites
+    *   `total_sites`: Total number of sites found
+    *   `error`: Error message if operation failed
+
+### Action: `get_sharepoint_site_details`
+
+*   **Description:** Get detailed information about a specific SharePoint site
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `site`: Object with site details including display name, description, web URL, and metadata
+    *   `error`: Error message if operation failed
+
+### Action: `list_sharepoint_libraries`
+
+*   **Description:** List all document libraries (drives) in a SharePoint site
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+    *   `limit`: Maximum number of libraries to return (optional)
+    *   `select_fields`: Comma-separated list of fields to return (optional)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `site_id`: The SharePoint site ID
+    *   `libraries`: List of document libraries with metadata
+    *   `total_libraries`: Total number of libraries found
+    *   `error`: Error message if operation failed
+
+### Action: `search_sharepoint_documents`
+
+*   **Description:** Search for documents across all document libraries in a SharePoint site
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+    *   `query`: Search query to find documents
+    *   `limit`: Maximum number of documents to return (default: 10)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `site_id`: The SharePoint site ID
+    *   `query`: The search query that was executed
+    *   `files`: List of matching documents with drive information
+    *   `total_files`: Total number of files found
+    *   `drives_searched`: Number of document libraries searched
+    *   `total_drives`: Total number of document libraries in the site
+    *   `search_errors`: List of errors encountered during search (if any)
+    *   `error`: Error message if operation failed
+
+### Action: `read_sharepoint_document`
+
+*   **Description:** Read the content of a SharePoint document with automatic PDF conversion for Office documents
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+    *   `file_id`: The ID of the file to read
+    *   `drive_id`: The ID of the document library containing the file (optional, for non-default libraries)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `file`: Object with file content and metadata
+        *   `content`: Base64 encoded file content (PDF for Office documents)
+        *   `name`: The name of the file
+        *   `contentType`: Content type of the returned file
+    *   `metadata`: File metadata including ID, size, web URL, site ID, and drive ID
+    *   `error`: Error message if operation failed
+
+### Action: `list_sharepoint_pages`
+
+*   **Description:** List all pages in a SharePoint site
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+    *   `limit`: Maximum number of pages to return (optional)
+    *   `order_by`: Sort order for results (optional)
+    *   `select_fields`: Comma-separated list of fields to return (optional)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `site_id`: The SharePoint site ID
+    *   `pages`: List of pages with metadata
+    *   `total_pages`: Total number of pages found
+    *   `error`: Error message if operation failed
+
+### Action: `read_sharepoint_page_content`
+
+*   **Description:** Read the content and metadata of a SharePoint site page
+*   **Inputs:**
+    *   `site_id`: The ID of the SharePoint site
+    *   `page_id`: The ID of the page to read
+    *   `include_content`: Whether to include page content and web parts (default: true)
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `site_id`: The SharePoint site ID
+    *   `page`: Object with page details including title, layout, and content
+    *   `error`: Error message if operation failed
+
 ## Requirements
 
 *   `autohive_integrations_sdk`
@@ -408,6 +508,35 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 ```json
 {
   "file_id": "01BYE5RZ6QN3ZWBTUANRHZI4XJBEYH2C3X"
+}
+```
+
+**Example 11: Search SharePoint sites**
+
+```json
+{
+  "query": "Human Resources",
+  "order_by_created": true
+}
+```
+
+**Example 12: Search SharePoint documents across all libraries**
+
+```json
+{
+  "site_id": "contoso.sharepoint.com,da60e844-ba1d-49bc-b4d4-d5e36bae9019,712a596e-90a1-49e3-9b48-bfa80bee8740",
+  "query": "policy",
+  "limit": 20
+}
+```
+
+**Example 13: Read SharePoint document from specific library**
+
+```json
+{
+  "site_id": "contoso.sharepoint.com,da60e844-ba1d-49bc-b4d4-d5e36bae9019,712a596e-90a1-49e3-9b48-bfa80bee8740",
+  "file_id": "01K7A2KM7ME6QPBHWX4ZHL4VU7RAZUCQXM",
+  "drive_id": "b!ASwBPCNefEqjDPqXBmbxfSFaFNP2-I9LqYIgUgXUa_nHoxnH9B9RSYhMey8OXO_l"
 }
 ```
 

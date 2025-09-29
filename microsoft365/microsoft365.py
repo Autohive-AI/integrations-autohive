@@ -338,11 +338,11 @@ class ListCalendarEventsAction(ActionHandler):
                 
                 events.append({
                     "id": event["id"],
-                    "subject": event.get("subject", ""),
+                    "subject": event.get("subject") or "",
                     "start": event["start"],
                     "end": event["end"],
-                    "location": event.get("location", {}).get("displayName", ""),
-                    "bodyPreview": event.get("bodyPreview", ""),
+                    "location": event.get("location", {}).get("displayName") or "",
+                    "bodyPreview": event.get("bodyPreview") or "",
                     "organizer": organizer_email,
                     "attendees": attendees,
                     "webLink": event["webLink"],
@@ -402,10 +402,10 @@ class ListEmailsAction(ActionHandler):
             for email in response.get("value", []):
                 emails.append({
                     "id": email["id"],
-                    "subject": email.get("subject", ""),
+                    "subject": email.get("subject") or "",
                     "sender": email["sender"],
                     "receivedDateTime": email["receivedDateTime"],
-                    "bodyPreview": email.get("bodyPreview", ""),
+                    "bodyPreview": email.get("bodyPreview") or "",
                     "body": email.get("body", {}),
                     "hasAttachments": email.get("hasAttachments", False),
                     "isRead": email.get("isRead", False),
@@ -449,10 +449,10 @@ class ListEmailsFromContactAction(ActionHandler):
             for email in response.get("value", []):
                 emails.append({
                     "id": email["id"],
-                    "subject": email.get("subject", ""),
+                    "subject": email.get("subject") or "",
                     "sender": email["sender"],
                     "receivedDateTime": email["receivedDateTime"],
-                    "bodyPreview": email.get("bodyPreview", ""),
+                    "bodyPreview": email.get("bodyPreview") or "",
                     "body": email.get("body", {}),
                     "hasAttachments": email.get("hasAttachments", False),
                     "isRead": email.get("isRead", False),
@@ -553,7 +553,7 @@ class ReadEmailAction(ActionHandler):
             # Format email details
             email_details = {
                 "id": email_response["id"],
-                "subject": email_response.get("subject", ""),
+                "subject": email_response.get("subject") or "",
                 "sender": email_response["sender"],
                 "receivedDateTime": email_response["receivedDateTime"],
                 "body": email_response.get("body", {}),
@@ -969,8 +969,8 @@ class CreateDraftEmailAction(ActionHandler):
             return {
                 "result": True,
                 "draft_id": response["id"],
-                "subject": response.get("subject", ""),
-                "created_datetime": response.get("createdDateTime", ""),
+                "subject": response.get("subject") or "",
+                "created_datetime": response.get("createdDateTime") or "",
                 "is_draft": response.get("isDraft", True)
             }
 
@@ -1205,11 +1205,11 @@ class SearchEmailsAction(ActionHandler):
                             }
 
                         messages.append({
-                            "message_id": message_data.get("id", ""),
-                            "subject": message_data.get("subject", ""),
+                            "message_id": message_data.get("id") or "",
+                            "subject": message_data.get("subject") or "",
                             "sender": sender,
-                            "received_datetime": message_data.get("receivedDateTime", ""),
-                            "body_preview": message_data.get("bodyPreview", ""),
+                            "received_datetime": message_data.get("receivedDateTime") or "",
+                            "body_preview": message_data.get("bodyPreview") or "",
                             "has_attachments": message_data.get("hasAttachments", False)
                         })
 
@@ -1254,13 +1254,13 @@ class SearchSharePointSitesAction(ActionHandler):
             sites = []
             for site in response.get("value", []):
                 sites.append({
-                    "id": site.get("id", ""),
-                    "name": site.get("name", ""),
-                    "display_name": site.get("displayName", ""),
-                    "description": site.get("description", ""),
-                    "web_url": site.get("webUrl", ""),
-                    "created_datetime": site.get("createdDateTime", ""),
-                    "last_modified_datetime": site.get("lastModifiedDateTime", "")
+                    "id": site.get("id") or "",
+                    "name": site.get("name") or "",
+                    "display_name": site.get("displayName") or "",
+                    "description": site.get("description") or "",
+                    "web_url": site.get("webUrl") or "",
+                    "created_datetime": site.get("createdDateTime") or "",
+                    "last_modified_datetime": site.get("lastModifiedDateTime") or ""
                 })
 
             return {
@@ -1293,13 +1293,13 @@ class GetSharePointSiteDetailsAction(ActionHandler):
 
             # Process response according to API documentation
             site_details = {
-                "id": response.get("id", ""),
-                "display_name": response.get("displayName", ""),
-                "name": response.get("name", ""),
-                "description": response.get("description", ""),
-                "web_url": response.get("webUrl", ""),
-                "created_datetime": response.get("createdDateTime", ""),
-                "last_modified_datetime": response.get("lastModifiedDateTime", ""),
+                "id": response.get("id") or "",
+                "display_name": response.get("displayName") or "",
+                "name": response.get("name") or "",
+                "description": response.get("description") or "",
+                "web_url": response.get("webUrl") or "",
+                "created_datetime": response.get("createdDateTime") or "",
+                "last_modified_datetime": response.get("lastModifiedDateTime") or "",
                 "is_personal_site": response.get("isPersonalSite", False)
             }
 

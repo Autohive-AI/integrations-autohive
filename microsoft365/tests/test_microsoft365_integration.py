@@ -702,6 +702,51 @@ class TestSearchEmailsAction(unittest.TestCase):
         self.assertEqual(result["total_results"], 0)
         self.assertEqual(len(result["messages"]), 0)
 
+    async def test_search_emails_with_null_fields(self):
+        """Test email search handles null subject and bodyPreview fields."""
+        # Mock response with None values for optional fields
+        mock_response = {
+            "value": [{
+                "hitsContainers": [{
+                    "total": 1,
+                    "hits": [
+                        {
+                            "resource": {
+                                "id": "msg1",
+                                "subject": None,  # Null subject
+                                "from": {
+                                    "emailAddress": {
+                                        "address": "sender@example.com",
+                                        "name": "Sender Name"
+                                    }
+                                },
+                                "receivedDateTime": "2024-08-20T10:00:00Z",
+                                "bodyPreview": None,  # Null bodyPreview
+                                "hasAttachments": False
+                            }
+                        }
+                    ]
+                }]
+            }]
+        }
+
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.SearchEmailsAction()
+        inputs = {"query": "test"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["total_results"], 1)
+
+        # Verify null values are converted to empty strings
+        first_msg = result["messages"][0]
+        self.assertEqual(first_msg["subject"], "")
+        self.assertEqual(first_msg["body_preview"], "")
+        self.assertIsInstance(first_msg["subject"], str)
+        self.assertIsInstance(first_msg["body_preview"], str)
+
 
 class TestSearchSharePointSitesAction(unittest.TestCase):
     def setUp(self):
