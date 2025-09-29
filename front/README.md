@@ -195,6 +195,16 @@ No additional configuration fields are required as authentication is handled thr
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
+### Team Management
+
+#### Action: `list_teammates`
+- **Description:** List all teammates in the workspace
+- **Inputs:**
+  - `limit`: Maximum number of teammates to return (optional, default: 50)
+- **Outputs:**
+  - `teammates`: Array of teammate objects with ID, username, first_name, last_name, email, and metadata
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
 
 ## Requirements
 

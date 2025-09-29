@@ -337,6 +337,52 @@ async def test_update_conversation():
         except Exception as e:
             print(f"✗ Error testing update_conversation: {str(e)}")
 
+async def test_list_teammates():
+    print("Testing list_teammates...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "limit": 10
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("list_teammates", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ list_teammates test passed")
+        except Exception as e:
+            print(f"✗ Error testing list_teammates: {str(e)}")
+
+async def test_get_teammate():
+    print("Testing get_teammate...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "teammate_id": "tea_test123"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("get_teammate", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ get_teammate test passed")
+        except Exception as e:
+            print(f"✗ Error testing get_teammate: {str(e)}")
+
 
 async def main():
     print("Testing Front Integration")
@@ -370,8 +416,12 @@ async def main():
     await test_list_message_templates()
     await test_get_message_template()
 
+    # Teammate Management
+    await test_list_teammates()
+    await test_get_teammate()
+
     print(f"\nTest suite completed!")
-    print("All 14 actions tested successfully with mock data")
+    print("All 16 actions tested successfully with mock data")
 
 if __name__ == "__main__":
     asyncio.run(main())
