@@ -1,0 +1,2 @@
+autohive_integrations_sdk
+python-pptx
