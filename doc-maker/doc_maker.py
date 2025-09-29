@@ -21,11 +21,13 @@ from PIL import Image
 import markdown
 from bs4 import BeautifulSoup
 import re
+import json
 
 doc_maker = Integration.load()
 
 documents = {}
 uploaded_images = {}
+
 
 def process_files(files: List[Dict[str, Any]]) -> Dict[str, BytesIO]:
     """Process files from the files parameter and return streams by filename"""
@@ -112,42 +114,190 @@ def iter_block_items(parent):
         elif isinstance(child, CT_Tbl):
             yield Table(child, parent)
 
-def detect_placeholder_patterns(text: str) -> bool:
-    """Detect if text looks like a placeholder that needs filling"""
+def detect_placeholder_patterns(text: str) -> tuple[bool, str]:
+    """Enhanced detection with pattern classification for better LLM optimization"""
     if not text or len(text.strip()) == 0:
-        return True  # Empty text is fillable
+        return True, "empty"
 
-    text = text.strip().lower()
+    original_text = text.strip()
+    text_lower = original_text.lower()
 
-    # Common placeholder patterns
-    placeholder_patterns = [
-        r'\{\{.*?\}\}',  # {{field}}
-        r'\[.*?\]',      # [field]
-        r'__.*?__',      # __field__
-        r'\{.*?\}',      # {field}
-        r'insert.*here', # "insert name here"
-        r'add.*here',    # "add content here"
-        r'data here',    # "data here"
-        r'your.*here',   # "your name here"
-        r'enter.*',      # "enter details"
-        r'type.*here',   # "type content here"
-        r'^(xxx+|yyy+|zzz+)$',  # "XXX", "YYY", etc.
-        r'^(_+|\.+|-+)$',       # "___", "...", "---"
-        r'(to be|tbd|tbc)',     # "to be determined"
-        r'(sample|example|placeholder|dummy)', # sample text
+    # Enhanced placeholder pattern detection with classification
+    pattern_categories = {
+        "formal_placeholder": [
+            r'\{\{.*?\}\}',      # {{FIELD}}
+            r'\{.*?\}',          # {FIELD}
+            r'\[.*?\]',          # [FIELD]
+            r'__.*?__',          # __FIELD__
+        ],
+        "instruction_text": [
+            r'\(note:.*?\)',           # (Note: instruction text)
+            r'\(delete.*?\)',          # (Delete this section)
+            r'\(add.*?\)',             # (Add details here)
+            r'\(provide.*?\)',         # (Provide information)
+            r'\(insert.*?\)',          # (Insert content here)
+            r'\(complete.*?\)',        # (Complete this section)
+            r'please (add|insert|provide|enter|complete)', # Please add details
+            r'(add|insert|provide|enter|type).*here',      # Insert details here
+        ],
+        "form_style": [
+            r'\w+:\s*[_\-\.]{2,}',     # "Name: ____", "Date: ---"
+            r'\w+:\s*\$[_\-\.]+',      # "Amount: $____"
+            r'\w+:\s*\[.*?\]',         # "Title: [placeholder]"
+            r'\w+:\s*\{.*?\}',         # "Field: {value}"
+            r'.*:\s*(tbd|tbc|xxx)',    # "Status: TBD"
+        ],
+        "business_placeholder": [
+            r'(company|client|customer)\s+(name|details|info)', # "company name", "client details"
+            r'(project|report|document)\s+(title|name)',        # "project title"
+            r'(start|end|due)\s+(date|time)',                   # "start date", "due date"
+            r'(total|sub|grand)\s+(amount|cost|price)',         # "total amount"
+            r'(contact|manager|author)\s+(name|details)',       # "contact name"
+            r'(address|location|venue)\s+(details|info)',       # "address details"
+        ],
+        "generic_placeholder": [
+            r'^(xxx+|yyy+|zzz+|aaa+)$',    # "XXX", "YYY", etc.
+            r'^(_+|\.+|-+|\*+)$',          # "___", "...", "---", "***"
+            r'^(tbd|tbc|pending|todo)$',   # "TBD", "TBC", "pending"
+            r'^(sample|example|dummy|test|placeholder).*', # sample text
+            r'lorem ipsum',                 # Lorem ipsum text
+            r'(enter|type|add|insert)\s+(text|content|details|info)', # "enter text"
+        ],
+        "natural_language": [
+            r'(data|information|details|content|text)\s+here',     # "data here"
+            r'(your|the|this)\s+(name|title|date|info|details)',   # "your name"
+            r'(fill|complete|update)\s+(this|here)',               # "fill this"
+            r'goes here',                                           # "content goes here"
+            r'to be (added|inserted|completed|provided)',          # "to be added"
+            r'will be (added|provided|completed)',                 # "will be provided"
+        ],
+        "short_generic": []  # Handled separately
+    }
+
+    # Check each pattern category
+    for pattern_type, patterns in pattern_categories.items():
+        for pattern in patterns:
+            if re.search(pattern, text_lower, re.IGNORECASE):
+                return True, pattern_type
+
+    # Enhanced short text detection with context
+    if len(original_text) < 30:
+        # Single words that are likely placeholders in business contexts
+        single_word_placeholders = [
+            'name', 'title', 'date', 'time', 'amount', 'cost', 'price', 'total',
+            'address', 'phone', 'email', 'company', 'client', 'project',
+            'description', 'details', 'notes', 'status', 'type', 'category'
+        ]
+
+        if text_lower in single_word_placeholders:
+            return True, "single_word"
+
+        # Short phrases with business keywords
+        business_keywords = ['name', 'date', 'title', 'content', 'text', 'data', 'info', 'details', 'amount', 'cost', 'description']
+        if len(original_text) < 20 and any(word in text_lower for word in business_keywords):
+            return True, "short_business"
+
+    # Numbers and currency that look like placeholders
+    if re.match(r'^[\$£€]?[0-9,\.\s\$]+$', original_text.strip()):
+        if len(original_text) < 15:  # Short monetary or numeric values
+            return True, "numeric_placeholder"
+
+    # Default patterns that look template-like
+    template_indicators = [
+        r'(example|sample|demo)',
+        r'[a-zA-Z]\s*[a-zA-Z]\s*[a-zA-Z]$',  # "A B C" pattern
+        r'^[A-Z\s]{2,10}$',                   # "TITLE TEXT" all caps short text
     ]
 
-    # Check if text matches any placeholder pattern
-    for pattern in placeholder_patterns:
-        if re.search(pattern, text, re.IGNORECASE):
-            return True
+    for pattern in template_indicators:
+        if re.search(pattern, text_lower):
+            return True, "template_indicator"
 
-    # Short generic text (likely placeholder)
-    if len(text) < 20 and any(word in text for word in ['name', 'date', 'title', 'content', 'text', 'data', 'info']):
+    return False, "content"
+
+
+def is_likely_placeholder_context(text: str, find_word: str) -> bool:
+    """Determine if a match appears in a placeholder context vs content text"""
+    text = text.strip().lower()
+    find_word = find_word.lower()
+
+    # Standalone word (likely placeholder)
+    if text == find_word:
         return True
 
+    # Form field pattern (word followed by colon and placeholder indicators)
+    if re.match(rf'^{re.escape(find_word)}:\s*([_\-\.\[\{{].*)?$', text):
+        return True
+
+    # Surrounded by placeholder indicators
+    placeholder_indicators = ['{', '}', '[', ']', '_', '-', '.', '(', ')']
+    text_around = text.replace(find_word, '').strip()
+    if len(text_around) < 10 and any(indicator in text_around for indicator in placeholder_indicators):
+        return True
+
+    # In obvious placeholder phrases
+    placeholder_phrases = ['insert', 'add', 'enter', 'type', 'provide', 'placeholder', 'here', 'tbd', 'tbc']
+    if any(phrase in text for phrase in placeholder_phrases):
+        return True
+
+    # Otherwise, likely content text
     return False
 
+def analyze_replacement_safety(find_text: str, matches_found: list) -> dict:
+    """Analyze replacement safety and provide intelligent guidance"""
+    safe_matches = []
+    unsafe_matches = []
+
+    for match in matches_found:
+        if is_likely_placeholder_context(match["content"], find_text):
+            safe_matches.append(match)
+        else:
+            unsafe_matches.append(match)
+
+    # Generate intelligent guidance based on actual content
+    guidance = []
+    alternatives = []
+
+    if len(safe_matches) > 0 and len(unsafe_matches) > 0:
+        guidance.append(f"Found {len(safe_matches)} safe placeholders and {len(unsafe_matches)} content text matches")
+
+        # Suggest safer alternatives based on actual safe matches
+        safe_contexts = []
+        for match in safe_matches[:3]:  # Look at first 3 safe matches
+            context = match["content"]
+            if ":" in context:
+                # Extract the pattern around the colon
+                safer_phrase = context.split(find_text)[0] + find_text + ":"
+                if safer_phrase not in safe_contexts:
+                    safe_contexts.append(safer_phrase.strip())
+
+        if safe_contexts:
+            alternatives.extend([f"Use '{ctx}' to target form fields" for ctx in safe_contexts[:2]])
+
+    elif len(unsafe_matches) > 0:
+        guidance.append(f"All {len(unsafe_matches)} matches appear to be in content text - very risky")
+        alternatives.append(f"Use position updates instead of text replacement")
+
+    elif len(safe_matches) > 0:
+        guidance.append(f"All {len(safe_matches)} matches appear to be placeholders - relatively safe")
+        if len(safe_matches) > 1:
+            alternatives.append(f"Add replace_all=true to confirm you want all {len(safe_matches)} instances replaced")
+
+    return {
+        "safety_level": "high_risk" if len(unsafe_matches) > len(safe_matches) else "moderate_risk" if unsafe_matches else "low_risk",
+        "safe_matches": len(safe_matches),
+        "unsafe_matches": len(unsafe_matches),
+        "guidance": guidance,
+        "alternatives": alternatives,
+        "match_details": [
+            {
+                "location": f"P{match['index']}" if match["type"] == "paragraph" else f"T{match['table_index']}R{match['row']}C{match['col']}",
+                "context": match["content"][:50] + "..." if len(match["content"]) > 50 else match["content"],
+                "safety": "SAFE" if match in safe_matches else "RISKY"
+            }
+            for match in matches_found[:5]  # Show first 5 matches
+        ]
+    }
 
 def analyze_document_structure(doc: Document) -> dict:
     """Analyze document structure and identify fillable elements"""
@@ -157,13 +307,14 @@ def analyze_document_structure(doc: Document) -> dict:
     for block in iter_block_items(doc):
         if isinstance(block, Paragraph):
             text = block.text.strip()
-            is_fillable = detect_placeholder_patterns(text)
+            is_fillable, pattern_type = detect_placeholder_patterns(text)
 
             elements.append({
                 "type": "paragraph",
                 "index": element_index,
                 "content": text,
-                "is_fillable": is_fillable,
+                "is_fillable": bool(is_fillable),  # Ensure boolean type
+                "pattern_type": pattern_type,
                 "length": len(text),
                 "style": block.style.name if block.style else "Normal"
             })
@@ -180,13 +331,14 @@ def analyze_document_structure(doc: Document) -> dict:
             for row_idx, row in enumerate(block.rows):
                 for col_idx, cell in enumerate(row.cells):
                     cell_text = cell.text.strip()
-                    is_fillable = detect_placeholder_patterns(cell_text)
+                    is_fillable, pattern_type = detect_placeholder_patterns(cell_text)
 
                     table_info["cells"].append({
                         "row": row_idx,
                         "col": col_idx,
                         "content": cell_text,
-                        "is_fillable": is_fillable,
+                        "is_fillable": bool(is_fillable),  # Ensure boolean type
+                        "pattern_type": pattern_type,
                         "length": len(cell_text)
                     })
 
@@ -331,6 +483,7 @@ class GetDocumentElementsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         document_id = inputs["document_id"]
         include_content = inputs.get("include_content", True)
+        show_all_elements = inputs.get("show_all_elements", False)
         files = inputs.get("files", [])
 
         load_document_from_files(document_id, files)
@@ -343,16 +496,100 @@ class GetDocumentElementsAction(ActionHandler):
         # Analyze document structure
         analysis = analyze_document_structure(doc)
 
-        # Filter content if requested
-        if not include_content:
+        # Create LLM-optimized response
+        if not show_all_elements:
+            # Only show fillable elements to reduce token usage
+            fillable_paragraphs = []
+            fillable_cells = []
+            pattern_counts = {}
+
             for element in analysis["elements"]:
-                if element["type"] == "paragraph":
-                    element["content"] = f"[{element['length']} chars]" if element["length"] > 0 else "[empty]"
+                if element["type"] == "paragraph" and bool(element["is_fillable"]):
+                    fillable_paragraphs.append({
+                        "id": f"p{element['index']}",
+                        "content": str(element["content"]),
+                        "pattern": str(element["pattern_type"]),
+                        "style": str(element["style"])
+                    })
+                    # Count patterns
+                    pattern = element["pattern_type"]
+                    pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+
                 elif element["type"] == "table":
                     for cell in element["cells"]:
-                        cell["content"] = f"[{cell['length']} chars]" if cell["length"] > 0 else "[empty]"
+                        if bool(cell["is_fillable"]):
+                            fillable_cells.append({
+                                "id": f"t{element['index']}r{cell['row']}c{cell['col']}",
+                                "content": str(cell["content"]),
+                                "pattern": str(cell["pattern_type"]),
+                                "location": f"Table {element['index']}, Row {cell['row']}, Col {cell['col']}"
+                            })
+                            # Count patterns
+                            pattern = cell["pattern_type"]
+                            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
 
-        return analysis
+            return {
+                "template_summary": {
+                    "structure": f"{analysis['paragraphs']}p,{analysis['tables']}t",
+                    "fillable_total": int(analysis["fillable_paragraphs"] + analysis["fillable_cells"]),
+                    "content_elements_hidden": int(analysis["total_elements"] - len(fillable_paragraphs) - len(fillable_cells))
+                },
+                "fillable_paragraphs": fillable_paragraphs,
+                "fillable_cells": fillable_cells,
+                "pattern_distribution": pattern_counts,
+                "recommended_strategy": "mixed" if len(pattern_counts) > 2 else "single_method",
+                "template_ready": True
+            }
+        else:
+            # Return full analysis but in the new schema format
+            all_paragraphs = []
+            all_cells = []
+
+            for element in analysis["elements"]:
+                if element["type"] == "paragraph":
+                    all_paragraphs.append({
+                        "id": f"p{element['index']}",
+                        "content": str(element["content"]),
+                        "pattern": str(element["pattern_type"]),
+                        "style": str(element["style"]),
+                        "is_fillable": bool(element["is_fillable"])
+                    })
+                elif element["type"] == "table":
+                    for cell in element["cells"]:
+                        all_cells.append({
+                            "id": f"t{element['index']}r{cell['row']}c{cell['col']}",
+                            "content": str(cell["content"]),
+                            "pattern": str(cell["pattern_type"]),
+                            "location": f"Table {element['index']}, Row {cell['row']}, Col {cell['col']}",
+                            "is_fillable": bool(cell["is_fillable"])
+                        })
+
+            # Pattern summary for strategy guidance
+            pattern_counts = {}
+            for element in analysis["elements"]:
+                if bool(element["is_fillable"]):
+                    pattern = str(element["pattern_type"])
+                    pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+                if element["type"] == "table":
+                    for cell in element["cells"]:
+                        if bool(cell["is_fillable"]):
+                            pattern = str(cell["pattern_type"])
+                            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+
+            return {
+                "template_summary": {
+                    "structure": f"{analysis['paragraphs']}p,{analysis['tables']}t",
+                    "fillable_total": analysis["fillable_paragraphs"] + analysis["fillable_cells"],
+                    "content_elements_hidden": 0  # All elements shown
+                },
+                "fillable_paragraphs": [p for p in all_paragraphs if p["is_fillable"]],
+                "fillable_cells": [c for c in all_cells if c["is_fillable"]],
+                "all_paragraphs": all_paragraphs,  # Additional field when show_all_elements=true
+                "all_cells": all_cells,  # Additional field when show_all_elements=true
+                "pattern_distribution": pattern_counts,
+                "recommended_strategy": "mixed" if len(pattern_counts) > 2 else "single_method",
+                "template_ready": True
+            }
 
 @doc_maker.action("create_document")
 class CreateDocumentAction(ActionHandler):
@@ -551,9 +788,16 @@ class UpdateByPositionAction(ActionHandler):
                 else:
                     changes_made.append(f"Table {table_index} not found")
 
+        # Create LLM-optimized response
+        successful_updates = [change for change in changes_made if "Updated" in change]
+        failed_updates = [change for change in changes_made if "not found" in change or "out of range" in change]
+
         original_result = {
-            "updates_applied": len(changes_made),
-            "changes_made": changes_made
+            "success": len(successful_updates) > 0,
+            "applied": len(successful_updates),
+            "failed": len(failed_updates),
+            "summary": f"Updated {len(successful_updates)} elements" + (f", {len(failed_updates)} failed" if failed_updates else ""),
+            "failures": failed_updates[:3] if failed_updates else []  # Limit failure details
         }
         return await save_and_return_document(original_result, document_id, context)
 
@@ -561,7 +805,15 @@ class UpdateByPositionAction(ActionHandler):
 class FindAndReplaceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         document_id = inputs["document_id"]
+
+        # Handle both array and JSON string formats (platform compatibility)
         replacements = inputs["replacements"]
+        if isinstance(replacements, str):
+            try:
+                replacements = json.loads(replacements)
+            except json.JSONDecodeError:
+                raise ValueError("Invalid replacements format: must be array or valid JSON string")
+
         case_sensitive = inputs.get("case_sensitive", False)
         files = inputs.get("files", [])
 
@@ -637,17 +889,37 @@ class FindAndReplaceAction(ActionHandler):
                                     "context": f"Table {table_idx}, Row {row_idx}, Col {col_idx}"
                                 })
 
-            # Safety check for multiple matches
+            # Enhanced safety check for multiple matches
             if len(matches_found) > 1 and not replace_all:
-                skipped_replacement = {
-                    "find_text": find_text,
-                    "matches_count": len(matches_found),
-                    "matches_found": matches_found,
-                    "safety_message": f"MULTIPLE MATCHES DETECTED: '{find_text}' found in {len(matches_found)} locations. Use more specific context or set replace_all=true to replace all instances."
-                }
-                skipped_replacements.append(skipped_replacement)
-                warnings.append(f"Skipped '{find_text}': {len(matches_found)} matches found - be more specific or use replace_all=true")
-                continue  # Skip this replacement
+                safety_analysis = analyze_replacement_safety(find_text, matches_found)
+
+                if safety_analysis["safety_level"] == "high_risk":
+                    # Block high-risk replacements with detailed analysis
+                    skipped_replacement = {
+                        "CRITICAL_WARNING": f"BLOCKED '{find_text}' - {safety_analysis['unsafe_matches']} unsafe content matches",
+                        "find_phrase": find_text,
+                        "risk_assessment": safety_analysis["safety_level"],
+                        "safe_placeholders": safety_analysis["safe_matches"],
+                        "content_text_matches": safety_analysis["unsafe_matches"],
+                        "intelligent_alternatives": safety_analysis["alternatives"],
+                        "match_analysis": safety_analysis["match_details"],
+                        "fix_required": "Use context-specific phrases from alternatives or position updates"
+                    }
+                    skipped_replacements.append(skipped_replacement)
+                    warnings.append(f"BLOCKED '{find_text}': High risk - {safety_analysis['unsafe_matches']} content matches detected")
+                    continue
+
+                else:
+                    # Warn about moderate risk but allow
+                    warning_details = {
+                        "phrase": find_text,
+                        "matches": len(matches_found),
+                        "risk_level": safety_analysis["safety_level"],
+                        "alternatives": safety_analysis["alternatives"],
+                        "context_review": safety_analysis["match_details"][:3]
+                    }
+                    skipped_replacements.append(warning_details)
+                    warnings.append(f"Proceeding with '{find_text}' but review recommended - {len(matches_found)} matches")
 
             elif len(matches_found) == 0:
                 warnings.append(f"No matches found for '{find_text}'")
@@ -707,12 +979,35 @@ class FindAndReplaceAction(ActionHandler):
 
             total_replacements += replacements_count
 
+        # Create LLM-optimized response
+        optimized_skipped = []
+        for skipped in skipped_replacements:
+            # Compress match information for LLM efficiency
+            match_previews = []
+            for match in skipped["matches_found"][:5]:  # Limit to first 5 matches
+                if match["type"] == "paragraph":
+                    preview = f"P{match['index']}:{match['content'][:30]}..."
+                else:
+                    preview = f"T{match['table_index']}R{match['row']}C{match['col']}:{match['content'][:20]}..."
+                match_previews.append(preview)
+
+            if len(skipped["matches_found"]) > 5:
+                match_previews.append(f"...+{len(skipped['matches_found']) - 5} more")
+
+            optimized_skipped.append({
+                "phrase": skipped["find_text"],
+                "matches": skipped["matches_count"],
+                "locations": match_previews,
+                "fix": "use_more_context_or_replace_all=true"
+            })
+
         original_result = {
-            "total_replacements": total_replacements,
-            "replacements_processed": len(replacements),
-            "skipped_replacements": skipped_replacements,
-            "warnings": warnings,
-            "safety_checks_performed": True
+            "success": total_replacements > 0 or len(skipped_replacements) == 0,
+            "replaced": total_replacements,
+            "processed": len(replacements),
+            "blocked": optimized_skipped,
+            "alerts": warnings[:3] if warnings else [],  # Limit to first 3 warnings
+            "safety_active": True
         }
         return await save_and_return_document(original_result, document_id, context)
 
@@ -780,20 +1075,93 @@ class FillTemplateFieldsAction(ActionHandler):
                             table.cell(row_idx, col_idx).text = str(new_content)
                             changes_made.append(f"Updated table {table_idx} cell ({row_idx},{col_idx})")
 
-        # 3. Search and replace patterns
+        # 3. Search and replace patterns (with safety analysis)
+        safety_warnings = []
         if "search_replace" in template_data:
             for item in template_data["search_replace"]:
                 find_text = item["find"]
                 replace_text = item["replace"]
-                replacement_count = 0
+                replace_all = item.get("replace_all", False)
+                remove_paragraph = item.get("remove_paragraph", False)
 
-                # Replace in paragraphs
+                # First, scan for all matches to analyze safety
+                matches_found = []
+
+                # Scan paragraphs
+                for para_idx, paragraph in enumerate(doc.paragraphs):
+                    if find_text.lower() in paragraph.text.lower():
+                        matches_found.append({
+                            "type": "paragraph",
+                            "index": para_idx,
+                            "content": paragraph.text,
+                            "context": f"Paragraph {para_idx}"
+                        })
+
+                # Scan tables
+                for table_idx, table in enumerate(doc.tables):
+                    for row_idx, row in enumerate(table.rows):
+                        for col_idx, cell in enumerate(row.cells):
+                            if find_text.lower() in cell.text.lower():
+                                matches_found.append({
+                                    "type": "table_cell",
+                                    "table_index": table_idx,
+                                    "row": row_idx,
+                                    "col": col_idx,
+                                    "content": cell.text,
+                                    "context": f"Table {table_idx}, Row {row_idx}, Col {col_idx}"
+                                })
+
+                # Analyze safety if multiple matches
+                if len(matches_found) > 1 and not replace_all:
+                    safety_analysis = analyze_replacement_safety(find_text, matches_found)
+
+                    if safety_analysis["safety_level"] == "high_risk":
+                        # Block high-risk replacements
+                        safety_warnings.append({
+                            "CRITICAL_WARNING": f"BLOCKED replacement of '{find_text}' - {safety_analysis['unsafe_matches']} unsafe matches detected",
+                            "find_phrase": find_text,
+                            "risk_level": safety_analysis["safety_level"],
+                            "safe_matches": safety_analysis["safe_matches"],
+                            "unsafe_matches": safety_analysis["unsafe_matches"],
+                            "alternatives": safety_analysis["alternatives"],
+                            "match_details": safety_analysis["match_details"],
+                            "action_required": "Use more specific context or position-based updates"
+                        })
+                        continue  # Skip this dangerous replacement
+
+                    else:
+                        # Warn but allow moderate risk replacements
+                        safety_warnings.append({
+                            "WARNING": f"'{find_text}' has {len(matches_found)} matches - review recommended",
+                            "alternatives": safety_analysis["alternatives"],
+                            "match_preview": safety_analysis["match_details"][:3]
+                        })
+
+                # Proceed with replacement
+                replacement_count = 0
+                paragraphs_to_remove = []
+
+                # Replace in paragraphs with spacing control
                 for paragraph in doc.paragraphs:
                     if find_text.lower() in paragraph.text.lower():
                         original_text = paragraph.text
-                        paragraph.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
-                        if paragraph.text != original_text:
+                        is_full_match = original_text.strip().lower() == find_text.lower()
+
+                        if is_full_match and replace_text.strip() == "" and remove_paragraph:
+                            paragraphs_to_remove.append(paragraph)
                             replacement_count += 1
+                        else:
+                            paragraph.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
+                            if paragraph.text != original_text:
+                                replacement_count += 1
+
+                # Remove marked paragraphs
+                for paragraph in paragraphs_to_remove:
+                    try:
+                        p = paragraph._element
+                        p.getparent().remove(p)
+                    except:
+                        paragraph.clear()
 
                 # Replace in tables
                 for table in doc.tables:
@@ -808,12 +1176,31 @@ class FillTemplateFieldsAction(ActionHandler):
                 if replacement_count > 0:
                     changes_made.append(f"Found and replaced '{find_text}' {replacement_count} times")
 
+        # Create LLM-optimized response with prominent safety warnings
+        has_critical_warnings = any("CRITICAL_WARNING" in str(warning) for warning in safety_warnings)
+        blocked_operations = len([w for w in safety_warnings if "BLOCKED" in str(w)])
+
+        change_summary = {}
+        for change in changes_made:
+            if "Replaced" in change:
+                change_summary["placeholders"] = change_summary.get("placeholders", 0) + 1
+            elif "Found and replaced" in change:
+                change_summary["searches"] = change_summary.get("searches", 0) + 1
+            elif "Updated" in change:
+                change_summary["positions"] = change_summary.get("positions", 0) + 1
+
         original_result = {
-            "fields_filled": len(changes_made),
-            "changes_made": changes_made,
-            "template_processed": True
+            "SAFETY_STATUS": "CRITICAL_ISSUES_DETECTED" if has_critical_warnings else "OK",
+            "success": len(changes_made) > 0 and not has_critical_warnings,
+            "completed_operations": len(changes_made),
+            "blocked_operations": blocked_operations,
+            "safety_warnings": safety_warnings,
+            "filled_summary": change_summary,
+            "template_status": "partially_complete" if blocked_operations > 0 else "complete",
+            "action_required": "Review safety warnings and use more specific context" if safety_warnings else "none"
         }
         return await save_and_return_document(original_result, document_id, context)
+
 
 @doc_maker.action("save_document")
 class SaveDocumentAction(ActionHandler):

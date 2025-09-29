@@ -408,6 +408,10 @@
                         "type": "boolean",
                         "description": "Whether to include full text content (default: true)"
                     },
+                    "show_all_elements": {
+                        "type": "boolean",
+                        "description": "Show all elements including non-fillable content (default: false for LLM efficiency)"
+                    },
                     "files": {
                         "type": "array",
                         "description": "List of files including the document to analyze",
@@ -427,27 +431,49 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "total_elements": {"type": "integer", "description": "Total number of elements in document"},
-                    "paragraphs": {"type": "integer", "description": "Number of paragraphs"},
-                    "tables": {"type": "integer", "description": "Number of tables"},
-                    "fillable_paragraphs": {"type": "integer", "description": "Number of paragraphs that appear to need filling"},
-                    "fillable_cells": {"type": "integer", "description": "Number of table cells that appear to need filling"},
-                    "elements": {
+                    "template_summary": {
+                        "type": "object",
+                        "description": "High-level template overview (LLM-optimized)",
+                        "properties": {
+                            "structure": {"type": "string", "description": "Document structure (e.g., '15p,1t')"},
+                            "fillable_total": {"type": "integer", "description": "Total fillable elements"},
+                            "content_elements_hidden": {"type": "integer", "description": "Non-fillable elements hidden for LLM efficiency"}
+                        }
+                    },
+                    "fillable_paragraphs": {
                         "type": "array",
-                        "description": "Detailed information about each element",
+                        "description": "Only paragraphs that need filling (LLM-optimized - content paragraphs hidden)",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "type": {"type": "string", "enum": ["paragraph", "table"]},
-                                "index": {"type": "integer", "description": "Element index for position-based updates"},
-                                "content": {"type": "string", "description": "Current text content"},
-                                "is_fillable": {"type": "boolean", "description": "Whether element appears to be a placeholder"},
-                                "length": {"type": "integer", "description": "Content length"}
+                                "id": {"type": "string", "description": "Short element ID (e.g., 'p5')"},
+                                "content": {"type": "string", "description": "Placeholder text content"},
+                                "pattern": {"type": "string", "description": "Detected pattern type for strategy guidance"},
+                                "style": {"type": "string", "description": "Word style name"}
                             }
                         }
-                    }
+                    },
+                    "fillable_cells": {
+                        "type": "array",
+                        "description": "Only table cells that need filling (LLM-optimized)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Short cell ID (e.g., 't0r1c2')"},
+                                "content": {"type": "string", "description": "Placeholder text content"},
+                                "pattern": {"type": "string", "description": "Detected pattern type"},
+                                "location": {"type": "string", "description": "Human-readable location"}
+                            }
+                        }
+                    },
+                    "pattern_distribution": {
+                        "type": "object",
+                        "description": "Count of each placeholder pattern type for strategy guidance"
+                    },
+                    "recommended_strategy": {"type": "string", "description": "Suggested filling approach based on detected patterns"},
+                    "template_ready": {"type": "boolean", "description": "Whether template is ready for filling"}
                 },
-                "required": ["total_elements", "elements"]
+                "required": ["template_summary", "fillable_paragraphs", "fillable_cells", "pattern_distribution", "recommended_strategy", "template_ready"]
             }
         },
         "update_by_position": {
@@ -494,13 +520,16 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "updates_applied": {"type": "integer", "description": "Number of successful updates"},
-                    "changes_made": {"type": "array", "items": {"type": "string"}, "description": "List of changes made"},
+                    "success": {"type": "boolean", "description": "Whether any updates were successful"},
+                    "applied": {"type": "integer", "description": "Number of successful updates"},
+                    "failed": {"type": "integer", "description": "Number of failed updates"},
+                    "summary": {"type": "string", "description": "Brief operation summary"},
+                    "failures": {"type": "array", "items": {"type": "string"}, "description": "First few failure messages (LLM-optimized)"},
                     "saved": {"type": "boolean"},
                     "file_path": {"type": "string"},
                     "file": {"type": "object"}
                 },
-                "required": ["updates_applied", "changes_made", "saved", "file_path", "file"]
+                "required": ["success", "applied", "failed", "summary", "saved", "file_path", "file"]
             }
         },
         "find_and_replace": {
@@ -556,53 +585,29 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "total_replacements": {"type": "integer", "description": "Total number of replacements made"},
-                    "replacements_processed": {"type": "integer", "description": "Number of replacement operations processed"},
-                    "skipped_replacements": {
+                    "success": {"type": "boolean", "description": "Whether operation completed successfully"},
+                    "replaced": {"type": "integer", "description": "Number of successful replacements"},
+                    "processed": {"type": "integer", "description": "Number of replacement operations processed"},
+                    "blocked": {
                         "type": "array",
-                        "description": "Replacements that were skipped due to multiple matches (when replace_all=false)",
+                        "description": "LLM-optimized info about blocked replacements",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "find_text": {"type": "string", "description": "The text that had multiple matches"},
-                                "matches_count": {"type": "integer", "description": "Number of matches found"},
-                                "matches_found": {
-                                    "type": "array",
-                                    "description": "Details of all matches found",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "type": {"type": "string", "enum": ["paragraph", "table_cell"]},
-                                            "context": {"type": "string", "description": "Location description"},
-                                            "content": {"type": "string", "description": "Content preview"}
-                                        }
-                                    }
-                                },
-                                "safety_message": {"type": "string", "description": "Safety guidance message"}
+                                "phrase": {"type": "string", "description": "The blocked phrase"},
+                                "matches": {"type": "integer", "description": "Number of matches found"},
+                                "locations": {"type": "array", "items": {"type": "string"}, "description": "Compressed location previews"},
+                                "fix": {"type": "string", "description": "Suggested solution"}
                             }
                         }
                     },
-                    "warnings": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Warning messages about skipped or failed replacements"
-                    },
-                    "safety_checks_performed": {"type": "boolean", "description": "Whether safety checks were performed"},
+                    "alerts": {"type": "array", "items": {"type": "string"}, "description": "Important warnings (limited for LLM efficiency)"},
+                    "safety_active": {"type": "boolean", "description": "Whether safety checks were performed"},
                     "saved": {"type": "boolean"},
                     "file_path": {"type": "string"},
-                    "file": {
-                        "type": "object",
-                        "description": "The saved document file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {"type": "string", "description": "Error message if operation failed"}
+                    "file": {"type": "object"}
                 },
-                "required": ["total_replacements", "replacements_processed", "skipped_replacements", "warnings", "safety_checks_performed", "saved", "file_path", "file"]
+                "required": ["success", "replaced", "processed", "blocked", "safety_active", "saved", "file_path", "file"]
             }
         },
         "fill_template_fields": {
@@ -660,14 +665,26 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "fields_filled": {"type": "integer", "description": "Number of successful field updates"},
-                    "changes_made": {"type": "array", "items": {"type": "string"}, "description": "List of changes made"},
-                    "template_processed": {"type": "boolean", "description": "Whether template was successfully processed"},
+                    "SAFETY_STATUS": {"type": "string", "enum": ["OK", "CRITICAL_ISSUES_DETECTED"], "description": "Prominent safety status indicator"},
+                    "success": {"type": "boolean", "description": "Whether template filling completed without safety blocks"},
+                    "completed_operations": {"type": "integer", "description": "Number of operations that completed successfully"},
+                    "blocked_operations": {"type": "integer", "description": "Number of operations blocked for safety"},
+                    "safety_warnings": {
+                        "type": "array",
+                        "description": "Detailed safety analysis and guidance",
+                        "items": {
+                            "type": "object",
+                            "description": "Safety warning with context-specific guidance"
+                        }
+                    },
+                    "filled_summary": {"type": "object", "description": "Summary of successful operations by type"},
+                    "template_status": {"type": "string", "enum": ["complete", "partially_complete"], "description": "Overall template completion status"},
+                    "action_required": {"type": "string", "description": "What the agent should do next"},
                     "saved": {"type": "boolean"},
                     "file_path": {"type": "string"},
                     "file": {"type": "object"}
                 },
-                "required": ["fields_filled", "changes_made", "template_processed", "saved", "file_path", "file"]
+                "required": ["SAFETY_STATUS", "success", "completed_operations", "blocked_operations", "safety_warnings", "template_status", "action_required", "saved", "file_path", "file"]
             }
         },
         "save_document": {
