@@ -215,6 +215,107 @@ def detect_placeholder_patterns(text: str) -> tuple[bool, str]:
 
     return False, "content"
 
+def parse_and_apply_markdown_formatting(target, text: str):
+    """
+    Centralized markdown parsing and application for any target (paragraph or cell).
+    Supports: **bold**, *italic*, `code`, ~~strikethrough~~, __underline__, ***bold italic***, \n line breaks
+    """
+    # Determine target type and get paragraph to work with
+    if hasattr(target, 'clear'):  # This is a paragraph
+        paragraph = target
+        paragraph.clear()
+    elif hasattr(target, 'paragraphs'):  # This is a table cell
+        target.text = ""  # Clear cell
+        paragraph = target.paragraphs[0] if target.paragraphs else target.add_paragraph()
+    else:
+        raise ValueError("Target must be a paragraph or table cell")
+
+    # Handle line breaks first by splitting into separate paragraphs
+    lines = text.split('\n')
+
+    for line_idx, line in enumerate(lines):
+        if line_idx > 0:
+            # Add line break for subsequent lines
+            paragraph.add_run().add_break()
+
+        if not line.strip():
+            continue  # Skip empty lines
+
+        # Enhanced markdown pattern matching (order matters for nested formatting)
+        # Match from most specific to least specific
+        formatting_patterns = [
+            (r'\*\*\*(.*?)\*\*\*', {'bold': True, 'italic': True}),     # ***bold italic***
+            (r'\*\*(.*?)\*\*', {'bold': True}),                         # **bold**
+            (r'\*(.*?)\*', {'italic': True}),                           # *italic*
+            (r'~~(.*?)~~', {'strike': True}),                           # ~~strikethrough~~
+            (r'__(.*?)__', {'underline': True}),                        # __underline__
+            (r'`(.*?)`', {'code': True}),                               # `code`
+        ]
+
+        # Process the line with all formatting patterns
+        remaining_text = line
+        processed_parts = []
+
+        while remaining_text:
+            earliest_match = None
+            earliest_pos = len(remaining_text)
+            earliest_pattern = None
+
+            # Find the earliest formatting pattern in the remaining text
+            for pattern, formatting in formatting_patterns:
+                match = re.search(pattern, remaining_text)
+                if match and match.start() < earliest_pos:
+                    earliest_match = match
+                    earliest_pos = match.start()
+                    earliest_pattern = formatting
+
+            if earliest_match:
+                # Add text before the match as normal text
+                if earliest_pos > 0:
+                    processed_parts.append({
+                        'text': remaining_text[:earliest_pos],
+                        'formatting': {}
+                    })
+
+                # Add the formatted text
+                processed_parts.append({
+                    'text': earliest_match.group(1),
+                    'formatting': earliest_pattern
+                })
+
+                # Continue with text after the match
+                remaining_text = remaining_text[earliest_match.end():]
+            else:
+                # No more formatting, add remaining text as normal
+                if remaining_text:
+                    processed_parts.append({
+                        'text': remaining_text,
+                        'formatting': {}
+                    })
+                break
+
+        # Apply all processed parts to the paragraph
+        for part in processed_parts:
+            if part['text']:  # Only add non-empty text
+                run = paragraph.add_run(part['text'])
+
+                # Apply formatting
+                formatting = part['formatting']
+                if formatting.get('bold'):
+                    run.bold = True
+                if formatting.get('italic'):
+                    run.italic = True
+                if formatting.get('strike'):
+                    run.font.strike = True
+                if formatting.get('underline'):
+                    run.underline = True
+                if formatting.get('code'):
+                    run.font.name = 'Courier New'
+
+def has_markdown_formatting(text: str) -> bool:
+    """Check if text contains any markdown formatting markers"""
+    markers = ['**', '*', '`', '~~', '__', '\n']
+    return any(marker in text for marker in markers)
 
 def is_likely_placeholder_context(text: str, find_word: str) -> bool:
     """Determine if a match appears in a placeholder context vs content text"""
@@ -482,8 +583,6 @@ def _add_table_from_html(doc: Document, table_element):
 class GetDocumentElementsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         document_id = inputs["document_id"]
-        include_content = inputs.get("include_content", True)
-        show_all_elements = inputs.get("show_all_elements", False)
         files = inputs.get("files", [])
 
         load_document_from_files(document_id, files)
@@ -496,100 +595,48 @@ class GetDocumentElementsAction(ActionHandler):
         # Analyze document structure
         analysis = analyze_document_structure(doc)
 
-        # Create LLM-optimized response
-        if not show_all_elements:
-            # Only show fillable elements to reduce token usage
-            fillable_paragraphs = []
-            fillable_cells = []
-            pattern_counts = {}
+        # Always return LLM-optimized response (fillable elements only)
+        fillable_paragraphs = []
+        fillable_cells = []
+        pattern_counts = {}
 
-            for element in analysis["elements"]:
-                if element["type"] == "paragraph" and bool(element["is_fillable"]):
-                    fillable_paragraphs.append({
-                        "id": f"p{element['index']}",
-                        "content": str(element["content"]),
-                        "pattern": str(element["pattern_type"]),
-                        "style": str(element["style"])
-                    })
-                    # Count patterns
-                    pattern = element["pattern_type"]
-                    pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+        for element in analysis["elements"]:
+            if element["type"] == "paragraph" and bool(element["is_fillable"]):
+                fillable_paragraphs.append({
+                    "id": f"p{element['index']}",
+                    "content": str(element["content"]),
+                    "pattern": str(element["pattern_type"]),
+                    "style": str(element["style"])
+                })
+                # Count patterns
+                pattern = element["pattern_type"]
+                pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
 
-                elif element["type"] == "table":
-                    for cell in element["cells"]:
-                        if bool(cell["is_fillable"]):
-                            fillable_cells.append({
-                                "id": f"t{element['index']}r{cell['row']}c{cell['col']}",
-                                "content": str(cell["content"]),
-                                "pattern": str(cell["pattern_type"]),
-                                "location": f"Table {element['index']}, Row {cell['row']}, Col {cell['col']}"
-                            })
-                            # Count patterns
-                            pattern = cell["pattern_type"]
-                            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
-
-            return {
-                "template_summary": {
-                    "structure": f"{analysis['paragraphs']}p,{analysis['tables']}t",
-                    "fillable_total": int(analysis["fillable_paragraphs"] + analysis["fillable_cells"]),
-                    "content_elements_hidden": int(analysis["total_elements"] - len(fillable_paragraphs) - len(fillable_cells))
-                },
-                "fillable_paragraphs": fillable_paragraphs,
-                "fillable_cells": fillable_cells,
-                "pattern_distribution": pattern_counts,
-                "recommended_strategy": "mixed" if len(pattern_counts) > 2 else "single_method",
-                "template_ready": True
-            }
-        else:
-            # Return full analysis but in the new schema format
-            all_paragraphs = []
-            all_cells = []
-
-            for element in analysis["elements"]:
-                if element["type"] == "paragraph":
-                    all_paragraphs.append({
-                        "id": f"p{element['index']}",
-                        "content": str(element["content"]),
-                        "pattern": str(element["pattern_type"]),
-                        "style": str(element["style"]),
-                        "is_fillable": bool(element["is_fillable"])
-                    })
-                elif element["type"] == "table":
-                    for cell in element["cells"]:
-                        all_cells.append({
+            elif element["type"] == "table":
+                for cell in element["cells"]:
+                    if bool(cell["is_fillable"]):
+                        fillable_cells.append({
                             "id": f"t{element['index']}r{cell['row']}c{cell['col']}",
                             "content": str(cell["content"]),
                             "pattern": str(cell["pattern_type"]),
-                            "location": f"Table {element['index']}, Row {cell['row']}, Col {cell['col']}",
-                            "is_fillable": bool(cell["is_fillable"])
+                            "location": f"Table {element['index']}, Row {cell['row']}, Col {cell['col']}"
                         })
+                        # Count patterns
+                        pattern = cell["pattern_type"]
+                        pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
 
-            # Pattern summary for strategy guidance
-            pattern_counts = {}
-            for element in analysis["elements"]:
-                if bool(element["is_fillable"]):
-                    pattern = str(element["pattern_type"])
-                    pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
-                if element["type"] == "table":
-                    for cell in element["cells"]:
-                        if bool(cell["is_fillable"]):
-                            pattern = str(cell["pattern_type"])
-                            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
-
-            return {
-                "template_summary": {
-                    "structure": f"{analysis['paragraphs']}p,{analysis['tables']}t",
-                    "fillable_total": analysis["fillable_paragraphs"] + analysis["fillable_cells"],
-                    "content_elements_hidden": 0  # All elements shown
-                },
-                "fillable_paragraphs": [p for p in all_paragraphs if p["is_fillable"]],
-                "fillable_cells": [c for c in all_cells if c["is_fillable"]],
-                "all_paragraphs": all_paragraphs,  # Additional field when show_all_elements=true
-                "all_cells": all_cells,  # Additional field when show_all_elements=true
-                "pattern_distribution": pattern_counts,
-                "recommended_strategy": "mixed" if len(pattern_counts) > 2 else "single_method",
-                "template_ready": True
-            }
+        return {
+            "template_summary": {
+                "structure": f"{analysis['paragraphs']}p,{analysis['tables']}t",
+                "fillable_total": int(analysis["fillable_paragraphs"] + analysis["fillable_cells"]),
+                "content_elements_hidden": int(analysis["total_elements"] - len(fillable_paragraphs) - len(fillable_cells))
+            },
+            "fillable_paragraphs": fillable_paragraphs,
+            "fillable_cells": fillable_cells,
+            "pattern_distribution": pattern_counts,
+            "recommended_strategy": "mixed" if len(pattern_counts) > 2 else "single_method",
+            "template_ready": True
+        }
 
 @doc_maker.action("create_document")
 class CreateDocumentAction(ActionHandler):
@@ -946,11 +993,18 @@ class FindAndReplaceAction(ActionHandler):
                         paragraphs_to_remove.append(paragraph)
                         replacements_count += 1
                     else:
-                        # Normal text replacement (preserves spacing)
+                        # Normal text replacement (preserves spacing) with enhanced formatting support
                         if case_sensitive:
-                            paragraph.text = original_text.replace(find_text, replace_text)
+                            new_text = original_text.replace(find_text, replace_text)
                         else:
-                            paragraph.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
+                            new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
+
+                        # Use centralized parser for enhanced formatting support
+                        if has_markdown_formatting(new_text):
+                            parse_and_apply_markdown_formatting(paragraph, new_text)
+                        else:
+                            paragraph.text = new_text
+
                         replacements_count += 1
 
             # Remove marked paragraphs
@@ -962,51 +1016,69 @@ class FindAndReplaceAction(ActionHandler):
                     # Fallback: just clear the text
                     paragraph.clear()
 
-            # Perform replacements in tables (cells don't get removed, just content cleared)
+            # Perform replacements in tables with enhanced formatting support
             for table in doc.tables:
                 for row in table.rows:
                     for cell in row.cells:
                         if case_sensitive:
                             if find_text in cell.text:
-                                cell.text = cell.text.replace(find_text, replace_text)
+                                new_text = cell.text.replace(find_text, replace_text)
+
+                                # Use centralized parser for enhanced formatting support
+                                if has_markdown_formatting(new_text):
+                                    parse_and_apply_markdown_formatting(cell, new_text)
+                                else:
+                                    cell.text = new_text
                                 replacements_count += 1
                         else:
                             original_text = cell.text
                             new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
                             if new_text != original_text:
-                                cell.text = new_text
+                                # Use centralized parser for enhanced formatting support
+                                if has_markdown_formatting(new_text):
+                                    parse_and_apply_markdown_formatting(cell, new_text)
+                                else:
+                                    cell.text = new_text
                                 replacements_count += 1
 
             total_replacements += replacements_count
 
-        # Create LLM-optimized response
-        optimized_skipped = []
+        # Create LLM-optimized response with proper field handling
+        optimized_blocked = []
         for skipped in skipped_replacements:
-            # Compress match information for LLM efficiency
-            match_previews = []
-            for match in skipped["matches_found"][:5]:  # Limit to first 5 matches
-                if match["type"] == "paragraph":
-                    preview = f"P{match['index']}:{match['content'][:30]}..."
-                else:
-                    preview = f"T{match['table_index']}R{match['row']}C{match['col']}:{match['content'][:20]}..."
-                match_previews.append(preview)
-
-            if len(skipped["matches_found"]) > 5:
-                match_previews.append(f"...+{len(skipped['matches_found']) - 5} more")
-
-            optimized_skipped.append({
-                "phrase": skipped["find_text"],
-                "matches": skipped["matches_count"],
-                "locations": match_previews,
-                "fix": "use_more_context_or_replace_all=true"
-            })
+            # Handle different skipped replacement formats
+            if "CRITICAL_WARNING" in skipped:
+                # This is from the new safety analysis format
+                optimized_blocked.append({
+                    "phrase": skipped.get("find_phrase", "unknown"),
+                    "warning": skipped.get("CRITICAL_WARNING", ""),
+                    "risk": skipped.get("risk_assessment", "unknown"),
+                    "safe_matches": skipped.get("safe_placeholders", 0),
+                    "unsafe_matches": skipped.get("content_text_matches", 0),
+                    "alternatives": skipped.get("intelligent_alternatives", []),
+                    "action_required": skipped.get("fix_required", "")
+                })
+            elif "WARNING" in skipped:
+                # This is a moderate risk warning
+                optimized_blocked.append({
+                    "phrase": skipped.get("phrase", "unknown"),
+                    "warning": skipped.get("WARNING", ""),
+                    "matches": skipped.get("matches", 0),
+                    "alternatives": skipped.get("alternatives", [])
+                })
+            else:
+                # Fallback for any other format
+                optimized_blocked.append({
+                    "phrase": str(skipped),
+                    "warning": "Format error in safety analysis"
+                })
 
         original_result = {
-            "success": total_replacements > 0 or len(skipped_replacements) == 0,
+            "success": total_replacements > 0 and len([s for s in skipped_replacements if "CRITICAL_WARNING" in s]) == 0,
             "replaced": total_replacements,
             "processed": len(replacements),
-            "blocked": optimized_skipped,
-            "alerts": warnings[:3] if warnings else [],  # Limit to first 3 warnings
+            "blocked": optimized_blocked,
+            "alerts": warnings[:3] if warnings else [],
             "safety_active": True
         }
         return await save_and_return_document(original_result, document_id, context)
@@ -1033,18 +1105,28 @@ class FillTemplateFieldsAction(ActionHandler):
             for placeholder, value in template_data["placeholder_data"].items():
                 replacement_count = 0
 
-                # Replace in paragraphs
+                # Replace in paragraphs with enhanced formatting support
                 for paragraph in doc.paragraphs:
                     if placeholder in paragraph.text:
-                        paragraph.text = paragraph.text.replace(placeholder, str(value))
+                        new_text = paragraph.text.replace(placeholder, str(value))
+                        # Use centralized parser for all replacements
+                        if has_markdown_formatting(new_text):
+                            parse_and_apply_markdown_formatting(paragraph, new_text)
+                        else:
+                            paragraph.text = new_text
                         replacement_count += 1
 
-                # Replace in tables
+                # Replace in tables with enhanced formatting support
                 for table in doc.tables:
                     for row in table.rows:
                         for cell in row.cells:
                             if placeholder in cell.text:
-                                cell.text = cell.text.replace(placeholder, str(value))
+                                new_text = cell.text.replace(placeholder, str(value))
+                                # Use centralized parser for all replacements
+                                if has_markdown_formatting(new_text):
+                                    parse_and_apply_markdown_formatting(cell, new_text)
+                                else:
+                                    cell.text = new_text
                                 replacement_count += 1
 
                 if replacement_count > 0:
@@ -1059,7 +1141,11 @@ class FillTemplateFieldsAction(ActionHandler):
                 if position_key.startswith("paragraph_"):
                     idx = int(position_key.split("_")[1])
                     if idx < len(paragraphs):
-                        paragraphs[idx].text = str(new_content)
+                        # Use centralized parser for all content
+                        if has_markdown_formatting(str(new_content)):
+                            parse_and_apply_markdown_formatting(paragraphs[idx], str(new_content))
+                        else:
+                            paragraphs[idx].text = str(new_content)
                         changes_made.append(f"Updated paragraph {idx}")
 
                 elif position_key.startswith("table_"):
@@ -1072,7 +1158,12 @@ class FillTemplateFieldsAction(ActionHandler):
                     if table_idx < len(tables):
                         table = tables[table_idx]
                         if row_idx < len(table.rows) and col_idx < len(table.columns):
-                            table.cell(row_idx, col_idx).text = str(new_content)
+                            cell = table.cell(row_idx, col_idx)
+                            # Use centralized parser for all content
+                            if has_markdown_formatting(str(new_content)):
+                                parse_and_apply_markdown_formatting(cell, str(new_content))
+                            else:
+                                cell.text = str(new_content)
                             changes_made.append(f"Updated table {table_idx} cell ({row_idx},{col_idx})")
 
         # 3. Search and replace patterns (with safety analysis)
@@ -1141,7 +1232,7 @@ class FillTemplateFieldsAction(ActionHandler):
                 replacement_count = 0
                 paragraphs_to_remove = []
 
-                # Replace in paragraphs with spacing control
+                # Replace in paragraphs with spacing control and formatting support
                 for paragraph in doc.paragraphs:
                     if find_text.lower() in paragraph.text.lower():
                         original_text = paragraph.text
@@ -1151,8 +1242,16 @@ class FillTemplateFieldsAction(ActionHandler):
                             paragraphs_to_remove.append(paragraph)
                             replacement_count += 1
                         else:
-                            paragraph.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
-                            if paragraph.text != original_text:
+                            # Perform text replacement
+                            new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
+
+                            # Use centralized parser for enhanced formatting support
+                            if has_markdown_formatting(new_text):
+                                parse_and_apply_markdown_formatting(paragraph, new_text)
+                            else:
+                                paragraph.text = new_text
+
+                            if new_text != original_text:
                                 replacement_count += 1
 
                 # Remove marked paragraphs
@@ -1163,14 +1262,21 @@ class FillTemplateFieldsAction(ActionHandler):
                     except:
                         paragraph.clear()
 
-                # Replace in tables
+                # Replace in tables with enhanced formatting support
                 for table in doc.tables:
                     for row in table.rows:
                         for cell in row.cells:
                             if find_text.lower() in cell.text.lower():
                                 original_text = cell.text
-                                cell.text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
-                                if cell.text != original_text:
+                                new_text = re.sub(re.escape(find_text), replace_text, original_text, flags=re.IGNORECASE)
+
+                                # Use centralized parser for enhanced formatting support
+                                if has_markdown_formatting(new_text):
+                                    parse_and_apply_markdown_formatting(cell, new_text)
+                                else:
+                                    cell.text = new_text
+
+                                if new_text != original_text:
                                     replacement_count += 1
 
                 if replacement_count > 0:
