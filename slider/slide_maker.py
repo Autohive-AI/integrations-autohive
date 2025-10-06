@@ -20,7 +20,10 @@ import markdown
 from bs4 import BeautifulSoup
 import re
 
-slide_maker = Integration.load()
+# Load integration from config.json in the same directory as this file
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_config_path = os.path.join(_current_dir, "config.json")
+slide_maker = Integration.load(_config_path)
 
 presentations = {}
 uploaded_images = {}
@@ -283,6 +286,416 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
     }
     
     return result
+
+
+# ---- Element Type Detection and Markdown Parsing ----
+
+def detect_element_type_from_markdown(markdown_text):
+    """
+    Auto-detect element type from markdown content.
+
+    Returns: "table", "bullets", or "text"
+    """
+    if not markdown_text or not isinstance(markdown_text, str):
+        return "text"
+
+    # Check for table (| ... | format with separator line)
+    if re.search(r'\|.*\|', markdown_text) and re.search(r'\|[-:\s]+\|', markdown_text):
+        return "table"
+
+    # Check for lists (-, *, +, or 1., 2., etc.)
+    lines = markdown_text.strip().split('\n')
+    list_pattern = r'^\s*[-*+]\s+|^\s*\d+\.\s+'
+    list_lines = [l for l in lines if re.match(list_pattern, l)]
+
+    # If at least 2 list items, consider it a bullet list
+    if len(list_lines) >= 2:
+        return "bullets"
+
+    # Default: plain text
+    return "text"
+
+def parse_markdown_table(markdown_text):
+    """
+    Parse markdown table syntax into structured data.
+
+    Input:  | Col1 | Col2 |
+            |------|------|
+            | A    | B    |
+
+    Output: {"rows": 2, "cols": 2, "data": [["Col1", "Col2"], ["A", "B"]]}
+    """
+    lines = [l.strip() for l in markdown_text.strip().split('\n') if l.strip()]
+
+    if len(lines) < 2:
+        return {"rows": 0, "cols": 0, "data": []}
+
+    table_data = []
+
+    for line in lines:
+        # Skip separator lines (|---|---|)
+        if re.match(r'\|[-:\s]+\|', line):
+            continue
+
+        # Parse row: split by |, strip whitespace
+        cells = [cell.strip() for cell in line.split('|')]
+        # Remove empty cells from start and end (if line starts/ends with |)
+        if cells and cells[0] == '':
+            cells = cells[1:]
+        if cells and cells[-1] == '':
+            cells = cells[:-1]
+
+        if cells:
+            table_data.append(cells)
+
+    if not table_data:
+        return {"rows": 0, "cols": 0, "data": []}
+
+    rows = len(table_data)
+    cols = len(table_data[0]) if table_data else 0
+
+    return {"rows": rows, "cols": cols, "data": table_data}
+
+def parse_markdown_bullets(markdown_text):
+    """
+    Parse markdown list syntax into bullet items with levels.
+
+    Input:  - Item 1
+              - Sub 1
+            - Item 2
+            1. Numbered item
+
+    Output: [
+        {"text": "Item 1", "level": 0},
+        {"text": "Sub 1", "level": 1},
+        {"text": "Item 2", "level": 0},
+        {"text": "Numbered item", "level": 0}
+    ]
+    """
+    lines = markdown_text.split('\n')
+    bullet_items = []
+
+    for line in lines:
+        # Match list items: -, *, +, or numbered (1., 2., etc.)
+        match = re.match(r'^(\s*)([-*+]|\d+\.)\s+(.+)$', line)
+        if match:
+            indent = match.group(1)
+            marker = match.group(2)
+            text = match.group(3)
+
+            # Calculate level based on indentation (2 spaces = 1 level)
+            level = len(indent) // 2
+
+            bullet_items.append({
+                "text": text,
+                "level": min(level, 8)  # Cap at level 8
+            })
+
+    return bullet_items
+
+def get_current_slide_elements(slide, slide_width_inches, slide_height_inches):
+    """
+    Get positions of all current elements on slide for overlap detection.
+
+    Returns: [
+        {
+            "index": 0,
+            "position": {
+                "left": 1.0, "top": 1.0, "width": 3.0, "height": 2.0,
+                "right": 4.0, "bottom": 3.0
+            }
+        },
+        ...
+    ]
+    """
+    elements = []
+    for i, shape in enumerate(slide.shapes):
+        left = shape.left / 914400 if shape.left is not None else 0
+        top = shape.top / 914400 if shape.top is not None else 0
+        width = shape.width / 914400 if shape.width is not None else 0
+        height = shape.height / 914400 if shape.height is not None else 0
+
+        elements.append({
+            "index": i,
+            "position": {
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+                "right": left + width,
+                "bottom": top + height
+            }
+        })
+    return elements
+
+def validate_and_adjust_position(requested_pos, existing_elements, slide_dims, auto_position=False):
+    """
+    Validate position using existing calculate_overlap() function.
+    Adjusts for boundaries and optionally finds alternative position if overlap detected.
+
+    Returns: {
+      "position": {left, top, width, height},
+      "adjusted": boolean,
+      "reason": string|null,
+      "fits": boolean
+    }
+    """
+    left = requested_pos["left"]
+    top = requested_pos["top"]
+    width = requested_pos["width"]
+    height = requested_pos["height"]
+    slide_width = slide_dims["width"]
+    slide_height = slide_dims["height"]
+
+    adjusted = False
+    reason = None
+
+    # STEP 1: Boundary check (reuse existing pattern)
+    if left + width > slide_width:
+        width = slide_width - left - 0.1
+        adjusted = True
+        reason = "Adjusted width to fit slide boundaries"
+
+    if top + height > slide_height:
+        height = slide_height - top - 0.1
+        adjusted = True
+        if reason:
+            reason += "; adjusted height to fit slide boundaries"
+        else:
+            reason = "Adjusted height to fit slide boundaries"
+
+    # Ensure minimum sizes
+    if width < 0.5:
+        width = 0.5
+    if height < 0.3:
+        height = 0.3
+
+    # STEP 2: Overlap check using EXISTING calculate_overlap()
+    new_pos = {
+        "left": left,
+        "top": top,
+        "width": width,
+        "height": height,
+        "right": left + width,
+        "bottom": top + height
+    }
+
+    has_overlap = False
+    for existing in existing_elements:
+        overlap = calculate_overlap(new_pos, existing["position"])
+        if overlap["overlaps"]:
+            has_overlap = True
+            break
+
+    if has_overlap:
+        if not auto_position:
+            return {"fits": False, "reason": "Element overlaps with existing element(s). Enable auto_position to find alternative placement."}
+
+        # STEP 3: Try alternative positions (shift right/down)
+        alternatives = [
+            (left + 0.5, top),          # Shift right 0.5"
+            (left, top + 0.5),          # Shift down 0.5"
+            (left + 1.0, top),          # Shift right 1.0"
+            (left, top + 1.0),          # Shift down 1.0"
+            (left + 0.5, top + 0.5),    # Shift diagonal 0.5"
+            (left + 1.5, top),          # Shift right 1.5"
+            (left, top + 1.5),          # Shift down 1.5"
+            (left + 1.0, top + 1.0),    # Shift diagonal 1.0"
+        ]
+
+        for alt_left, alt_top in alternatives:
+            # Check if alternative is within bounds
+            if alt_left < 0 or alt_top < 0:
+                continue
+            if alt_left + width > slide_width or alt_top + height > slide_height:
+                continue
+
+            alt_pos = {
+                "left": alt_left,
+                "top": alt_top,
+                "width": width,
+                "height": height,
+                "right": alt_left + width,
+                "bottom": alt_top + height
+            }
+
+            # Check this alternative for overlaps
+            alt_has_overlap = False
+            for existing in existing_elements:
+                if calculate_overlap(alt_pos, existing["position"])["overlaps"]:
+                    alt_has_overlap = True
+                    break
+
+            if not alt_has_overlap:
+                # Found a valid position!
+                return {
+                    "position": {"left": alt_left, "top": alt_top, "width": width, "height": height},
+                    "adjusted": True,
+                    "reason": f"Repositioned to avoid overlap (moved from {left:.1f}, {top:.1f} to {alt_left:.1f}, {alt_top:.1f})",
+                    "fits": True
+                }
+
+        # No valid alternative found
+        return {
+            "fits": False,
+            "reason": "No valid position found - all attempted positions overlap with existing elements or exceed slide boundaries"
+        }
+
+    # No overlap detected
+    return {
+        "position": {"left": left, "top": top, "width": width, "height": height},
+        "adjusted": adjusted,
+        "reason": reason,
+        "fits": True
+    }
+
+
+# ---- Internal Element Creation Helpers ----
+
+def _create_text_box(slide, text_content, position, prs):
+    """
+    Core text box creation logic extracted from add_text action.
+    Returns the created shape.
+    """
+    left = Inches(position["left"])
+    top = Inches(position["top"])
+    width = Inches(position["width"])
+    height = Inches(position["height"])
+
+    # Create text box
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.clear()
+
+    # Set margins
+    tf.margin_left = Inches(0.1)
+    tf.margin_right = Inches(0.1)
+    tf.margin_top = Inches(0.05)
+    tf.margin_bottom = Inches(0.05)
+
+    # Calculate appropriate font size
+    width_inches = position["width"]
+    height_inches = position["height"]
+    has_markdown = has_markdown_formatting(text_content)
+    best_fit_size = calculate_best_fit_font_size(text_content, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
+
+    # Parse and add formatted text
+    html = parse_markdown_with_extensions(text_content)
+    soup = BeautifulSoup(html, 'html.parser')
+    content_element = soup.find('p') or soup
+    paragraph = tf.paragraphs[0]
+    _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
+
+    # Enable word wrap
+    tf.word_wrap = True
+
+    return txBox
+
+def _create_table(slide, table_data, position, prs):
+    """
+    Core table creation logic extracted from add_table action.
+    table_data format: {"rows": N, "cols": M, "data": [[...], [...]]}
+    Returns the created table shape.
+    """
+    rows = table_data["rows"]
+    cols = table_data["cols"]
+    data = table_data.get("data", [])
+
+    left = Inches(position["left"])
+    top = Inches(position["top"])
+    width = Inches(position["width"])
+    height = Inches(position["height"])
+
+    # Create table (keep shape reference)
+    table_shape = slide.shapes.add_table(rows, cols, left, top, width, height)
+    table = table_shape.table
+
+    # Fill table with data (parse each cell as markdown with auto-sizing)
+    for row_idx, row_data in enumerate(data[:rows]):
+        for col_idx, cell_value in enumerate(row_data[:cols]):
+            cell = table.cell(row_idx, col_idx)
+            cell_text = str(cell_value)
+
+            # Get cell dimensions for font size calculation
+            cell_width = table.columns[col_idx].width / 914400 if col_idx < len(table.columns) else 2
+            cell_height = table.rows[row_idx].height / 914400 if row_idx < len(table.rows) else 0.5
+
+            # Calculate appropriate font size
+            has_markdown = has_markdown_formatting(cell_text)
+            best_fit_size = calculate_best_fit_font_size(cell_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
+
+            # Parse cell content as markdown
+            html = parse_markdown_with_extensions(cell_text)
+            soup = BeautifulSoup(html, 'html.parser')
+            content_element = soup.find('p') or soup
+            cell.text_frame.clear()
+            paragraph = cell.text_frame.paragraphs[0]
+            _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
+
+            # Enable word wrap for cells
+            cell.text_frame.word_wrap = True
+
+    return table_shape
+
+def _create_bullet_list(slide, bullet_items, position, prs):
+    """
+    Core bullet list creation logic extracted from add_bullet_list action.
+    bullet_items format: [{"text": "...", "level": 0}, ...]
+    Returns the created shape.
+    """
+    left = Inches(position["left"])
+    top = Inches(position["top"])
+    width = Inches(position["width"])
+    height = Inches(position["height"])
+
+    # Create text box for bullets
+    textbox = slide.shapes.add_textbox(left, top, width, height)
+    text_frame = textbox.text_frame
+    text_frame.clear()
+
+    # Set margins
+    text_frame.margin_left = Inches(0.1)
+    text_frame.margin_right = Inches(0.1)
+    text_frame.margin_top = Inches(0.05)
+    text_frame.margin_bottom = Inches(0.05)
+
+    # Calculate appropriate font size based on all bullet text
+    width_inches = position["width"]
+    height_inches = position["height"]
+    all_bullet_text = '\n'.join([item.get("text", "") for item in bullet_items])
+    best_fit_size = calculate_best_fit_font_size(all_bullet_text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=True)
+
+    # Add bullet items with calculated font size
+    for i, item in enumerate(bullet_items):
+        text = item.get("text", "")
+        level = item.get("level", 0)
+
+        if i == 0:
+            p = text_frame.paragraphs[0]
+        else:
+            p = text_frame.add_paragraph()
+
+        # Create manual bullets with Unicode symbols
+        bullet_symbols = ["•", "◦", "▪", "▫", "‣"]
+        bullet_symbol = bullet_symbols[min(level, len(bullet_symbols)-1)]
+        indent = "    " * level
+
+        # Add bullet symbol
+        run = p.add_run()
+        run.text = f"{indent}{bullet_symbol} "
+        run.font.name = 'Calibri'
+        run.font.size = Pt(best_fit_size)
+
+        # Parse text as markdown and add formatted content
+        html = parse_markdown_with_extensions(text)
+        soup = BeautifulSoup(html, 'html.parser')
+        content_element = soup.find('p') or soup
+        _add_formatted_text_from_html(p, content_element, base_font='Calibri', base_size=best_fit_size)
+
+    # Enable word wrap
+    text_frame.word_wrap = True
+
+    return textbox
 
 
 # ---- HTML/Markdown Parser Utilities ----
@@ -973,86 +1386,6 @@ class AddSlideAction(ActionHandler):
         }
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slide_maker.action("add_text")
-class AddTextAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        text = inputs["text"]
-        position = inputs["position"]
-        color = inputs.get("color")  # Optional hex color like "#FF0000"
-        files = inputs.get("files", [])
-        
-        load_presentation_from_files(presentation_id, files)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-        
-        slide = prs.slides[slide_index]
-        
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
-        
-        # Validate text box doesn't exceed slide boundaries
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
-        
-        # Adjust if text box exceeds slide boundaries
-        if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)  
-        if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)
-            
-        # Ensure minimum text box size
-        if width < Inches(0.5):
-            width = Inches(0.5)
-        if height < Inches(0.3):
-            height = Inches(0.3)
-        
-        txBox = slide.shapes.add_textbox(left, top, width, height)
-        tf = txBox.text_frame
-        tf.clear()
-
-        # Set margins first
-        tf.margin_left = Inches(0.1)
-        tf.margin_right = Inches(0.1)
-        tf.margin_top = Inches(0.05)
-        tf.margin_bottom = Inches(0.05)
-
-        # Calculate appropriate font size based on text length and box dimensions
-        width_inches = (width.emu / 914400) if hasattr(width, 'emu') else (width / 914400)
-        height_inches = (height.emu / 914400) if hasattr(height, 'emu') else (height / 914400)
-        # Check if text has markdown formatting
-        has_markdown = has_markdown_formatting(text)
-        best_fit_size = calculate_best_fit_font_size(text, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
-
-        # Convert hex color to RGB if provided
-        rgb_color = None
-        if color:
-            rgb_color = hex_to_rgb(color)
-
-        # Add text content with calculated font size (always parse as markdown)
-        html = parse_markdown_with_extensions(text)
-        soup = BeautifulSoup(html, 'html.parser')
-        content_element = soup.find('p') or soup
-        paragraph = tf.paragraphs[0]
-        _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size, base_color=rgb_color)
-
-        # Enable word wrap (no auto_size needed - we calculated the size ourselves)
-        tf.word_wrap = True
-
-        original_result = {"shape_id": str(txBox.shape_id)}
-        return await save_and_return_presentation(original_result, presentation_id, context)
-
 @slide_maker.action("add_image")
 class AddImageAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -1128,80 +1461,6 @@ class AddImageAction(ActionHandler):
         original_result = {"shape_id": str(pic.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slide_maker.action("add_table")
-class AddTableAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        rows = inputs["rows"]
-        cols = inputs["cols"]
-        position = inputs["position"]
-        data = inputs.get("data", [])
-        files = inputs.get("files", [])
-        
-        load_presentation_from_files(presentation_id, files)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-        
-        slide = prs.slides[slide_index]
-        
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
-        
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
-        
-        # Adjust if table exceeds slide boundaries
-        if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)  # Leave small margin
-        if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)  # Leave small margin
-            
-        if width < Inches(1):
-            width = Inches(1)
-        if height < Inches(0.5):
-            height = Inches(0.5)
-        
-        table = slide.shapes.add_table(rows, cols, left, top, width, height).table
-        
-        # Fill table with data if provided (always parse as markdown with auto-sizing)
-        for row_idx, row_data in enumerate(data[:rows]):
-            for col_idx, cell_value in enumerate(row_data[:cols]):
-                cell = table.cell(row_idx, col_idx)
-                cell_text = str(cell_value)
-
-                # Get cell dimensions for font size calculation
-                cell_width = table.columns[col_idx].width / 914400 if col_idx < len(table.columns) else 2
-                cell_height = table.rows[row_idx].height / 914400 if row_idx < len(table.rows) else 0.5
-
-                # Calculate appropriate font size
-                has_markdown = has_markdown_formatting(cell_text)
-                best_fit_size = calculate_best_fit_font_size(cell_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
-
-                # Always parse cell content as markdown with calculated font size
-                html = parse_markdown_with_extensions(cell_text)
-                soup = BeautifulSoup(html, 'html.parser')
-                content_element = soup.find('p') or soup
-                cell.text_frame.clear()
-                paragraph = cell.text_frame.paragraphs[0]
-                _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
-
-                # Enable word wrap for cells
-                cell.text_frame.word_wrap = True
-        
-        original_result = {"table_id": f"table_{slide_index}_{len(slide.shapes)}"}
-        return await save_and_return_presentation(original_result, presentation_id, context)
-
 @slide_maker.action("add_chart")
 class AddChartAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -1256,110 +1515,6 @@ class AddChartAction(ActionHandler):
         chart_shape = slide.shapes.add_chart(chart_type_enum, left, top, width, height, chart_data)
         
         original_result = {"chart_id": str(chart_shape.shape_id)}
-        return await save_and_return_presentation(original_result, presentation_id, context)
-
-@slide_maker.action("extract_text")
-class ExtractTextAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        file_path = inputs["file_path"]
-        
-        if not os.path.exists(file_path):
-            raise ValueError(f"File {file_path} not found")
-        
-        prs = Presentation(file_path)
-        slides_text = []
-        all_text_parts = []
-        
-        for slide_idx, slide in enumerate(prs.slides):
-            slide_text = []
-            
-            for shape in slide.shapes:
-                if not shape.has_text_frame:
-                    continue
-                    
-                for paragraph in shape.text_frame.paragraphs:
-                    text_run = ''.join(run.text for run in paragraph.runs)
-                    if text_run.strip():
-                        slide_text.append(text_run.strip())
-                        all_text_parts.append(text_run.strip())
-            
-            slides_text.append({
-                "slide_index": slide_idx,
-                "text_content": slide_text
-            })
-        
-        return {
-            "slides": slides_text,
-            "all_text": "\n".join(all_text_parts)
-        }
-
-@slide_maker.action("modify_slide")
-class ModifySlideAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        updates = inputs["updates"]
-        files = inputs.get("files", [])
-        
-        load_presentation_from_files(presentation_id, files)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-        
-        slide = prs.slides[slide_index]
-        modified = False
-        
-        # Update title if provided
-        if "title" in updates and slide.shapes.title:
-            slide.shapes.title.text = updates["title"]
-            modified = True
-        
-        # Perform text replacements
-        if "replace_text" in updates:
-            for shape in slide.shapes:
-                if not shape.has_text_frame:
-                    continue
-                    
-                for paragraph in shape.text_frame.paragraphs:
-                    for replacement in updates["replace_text"]:
-                        old_text = replacement["old_text"]
-                        new_text = replacement["new_text"]
-                        
-                        paragraph_text = ''.join(run.text for run in paragraph.runs)
-                        if old_text in paragraph_text:
-                            # Replace text in the paragraph
-                            new_paragraph_text = paragraph_text.replace(old_text, new_text)
-
-                            # Clear existing runs and parse new text as markdown
-                            paragraph.clear()
-
-                            # Get shape dimensions for font size calculation
-                            shape_width = shape.width / 914400 if shape.width else 5
-                            shape_height = shape.height / 914400 if shape.height else 1
-
-                            # Calculate appropriate font size
-                            has_markdown = has_markdown_formatting(new_paragraph_text)
-                            best_fit_size = calculate_best_fit_font_size(new_paragraph_text, shape_width, shape_height, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
-
-                            # Always parse replacement text as markdown with calculated font size
-                            html = parse_markdown_with_extensions(new_paragraph_text)
-                            soup = BeautifulSoup(html, 'html.parser')
-                            content_element = soup.find('p') or soup
-                            _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
-
-                            # Enable word wrap
-                            shape.text_frame.word_wrap = True
-
-                            modified = True
-        
-        original_result = {"modified": modified}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
 @slide_maker.action("save_presentation")
@@ -1879,108 +2034,6 @@ class ResetSlideBackgroundAction(ActionHandler):
             "success": True,
             "follow_master_background": True,
             "note": "Slide background reset to inherit from master/layout"
-        }
-        
-        return await save_and_return_presentation(result, presentation_id, context)
-
-@slide_maker.action("add_bullet_list")
-class AddBulletListAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        bullet_items = inputs["bullet_items"]
-        position = inputs["position"]
-        formatting = inputs.get("formatting", {})
-        files = inputs.get("files", [])
-        
-        load_presentation_from_files(presentation_id, files)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-        
-        slide = prs.slides[slide_index]
-        
-        left = Inches(position["left"])
-        top = Inches(position["top"])
-        width = Inches(position["width"])
-        height = Inches(position["height"])
-        
-        # Validate bullet list doesn't exceed slide boundaries
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
-        
-        # Adjust if bullet list exceeds slide boundaries
-        if left + width > slide_width:
-            width = slide_width - left - Inches(0.1)
-        if top + height > slide_height:
-            height = slide_height - top - Inches(0.1)
-            
-        if width < Inches(1):
-            width = Inches(1)
-        if height < Inches(0.5):
-            height = Inches(0.5)
-        
-        # Always create a text box for consistent behavior and avoid double bullets
-        textbox = slide.shapes.add_textbox(left, top, width, height)
-        text_frame = textbox.text_frame
-        text_frame.clear()
-
-        # Set margins first
-        text_frame.margin_left = Inches(0.1)
-        text_frame.margin_right = Inches(0.1)
-        text_frame.margin_top = Inches(0.05)
-        text_frame.margin_bottom = Inches(0.05)
-
-        # Calculate appropriate font size based on all bullet text
-        width_inches = (width.emu / 914400) if hasattr(width, 'emu') else (width / 914400)
-        height_inches = (height.emu / 914400) if hasattr(height, 'emu') else (height / 914400)
-        all_bullet_text = '\n'.join([item.get("text", "") for item in bullet_items])
-        best_fit_size = calculate_best_fit_font_size(all_bullet_text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=True)
-
-        # Add bullet items with calculated font size
-        for i, item in enumerate(bullet_items):
-            text = item.get("text", "")
-            level = item.get("level", 0)
-
-            if i == 0:
-                p = text_frame.paragraphs[0]
-            else:
-                p = text_frame.add_paragraph()
-
-            # Create manual bullets with Unicode symbols
-            bullet_symbols = ["•", "◦", "▪", "▫", "‣"]  # Different levels
-            bullet_symbol = bullet_symbols[min(level, len(bullet_symbols)-1)]
-            indent = "    " * level  # Manual indentation
-
-            # Add bullet symbol
-            run = p.add_run()
-            run.text = f"{indent}{bullet_symbol} "
-            run.font.name = 'Calibri'
-            run.font.size = Pt(best_fit_size)
-
-            # Always parse item text as markdown with calculated font size
-            html = parse_markdown_with_extensions(text)
-            soup = BeautifulSoup(html, 'html.parser')
-            content_element = soup.find('p') or soup
-            _add_formatted_text_from_html(p, content_element, base_font='Calibri', base_size=best_fit_size)
-
-            p.alignment = PP_ALIGN.LEFT
-
-        # Enable word wrap
-        text_frame.word_wrap = True
-        
-        shape_id = str(textbox.shape_id)
-        
-        result = {
-            "shape_id": shape_id,
-            "items_count": len(bullet_items)
         }
         
         return await save_and_return_presentation(result, presentation_id, context)
@@ -2708,98 +2761,6 @@ class GetElementStylingAction(ActionHandler):
         except:
             return False
 
-@slide_maker.action("build_slide_from_markdown")
-class BuildSlideFromMarkdownAction(ActionHandler):
-    """Build entire slide from markdown content"""
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        markdown_content = inputs["markdown"]
-        files = inputs.get("files", [])
-
-        load_presentation_from_files(presentation_id, files)
-
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-
-        slide = prs.slides[slide_index]
-
-        # Parse markdown and build slide
-        created_shapes = parse_markdown_to_slide(slide, markdown_content, prs)
-
-        result = {
-            "elements_created": len(created_shapes),
-            "shapes": created_shapes,
-            "markdown_parsed": True
-        }
-
-        return await save_and_return_presentation(result, presentation_id, context)
-
-@slide_maker.action("build_presentation_from_markdown")
-class BuildPresentationFromMarkdownAction(ActionHandler):
-    """Build multi-slide presentation from markdown outline"""
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        outline_markdown = inputs["outline"]
-        files = inputs.get("files", [])
-
-        load_presentation_from_files(presentation_id, files)
-
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-
-        prs = presentations[presentation_id]
-
-        # Split outline by H1 headers (each = new slide)
-        # Use regex to split on H1 while keeping the H1 in each section
-        import re
-        sections = re.split(r'(?=^# )', outline_markdown, flags=re.MULTILINE)
-
-        # Filter out empty sections
-        slide_sections = [s.strip() for s in sections if s.strip() and s.strip().startswith('#')]
-
-        if not slide_sections:
-            # If no H1 headers found, treat entire content as one slide
-            slide_sections = [outline_markdown]
-
-        slides_created = []
-
-        for section_markdown in slide_sections:
-            # Add new blank slide
-            slide_layout = prs.slide_layouts[BLANK_LAYOUT_INDEX]
-            slide = prs.slides.add_slide(slide_layout)
-            slide_index = len(prs.slides) - 1
-
-            # Build slide content from markdown
-            try:
-                created_shapes = parse_markdown_to_slide(slide, section_markdown, prs)
-
-                slides_created.append({
-                    "slide_index": slide_index,
-                    "elements_created": len(created_shapes),
-                    "shapes": created_shapes
-                })
-            except Exception as e:
-                slides_created.append({
-                    "slide_index": slide_index,
-                    "error": f"Error building slide: {str(e)}"
-                })
-
-        result = {
-            "slides_created": len(slides_created),
-            "slides": slides_created,
-            "outline_parsed": True
-        }
-
-        return await save_and_return_presentation(result, presentation_id, context)
-
 @slide_maker.action("find_and_replace")
 class FindAndReplaceAction(ActionHandler):
     """Find and replace text across entire presentation with safety checks"""
@@ -2846,20 +2807,25 @@ class FindAndReplaceAction(ActionHandler):
 
                 # Scan all table cells
                 for shape_idx, shape in enumerate(slide.shapes):
-                    if hasattr(shape, 'table'):
-                        table = shape.table
-                        for row_idx, row in enumerate(table.rows):
-                            for col_idx, cell in enumerate(row.cells):
-                                if find_text in cell.text:
-                                    matches_found.append({
-                                        "type": "table_cell",
-                                        "slide_index": slide_idx,
-                                        "element_index": shape_idx,
-                                        "row": row_idx,
-                                        "col": col_idx,
-                                        "content": cell.text[:80] + "..." if len(cell.text) > 80 else cell.text,
-                                        "location": f"Slide {slide_idx}, Table {shape_idx}, Cell ({row_idx},{col_idx})"
-                                    })
+                    # Check if shape is actually a table (shape_type == 19)
+                    if hasattr(shape, 'shape_type') and shape.shape_type == 19:
+                        try:
+                            table = shape.table
+                            for row_idx, row in enumerate(table.rows):
+                                for col_idx, cell in enumerate(row.cells):
+                                    if find_text in cell.text:
+                                        matches_found.append({
+                                            "type": "table_cell",
+                                            "slide_index": slide_idx,
+                                            "element_index": shape_idx,
+                                            "row": row_idx,
+                                            "col": col_idx,
+                                            "content": cell.text[:80] + "..." if len(cell.text) > 80 else cell.text,
+                                            "location": f"Slide {slide_idx}, Table {shape_idx}, Cell ({row_idx},{col_idx})"
+                                        })
+                        except:
+                            # Skip shapes that can't be accessed as tables
+                            pass
 
             # STEP 2: Safety check
             if len(matches_found) == 0:
@@ -2909,43 +2875,77 @@ class FindAndReplaceAction(ActionHandler):
                     has_markdown = has_markdown_formatting(new_text)
                     best_fit_size = calculate_best_fit_font_size(new_text, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
 
-                    # Parse markdown and apply
+                    # Parse markdown and apply (handle multiple paragraphs)
                     html = parse_markdown_with_extensions(new_text)
                     soup = BeautifulSoup(html, 'html.parser')
-                    content_element = soup.find('p') or soup
-                    paragraph = text_frame.paragraphs[0]
-                    _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size, base_color=existing_color)
+
+                    # Find all paragraphs and lists (not just first one)
+                    paragraphs = soup.find_all(['p', 'ul', 'ol'])
+
+                    if not paragraphs:
+                        # Fallback: treat entire content as single element
+                        content_element = soup
+                        paragraph = text_frame.paragraphs[0]
+                        _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size, base_color=existing_color)
+                    else:
+                        # Process each paragraph separately
+                        for idx, p_elem in enumerate(paragraphs):
+                            if idx == 0:
+                                paragraph = text_frame.paragraphs[0]
+                            else:
+                                paragraph = text_frame.add_paragraph()
+
+                            _add_formatted_text_from_html(paragraph, p_elem, base_font='Calibri', base_size=best_fit_size, base_color=existing_color)
 
                     text_frame.word_wrap = True
                     replacement_count += 1
 
                 elif match["type"] == "table_cell":
                     # Replace in table cell with markdown + auto-sizing
-                    shape = slide.shapes[match["element_index"]]
-                    table = shape.table
-                    cell = table.cell(match["row"], match["col"])
+                    try:
+                        shape = slide.shapes[match["element_index"]]
+                        table = shape.table
+                        cell = table.cell(match["row"], match["col"])
 
-                    # Perform replacement
-                    new_text = cell.text.replace(find_text, replace_text)
-                    cell.text_frame.clear()
+                        # Perform replacement
+                        new_text = cell.text.replace(find_text, replace_text)
+                        cell.text_frame.clear()
 
-                    # Get cell dimensions
-                    cell_width = table.columns[match["col"]].width / 914400
-                    cell_height = table.rows[match["row"]].height / 914400
+                        # Get cell dimensions
+                        cell_width = table.columns[match["col"]].width / 914400
+                        cell_height = table.rows[match["row"]].height / 914400
 
-                    # Calculate font size
-                    has_markdown = has_markdown_formatting(new_text)
-                    best_fit_size = calculate_best_fit_font_size(new_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
+                        # Calculate font size
+                        has_markdown = has_markdown_formatting(new_text)
+                        best_fit_size = calculate_best_fit_font_size(new_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
 
-                    # Parse markdown and apply
-                    html = parse_markdown_with_extensions(new_text)
-                    soup = BeautifulSoup(html, 'html.parser')
-                    content_element = soup.find('p') or soup
-                    paragraph = cell.text_frame.paragraphs[0] if cell.text_frame.paragraphs else cell.text_frame.add_paragraph()
-                    _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
+                        # Parse markdown and apply (handle multiple paragraphs)
+                        html = parse_markdown_with_extensions(new_text)
+                        soup = BeautifulSoup(html, 'html.parser')
 
-                    cell.text_frame.word_wrap = True
-                    replacement_count += 1
+                        # Find all paragraphs (not just first one)
+                        paragraphs = soup.find_all(['p', 'ul', 'ol'])
+
+                        if not paragraphs:
+                            # Fallback: treat entire content as single element
+                            content_element = soup
+                            paragraph = cell.text_frame.paragraphs[0] if cell.text_frame.paragraphs else cell.text_frame.add_paragraph()
+                            _add_formatted_text_from_html(paragraph, content_element, base_font='Calibri', base_size=best_fit_size)
+                        else:
+                            # Process each paragraph separately
+                            for idx, p_elem in enumerate(paragraphs):
+                                if idx == 0:
+                                    paragraph = cell.text_frame.paragraphs[0] if cell.text_frame.paragraphs else cell.text_frame.add_paragraph()
+                                else:
+                                    paragraph = cell.text_frame.add_paragraph()
+
+                                _add_formatted_text_from_html(paragraph, p_elem, base_font='Calibri', base_size=best_fit_size)
+
+                        cell.text_frame.word_wrap = True
+                        replacement_count += 1
+                    except:
+                        # Skip if table access fails
+                        pass
 
             total_replacements += replacement_count
 
@@ -2955,6 +2955,199 @@ class FindAndReplaceAction(ActionHandler):
             "processed": len(replacements),
             "blocked": blocked_replacements,
             "warnings": warnings
+        }
+
+        return await save_and_return_presentation(result, presentation_id, context)
+
+
+@slide_maker.action("add_elements")
+class AddElementsAction(ActionHandler):
+    """
+    Unified action to add one or multiple elements from markdown content.
+    Supports TWO MODES:
+    1. GRANULAR MODE (auto_layout=false): Array of elements with position control
+    2. AUTO-LAYOUT MODE (auto_layout=true): Single markdown document with vertical flow
+    """
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        presentation_id = inputs["presentation_id"]
+        slide_index = inputs["slide_index"]
+        auto_layout = inputs.get("auto_layout", False)
+        files = inputs.get("files", [])
+
+        load_presentation_from_files(presentation_id, files)
+
+        if presentation_id not in presentations:
+            raise ValueError(f"Presentation {presentation_id} not found")
+
+        prs = presentations[presentation_id]
+        if slide_index >= len(prs.slides):
+            if len(prs.slides) == 0:
+                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
+            else:
+                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
+
+        slide = prs.slides[slide_index]
+        slide_width = prs.slide_width / 914400
+        slide_height = prs.slide_height / 914400
+        slide_dims = {"width": slide_width, "height": slide_height}
+
+        # MODE DETECTION: Auto-layout or Granular
+        if auto_layout:
+            # AUTO-LAYOUT MODE: Single markdown document → vertical flow
+            markdown_content = inputs.get("markdown")
+            if not markdown_content:
+                raise ValueError("auto_layout=true requires 'markdown' parameter")
+
+            # Use existing parse_markdown_to_slide function (supports h1-h6, blockquotes, code, etc.)
+            created_shapes = parse_markdown_to_slide(slide, markdown_content, prs)
+
+            result = {
+                "mode": "auto_layout",
+                "total_requested": len(created_shapes),
+                "successfully_added": len(created_shapes),
+                "skipped": 0,
+                "elements_added": [
+                    {
+                        "index": idx,
+                        "type": shape_info["type"],
+                        "shape_id": shape_info["shape_id"],
+                        "requested_position": None,  # Auto-positioned
+                        "final_position": None,  # Position info not tracked in auto-layout
+                        "position_adjusted": False,
+                        "adjustment_reason": "Auto-positioned by layout algorithm"
+                    }
+                    for idx, shape_info in enumerate(created_shapes)
+                ],
+                "elements_skipped": []
+            }
+
+            return await save_and_return_presentation(result, presentation_id, context)
+
+        # GRANULAR MODE: Array of elements with position control
+        elements_to_add = inputs.get("elements")
+        if not elements_to_add:
+            raise ValueError("auto_layout=false requires 'elements' parameter")
+
+        # Get current elements for overlap detection
+        existing_elements = get_current_slide_elements(slide, slide_width, slide_height)
+
+        elements_added = []
+        elements_skipped = []
+
+        for idx, element in enumerate(elements_to_add):
+            content = element["content"]
+            requested_pos = element.get("position")
+            auto_position = element.get("auto_position", False)
+
+            # STEP 1: Auto-detect element type from markdown
+            element_type = detect_element_type_from_markdown(content)
+
+            # STEP 2: Parse markdown content based on type
+            try:
+                if element_type == "table":
+                    parsed_data = parse_markdown_table(content)
+                    if parsed_data["rows"] == 0 or parsed_data["cols"] == 0:
+                        elements_skipped.append({
+                            "index": idx,
+                            "content_preview": content[:50] + "..." if len(content) > 50 else content,
+                            "skip_reason": "Failed to parse markdown table - check table syntax",
+                            "suggestion": "Ensure table has | separators and a header separator line (|---|---|)"
+                        })
+                        continue
+                    # Set default dimensions if not provided
+                    if not requested_pos:
+                        requested_pos = {
+                            "left": 0.5,
+                            "top": 0.5 + (idx * 0.5),
+                            "width": 5.0,
+                            "height": 1.0 + (parsed_data["rows"] * 0.3)
+                        }
+                elif element_type == "bullets":
+                    parsed_data = parse_markdown_bullets(content)
+                    if len(parsed_data) == 0:
+                        elements_skipped.append({
+                            "index": idx,
+                            "content_preview": content[:50] + "..." if len(content) > 50 else content,
+                            "skip_reason": "Failed to parse markdown bullets - check list syntax",
+                            "suggestion": "Use - or * for unordered lists, or 1. 2. for ordered lists"
+                        })
+                        continue
+                    if not requested_pos:
+                        requested_pos = {
+                            "left": 0.5,
+                            "top": 0.5 + (idx * 0.5),
+                            "width": 4.0,
+                            "height": 1.5 + (len(parsed_data) * 0.2)
+                        }
+                else:  # text
+                    parsed_data = content
+                    if not requested_pos:
+                        requested_pos = {
+                            "left": 0.5,
+                            "top": 0.5 + (idx * 0.5),
+                            "width": 4.0,
+                            "height": 1.0
+                        }
+
+                # STEP 3: Validate and adjust position
+                validation = validate_and_adjust_position(
+                    requested_pos, existing_elements, slide_dims, auto_position
+                )
+
+                if not validation["fits"]:
+                    elements_skipped.append({
+                        "index": idx,
+                        "content_preview": content[:50] + "..." if len(content) > 50 else content,
+                        "skip_reason": validation["reason"],
+                        "suggestion": "Try enabling auto_position, providing different coordinates, or adjusting element size"
+                    })
+                    continue
+
+                final_pos = validation["position"]
+
+                # STEP 4: Create element using internal helpers
+                if element_type == "text":
+                    shape = _create_text_box(slide, parsed_data, final_pos, prs)
+                elif element_type == "table":
+                    shape = _create_table(slide, parsed_data, final_pos, prs)
+                elif element_type == "bullets":
+                    shape = _create_bullet_list(slide, parsed_data, final_pos, prs)
+
+                elements_added.append({
+                    "index": idx,
+                    "type": element_type,
+                    "shape_id": str(shape.shape_id),
+                    "requested_position": requested_pos if element.get("position") else None,
+                    "final_position": final_pos,
+                    "position_adjusted": validation["adjusted"],
+                    "adjustment_reason": validation.get("reason") or "No adjustment needed"
+                })
+
+                # Update existing_elements for next iteration
+                existing_elements.append({
+                    "index": len(existing_elements),
+                    "position": {
+                        **final_pos,
+                        "right": final_pos["left"] + final_pos["width"],
+                        "bottom": final_pos["top"] + final_pos["height"]
+                    }
+                })
+
+            except Exception as e:
+                elements_skipped.append({
+                    "index": idx,
+                    "content_preview": content[:50] + "..." if len(content) > 50 else content,
+                    "skip_reason": f"Error creating element: {str(e)}",
+                    "suggestion": "Check markdown syntax and ensure dimensions are valid"
+                })
+
+        result = {
+            "mode": "granular",
+            "total_requested": len(elements_to_add),
+            "successfully_added": len(elements_added),
+            "skipped": len(elements_skipped),
+            "elements_added": elements_added,
+            "elements_skipped": elements_skipped
         }
 
         return await save_and_return_presentation(result, presentation_id, context)

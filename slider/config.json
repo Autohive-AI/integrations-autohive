@@ -174,87 +174,6 @@
                 "required": ["slide_index", "slide_count", "saved", "file_path", "file"]
             }
         },
-        "add_text": {
-            "display_name": "Add Text",
-            "description": "Add formatted text to a slide in a text box at the specified position. Text is always parsed as markdown - use **bold**, *italic*, __underline__, `code` for formatting. Font size is automatically calculated based on text length and box dimensions to prevent overflow while preserving all markdown formatting. Text wraps at box width. Returns the updated presentation file.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide (0-based)"
-                    },
-                    "text": {
-                        "type": "string",
-                        "description": "Text content in markdown format. Use **bold**, *italic*, __underline__, `code` for formatting. Font size automatically calculated to fit box dimensions."
-                    },
-                    "color": {
-                        "type": "string",
-                        "description": "Text color in hex format (e.g., #FF0000 for red). Optional - defaults to black if not specified."
-                    },
-                    "position": {
-                        "type": "object",
-                        "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Width in inches"},
-                            "height": {"type": "number", "description": "Height in inches"}
-                        },
-                        "required": ["left", "top", "width", "height"]
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "text", "position"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "shape_id": {
-                        "type": "string",
-                        "description": "ID of the created text shape"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["shape_id", "saved", "file_path", "file"]
-            }
-        },
         "add_image": {
             "display_name": "Add Image",
             "description": "Insert an image into a slide from uploaded files. Provide the image file in the 'files' parameter - the first image file found will be used. Supports PNG, JPG, JPEG, GIF, and BMP formats.",
@@ -335,97 +254,6 @@
                     }
                 },
                 "required": ["shape_id", "saved", "file_path", "file"]
-            }
-        },
-        "add_table": {
-            "display_name": "Add Table",
-            "description": "Create a table in a slide. Each cell value is parsed as markdown, allowing inline formatting like **bold**, *italic*, etc. Requires the current presentation file in the 'files' parameter. Returns the updated presentation file.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide (0-based)"
-                    },
-                    "rows": {
-                        "type": "integer",
-                        "description": "Number of rows",
-                        "minimum": 1
-                    },
-                    "cols": {
-                        "type": "integer",
-                        "description": "Number of columns",
-                        "minimum": 1
-                    },
-                    "position": {
-                        "type": "object",
-                        "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Table width in inches"},
-                            "height": {"type": "number", "description": "Table height in inches"}
-                        },
-                        "required": ["left", "top", "width", "height"]
-                    },
-                    "data": {
-                        "type": "array",
-                        "description": "2D array of table data. Each cell value is parsed as markdown (supports **bold**, *italic*, __underline__, etc.)",
-                        "items": {
-                            "type": "array",
-                            "items": {"type": "string"}
-                        }
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "rows", "cols", "position"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "table_id": {
-                        "type": "string",
-                        "description": "ID of the created table"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["table_id", "saved", "file_path", "file"]
             }
         },
         "add_chart": {
@@ -530,125 +358,6 @@
                     }
                 },
                 "required": ["chart_id", "saved", "file_path", "file"]
-            }
-        },
-        "extract_text": {
-            "display_name": "Extract Text",
-            "description": "Extract all text content from a presentation",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path to the PowerPoint file"
-                    }
-                },
-                "required": ["file_path"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "slides": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "slide_index": {"type": "integer"},
-                                "text_content": {
-                                    "type": "array",
-                                    "items": {"type": "string"}
-                                }
-                            }
-                        },
-                        "description": "Text content from each slide"
-                    },
-                    "all_text": {
-                        "type": "string",
-                        "description": "All text content combined"
-                    }
-                },
-                "required": ["slides", "all_text"]
-            }
-        },
-        "modify_slide": {
-            "display_name": "Modify Slide",
-            "description": "Update content in an existing slide using text replacement. NOTE: For most text replacement needs, use find_and_replace instead - it's more powerful and works across all slides. Use modify_slide only for legacy compatibility or specific slide-scoped replacements. Replacement text is parsed as markdown for inline formatting. Requires the current presentation file in the 'files' parameter. Returns the updated presentation file.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide to modify (0-based)"
-                    },
-                    "updates": {
-                        "type": "object",
-                        "properties": {
-                            "title": {"type": "string", "description": "New title text"},
-                            "replace_text": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "old_text": {"type": "string", "description": "Text to find"},
-                                        "new_text": {"type": "string", "description": "Replacement text in markdown format (supports **bold**, *italic*, etc.)"}
-                                    },
-                                    "required": ["old_text", "new_text"]
-                                },
-                                "description": "Text replacements to make. Replacement text is parsed as markdown."
-                            }
-                        }
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "updates"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "modified": {
-                        "type": "boolean",
-                        "description": "Whether the slide was successfully modified"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["modified", "saved", "file_path", "file"]
             }
         },
         "save_presentation": {
@@ -1419,105 +1128,6 @@
                 "required": ["success", "follow_master_background", "note", "saved", "file_path", "file"]
             }
         },
-        "add_bullet_list": {
-            "display_name": "Add Bullet List",
-            "description": "Add a multi-level bullet list to a slide. Bullet symbols (•, ◦, ▪, ▫, ‣) are automatically added based on level. Each bullet item text is parsed as markdown for inline formatting like **bold**, *italic*, etc. Font size is automatically calculated based on total content length and box dimensions to ensure all bullets fit. Do not include bullet symbols in your text - they are added automatically. Returns the updated presentation file.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide (0-based)"
-                    },
-                    "bullet_items": {
-                        "type": "array",
-                        "description": "Array of bullet items with markdown text and level",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "text": {
-                                    "type": "string",
-                                    "description": "Bullet text in markdown format (supports **bold**, *italic*, __underline__, `code`). Font size automatically calculated to fit all bullets in box."
-                                },
-                                "level": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 8,
-                                    "description": "Indentation level (0-8)",
-                                    "default": 0
-                                }
-                            },
-                            "required": ["text"]
-                        },
-                        "minItems": 1
-                    },
-                    "position": {
-                        "type": "object",
-                        "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Width in inches"},
-                            "height": {"type": "number", "description": "Height in inches"}
-                        },
-                        "required": ["left", "top", "width", "height"]
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "bullet_items", "position"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "shape_id": {
-                        "type": "string",
-                        "description": "ID of the created bullet list shape"
-                    },
-                    "items_count": {
-                        "type": "integer",
-                        "description": "Number of bullet items added"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["shape_id", "items_count", "saved", "file_path", "file"]
-            }
-        },
         "delete_element": {
             "display_name": "Delete Element",
             "description": "Remove a shape, text box, image, chart, or any other element from a slide by its index position. Requires the current presentation file in the 'files' parameter. Use this to delete unwanted elements like text boxes, pictures, charts, tables, or any other shapes that were previously added to the slide. Shape indices are 0-based and correspond to the order elements were added. Returns the updated presentation file.",
@@ -1976,178 +1586,6 @@
                 "required": ["element_index", "element_type", "styling_description", "position"]
             }
         },
-        "build_slide_from_markdown": {
-            "display_name": "Build Slide from Markdown",
-            "description": "Build an entire slide from markdown content with automatic layout and formatting. The integration parses markdown into structured elements (titles, headings, paragraphs, bullets, tables) and positions them intelligently on the slide with calculated font sizes to ensure all content fits. LLM provides content in markdown; integration handles ALL positioning, sizing, and formatting. Supports: # title, ## headings, paragraphs, - bullets, 1. numbered lists, tables, **bold**, *italic*, __underline__, `code`. Font sizes automatically calculated per element. Requires the current presentation file in the 'files' parameter.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide (0-based)"
-                    },
-                    "markdown": {
-                        "type": "string",
-                        "description": "Markdown content for the slide. Supports headings (# H1, ## H2), paragraphs, lists (- bullets, 1. numbered), tables, inline formatting (**bold**, *italic*, `code`), and more."
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "markdown"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "elements_created": {
-                        "type": "integer",
-                        "description": "Number of elements created on the slide"
-                    },
-                    "shapes": {
-                        "type": "array",
-                        "description": "List of created shapes with their types and IDs",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "type": {"type": "string", "description": "Element type (h1, h2, p, ul, ol, table, etc.)"},
-                                "shape_id": {"type": "string", "description": "PowerPoint shape ID"}
-                            }
-                        }
-                    },
-                    "markdown_parsed": {
-                        "type": "boolean",
-                        "description": "Whether markdown was successfully parsed"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["elements_created", "shapes", "markdown_parsed", "saved", "file_path", "file"]
-            }
-        },
-        "build_presentation_from_markdown": {
-            "display_name": "Build Presentation from Markdown",
-            "description": "Build a multi-slide presentation from a markdown outline. Each H1 (# heading) creates a new slide with its content. The integration automatically creates slides, parses markdown for each slide, calculates optimal font sizes, and handles all layout/formatting. Font sizes are calculated per element to ensure content fits while preserving markdown formatting. LLM provides entire presentation as markdown; integration does everything else. Perfect for creating complete presentations from outlines. Requires the current presentation file in the 'files' parameter.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation"
-                    },
-                    "outline": {
-                        "type": "string",
-                        "description": "Markdown outline for the entire presentation. Each # H1 creates a new slide. Content under each H1 becomes that slide's content. Supports all markdown features: headings, lists, tables, formatting, etc."
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "outline"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "slides_created": {
-                        "type": "integer",
-                        "description": "Number of slides created"
-                    },
-                    "slides": {
-                        "type": "array",
-                        "description": "Details about each created slide",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "slide_index": {"type": "integer", "description": "Index of the created slide"},
-                                "elements_created": {"type": "integer", "description": "Number of elements on this slide"},
-                                "shapes": {
-                                    "type": "array",
-                                    "description": "Shapes created on this slide",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "type": {"type": "string"},
-                                            "shape_id": {"type": "string"}
-                                        }
-                                    }
-                                },
-                                "error": {"type": "string", "description": "Error message if slide creation failed"}
-                            }
-                        }
-                    },
-                    "outline_parsed": {
-                        "type": "boolean",
-                        "description": "Whether outline was successfully parsed"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["slides_created", "slides", "outline_parsed", "saved", "file_path", "file"]
-            }
-        },
         "find_and_replace": {
             "display_name": "Find and Replace",
             "description": "Find and replace text across entire presentation. Scans all text boxes and table cells on all slides. Supports multiple find/replace operations in one call (batch processing). Replacement text is parsed as markdown with automatic font sizing and color preservation. SAFETY: Blocks replacements if multiple matches found without replace_all=true confirmation. USE THIS FOR: Filling templates with placeholders ({{COMPANY}}, {{DATE}}, etc.), updating text content without knowing element positions, batch text updates across multiple slides. This is the PREFERRED method for text-based updates - you don't need modify_element for simple text replacements. Perfect for filling presentation templates with multiple placeholders in a single call.",
@@ -2259,6 +1697,173 @@
                     }
                 },
                 "required": ["success", "total_replacements", "processed", "blocked", "warnings", "saved", "file_path", "file"]
+            }
+        },
+        "add_elements": {
+            "display_name": "Add Elements",
+            "description": "UNIFIED action for adding content to slides from markdown. Supports TWO MODES: (1) GRANULAR MODE: Provide array of elements with optional positions for precise control. (2) AUTO-LAYOUT MODE: Provide single markdown document for automatic vertical flow layout. Element types are auto-detected from markdown. Supports text, tables, bullets, headings (H1-H6), blockquotes, code blocks. This is the PRIMARY and RECOMMENDED way to add content to slides. Perfect for AI agents.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "presentation_id": {
+                        "type": "string",
+                        "description": "ID of the presentation"
+                    },
+                    "slide_index": {
+                        "type": "integer",
+                        "description": "Index of the slide (0-based)"
+                    },
+                    "auto_layout": {
+                        "type": "boolean",
+                        "description": "Enable AUTO-LAYOUT mode. When true: provide 'markdown' parameter (single document), integration auto-positions elements vertically with rich element support (h1-h6, blockquotes, code). When false (default): provide 'elements' array for granular control over positions. Choose based on use case: auto_layout=true for quick document layouts, auto_layout=false for precise positioning.",
+                        "default": false
+                    },
+                    "markdown": {
+                        "type": "string",
+                        "description": "Single markdown document for AUTO-LAYOUT mode (auto_layout=true). Integration parses and auto-positions elements vertically. Supports: # H1 (title), ## H2-H6 (headings), paragraphs, - bullets, 1. numbered lists, | tables |, > blockquotes, ``` code blocks ```, **bold**, *italic*, __underline__, `code`. Mutually exclusive with 'elements' parameter."
+                    },
+                    "elements": {
+                        "type": "array",
+                        "description": "Array of elements for GRANULAR mode (auto_layout=false). Each element's type is auto-detected from markdown content. Provides precise control over positioning. Mutually exclusive with 'markdown' parameter.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "Markdown content for the element. Type is auto-detected: plain text/inline formatting = text box, | Col1 | Col2 | with separator = table, - Item 1 or 1. Item 1 = bullets. Supports **bold**, *italic*, __underline__, `code` for all types."
+                                },
+                                "position": {
+                                    "type": "object",
+                                    "description": "Optional preferred position and size. If omitted, default positions are used with vertical stacking. If auto_position is enabled, this serves as a starting point for position search.",
+                                    "properties": {
+                                        "left": {"type": "number", "description": "Left position in inches"},
+                                        "top": {"type": "number", "description": "Top position in inches"},
+                                        "width": {"type": "number", "description": "Width in inches"},
+                                        "height": {"type": "number", "description": "Height in inches"}
+                                    },
+                                    "required": ["left", "top", "width", "height"]
+                                },
+                                "auto_position": {
+                                    "type": "boolean",
+                                    "description": "Enable intelligent auto-positioning to avoid overlaps and boundaries. When true, the integration will automatically find a safe position if the requested position overlaps with existing elements or exceeds slide boundaries. Default: false.",
+                                    "default": false
+                                }
+                            },
+                            "required": ["content"]
+                        },
+                        "minItems": 1
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "List of files including the current presentation file",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "contentType": {"type": "string"},
+                                "content": {"type": "string"}
+                            },
+                            "required": ["name", "contentType", "content"]
+                        }
+                    }
+                },
+                "required": ["presentation_id", "slide_index"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": ["granular", "auto_layout"],
+                        "description": "Mode used: 'granular' for element array, 'auto_layout' for markdown document"
+                    },
+                    "total_requested": {
+                        "type": "integer",
+                        "description": "Total number of elements requested to be added"
+                    },
+                    "successfully_added": {
+                        "type": "integer",
+                        "description": "Number of elements successfully added to the slide"
+                    },
+                    "skipped": {
+                        "type": "integer",
+                        "description": "Number of elements that were skipped due to errors or positioning issues"
+                    },
+                    "elements_added": {
+                        "type": "array",
+                        "description": "Details about successfully added elements",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {"type": "integer", "description": "Index in the original elements array"},
+                                "type": {"type": "string", "description": "Auto-detected element type: granular mode (text/table/bullets), auto_layout mode (h1/h2/h3/h4/h5/h6/p/ul/ol/table/blockquote/pre)"},
+                                "shape_id": {"type": "string", "description": "PowerPoint shape ID of created element"},
+                                "requested_position": {
+                                    "oneOf": [
+                                        {"type": "null"},
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "left": {"type": "number"},
+                                                "top": {"type": "number"},
+                                                "width": {"type": "number"},
+                                                "height": {"type": "number"}
+                                            }
+                                        }
+                                    ],
+                                    "description": "Position that was requested (null if not provided or in auto-layout mode)"
+                                },
+                                "final_position": {
+                                    "oneOf": [
+                                        {"type": "null"},
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "left": {"type": "number", "description": "Left position in inches"},
+                                                "top": {"type": "number", "description": "Top position in inches"},
+                                                "width": {"type": "number", "description": "Width in inches"},
+                                                "height": {"type": "number", "description": "Height in inches"}
+                                            },
+                                            "required": ["left", "top", "width", "height"]
+                                        }
+                                    ],
+                                    "description": "Actual position where element was placed (null in auto-layout mode where positions are calculated by flow algorithm)"
+                                },
+                                "position_adjusted": {"type": "boolean", "description": "Whether position was adjusted from requested"},
+                                "adjustment_reason": {"type": "string", "description": "Reason for position adjustment (if adjusted)"}
+                            },
+                            "required": ["index", "type", "shape_id", "final_position", "position_adjusted"]
+                        }
+                    },
+                    "elements_skipped": {
+                        "type": "array",
+                        "description": "Details about elements that could not be added",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {"type": "integer", "description": "Index in the original elements array"},
+                                "content_preview": {"type": "string", "description": "Preview of the content that failed"},
+                                "skip_reason": {"type": "string", "description": "Reason element was skipped"},
+                                "suggestion": {"type": "string", "description": "Suggestion for how to fix the issue"}
+                            },
+                            "required": ["index", "skip_reason", "suggestion"]
+                        }
+                    },
+                    "saved": {"type": "boolean", "description": "Whether the presentation was successfully saved"},
+                    "file_path": {"type": "string", "description": "Path where the presentation was saved"},
+                    "file": {
+                        "type": "object",
+                        "description": "The saved presentation file for streaming",
+                        "properties": {
+                            "content": {"type": "string", "description": "The file content encoded as base64"},
+                            "name": {"type": "string", "description": "The name of the file"},
+                            "contentType": {"type": "string", "description": "The content type of the file"}
+                        },
+                        "required": ["content", "name", "contentType"]
+                    },
+                    "error": {"type": "string", "description": "Error message if file streaming failed"}
+                },
+                "required": ["mode", "total_requested", "successfully_added", "skipped", "elements_added", "elements_skipped", "saved", "file_path", "file"]
             }
         }
     }
