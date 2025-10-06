@@ -174,3 +174,255 @@ class CreateDocAction(ActionHandler):
                 "result": False,
                 "error": str(e)
             }
+
+
+@coda.action("list_pages")
+class ListPagesAction(ActionHandler):
+    """
+    Lists all pages in a Coda doc.
+    Returns pages with metadata including name, subtitle, icon, and parent/child relationships.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required doc_id
+            doc_id = inputs["doc_id"]
+
+            # Build query parameters
+            params = {}
+
+            if "limit" in inputs and inputs["limit"]:
+                params["limit"] = inputs["limit"]
+
+            if "page_token" in inputs and inputs["page_token"]:
+                params["pageToken"] = inputs["page_token"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/pages"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Extract pages from response
+            pages = response.get("items", [])
+            next_page_token = response.get("nextPageToken")
+
+            result = {
+                "pages": pages,
+                "result": True
+            }
+
+            if next_page_token:
+                result["next_page_token"] = next_page_token
+
+            return result
+
+        except Exception as e:
+            return {
+                "pages": [],
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("get_page")
+class GetPageAction(ActionHandler):
+    """
+    Retrieves detailed metadata for a specific page in a Coda doc.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            page_id_or_name = inputs["page_id_or_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/pages/{page_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("create_page")
+class CreatePageAction(ActionHandler):
+    """
+    Creates a new page in a Coda doc with optional content, subtitle, icon, and parent page.
+    Returns HTTP 202 (Accepted) as page creation is processed asynchronously.
+    Requires Doc Maker permissions.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            name = inputs["name"]
+
+            # Build request body
+            body = {
+                "name": name
+            }
+
+            # Add optional fields
+            if "subtitle" in inputs and inputs["subtitle"]:
+                body["subtitle"] = inputs["subtitle"]
+
+            if "icon_name" in inputs and inputs["icon_name"]:
+                body["iconName"] = inputs["icon_name"]
+
+            if "image_url" in inputs and inputs["image_url"]:
+                body["imageUrl"] = inputs["image_url"]
+
+            if "parent_page_id" in inputs and inputs["parent_page_id"]:
+                body["parentPageId"] = inputs["parent_page_id"]
+
+            # Add page content if provided
+            if "content" in inputs and inputs["content"]:
+                content_format = inputs.get("content_format", "html")
+                body["pageContent"] = {
+                    "type": "canvas",
+                    "canvasContent": {
+                        "format": content_format,
+                        "content": inputs["content"]
+                    }
+                }
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/pages"
+            response = await context.fetch(
+                url,
+                method="POST",
+                headers=headers,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("update_page")
+class UpdatePageAction(ActionHandler):
+    """
+    Updates a page's metadata (name, subtitle, icon, image).
+    Cannot update page content after creation.
+    Returns HTTP 202 (Accepted) as update is processed asynchronously.
+    Requires Doc Maker permissions for updating title/icon.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            page_id_or_name = inputs["page_id_or_name"]
+
+            # Build request body with only provided fields
+            body = {}
+
+            if "name" in inputs and inputs["name"]:
+                body["name"] = inputs["name"]
+
+            if "subtitle" in inputs and inputs["subtitle"]:
+                body["subtitle"] = inputs["subtitle"]
+
+            if "icon_name" in inputs and inputs["icon_name"]:
+                body["iconName"] = inputs["icon_name"]
+
+            if "image_url" in inputs and inputs["image_url"]:
+                body["imageUrl"] = inputs["image_url"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/pages/{page_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="PUT",
+                headers=headers,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("delete_page")
+class DeletePageAction(ActionHandler):
+    """
+    Deletes the specified page from a Coda doc.
+    Returns HTTP 202 (Accepted) as deletion is queued for processing.
+    Use page IDs rather than names when possible.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            page_id_or_name = inputs["page_id_or_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/pages/{page_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="DELETE",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }

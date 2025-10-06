@@ -1,7 +1,7 @@
 {
     "name": "coda",
     "version": "1.0.0",
-    "description": "Coda integration for managing documents, tables, and rows",
+    "description": "Coda integration for managing documents, pages, tables, and rows",
     "entry_point": "coda.py",
     "auth": {
         "type": "custom",
@@ -141,6 +141,242 @@
                     "data": {
                         "type": "object",
                         "description": "Created doc details including id, name, href, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "list_pages": {
+            "display_name": "List Pages",
+            "description": "Returns a list of pages in a Coda doc. Use this to discover the doc structure and navigate between pages.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return per page",
+                        "default": 100,
+                        "minimum": 1,
+                        "maximum": 500
+                    },
+                    "page_token": {
+                        "type": "string",
+                        "description": "Token for fetching the next page of results"
+                    }
+                },
+                "required": ["doc_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "pages": {
+                        "type": "array",
+                        "description": "List of pages in the doc",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for fetching next page of results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["pages", "result"]
+            }
+        },
+        "get_page": {
+            "display_name": "Get Page",
+            "description": "Returns detailed metadata for a specific page including title, subtitle, icon, image, parent/child relationships, and authors.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "page_id_or_name": {
+                        "type": "string",
+                        "description": "Page ID or name (e.g., 'canvas-abc123')"
+                    }
+                },
+                "required": ["doc_id", "page_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Page metadata including id, name, subtitle, icon, image, parent, children, authors, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "create_page": {
+            "display_name": "Create Page",
+            "description": "Creates a new page in a Coda doc with optional content, subtitle, icon, and parent page. Returns HTTP 202 (Accepted) as creation is processed asynchronously. Requires Doc Maker permissions.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Page name/title"
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "description": "Optional: Page subtitle text"
+                    },
+                    "icon_name": {
+                        "type": "string",
+                        "description": "Optional: Icon name (e.g., 'rocket', 'star', 'heart', 'bell', 'calendar')"
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "description": "Optional: URL for cover image"
+                    },
+                    "parent_page_id": {
+                        "type": "string",
+                        "description": "Optional: Parent page ID to create as subpage"
+                    },
+                    "content_format": {
+                        "type": "string",
+                        "enum": ["html", "markdown"],
+                        "description": "Optional: Format of page content (html or markdown)",
+                        "default": "html"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Optional: Page content in HTML or Markdown format"
+                    }
+                },
+                "required": ["doc_id", "name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Created page details including id, requestId"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "update_page": {
+            "display_name": "Update Page",
+            "description": "Updates a page's metadata (name, subtitle, icon, image). Cannot update page content after creation. Returns HTTP 202 (Accepted). Requires Doc Maker permissions for updating title/icon.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "page_id_or_name": {
+                        "type": "string",
+                        "description": "Page ID or name to update"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Optional: New page name/title"
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "description": "Optional: New page subtitle"
+                    },
+                    "icon_name": {
+                        "type": "string",
+                        "description": "Optional: New icon name (e.g., 'rocket', 'star', 'heart')"
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "description": "Optional: New cover image URL"
+                    }
+                },
+                "required": ["doc_id", "page_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Updated page details including id, requestId"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "delete_page": {
+            "display_name": "Delete Page",
+            "description": "Deletes the specified page from a Coda doc. Returns HTTP 202 (Accepted) as deletion is queued for processing. Use page IDs rather than names when possible.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "page_id_or_name": {
+                        "type": "string",
+                        "description": "Page ID or name to delete. Names are discouraged as they can be changed by users. If multiple pages have the same name, an arbitrary one will be selected."
+                    }
+                },
+                "required": ["doc_id", "page_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Deletion confirmation including id and requestId"
                     },
                     "result": {
                         "type": "boolean",
