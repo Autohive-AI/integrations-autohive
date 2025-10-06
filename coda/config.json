@@ -1,0 +1,158 @@
+{
+    "name": "coda",
+    "version": "1.0.0",
+    "description": "Coda integration for managing documents, tables, and rows",
+    "entry_point": "coda.py",
+    "auth": {
+        "type": "custom",
+        "title": "Coda API Token",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_token": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "API Token",
+                    "help_text": "Generate your API token from Coda account settings > API Settings. Visit https://coda.io/account for more details."
+                }
+            }
+        }
+    },
+    "actions": {
+        "list_docs": {
+            "display_name": "List Docs",
+            "description": "Returns a list of Coda docs accessible by the user. Docs are returned in reverse chronological order by the latest event relevant to the user.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "is_owner": {
+                        "type": "boolean",
+                        "description": "Show only docs owned by the user",
+                        "default": false
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search term to filter docs by name"
+                    },
+                    "source_doc": {
+                        "type": "string",
+                        "description": "Show only docs copied from the specified doc ID"
+                    },
+                    "is_published": {
+                        "type": "boolean",
+                        "description": "Show only published docs"
+                    },
+                    "is_starred": {
+                        "type": "boolean",
+                        "description": "Show only starred docs"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 100,
+                        "minimum": 1,
+                        "maximum": 500
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "docs": {
+                        "type": "array",
+                        "description": "List of Coda documents",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["docs", "result"]
+            }
+        },
+        "get_doc": {
+            "display_name": "Get Doc",
+            "description": "Returns metadata for the specified Coda doc, including name, owner, creation date, and other details.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    }
+                },
+                "required": ["doc_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Doc metadata including id, name, owner, createdAt, updatedAt, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "create_doc": {
+            "display_name": "Create Doc",
+            "description": "Creates a new Coda doc. Optionally copies content from an existing doc. Returns HTTP 202 (Accepted) as doc creation is processed asynchronously.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Title of the new doc"
+                    },
+                    "source_doc": {
+                        "type": "string",
+                        "description": "Optional: Doc ID to copy content from (e.g., 'AbCDeFGH')"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "Optional: Timezone for the doc (e.g., 'America/Los_Angeles')"
+                    },
+                    "folder_id": {
+                        "type": "string",
+                        "description": "Optional: Folder ID where the doc should be created"
+                    }
+                },
+                "required": ["title"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Created doc details including id, name, href, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        }
+    }
+}
