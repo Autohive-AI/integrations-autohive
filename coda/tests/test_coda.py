@@ -270,6 +270,96 @@ async def test_list_starred_docs():
             print(f"Error testing list_starred_docs: {e}")
             return None
 
+async def test_update_doc():
+    """Test updating a doc's metadata"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, get a doc ID from list_docs
+    list_inputs = {"limit": 1}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", list_inputs, context)
+
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 9: Update Doc (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+
+            print("\nTest 9: Update Doc")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "title": "Updated Doc Title via API",
+                "icon_name": "star"
+            }
+            result = await coda.execute_action("update_doc", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                doc = result.get("data", {})
+                print(f"SUCCESS: Doc updated")
+                print(f"ID: {doc.get('id', doc_id)}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing update_doc: {e}")
+            return None
+
+async def test_delete_doc():
+    """Test deleting a doc"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, create a doc to delete
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            # Create a test doc
+            create_result = await coda.execute_action("create_doc", {
+                "title": "Test Doc - To Be Deleted"
+            }, context)
+
+            if not create_result.get("result"):
+                print("\nTest 10: Delete Doc (SKIPPED - Could not create test doc)")
+                return None
+
+            # Wait for doc creation to process
+            import asyncio
+            await asyncio.sleep(3)
+
+            # Get the created doc ID
+            doc_id = create_result["data"].get("id")
+
+            if not doc_id:
+                print("\nTest 10: Delete Doc (SKIPPED - No doc ID returned)")
+                return None
+
+            print("\nTest 10: Delete Doc")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id}
+            result = await coda.execute_action("delete_doc", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                print(f"SUCCESS: Doc deleted (HTTP 202 - Processing)")
+                print(f"Deleted doc ID: {doc_id}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing delete_doc: {e}")
+            return None
+
 async def test_list_pages():
     """Test listing pages in a doc"""
     auth = {
@@ -588,6 +678,8 @@ async def main():
     await test_create_doc_from_source()
     await test_list_published_docs()
     await test_list_starred_docs()
+    await test_update_doc()
+    await test_delete_doc()
 
     # Run all page tests
     await test_list_pages()

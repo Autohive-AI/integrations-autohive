@@ -176,6 +176,89 @@ class CreateDocAction(ActionHandler):
             }
 
 
+@coda.action("update_doc")
+class UpdateDocAction(ActionHandler):
+    """
+    Updates metadata for a Coda doc (title and icon).
+    Requires Doc Maker permissions for updating the title.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required doc_id
+            doc_id = inputs["doc_id"]
+
+            # Build request body with only provided fields
+            body = {}
+
+            if "title" in inputs and inputs["title"]:
+                body["title"] = inputs["title"]
+
+            if "icon_name" in inputs and inputs["icon_name"]:
+                body["iconName"] = inputs["icon_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}"
+            response = await context.fetch(
+                url,
+                method="PATCH",
+                headers=headers,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("delete_doc")
+class DeleteDocAction(ActionHandler):
+    """
+    Deletes a Coda doc.
+    Returns HTTP 202 (Accepted) as deletion is queued for processing.
+    This action is permanent and cannot be undone.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required doc_id
+            doc_id = inputs["doc_id"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}"
+            response = await context.fetch(
+                url,
+                method="DELETE",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
 @coda.action("list_pages")
 class ListPagesAction(ActionHandler):
     """

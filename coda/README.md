@@ -153,6 +153,58 @@ Create with timezone:
 Create a Coda doc called "Project Plan" in America/New_York timezone
 ```
 
+### update_doc
+
+Updates metadata for a Coda doc (title and icon). Requires Doc Maker permissions for updating the title.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc to update (e.g., "AbCDeFGH")
+- `title` (optional): String - New title for the doc
+- `icon_name` (optional): String - New icon name (e.g., "rocket", "star", "heart")
+
+**Output:**
+- `data`: Object with updated doc details
+- `result`: Boolean - Whether the operation was successful
+- `error`: String - Error message if operation failed
+
+**Example Usage:**
+
+Update doc title:
+```
+Update Coda doc "abc123" with new title "Q4 Project Tracker"
+```
+
+Update doc icon:
+```
+Update Coda doc "abc123" with rocket icon
+```
+
+Update both:
+```
+Update Coda doc "abc123" with title "Launch Plan" and rocket icon
+```
+
+### delete_doc
+
+Deletes a Coda doc. Returns HTTP 202 (Accepted) as deletion is queued for processing. This action is permanent and cannot be undone.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc to delete (e.g., "AbCDeFGH")
+
+**Output:**
+- `data`: Object with deletion confirmation
+- `result`: Boolean - Whether the operation was successful
+- `error`: String - Error message if operation failed
+
+**Warning:** This action permanently deletes the doc and cannot be reversed.
+
+**Example Usage:**
+
+Delete a doc:
+```
+Delete Coda doc "abc123"
+```
+
 ### list_pages
 
 Returns a list of pages in a Coda doc. Use this to discover the doc structure and navigate between pages.

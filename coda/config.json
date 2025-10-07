@@ -154,6 +154,78 @@
                 "required": ["data", "result"]
             }
         },
+        "update_doc": {
+            "display_name": "Update Doc",
+            "description": "Updates metadata for a Coda doc (title and icon). Requires Doc Maker permissions for updating the title.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc to update (e.g., 'AbCDeFGH')"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Optional: New title for the doc"
+                    },
+                    "icon_name": {
+                        "type": "string",
+                        "description": "Optional: New icon name (e.g., 'rocket', 'star', 'heart')"
+                    }
+                },
+                "required": ["doc_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Updated doc details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "delete_doc": {
+            "display_name": "Delete Doc",
+            "description": "Deletes a Coda doc. Returns HTTP 202 (Accepted) as deletion is queued for processing. This action is permanent and cannot be undone.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc to delete (e.g., 'AbCDeFGH')"
+                    }
+                },
+                "required": ["doc_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Deletion confirmation"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
         "list_pages": {
             "display_name": "List Pages",
             "description": "Returns a list of pages in a Coda doc. Use this to discover the doc structure and navigate between pages.",
