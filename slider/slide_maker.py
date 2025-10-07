@@ -78,8 +78,11 @@ def load_presentation_from_files(presentation_id: str, files: List[Dict[str, Any
 
 async def save_and_return_presentation(original_result: Dict[str, Any], presentation_id: str, context: ExecutionContext, custom_filename: str = None) -> Dict[str, Any]:
     """Helper to save presentation and return combined result"""
-    save_action = SavePresentationAction()
-    
+    if presentation_id not in presentations:
+        raise ValueError(f"Presentation {presentation_id} not found")
+
+    prs = presentations[presentation_id]
+
     if custom_filename:
         # Remove any existing .pptx extensions first, then add one
         file_path = custom_filename
@@ -88,13 +91,41 @@ async def save_and_return_presentation(original_result: Dict[str, Any], presenta
         file_path += '.pptx'  # Add exactly one .pptx
     else:
         file_path = f"{presentation_id}.pptx"
-    
-    save_inputs = {
-        "presentation_id": presentation_id,
-        "file_path": file_path
-    }
-    save_result = await save_action.execute(save_inputs, context)
-    
+
+    # Save presentation to memory buffer (inlined from SavePresentationAction)
+    try:
+        buffer = BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        file_content = buffer.getvalue()
+
+        # Encode as base64
+        content_base64 = base64.b64encode(file_content).decode('utf-8')
+
+        # Get file name from path
+        file_name = os.path.basename(file_path)
+
+        save_result = {
+            "saved": True,
+            "file_path": file_path,
+            "file": {
+                "content": content_base64,
+                "name": file_name,
+                "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+        }
+    except Exception as e:
+        save_result = {
+            "saved": False,
+            "file_path": file_path,
+            "file": {
+                "content": "",
+                "name": os.path.basename(file_path),
+                "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            },
+            "error": f"Could not generate presentation for streaming: {str(e)}"
+        }
+
     combined_result = original_result.copy()
     combined_result.update({
         "saved": save_result["saved"],
@@ -1517,52 +1548,6 @@ class AddChartAction(ActionHandler):
         original_result = {"chart_id": str(chart_shape.shape_id)}
         return await save_and_return_presentation(original_result, presentation_id, context)
 
-@slide_maker.action("save_presentation")
-class SavePresentationAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        file_path = inputs["file_path"]
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        
-        # Save presentation to memory buffer instead of disk
-        try:
-            from io import BytesIO
-            buffer = BytesIO()
-            prs.save(buffer)
-            buffer.seek(0)
-            file_content = buffer.getvalue()
-            
-            # Encode as base64
-            content_base64 = base64.b64encode(file_content).decode('utf-8')
-            
-            # Get file name from path
-            file_name = os.path.basename(file_path)
-            
-            return {
-                "saved": True,
-                "file_path": file_path,
-                "file": {
-                    "content": content_base64,
-                    "name": file_name,
-                    "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                }
-            }
-        except Exception as e:
-            return {
-                "saved": False,
-                "file_path": file_path,
-                "file": {
-                    "content": "",
-                    "name": os.path.basename(file_path),
-                    "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                },
-                "error": f"Could not generate presentation for streaming: {str(e)}"
-            }
-
 @slide_maker.action("set_text_autosize")
 class SetTextAutosizeAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -1628,60 +1613,6 @@ class SetTextAutosizeAction(ActionHandler):
             "success": True,
             "autosize_type": autosize_type,
             "word_wrap": text_frame.word_wrap
-        }
-        return await save_and_return_presentation(original_result, presentation_id, context)
-
-@slide_maker.action("fit_text_to_shape")
-class FitTextToShapeAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        presentation_id = inputs["presentation_id"]
-        slide_index = inputs["slide_index"]
-        shape_index = inputs["shape_index"]
-        max_size = inputs.get("max_size", 48)
-        files = inputs.get("files", [])
-        
-        load_presentation_from_files(presentation_id, files)
-        
-        if presentation_id not in presentations:
-            raise ValueError(f"Presentation {presentation_id} not found")
-        
-        prs = presentations[presentation_id]
-        if slide_index >= len(prs.slides):
-            if len(prs.slides) == 0:
-                raise ValueError(f"Slide index {slide_index} out of range. Presentation has no slides.")
-            else:
-                raise ValueError(f"Slide index {slide_index} out of range. Valid range: 0-{len(prs.slides)-1} ({len(prs.slides)} slides total).")
-        
-        slide = prs.slides[slide_index]
-        if shape_index >= len(slide.shapes):
-            if len(slide.shapes) == 0:
-                raise ValueError(f"Shape index {shape_index} out of range. Slide has no elements.")
-            else:
-                raise ValueError(f"Shape index {shape_index} out of range. Valid range: 0-{len(slide.shapes)-1} ({len(slide.shapes)} elements total).")
-        
-        shape = slide.shapes[shape_index]
-        if not shape.has_text_frame:
-            raise ValueError("Shape does not have a text frame")
-        
-        text_frame = shape.text_frame
-        
-        # Use the fit_text method to automatically size text to fit shape
-        text_frame.fit_text(max_size=max_size)
-        
-        # Force recalculation by slightly adjusting text box size
-        original_width = shape.width
-        original_height = shape.height
-        
-        shape.width = original_width + 1
-        shape.height = original_height + 1
-        
-        shape.width = original_width
-        shape.height = original_height
-        
-        original_result = {
-            "success": True,
-            "max_size": max_size,
-            "auto_size": "TEXT_TO_FIT_SHAPE"
         }
         return await save_and_return_presentation(original_result, presentation_id, context)
 
@@ -2223,8 +2154,8 @@ class GetSlideElementsAction(ActionHandler):
         
         return result
 
-@slide_maker.action("modify_element")
-class ModifyElementAction(ActionHandler):
+@slide_maker.action("reposition_element")
+class RepositionElementAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         presentation_id = inputs["presentation_id"]
         slide_index = inputs["slide_index"]

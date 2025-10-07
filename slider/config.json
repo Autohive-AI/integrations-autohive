@@ -1,7 +1,7 @@
 {
     "name": "Slide Maker",
-    "version": "1.0.0",
-    "description": "PowerPoint automation integration using python-pptx for creating, modifying, and extracting content from presentations",
+    "version": "2.0.0",
+    "description": "PowerPoint automation integration using python-pptx. Unified markdown-based content addition (add_elements), template filling (find_and_replace), and comprehensive slide manipulation. Optimized for AI agents with intelligent auto-positioning, overlap detection, and graceful error handling.",
     "entry_point": "slide_maker.py",
     "actions": {
         "create_presentation": {
@@ -360,61 +360,6 @@
                 "required": ["chart_id", "saved", "file_path", "file"]
             }
         },
-        "save_presentation": {
-            "display_name": "Save Presentation",
-            "description": "Save a presentation and return it as a base64-encoded file for download. The presentation is saved to memory and returned as streaming content - no physical file is created on the server.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "ID of the presentation to save"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where to save the presentation"
-                    }
-                },
-                "required": ["presentation_id", "file_path"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {
-                                "type": "string",
-                                "description": "The file content encoded as base64"
-                            },
-                            "name": {
-                                "type": "string",
-                                "description": "The name of the file"
-                            },
-                            "contentType": {
-                                "type": "string",
-                                "description": "The content type of the file"
-                            }
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["saved", "file_path", "file"]
-            }
-        },
         "set_text_autosize": {
             "display_name": "Set Text Autosize",
             "description": "Set automatic text sizing behavior for a text box or shape. Requires the current presentation file in the 'files' parameter. Use TEXT_TO_FIT_SHAPE to prevent text overflow by automatically reducing font size to fit within the shape boundaries. Use SHAPE_TO_FIT_TEXT to expand the shape to accommodate all text. Returns the updated presentation file.",
@@ -497,87 +442,6 @@
                     }
                 },
                 "required": ["success", "autosize_type", "saved", "file_path", "file"]
-            }
-        },
-        "fit_text_to_shape": {
-            "display_name": "Fit Text to Shape",
-            "description": "Automatically resize text to fit within the shape boundaries by reducing font size. Requires the current presentation file in the 'files' parameter. This prevents text overflow and ensures all content is visible. Specify max_size to control the maximum font size allowed (default: 48pt). Returns the updated presentation file.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "presentation_id": {
-                        "type": "string",
-                        "description": "The presentation ID"
-                    },
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "The slide index (0-based)"
-                    },
-                    "shape_index": {
-                        "type": "integer",
-                        "description": "The shape index (0-based)"
-                    },
-                    "max_size": {
-                        "type": "number",
-                        "description": "Maximum font size in points (default: 48)",
-                        "minimum": 1,
-                        "maximum": 144
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "List of files including the current presentation file",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index", "shape_index"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "success": {
-                        "type": "boolean",
-                        "description": "Whether the operation was successful"
-                    },
-                    "max_size": {
-                        "type": "number",
-                        "description": "The maximum font size used"
-                    },
-                    "auto_size": {
-                        "type": "string",
-                        "description": "The auto-sizing mode applied"
-                    },
-                    "saved": {
-                        "type": "boolean",
-                        "description": "Whether the presentation was successfully saved"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path where the presentation was saved"
-                    },
-                    "file": {
-                        "type": "object",
-                        "description": "The saved presentation file for streaming",
-                        "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if file streaming failed"
-                    }
-                },
-                "required": ["success", "max_size", "auto_size", "saved", "file_path", "file"]
             }
         },
         "set_text_margins": {
@@ -1395,9 +1259,9 @@
                 "required": ["slide_index", "total_elements", "layout_status", "slide_dimensions", "elements"]
             }
         },
-        "modify_element": {
-            "display_name": "Modify Element",
-            "description": "Modify element position, size, and table cell content by index. DOES NOT support general text replacement - use find_and_replace for that instead. USE THIS ONLY FOR: (1) Resizing/repositioning elements (changing dimensions, moving elements), (2) Updating specific table cells by row/column coordinates. DO NOT USE for simple text changes - find_and_replace is more efficient and doesn't require knowing element positions. Use get_slide_elements to find element indices. Requires the current presentation file in the 'files' parameter. Returns the updated presentation file.",
+        "reposition_element": {
+            "display_name": "Reposition Element",
+            "description": "Reposition or resize elements, and update table cells by row/column coordinates. DOES NOT support general text replacement - use find_and_replace for that instead. USE THIS ONLY FOR: (1) Changing element position/size (left, top, width, height), (2) Updating specific table cells by row/column index. DO NOT USE for text replacement - find_and_replace is more efficient. Use get_slide_elements to find element indices. Requires the current presentation file in the 'files' parameter. Returns the updated presentation file.",
             "input_schema": {
                 "type": "object",
                 "properties": {
