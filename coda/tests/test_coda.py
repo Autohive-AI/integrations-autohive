@@ -872,6 +872,379 @@ async def test_get_column():
             print(f"Error testing get_column: {e}")
             return None
 
+async def test_list_rows():
+    """Test listing rows in a table"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # Get doc and table IDs
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 19: List Rows (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 19: List Rows (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            print("\nTest 19: List Rows")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 5}
+            result = await coda.execute_action("list_rows", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                rows_count = len(result.get("rows", []))
+                print(f"SUCCESS: Found {rows_count} rows")
+                for idx, row in enumerate(result.get("rows", [])[:2], 1):
+                    print(f"\n{idx}. Row ID: {row.get('id')}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing list_rows: {e}")
+            return None
+
+async def test_get_row():
+    """Test getting a specific row"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 20: Get Row (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 20: Get Row (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+            rows_result = await coda.execute_action("list_rows", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 1}, context)
+
+            if not rows_result.get("result") or not rows_result.get("rows"):
+                print("\nTest 20: Get Row (SKIPPED - No rows available)")
+                return None
+
+            row_id = rows_result["rows"][0]["id"]
+
+            print("\nTest 20: Get Row")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id, "table_id_or_name": table_id, "row_id_or_name": row_id}
+            result = await coda.execute_action("get_row", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                row = result.get("data", {})
+                print(f"SUCCESS: Retrieved row")
+                print(f"ID: {row.get('id')}")
+                print(f"Created: {row.get('createdAt')}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing get_row: {e}")
+            return None
+
+async def test_upsert_rows():
+    """Test upserting rows into a table"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 21: Upsert Rows (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "table_types": "table", "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 21: Upsert Rows (SKIPPED - No base tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+            columns_result = await coda.execute_action("list_columns", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 2}, context)
+
+            if not columns_result.get("result") or not columns_result.get("columns"):
+                print("\nTest 21: Upsert Rows (SKIPPED - No columns available)")
+                return None
+
+            # Use first column for test data
+            column_id = columns_result["columns"][0]["id"]
+
+            print("\nTest 21: Upsert Rows")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "rows": [
+                    {"cells": [{"column": column_id, "value": "Test Row from API"}]}
+                ]
+            }
+            result = await coda.execute_action("upsert_rows", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                data = result.get("data", {})
+                print(f"SUCCESS: Rows upserted (HTTP 202 - Processing)")
+                print(f"Request ID: {data.get('requestId', 'N/A')}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing upsert_rows: {e}")
+            return None
+
+async def test_update_row():
+    """Test updating a row"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 22: Update Row (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 22: Update Row (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+            rows_result = await coda.execute_action("list_rows", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 1}, context)
+
+            if not rows_result.get("result") or not rows_result.get("rows"):
+                print("\nTest 22: Update Row (SKIPPED - No rows available)")
+                return None
+
+            row_id = rows_result["rows"][0]["id"]
+            columns_result = await coda.execute_action("list_columns", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 1}, context)
+
+            if not columns_result.get("result") or not columns_result.get("columns"):
+                print("\nTest 22: Update Row (SKIPPED - No columns available)")
+                return None
+
+            column_id = columns_result["columns"][0]["id"]
+
+            print("\nTest 22: Update Row")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "row_id_or_name": row_id,
+                "cells": [{"column": column_id, "value": "Updated via API"}]
+            }
+            result = await coda.execute_action("update_row", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                print(f"SUCCESS: Row updated (HTTP 202 - Processing)")
+
+            return result
+        except Exception as e:
+            print(f"Error testing update_row: {e}")
+            return None
+
+async def test_delete_row():
+    """Test deleting a single row"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 23: Delete Row (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "table_types": "table", "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 23: Delete Row (SKIPPED - No base tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            # Create a test row to delete
+            columns_result = await coda.execute_action("list_columns", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 1}, context)
+            if not columns_result.get("result") or not columns_result.get("columns"):
+                print("\nTest 23: Delete Row (SKIPPED - No columns available)")
+                return None
+
+            column_id = columns_result["columns"][0]["id"]
+
+            # Insert a test row
+            upsert_result = await coda.execute_action("upsert_rows", {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "rows": [{"cells": [{"column": column_id, "value": "Row to Delete"}]}]
+            }, context)
+
+            if not upsert_result.get("result"):
+                print("\nTest 23: Delete Row (SKIPPED - Could not create test row)")
+                return None
+
+            # Wait for row creation
+            import asyncio
+            await asyncio.sleep(2)
+
+            # Get the row ID
+            rows_result = await coda.execute_action("list_rows", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 10}, context)
+            row_id = None
+            for row in rows_result.get("rows", []):
+                values = row.get("values", {})
+                if "Row to Delete" in str(values):
+                    row_id = row.get("id")
+                    break
+
+            if not row_id:
+                print("\nTest 23: Delete Row (SKIPPED - Could not find test row)")
+                return None
+
+            print("\nTest 23: Delete Row")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "row_id_or_name": row_id
+            }
+            result = await coda.execute_action("delete_row", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                print(f"SUCCESS: Row deleted (HTTP 202 - Processing)")
+
+            return result
+        except Exception as e:
+            print(f"Error testing delete_row: {e}")
+            return None
+
+async def test_delete_rows():
+    """Test deleting multiple rows"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", {"limit": 1}, context)
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 24: Delete Rows (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "table_types": "table", "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 24: Delete Rows (SKIPPED - No base tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            # Create test rows to delete
+            columns_result = await coda.execute_action("list_columns", {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 1}, context)
+            if not columns_result.get("result") or not columns_result.get("columns"):
+                print("\nTest 24: Delete Rows (SKIPPED - No columns available)")
+                return None
+
+            column_id = columns_result["columns"][0]["id"]
+
+            # Insert test rows
+            upsert_result = await coda.execute_action("upsert_rows", {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "rows": [
+                    {"cells": [{"column": column_id, "value": "Bulk Delete 1"}]},
+                    {"cells": [{"column": column_id, "value": "Bulk Delete 2"}]}
+                ]
+            }, context)
+
+            if not upsert_result.get("result"):
+                print("\nTest 24: Delete Rows (SKIPPED - Could not create test rows)")
+                return None
+
+            # Wait for row creation
+            import asyncio
+            await asyncio.sleep(2)
+
+            # Get the row IDs
+            rows_result = await coda.execute_action("list_rows", {"doc_id": doc_id, "table_id_or_name": table_id}, context)
+            row_ids = []
+            for row in rows_result.get("rows", []):
+                values = row.get("values", {})
+                if "Bulk Delete" in str(values):
+                    row_ids.append(row.get("id"))
+                if len(row_ids) >= 2:
+                    break
+
+            if len(row_ids) < 2:
+                print(f"\nTest 24: Delete Rows (SKIPPED - Could not find test rows, found {len(row_ids)})")
+                return None
+
+            print("\nTest 24: Delete Rows")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "row_ids": row_ids
+            }
+            result = await coda.execute_action("delete_rows", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                print(f"SUCCESS: {len(row_ids)} rows deleted (HTTP 202 - Processing)")
+
+            return result
+        except Exception as e:
+            print(f"Error testing delete_rows: {e}")
+            return None
+
 async def main():
     """Run all tests"""
     print("\n" + "=" * 60)
@@ -906,6 +1279,14 @@ async def main():
     await test_get_table()
     await test_list_columns()
     await test_get_column()
+
+    # Run all row tests
+    await test_list_rows()
+    await test_get_row()
+    await test_upsert_rows()
+    await test_update_row()
+    await test_delete_row()
+    await test_delete_rows()
 
     print("\n" + "=" * 60)
     print("ALL TESTS COMPLETED")

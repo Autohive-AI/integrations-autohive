@@ -702,3 +702,312 @@ class GetColumnAction(ActionHandler):
                 "result": False,
                 "error": str(e)
             }
+
+
+@coda.action("list_rows")
+class ListRowsAction(ActionHandler):
+    """
+    Lists all rows in a table or view.
+    Supports filtering, sorting, and pagination.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+
+            # Build query parameters
+            params = {}
+
+            if "limit" in inputs and inputs["limit"]:
+                params["limit"] = inputs["limit"]
+
+            if "page_token" in inputs and inputs["page_token"]:
+                params["pageToken"] = inputs["page_token"]
+
+            if "query" in inputs and inputs["query"]:
+                params["query"] = inputs["query"]
+
+            if "sort_by" in inputs and inputs["sort_by"]:
+                params["sortBy"] = inputs["sort_by"]
+
+            if "use_column_names" in inputs and inputs["use_column_names"] is not None:
+                params["useColumnNames"] = str(inputs["use_column_names"]).lower()
+
+            if "value_format" in inputs and inputs["value_format"]:
+                params["valueFormat"] = inputs["value_format"]
+
+            if "visible_only" in inputs and inputs["visible_only"] is not None:
+                params["visibleOnly"] = str(inputs["visible_only"]).lower()
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Extract rows from response
+            rows = response.get("items", [])
+            next_page_token = response.get("nextPageToken")
+
+            result = {
+                "rows": rows,
+                "result": True
+            }
+
+            if next_page_token:
+                result["next_page_token"] = next_page_token
+
+            return result
+
+        except Exception as e:
+            return {
+                "rows": [],
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("get_row")
+class GetRowAction(ActionHandler):
+    """
+    Retrieves detailed data for a specific row.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            row_id_or_name = inputs["row_id_or_name"]
+
+            # Build query parameters
+            params = {}
+
+            if "use_column_names" in inputs and inputs["use_column_names"] is not None:
+                params["useColumnNames"] = str(inputs["use_column_names"]).lower()
+
+            if "value_format" in inputs and inputs["value_format"]:
+                params["valueFormat"] = inputs["value_format"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("upsert_rows")
+class UpsertRowsAction(ActionHandler):
+    """
+    Inserts rows into a table, or updates existing rows if keyColumns are provided.
+    Only works on base tables, not views.
+    Returns HTTP 202 (Accepted) as processing is asynchronous.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            rows = inputs["rows"]
+
+            # Build request body
+            body = {
+                "rows": rows
+            }
+
+            # Add optional keyColumns for upsert behavior
+            if "key_columns" in inputs and inputs["key_columns"]:
+                body["keyColumns"] = inputs["key_columns"]
+
+            # Build query parameters
+            params = {}
+            if "disable_parsing" in inputs and inputs["disable_parsing"]:
+                params["disableParsing"] = str(inputs["disable_parsing"]).lower()
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows"
+            response = await context.fetch(
+                url,
+                method="POST",
+                headers=headers,
+                params=params,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("update_row")
+class UpdateRowAction(ActionHandler):
+    """
+    Updates a specific row in a table.
+    Only updates the cells provided, leaving others unchanged.
+    Returns HTTP 202 (Accepted).
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            row_id_or_name = inputs["row_id_or_name"]
+            cells = inputs["cells"]
+
+            # Build request body
+            body = {
+                "row": {
+                    "cells": cells
+                }
+            }
+
+            # Build query parameters
+            params = {}
+            if "disable_parsing" in inputs and inputs["disable_parsing"]:
+                params["disableParsing"] = str(inputs["disable_parsing"]).lower()
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="PUT",
+                headers=headers,
+                params=params,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("delete_row")
+class DeleteRowAction(ActionHandler):
+    """
+    Deletes a specific row from a table.
+    Returns HTTP 202 (Accepted) as deletion is queued for processing.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            row_id_or_name = inputs["row_id_or_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="DELETE",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("delete_rows")
+class DeleteRowsAction(ActionHandler):
+    """
+    Deletes multiple rows from a table by their IDs.
+    Returns HTTP 202 (Accepted) as deletion is queued for processing.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            row_ids = inputs["row_ids"]
+
+            # Build request body
+            body = {
+                "rowIds": row_ids
+            }
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/rows"
+            response = await context.fetch(
+                url,
+                method="DELETE",
+                headers=headers,
+                json=body
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }

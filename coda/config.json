@@ -655,6 +655,355 @@
                 },
                 "required": ["data", "result"]
             }
+        },
+        "list_rows": {
+            "display_name": "List Rows",
+            "description": "Returns a list of rows in a table or view. Supports filtering, sorting, and pagination. Use query parameter to filter rows by column values.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return per page",
+                        "default": 100,
+                        "minimum": 1,
+                        "maximum": 500
+                    },
+                    "page_token": {
+                        "type": "string",
+                        "description": "Token for fetching the next page of results"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Filter rows by column value (format: 'ColumnName:\"value\"' or 'c-columnId:123')"
+                    },
+                    "sort_by": {
+                        "type": "string",
+                        "description": "Sort by column (e.g., 'natural', 'created', or column ID)"
+                    },
+                    "use_column_names": {
+                        "type": "boolean",
+                        "description": "Use column names instead of IDs in response (default: false)",
+                        "default": false
+                    },
+                    "value_format": {
+                        "type": "string",
+                        "enum": ["simple", "simpleWithArrays", "rich"],
+                        "description": "Format for cell values (simple, simpleWithArrays, or rich)",
+                        "default": "simple"
+                    },
+                    "visible_only": {
+                        "type": "boolean",
+                        "description": "Return only visible columns (default: false)",
+                        "default": false
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "type": "array",
+                        "description": "List of rows",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for fetching next page of results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["rows", "result"]
+            }
+        },
+        "get_row": {
+            "display_name": "Get Row",
+            "description": "Returns detailed data for a specific row including all cell values, creation date, and update date.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "row_id_or_name": {
+                        "type": "string",
+                        "description": "Row ID or name. IDs recommended (e.g., 'i-rowId123')"
+                    },
+                    "use_column_names": {
+                        "type": "boolean",
+                        "description": "Use column names instead of IDs in response (default: false)",
+                        "default": false
+                    },
+                    "value_format": {
+                        "type": "string",
+                        "enum": ["simple", "simpleWithArrays", "rich"],
+                        "description": "Format for cell values",
+                        "default": "simple"
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "row_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Row data including id, values, createdAt, updatedAt, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "upsert_rows": {
+            "display_name": "Upsert Rows",
+            "description": "Inserts rows into a table, or updates existing rows if keyColumns are provided. Only works on base tables, not views. Returns HTTP 202 (Accepted) as processing is asynchronous.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. Must be a base table, not a view. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "rows": {
+                        "type": "array",
+                        "description": "Array of rows to insert/update. Each row contains a cells array.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "cells": {
+                                    "type": "array",
+                                    "description": "Array of cell objects with column and value",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "column": {
+                                                "type": "string",
+                                                "description": "Column ID or name (e.g., 'c-column123')"
+                                            },
+                                            "value": {
+                                                "description": "Cell value (type depends on column)"
+                                            }
+                                        },
+                                        "required": ["column", "value"]
+                                    }
+                                }
+                            },
+                            "required": ["cells"]
+                        }
+                    },
+                    "key_columns": {
+                        "type": "array",
+                        "description": "Optional: Column IDs/names to use for matching existing rows (for upsert behavior)",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "disable_parsing": {
+                        "type": "boolean",
+                        "description": "If true, disables automatic value parsing (default: false)",
+                        "default": false
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "rows"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Response including addedRowIds and requestId"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "update_row": {
+            "display_name": "Update Row",
+            "description": "Updates a specific row in a table. Only updates the cells provided, leaving others unchanged. Returns HTTP 202 (Accepted).",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "row_id_or_name": {
+                        "type": "string",
+                        "description": "Row ID or name. IDs recommended (e.g., 'i-rowId123')"
+                    },
+                    "cells": {
+                        "type": "array",
+                        "description": "Array of cell objects to update",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "column": {
+                                    "type": "string",
+                                    "description": "Column ID or name (e.g., 'c-column123')"
+                                },
+                                "value": {
+                                    "description": "New cell value (type depends on column)"
+                                }
+                            },
+                            "required": ["column", "value"]
+                        }
+                    },
+                    "disable_parsing": {
+                        "type": "boolean",
+                        "description": "If true, disables automatic value parsing (default: false)",
+                        "default": false
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "row_id_or_name", "cells"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Update response including requestId and id"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "delete_row": {
+            "display_name": "Delete Row",
+            "description": "Deletes a specific row from a table. Returns HTTP 202 (Accepted) as deletion is queued for processing.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "row_id_or_name": {
+                        "type": "string",
+                        "description": "Row ID or name to delete. IDs recommended (e.g., 'i-rowId123')"
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "row_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Deletion confirmation including requestId and id"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "delete_rows": {
+            "display_name": "Delete Rows",
+            "description": "Deletes multiple rows from a table by their IDs. Returns HTTP 202 (Accepted) as deletion is queued for processing.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "row_ids": {
+                        "type": "array",
+                        "description": "Array of row IDs to delete (e.g., ['i-row1', 'i-row2'])",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "row_ids"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Deletion confirmation including requestId and rowIds"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
         }
     }
 }

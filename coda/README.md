@@ -509,6 +509,171 @@ Get column by name:
 Get column "Task Name" from table "Projects" in doc "abc123"
 ```
 
+### list_rows
+
+Returns a list of rows in a table or view. Supports filtering, sorting, and pagination. Use query parameter to filter rows by column values.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name (IDs recommended)
+- `limit` (optional): Integer - Max results per page (1-500, default: 100)
+- `page_token` (optional): String - Pagination token
+- `query` (optional): String - Filter rows (format: `"ColumnName:\"value\""` or `"c-columnId:123"`)
+- `sort_by` (optional): String - Sort by column (e.g., "natural", "created", or column ID)
+- `use_column_names` (optional): Boolean - Use column names in response (default: false)
+- `value_format` (optional): String - Cell value format: "simple", "simpleWithArrays", or "rich" (default: "simple")
+- `visible_only` (optional): Boolean - Return only visible columns (default: false)
+
+**Output:**
+- `rows`: Array of row objects with id, values, createdAt, updatedAt, etc.
+- `next_page_token`: String - Token for next page
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+List all rows:
+```
+List all rows in table "grid-xyz789" from doc "abc123"
+```
+
+Filter rows:
+```
+List rows in table "Projects" where Status is "Active" from doc "abc123"
+```
+
+List with rich format:
+```
+List rows in table "grid-xyz789" with value_format "rich" from doc "abc123"
+```
+
+### get_row
+
+Returns detailed data for a specific row including all cell values, creation date, and update date.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name
+- `row_id_or_name` (required): String - Row ID or name (IDs recommended, e.g., "i-rowId123")
+- `use_column_names` (optional): Boolean - Use column names in response (default: false)
+- `value_format` (optional): String - "simple", "simpleWithArrays", or "rich"
+
+**Output:**
+- `data`: Object with row data including id, values, createdAt, updatedAt
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Get row by ID:
+```
+Get row "i-row123" from table "grid-xyz789" in doc "abc123"
+```
+
+Get row with rich format:
+```
+Get row "i-row123" from table "Projects" with value_format "rich" in doc "abc123"
+```
+
+### upsert_rows
+
+Inserts rows into a table, or updates existing rows if keyColumns are provided. Only works on base tables, not views. Returns HTTP 202 (Accepted) as processing is asynchronous.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID (must be base table, not view)
+- `rows` (required): Array - Array of row objects with cells
+  - Each row: `{"cells": [{"column": "c-col123", "value": "data"}]}`
+- `key_columns` (optional): Array - Column IDs/names for upsert matching
+- `disable_parsing` (optional): Boolean - Disable automatic value parsing (default: false)
+
+**Output:**
+- `data`: Object with addedRowIds array and requestId
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Behavior:**
+- **Without keyColumns**: Always inserts new rows
+- **With keyColumns**: Creates if key doesn't exist, updates if key exists
+- **Multiple matches**: All matching rows are updated
+
+**Example Usage:**
+
+Insert new rows:
+```
+Insert rows into table "grid-xyz789" in doc "abc123" with data
+```
+
+Upsert with key column:
+```
+Upsert rows into table "Projects" with key_columns ["Email"] in doc "abc123"
+```
+
+### update_row
+
+Updates a specific row in a table. Only updates the cells provided, leaving others unchanged. Returns HTTP 202 (Accepted).
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name
+- `row_id_or_name` (required): String - Row ID or name (IDs recommended)
+- `cells` (required): Array - Cell objects to update: `[{"column": "c-col123", "value": "new value"}]`
+- `disable_parsing` (optional): Boolean - Disable automatic value parsing (default: false)
+
+**Output:**
+- `data`: Object with requestId and id
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Update row cells:
+```
+Update row "i-row123" in table "grid-xyz789" setting Status to "Complete" in doc "abc123"
+```
+
+### delete_row
+
+Deletes a specific row from a table. Returns HTTP 202 (Accepted) as deletion is queued for processing.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name
+- `row_id_or_name` (required): String - Row ID or name to delete (IDs recommended)
+
+**Output:**
+- `data`: Object with requestId and id
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Delete row by ID:
+```
+Delete row "i-row123" from table "grid-xyz789" in doc "abc123"
+```
+
+### delete_rows
+
+Deletes multiple rows from a table by their IDs. Returns HTTP 202 (Accepted) as deletion is queued for processing.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name
+- `row_ids` (required): Array - Array of row IDs to delete (e.g., ["i-row1", "i-row2"])
+
+**Output:**
+- `data`: Object with requestId and rowIds
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Delete multiple rows:
+```
+Delete rows ["i-row1", "i-row2", "i-row3"] from table "grid-xyz789" in doc "abc123"
+```
+
 ## Rate Limits
 
 - **Reading data (GET)**: 100 requests per 6 seconds
