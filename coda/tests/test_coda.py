@@ -660,6 +660,218 @@ async def test_delete_page():
             print(f"Error testing delete_page: {e}")
             return None
 
+async def test_list_tables():
+    """Test listing tables in a doc"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, get a doc ID
+    list_inputs = {"limit": 1}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", list_inputs, context)
+
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 15: List Tables (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+
+            print("\nTest 15: List Tables")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id, "limit": 10}
+            result = await coda.execute_action("list_tables", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                tables_count = len(result.get("tables", []))
+                print(f"SUCCESS: Found {tables_count} tables/views")
+                for idx, table in enumerate(result.get("tables", [])[:3], 1):
+                    print(f"\n{idx}. {table.get('name', 'Untitled')}")
+                    print(f"   ID: {table.get('id')}")
+                    print(f"   Type: {table.get('type')}")
+                    print(f"   Row Count: {table.get('rowCount', 0)}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing list_tables: {e}")
+            return None
+
+async def test_get_table():
+    """Test getting a specific table"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, get a doc ID and table ID
+    list_inputs = {"limit": 1}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", list_inputs, context)
+
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 16: Get Table (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+
+            # Get tables
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 16: Get Table (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            print("\nTest 16: Get Table")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id, "table_id_or_name": table_id}
+            result = await coda.execute_action("get_table", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                table = result.get("data", {})
+                print(f"SUCCESS: Retrieved table")
+                print(f"Name: {table.get('name')}")
+                print(f"ID: {table.get('id')}")
+                print(f"Type: {table.get('type')}")
+                print(f"Row Count: {table.get('rowCount', 0)}")
+                print(f"Display Column: {table.get('displayColumn', {}).get('name', 'N/A')}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing get_table: {e}")
+            return None
+
+async def test_list_columns():
+    """Test listing columns in a table"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, get a doc ID and table ID
+    list_inputs = {"limit": 1}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", list_inputs, context)
+
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 17: List Columns (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+
+            # Get tables
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 17: List Columns (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            print("\nTest 17: List Columns")
+            print("=" * 60)
+
+            inputs = {"doc_id": doc_id, "table_id_or_name": table_id, "limit": 10}
+            result = await coda.execute_action("list_columns", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                columns_count = len(result.get("columns", []))
+                print(f"SUCCESS: Found {columns_count} columns")
+                for idx, column in enumerate(result.get("columns", [])[:3], 1):
+                    print(f"\n{idx}. {column.get('name', 'Untitled')}")
+                    print(f"   ID: {column.get('id')}")
+                    print(f"   Type: {column.get('valueType', 'N/A')}")
+                    print(f"   Calculated: {column.get('calculated', False)}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing list_columns: {e}")
+            return None
+
+async def test_get_column():
+    """Test getting a specific column"""
+    auth = {
+        "credentials": {
+            "api_token": "your_api_token_here"
+        }
+    }
+
+    # First, get a doc ID, table ID, and column ID
+    list_inputs = {"limit": 1}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            list_result = await coda.execute_action("list_docs", list_inputs, context)
+
+            if not list_result.get("result") or not list_result.get("docs"):
+                print("\nTest 18: Get Column (SKIPPED - No docs available)")
+                return None
+
+            doc_id = list_result["docs"][0]["id"]
+
+            # Get tables
+            tables_result = await coda.execute_action("list_tables", {"doc_id": doc_id, "limit": 1}, context)
+
+            if not tables_result.get("result") or not tables_result.get("tables"):
+                print("\nTest 18: Get Column (SKIPPED - No tables available)")
+                return None
+
+            table_id = tables_result["tables"][0]["id"]
+
+            # Get columns
+            columns_result = await coda.execute_action("list_columns", {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "limit": 1
+            }, context)
+
+            if not columns_result.get("result") or not columns_result.get("columns"):
+                print("\nTest 18: Get Column (SKIPPED - No columns available)")
+                return None
+
+            column_id = columns_result["columns"][0]["id"]
+
+            print("\nTest 18: Get Column")
+            print("=" * 60)
+
+            inputs = {
+                "doc_id": doc_id,
+                "table_id_or_name": table_id,
+                "column_id_or_name": column_id
+            }
+            result = await coda.execute_action("get_column", inputs, context)
+
+            if not result.get("result"):
+                print(f"ERROR: {result.get('error')}")
+            else:
+                column = result.get("data", {})
+                print(f"SUCCESS: Retrieved column")
+                print(f"Name: {column.get('name')}")
+                print(f"ID: {column.get('id')}")
+                print(f"Value Type: {column.get('valueType')}")
+                print(f"Calculated: {column.get('calculated', False)}")
+                print(f"Display Column: {column.get('display', False)}")
+
+            return result
+        except Exception as e:
+            print(f"Error testing get_column: {e}")
+            return None
+
 async def main():
     """Run all tests"""
     print("\n" + "=" * 60)
@@ -688,6 +900,12 @@ async def main():
     await test_create_page_with_content()
     await test_update_page()
     await test_delete_page()
+
+    # Run all table/column tests
+    await test_list_tables()
+    await test_get_table()
+    await test_list_columns()
+    await test_get_column()
 
     print("\n" + "=" * 60)
     print("ALL TESTS COMPLETED")

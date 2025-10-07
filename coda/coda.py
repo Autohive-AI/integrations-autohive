@@ -509,3 +509,196 @@ class DeletePageAction(ActionHandler):
                 "result": False,
                 "error": str(e)
             }
+
+
+@coda.action("list_tables")
+class ListTablesAction(ActionHandler):
+    """
+    Lists all tables in a Coda doc.
+    By default returns both base tables and views.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required doc_id
+            doc_id = inputs["doc_id"]
+
+            # Build query parameters
+            params = {}
+
+            if "limit" in inputs and inputs["limit"]:
+                params["limit"] = inputs["limit"]
+
+            if "page_token" in inputs and inputs["page_token"]:
+                params["pageToken"] = inputs["page_token"]
+
+            if "sort_by" in inputs and inputs["sort_by"]:
+                params["sortBy"] = inputs["sort_by"]
+
+            if "table_types" in inputs and inputs["table_types"]:
+                params["tableTypes"] = inputs["table_types"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Extract tables from response
+            tables = response.get("items", [])
+            next_page_token = response.get("nextPageToken")
+
+            result = {
+                "tables": tables,
+                "result": True
+            }
+
+            if next_page_token:
+                result["next_page_token"] = next_page_token
+
+            return result
+
+        except Exception as e:
+            return {
+                "tables": [],
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("get_table")
+class GetTableAction(ActionHandler):
+    """
+    Retrieves detailed metadata for a specific table or view.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("list_columns")
+class ListColumnsAction(ActionHandler):
+    """
+    Lists all columns in a table or view.
+    Use this to discover table structure before inserting or reading rows.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+
+            # Build query parameters
+            params = {}
+
+            if "limit" in inputs and inputs["limit"]:
+                params["limit"] = inputs["limit"]
+
+            if "page_token" in inputs and inputs["page_token"]:
+                params["pageToken"] = inputs["page_token"]
+
+            if "visible_only" in inputs and inputs["visible_only"] is not None:
+                params["visibleOnly"] = str(inputs["visible_only"]).lower()
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/columns"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Extract columns from response
+            columns = response.get("items", [])
+            next_page_token = response.get("nextPageToken")
+
+            result = {
+                "columns": columns,
+                "result": True
+            }
+
+            if next_page_token:
+                result["next_page_token"] = next_page_token
+
+            return result
+
+        except Exception as e:
+            return {
+                "columns": [],
+                "result": False,
+                "error": str(e)
+            }
+
+
+@coda.action("get_column")
+class GetColumnAction(ActionHandler):
+    """
+    Retrieves detailed metadata for a specific column.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract required parameters
+            doc_id = inputs["doc_id"]
+            table_id_or_name = inputs["table_id_or_name"]
+            column_id_or_name = inputs["column_id_or_name"]
+
+            # Get auth headers
+            headers = get_auth_headers(context)
+
+            # Make API request
+            url = f"{CODA_API_BASE_URL}/docs/{doc_id}/tables/{table_id_or_name}/columns/{column_id_or_name}"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers
+            )
+
+            return {
+                "data": response,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "data": {},
+                "result": False,
+                "error": str(e)
+            }

@@ -368,6 +368,147 @@ Delete page by name:
 Delete page "Old Notes" from doc "abc123"
 ```
 
+### list_tables
+
+Returns a list of tables in a Coda doc. By default, returns both base tables and views. Use tableTypes to filter results.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc (e.g., "AbCDeFGH")
+- `limit` (optional): Integer - Maximum number of results per page (1-500, default: 100)
+- `page_token` (optional): String - Token for fetching next page of results
+- `sort_by` (optional): String - Sort order for tables
+- `table_types` (optional): String - Comma-separated types: "table,view" (default), "table", or "view"
+
+**Output:**
+- `tables`: Array of table objects with metadata (id, name, rowCount, displayColumn, parent, etc.)
+- `next_page_token`: String - Token for next page if more results available
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+List all tables and views:
+```
+List all tables in Coda doc "abc123"
+```
+
+List only base tables:
+```
+List tables in doc "abc123" with table_types "table"
+```
+
+List with pagination:
+```
+List first 20 tables in doc "abc123"
+```
+
+### get_table
+
+Returns detailed metadata for a specific table or view, including row count, columns, display column, and sort configuration.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc (e.g., "AbCDeFGH")
+- `table_id_or_name` (required): String - Table ID or name (IDs recommended, e.g., "grid-xyz123")
+
+**Output:**
+- `data`: Object with comprehensive table metadata:
+  - `id`: Table ID
+  - `type`: "table" or "view"
+  - `name`: Table name
+  - `parent`: Parent page reference
+  - `parentTable`: Parent table (for views only)
+  - `displayColumn`: Display column details
+  - `rowCount`: Number of rows
+  - `sorts`: Array of sort configurations
+  - `layout`: Table layout type
+  - `createdAt` / `updatedAt`: Timestamps
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Get table by ID:
+```
+Get Coda table "grid-xyz789" from doc "abc123"
+```
+
+Get table by name:
+```
+Get table "Projects" from doc "abc123"
+```
+
+### list_columns
+
+Returns a list of columns in a table or view. Use this to discover the table structure before inserting or reading rows.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name (IDs recommended)
+- `limit` (optional): Integer - Maximum results per page (1-500, default: 100)
+- `page_token` (optional): String - Pagination token
+- `visible_only` (optional): Boolean - If true, returns only UI-visible columns (default: false)
+
+**Output:**
+- `columns`: Array of column objects with:
+  - `id`: Column ID (e.g., "c-column123")
+  - `name`: Column name
+  - `type`: "column"
+  - `calculated`: Boolean (true if formula column)
+  - `formula`: Formula expression (if calculated)
+  - `display`: Boolean (is display column)
+  - `valueType`: Data type (text, number, date, person, etc.)
+  - `defaultValue`: Default value for new rows
+- `next_page_token`: String - Token for next page
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+List all columns:
+```
+List all columns in table "grid-xyz789" from doc "abc123"
+```
+
+List only visible columns:
+```
+List visible columns in table "Projects" from doc "abc123"
+```
+
+### get_column
+
+Returns detailed metadata for a specific column including name, type, formula (if calculated), default value, and format settings.
+
+**Input Parameters:**
+- `doc_id` (required): String - ID of the doc
+- `table_id_or_name` (required): String - Table ID or name (IDs recommended)
+- `column_id_or_name` (required): String - Column ID or name (IDs recommended, e.g., "c-column123")
+
+**Output:**
+- `data`: Object with column metadata:
+  - `id`: Column ID
+  - `name`: Column name
+  - `type`: "column"
+  - `calculated`: Boolean indicating if formula column
+  - `formula`: Formula expression (if calculated)
+  - `display`: Boolean indicating if display column
+  - `valueType`: Data type (text, number, date, person, currency, percent, etc.)
+  - `defaultValue`: Default value for new rows
+  - `format`: Column format details
+- `result`: Boolean - Whether operation was successful
+- `error`: String - Error message if failed
+
+**Example Usage:**
+
+Get column by ID:
+```
+Get column "c-column123" from table "grid-xyz789" in doc "abc123"
+```
+
+Get column by name:
+```
+Get column "Task Name" from table "Projects" in doc "abc123"
+```
+
 ## Rate Limits
 
 - **Reading data (GET)**: 100 requests per 6 seconds

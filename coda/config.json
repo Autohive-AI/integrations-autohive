@@ -461,6 +461,200 @@
                 },
                 "required": ["data", "result"]
             }
+        },
+        "list_tables": {
+            "display_name": "List Tables",
+            "description": "Returns a list of tables in a Coda doc. By default, returns both base tables and views. Use tableTypes to filter results.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return per page",
+                        "default": 100,
+                        "minimum": 1,
+                        "maximum": 500
+                    },
+                    "page_token": {
+                        "type": "string",
+                        "description": "Token for fetching the next page of results"
+                    },
+                    "sort_by": {
+                        "type": "string",
+                        "description": "Optional: Sort order for tables"
+                    },
+                    "table_types": {
+                        "type": "string",
+                        "description": "Comma-separated list of table types to include (e.g., 'table,view', 'table', or 'view')",
+                        "default": "table,view"
+                    }
+                },
+                "required": ["doc_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "tables": {
+                        "type": "array",
+                        "description": "List of tables and/or views",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for fetching next page of results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["tables", "result"]
+            }
+        },
+        "get_table": {
+            "display_name": "Get Table",
+            "description": "Returns detailed metadata for a specific table or view, including row count, columns, display column, and sort configuration.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended over names (e.g., 'grid-xyz123')"
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Table metadata including id, name, rowCount, displayColumn, sorts, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
+        },
+        "list_columns": {
+            "display_name": "List Columns",
+            "description": "Returns a list of columns in a table or view. Use this to discover the table structure before inserting or reading rows.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended over names (e.g., 'grid-xyz123')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return per page",
+                        "default": 100,
+                        "minimum": 1,
+                        "maximum": 500
+                    },
+                    "page_token": {
+                        "type": "string",
+                        "description": "Token for fetching the next page of results"
+                    },
+                    "visible_only": {
+                        "type": "boolean",
+                        "description": "If true, returns only columns visible in the UI",
+                        "default": false
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "columns": {
+                        "type": "array",
+                        "description": "List of columns in the table",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for fetching next page of results"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["columns", "result"]
+            }
+        },
+        "get_column": {
+            "display_name": "Get Column",
+            "description": "Returns detailed metadata for a specific column including name, type, formula (if calculated), default value, and format settings.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {
+                        "type": "string",
+                        "description": "ID of the doc (e.g., 'AbCDeFGH')"
+                    },
+                    "table_id_or_name": {
+                        "type": "string",
+                        "description": "Table ID or name. IDs recommended (e.g., 'grid-xyz123')"
+                    },
+                    "column_id_or_name": {
+                        "type": "string",
+                        "description": "Column ID or name. IDs recommended (e.g., 'c-column123')"
+                    }
+                },
+                "required": ["doc_id", "table_id_or_name", "column_id_or_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "Column metadata including id, name, valueType, calculated, formula, display, etc."
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["data", "result"]
+            }
         }
     }
 }
