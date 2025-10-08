@@ -20,7 +20,7 @@ class GongAPIClient:
     
     async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict] = None, data: Optional[Dict] = None):
         """Make an authenticated request to the Gong API"""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/v2/{endpoint}"
         
         headers = {
             "Content-Type": "application/json"
