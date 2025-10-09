@@ -608,7 +608,7 @@ def _create_text_box(slide, text_content, position, prs):
     width_inches = position["width"]
     height_inches = position["height"]
     has_markdown = has_markdown_formatting(text_content)
-    best_fit_size = calculate_best_fit_font_size(text_content, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
+    best_fit_size = calculate_best_fit_font_size(text_content, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
     # Parse and add formatted text
     html = parse_markdown_with_extensions(text_content)
@@ -653,7 +653,7 @@ def _create_table(slide, table_data, position, prs):
 
             # Calculate appropriate font size
             has_markdown = has_markdown_formatting(cell_text)
-            best_fit_size = calculate_best_fit_font_size(cell_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
+            best_fit_size = calculate_best_fit_font_size(cell_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
             # Parse cell content as markdown
             html = parse_markdown_with_extensions(cell_text)
@@ -694,7 +694,7 @@ def _create_bullet_list(slide, bullet_items, position, prs):
     width_inches = position["width"]
     height_inches = position["height"]
     all_bullet_text = '\n'.join([item.get("text", "") for item in bullet_items])
-    best_fit_size = calculate_best_fit_font_size(all_bullet_text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=True)
+    best_fit_size = calculate_best_fit_font_size(all_bullet_text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=True, font_face='Calibri')
 
     # Add bullet items with calculated font size
     for i, item in enumerate(bullet_items):
@@ -745,10 +745,165 @@ def has_markdown_formatting(text: str) -> bool:
     markers = ['**', '*', '`', '~~', '__']
     return any(marker in text for marker in markers)
 
-def calculate_best_fit_font_size(text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=False):
+def get_font_path(font_face):
     """
-    Calculate appropriate font size to fit text in box (both width AND height).
-    Returns font size in points.
+    Resolve font file path from font name.
+
+    Args:
+        font_face (str): Font name (e.g., 'Calibri', 'Arial', 'Courier New')
+
+    Returns:
+        str: Full path to font file, or None if not found
+    """
+    # Map font names to files (case-insensitive)
+    font_files = {
+        'calibri': 'Calibri.ttf',
+        'arial': 'Arial.ttf',
+        'times new roman': 'Times.ttf',
+        'times': 'Times.ttf',
+        'courier new': 'Courier.ttf',
+        'courier': 'Courier.ttf'
+    }
+
+    font_key = font_face.lower()
+    font_file = font_files.get(font_key)
+
+    if not font_file:
+        return None
+
+    # Get path to fonts directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    font_path = os.path.join(current_dir, 'fonts', font_file)
+
+    # Check if file exists
+    if os.path.exists(font_path):
+        return font_path
+
+    return None
+
+def calculate_best_fit_font_size_pillow(text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=False, font_face='Calibri'):
+    """
+    Calculate optimal font size using Pillow for accurate text measurement.
+
+    IMPORTANT: This function only scales DOWN, never UP. If text fits at max_font_size,
+    it returns max_font_size (the requested size). Only if it doesn't fit does it
+    reduce the size until it fits.
+
+    Args:
+        text (str): Text to measure
+        width_inches (float): Box width in inches
+        height_inches (float): Box height in inches
+        max_font_size (int): Requested/maximum font size (default: 18)
+        has_formatting (bool): Whether text has bold/italic (affects width)
+        is_bullets (bool): Whether this is a bullet list (needs extra space)
+        font_face (str): Font name (default: 'Calibri')
+
+    Returns:
+        int: Font size in points (will be <= max_font_size), or None if font file not available
+    """
+    from PIL import ImageFont
+    import math
+
+    # Get font file path
+    font_path = get_font_path(font_face)
+    if not font_path:
+        return None  # Font file not available, caller will use heuristic
+
+    # Handle empty or invalid text
+    if not text or len(text.strip()) == 0:
+        return max_font_size
+
+    # Remove markdown markers for measurement
+    clean_text = text.replace('**', '').replace('*', '').replace('__', '').replace('`', '').replace('~~', '')
+
+    # Convert inches to pixels (72 DPI standard)
+    box_width_px = width_inches * 72
+    box_height_px = height_inches * 72
+
+    # Calculate usable space (with margins)
+    usable_width_px = (box_width_px - 0.2 * 72)  # 0.2 inch margins
+    usable_height_px = (box_height_px - 0.1 * 72)  # 0.1 inch margins
+
+    # Minimum readable size
+    min_font_size = 10
+
+    # Try from requested size down to minimum (only scale DOWN, never UP)
+    for font_size in range(max_font_size, min_font_size - 1, -1):  # Step by -1pt for precision
+        try:
+            # Load font at current size
+            font = ImageFont.truetype(font_path, size=font_size)
+
+            # Measure text bounding box
+            bbox = font.getbbox(clean_text, anchor='lt')  # left-top anchor
+            text_width_px = bbox[2] - bbox[0]  # x2 - x0
+
+            # Adjust for formatting (bold text takes slightly more space)
+            if has_formatting:
+                text_width_px *= 1.05
+
+            # Estimate number of lines needed (with wrapping)
+            lines_needed = math.ceil(text_width_px / usable_width_px)
+
+            # Calculate total height with line spacing
+            line_height_px = font_size * 1.2  # 1.2 = standard line height multiplier
+
+            # Adjust for bullets (need extra vertical space)
+            if is_bullets:
+                line_height_px *= 1.1
+
+            text_height_px = lines_needed * line_height_px
+
+            # Check if text fits VERTICALLY (horizontal wrapping is automatic in PowerPoint)
+            # We only care about vertical overflow since text wraps to fit width
+            if text_height_px <= usable_height_px:
+                return font_size  # Return first size that fits (requested size or smaller)
+
+        except Exception as e:
+            # If PIL fails for this font size, continue trying smaller sizes
+            continue
+
+    return min_font_size  # Return minimum if nothing fits
+
+def calculate_best_fit_font_size(text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=False, font_face='Calibri'):
+    """
+    Calculate optimal font size to fit text in box.
+
+    Uses Pillow for accurate measurement when font files available.
+    Falls back to heuristic approach if font file not found.
+
+    Args:
+        text (str): Text to measure
+        width_inches (float): Box width in inches
+        height_inches (float): Box height in inches
+        max_font_size (int): Maximum font size (default: 18)
+        has_formatting (bool): Whether text has bold/italic
+        is_bullets (bool): Whether this is a bullet list
+        font_face (str): Font name (default: 'Calibri')
+
+    Returns:
+        int: Optimal font size in points
+    """
+
+    # Try Pillow-based accurate measurement
+    font_size = calculate_best_fit_font_size_pillow(
+        text, width_inches, height_inches, max_font_size,
+        has_formatting, is_bullets, font_face
+    )
+
+    if font_size is not None:
+        return font_size
+
+    # Fallback to heuristic (font file not available)
+    return calculate_best_fit_font_size_heuristic(
+        text, width_inches, height_inches, max_font_size,
+        has_formatting, is_bullets
+    )
+
+
+def calculate_best_fit_font_size_heuristic(text, width_inches, height_inches, max_font_size=18, has_formatting=True, is_bullets=False):
+    """
+    Original heuristic-based font size calculation (fallback).
+    Used when font files are not available.
 
     Algorithm:
     1. Calculate how many characters fit per line based on width
@@ -951,7 +1106,7 @@ def _add_title_from_html(slide, h1_element, slide_dims):
 
     # Calculate appropriate font size (titles are always bold)
     title_text = h1_element.get_text()
-    best_fit_size = calculate_best_fit_font_size(title_text, width, height, max_font_size=32, has_formatting=True, is_bullets=False)
+    best_fit_size = calculate_best_fit_font_size(title_text, width, height, max_font_size=32, has_formatting=True, is_bullets=False, font_face='Calibri')
 
     # Parse inline HTML formatting with calculated font size
     paragraph = tf.paragraphs[0]
@@ -987,7 +1142,7 @@ def _add_heading_from_html(slide, heading_element, current_top, margin_left, con
 
     # Calculate appropriate font size (headings are always bold)
     heading_text = heading_element.get_text()
-    best_fit_size = calculate_best_fit_font_size(heading_text, content_width, height, max_font_size=max_font_size, has_formatting=True, is_bullets=False)
+    best_fit_size = calculate_best_fit_font_size(heading_text, content_width, height, max_font_size=max_font_size, has_formatting=True, is_bullets=False, font_face='Calibri')
 
     # Parse inline HTML formatting with calculated font size
     paragraph = tf.paragraphs[0]
@@ -1020,7 +1175,7 @@ def _add_paragraph_from_html(slide, p_element, current_top, margin_left, content
     # Calculate appropriate font size (check if paragraph has formatting)
     paragraph_text = p_element.get_text()
     has_formatting = len(p_element.find_all(['strong', 'b', 'em', 'i', 'u', 'code'])) > 0
-    best_fit_size = calculate_best_fit_font_size(paragraph_text, content_width, height, max_font_size=18, has_formatting=has_formatting, is_bullets=False)
+    best_fit_size = calculate_best_fit_font_size(paragraph_text, content_width, height, max_font_size=18, has_formatting=has_formatting, is_bullets=False, font_face='Calibri')
 
     # Parse inline HTML formatting with calculated font size
     paragraph = tf.paragraphs[0]
@@ -1064,7 +1219,7 @@ def _add_bullet_list_from_html(slide, list_element, current_top, margin_left, co
 
     # Calculate appropriate font size for all bullets
     all_text = '\n'.join(items)
-    best_fit_size = calculate_best_fit_font_size(all_text, content_width - 0.3, height, max_font_size=18, has_formatting=True, is_bullets=True)
+    best_fit_size = calculate_best_fit_font_size(all_text, content_width - 0.3, height, max_font_size=18, has_formatting=True, is_bullets=True, font_face='Calibri')
 
     # Add bullet items with calculated font size
     for i, item_text in enumerate(items):
@@ -1344,7 +1499,7 @@ class CreatePresentationAction(ActionHandler):
 
             # Calculate appropriate title font size (titles are bold)
             has_markdown = has_markdown_formatting(title)
-            best_title_size = calculate_best_fit_font_size(title, title_width, title_height, max_font_size=32, has_formatting=True, is_bullets=False)
+            best_title_size = calculate_best_fit_font_size(title, title_width, title_height, max_font_size=32, has_formatting=True, is_bullets=False, font_face='Calibri')
 
             # Always parse title as markdown with calculated font size
             html = parse_markdown_with_extensions(title)
@@ -1373,7 +1528,7 @@ class CreatePresentationAction(ActionHandler):
 
                 # Calculate appropriate subtitle font size
                 has_markdown = has_markdown_formatting(subtitle)
-                best_subtitle_size = calculate_best_fit_font_size(subtitle, title_width, subtitle_height, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
+                best_subtitle_size = calculate_best_fit_font_size(subtitle, title_width, subtitle_height, max_font_size=18, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
                 # Always parse subtitle as markdown with calculated font size
                 html = parse_markdown_with_extensions(subtitle)
@@ -2239,7 +2394,7 @@ class RepositionElementAction(ActionHandler):
 
                         # Calculate appropriate font size for cell
                         has_markdown = has_markdown_formatting(text)
-                        best_fit_size = calculate_best_fit_font_size(text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
+                        best_fit_size = calculate_best_fit_font_size(text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
                         # Always parse as markdown with calculated font size
                         html = parse_markdown_with_extensions(text)
@@ -2804,7 +2959,7 @@ class FindAndReplaceAction(ActionHandler):
 
                     # Calculate font size
                     has_markdown = has_markdown_formatting(new_text)
-                    best_fit_size = calculate_best_fit_font_size(new_text, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False)
+                    best_fit_size = calculate_best_fit_font_size(new_text, width_inches, height_inches, max_font_size=18, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
                     # Parse markdown and apply (handle multiple paragraphs)
                     html = parse_markdown_with_extensions(new_text)
@@ -2848,7 +3003,7 @@ class FindAndReplaceAction(ActionHandler):
 
                         # Calculate font size
                         has_markdown = has_markdown_formatting(new_text)
-                        best_fit_size = calculate_best_fit_font_size(new_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False)
+                        best_fit_size = calculate_best_fit_font_size(new_text, cell_width, cell_height, max_font_size=14, has_formatting=has_markdown, is_bullets=False, font_face='Calibri')
 
                         # Parse markdown and apply (handle multiple paragraphs)
                         html = parse_markdown_with_extensions(new_text)
