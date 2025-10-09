@@ -1,0 +1,542 @@
+{
+  "name": "slide-maker-js",
+  "version": "1.0.0",
+  "description": "PowerPoint automation using PPTXgenJS. Create presentations with markdown, master slide templates, data-driven batch generation, HTML table support, and template filling (find_and_replace). Supports 1500+ Google Fonts with auto-download and intelligent auto-fitting. Optimized for AI agents with minimal API calls - generate 100 slides in one request or fill existing templates with placeholders.",
+  "entry_point": "slide_maker.js",
+  "actions": {
+    "create_presentation": {
+      "display_name": "Create PowerPoint Presentation",
+      "description": "Create a new PowerPoint presentation with optional master slide template for branding. Master slides define reusable layouts with logos, footers, and consistent styling. Can create initial slides with markdown content. Returns presentation file for stateless operation. USE THIS to start a new presentation, optionally with branding template that will be applied to all subsequent slides.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Presentation title (optional)"
+          },
+          "author": {
+            "type": "string",
+            "description": "Presentation author (optional)"
+          },
+          "master": {
+            "type": "object",
+            "description": "Define master slide template for consistent branding across all slides (optional). Once defined, all slides will inherit this layout.",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Unique name for this master template (e.g. 'BRAND_MASTER')"
+              },
+              "background": {
+                "type": "object",
+                "description": "Background settings",
+                "properties": {
+                  "color": {
+                    "type": "string",
+                    "description": "Hex color code (e.g. 'FFFFFF' for white)"
+                  }
+                }
+              },
+              "objects": {
+                "type": "array",
+                "description": "Design elements to appear on every slide (logos, footers, etc.)",
+                "items": {
+                  "type": "object",
+                  "description": "Shape object (image, rect, line, text)"
+                }
+              },
+              "slideNumber": {
+                "type": "object",
+                "description": "Slide number position",
+                "properties": {
+                  "x": {
+                    "description": "X position (number in inches or percentage string like '95%')"
+                  },
+                  "y": {
+                    "description": "Y position (number in inches or percentage string like '95%')"
+                  }
+                }
+              }
+            },
+            "required": ["title"]
+          },
+          "slides": {
+            "type": "array",
+            "description": "Initial slides to create (optional)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "markdown": {
+                  "type": "string",
+                  "description": "Markdown content for this slide (supports # headings, - bullets, | tables |, **bold**, *italic*)"
+                }
+              }
+            }
+          },
+          "custom_filename": {
+            "type": "string",
+            "description": "Custom filename for the output file (optional, .pptx extension added automatically)"
+          }
+        },
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "presentation_id": {
+            "type": "string",
+            "description": "Unique identifier for this presentation"
+          },
+          "slide_count": {
+            "type": "integer",
+            "description": "Number of slides created"
+          },
+          "master_defined": {
+            "type": "boolean",
+            "description": "Whether a master slide template was defined"
+          },
+          "master_name": {
+            "type": "string",
+            "description": "Name of the defined master template (if any)"
+          },
+          "file": {
+            "type": "object",
+            "description": "The presentation file for streaming",
+            "properties": {
+              "content": {
+                "type": "string",
+                "description": "Base64-encoded file content"
+              },
+              "name": {
+                "type": "string",
+                "description": "Filename"
+              },
+              "contentType": {
+                "type": "string",
+                "description": "MIME type"
+              }
+            },
+            "required": ["content", "name", "contentType"]
+          }
+        },
+        "required": ["presentation_id", "slide_count", "master_defined", "file"]
+      }
+    },
+    "generate_slides": {
+      "display_name": "Generate Slides from Data",
+      "description": "POWER FEATURE: Generate multiple slides from data array + markdown template in ONE API call. Perfect for creating 50+ identical slides with different data (sales reports, dashboards, etc.). Uses Mustache template syntax {{variable}} for variable replacement. This is the MOST EFFICIENT way to create data-driven presentations - generate 100 slides in one request instead of 100 separate calls. USE THIS when you have repetitive slides with different data.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "Existing presentation file to add slides to",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "contentType": {"type": "string"},
+                "content": {"type": "string", "description": "Base64-encoded content"}
+              },
+              "required": ["name", "contentType", "content"]
+            }
+          },
+          "template": {
+            "type": "object",
+            "description": "Slide template with variable placeholders",
+            "properties": {
+              "markdown_template": {
+                "type": "string",
+                "description": "Markdown template with {{variable}} placeholders. Supports {{var}}, {{#array}}...{{/array}} for loops. Example: '# {{title}}\\n\\n- Revenue: {{revenue}}\\n- Growth: {{growth}}%'"
+              }
+            },
+            "required": ["markdown_template"]
+          },
+          "data": {
+            "type": "array",
+            "description": "Array of data objects. Each object generates one slide with variables filled from template.",
+            "items": {
+              "type": "object",
+              "description": "Data object with properties matching template variables"
+            },
+            "minItems": 1
+          },
+          "master": {
+            "type": "string",
+            "description": "Master slide template name to use (if defined in create_presentation)"
+          }
+        },
+        "required": ["template", "data"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "slides_generated": {
+            "type": "integer",
+            "description": "Number of slides created from data array"
+          },
+          "template_used": {
+            "type": "string",
+            "description": "The template that was used"
+          },
+          "total_slides": {
+            "type": "integer",
+            "description": "Total slides in presentation after generation"
+          },
+          "file": {
+            "type": "object",
+            "description": "Updated presentation file",
+            "properties": {
+              "content": {"type": "string"},
+              "name": {"type": "string"},
+              "contentType": {"type": "string"}
+            },
+            "required": ["content", "name", "contentType"]
+          }
+        },
+        "required": ["slides_generated", "total_slides", "file"]
+      }
+    },
+    "add_content": {
+      "display_name": "Add Content to Slide",
+      "description": "Add content to slides using markdown OR HTML. Supports THREE MODES: (1) GRANULAR: Array of markdown elements with optional positions, (2) AUTO-LAYOUT: Single markdown document with vertical flow, (3) HTML TABLE: Direct HTML table conversion. Batch multiple elements in one call. Supports auto-type detection from markdown (table/bullets/text). USE THIS for adding flexible content - markdown for simple text, HTML for complex tables.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "Current presentation file",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "contentType": {"type": "string"},
+                "content": {"type": "string"}
+              },
+              "required": ["name", "contentType", "content"]
+            }
+          },
+          "slide_index": {
+            "type": "integer",
+            "description": "Index of slide to add content to (0-based)"
+          },
+          "auto_layout": {
+            "type": "boolean",
+            "description": "Enable AUTO-LAYOUT mode: provide 'markdown' parameter for vertical flow. When false: provide 'elements' array for granular control.",
+            "default": false
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Single markdown document for AUTO-LAYOUT mode. Supports # headings, - bullets, | tables |, **bold**, *italic*, ```code```, > blockquotes."
+          },
+          "elements": {
+            "type": "array",
+            "description": "Array of elements for GRANULAR mode. Each element's type is auto-detected from markdown content.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "description": "Markdown content. Type auto-detected: plain text = text box, | table | = table, - bullets = bullets."
+                },
+                "position": {
+                  "type": "object",
+                  "description": "Position and size in inches (optional, auto-positioned if omitted)",
+                  "properties": {
+                    "x": {"type": "number"},
+                    "y": {"type": "number"},
+                    "w": {"type": "number"},
+                    "h": {"type": "number"}
+                  },
+                  "required": ["x", "y", "w", "h"]
+                },
+                "format": {
+                  "type": "string",
+                  "enum": ["markdown", "html"],
+                  "description": "Explicit format specification (optional, auto-detected if omitted)"
+                },
+                "autoFit": {
+                  "type": "boolean",
+                  "description": "Enable intelligent font size calculation to fit text within box dimensions. Uses opentype.js with actual font geometry for pixel-perfect accuracy. Supports ALL fonts (Calibri, Arial, Times New Roman, Courier New, and any bundled TTF files). Automatically calculates optimal font size (10-44pt) based on text length, box size, and formatting. DEFAULT: TRUE (always enabled unless explicitly disabled or fontSize is provided). Set to false only if you want fixed fontSize.",
+                  "default": true
+                },
+                "style": {
+                  "type": "object",
+                  "description": "Text styling options (optional)",
+                  "properties": {
+                    "fontSize": {"type": "number", "description": "Font size in points (overrides autoFit if specified)"},
+                    "fontFace": {"type": "string", "description": "Font family (e.g., 'Calibri', 'Arial')"},
+                    "bold": {"type": "boolean", "description": "Bold text"},
+                    "italic": {"type": "boolean", "description": "Italic text"},
+                    "color": {"type": "string", "description": "Text color (hex without #, e.g., 'FF0000')"},
+                    "align": {"type": "string", "enum": ["left", "center", "right", "justify"], "description": "Horizontal alignment"},
+                    "minFontSize": {"type": "number", "description": "Minimum font size for autoFit (default: 10)"},
+                    "maxFontSize": {"type": "number", "description": "Maximum font size for autoFit (default: 44)"}
+                  }
+                }
+              },
+              "required": ["content"]
+            }
+          },
+          "html_table": {
+            "type": "string",
+            "description": "HTML table string for direct conversion (PPTXgenJS native feature, faster than markdown parsing)"
+          }
+        },
+        "required": ["slide_index"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["granular", "auto_layout", "html_table"],
+            "description": "Mode used for content addition"
+          },
+          "elements_added": {
+            "type": "integer",
+            "description": "Number of elements added to slide"
+          },
+          "total_slides": {
+            "type": "integer",
+            "description": "Total slides in presentation"
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "content": {"type": "string"},
+              "name": {"type": "string"},
+              "contentType": {"type": "string"}
+            },
+            "required": ["content", "name", "contentType"]
+          }
+        },
+        "required": ["mode", "elements_added", "total_slides", "file"]
+      }
+    },
+    "add_chart_and_images": {
+      "display_name": "Add Charts and Images",
+      "description": "Add charts and/or images to a slide. Batch multiple items in one call. Supports all PPTXgenJS chart types (bar, line, pie, area, scatter, etc.). Images can be provided as base64 data. USE THIS for visual content that can't be represented in markdown.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "Current presentation file",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "contentType": {"type": "string"},
+                "content": {"type": "string"}
+              },
+              "required": ["name", "contentType", "content"]
+            }
+          },
+          "slide_index": {
+            "type": "integer",
+            "description": "Index of slide to add items to (0-based)"
+          },
+          "items": {
+            "type": "array",
+            "description": "Array of charts and/or images to add",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["chart", "image"],
+                  "description": "Item type"
+                },
+                "chartType": {
+                  "type": "string",
+                  "enum": ["bar", "line", "pie", "area", "scatter", "bubble", "doughnut", "radar"],
+                  "description": "Chart type (required if type=chart)"
+                },
+                "data": {
+                  "description": "Chart data or image base64 content"
+                },
+                "position": {
+                  "type": "object",
+                  "description": "Position and size",
+                  "properties": {
+                    "x": {"type": "number", "description": "X position in inches"},
+                    "y": {"type": "number", "description": "Y position in inches"},
+                    "w": {"type": "number", "description": "Width in inches"},
+                    "h": {"type": "number", "description": "Height in inches"}
+                  },
+                  "required": ["x", "y", "w", "h"]
+                },
+                "options": {
+                  "type": "object",
+                  "description": "Additional options for styling (optional)"
+                }
+              },
+              "required": ["type", "position"]
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["slide_index", "items"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items_added": {
+            "type": "integer",
+            "description": "Number of charts/images added"
+          },
+          "total_slides": {
+            "type": "integer",
+            "description": "Total slides in presentation"
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "content": {"type": "string"},
+              "name": {"type": "string"},
+              "contentType": {"type": "string"}
+            },
+            "required": ["content", "name", "contentType"]
+          }
+        },
+        "required": ["items_added", "total_slides", "file"]
+      }
+    },
+    "find_and_replace": {
+      "display_name": "Find and Replace",
+      "description": "Find and replace text in existing PowerPoint template files. Scans all slides and text boxes. Supports multiple find/replace operations in one call (batch processing). Replacement text supports markdown formatting (**bold**, *italic*, __underline__, `code`) with automatic font sizing. Handles text split across multiple XML runs. USE THIS FOR: Filling templates with placeholders ({{COMPANY}}, {{DATE}}, etc.), updating existing presentations, batch text updates. This is the PREFERRED method for template filling - works with existing PPTX files.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "Template PPTX file to modify",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "contentType": {"type": "string"},
+                "content": {"type": "string", "description": "Base64-encoded PPTX content"}
+              },
+              "required": ["name", "contentType", "content"]
+            },
+            "minItems": 1
+          },
+          "replacements": {
+            "type": "array",
+            "description": "Array of find/replace operations to perform",
+            "items": {
+              "type": "object",
+              "properties": {
+                "find": {
+                  "type": "string",
+                  "description": "Text to find (case-sensitive exact match). Example: '{{COMPANY}}'"
+                },
+                "replace": {
+                  "type": "string",
+                  "description": "Replacement text in markdown format (supports **bold**, *italic*, __underline__, `code`). Font size automatically calculated to fit original text box. Example: '**Acme Corp** Inc'"
+                },
+                "replace_all": {
+                  "type": "boolean",
+                  "description": "Set to true to allow replacing multiple matches. If false (default), operation is BLOCKED if multiple matches found (safety feature). This prevents accidental replacements when your search text is ambiguous. If blocked, the response will show all match locations and ask you to either: (1) provide more context in the 'find' text to make it unique, or (2) set replace_all=true to confirm replacing all instances.",
+                  "default": false
+                }
+              },
+              "required": ["find", "replace"]
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["files", "replacements"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "TRUE if at least one replacement was made, FALSE if no placeholders were found. Check this field to determine if template filling succeeded."
+          },
+          "total_replacements": {
+            "type": "integer",
+            "description": "Total number of actual text replacements performed across all slides. If 0, no placeholders were found."
+          },
+          "replacements_requested": {
+            "type": "integer",
+            "description": "Number of replacement operations requested in input (length of replacements array)"
+          },
+          "replacements_found": {
+            "type": "integer",
+            "description": "Number of placeholders that were found and replaced"
+          },
+          "replacements_not_found": {
+            "type": "integer",
+            "description": "Number of placeholders that were NOT found in the template"
+          },
+          "blocked_count": {
+            "type": "integer",
+            "description": "Number of replacements BLOCKED due to multiple matches without replace_all=true"
+          },
+          "blocked": {
+            "type": "array",
+            "description": "Replacements that were BLOCKED due to multiple matches without replace_all flag. LLM should retry with more specific text or set replace_all=true.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "BLOCKED": {"type": "string", "description": "Block reason"},
+                "find_phrase": {"type": "string", "description": "The ambiguous search text"},
+                "match_count": {"type": "integer", "description": "Number of matches found"},
+                "matches": {
+                  "type": "array",
+                  "description": "First 5 match locations with context",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slide_number": {"type": "integer"},
+                      "location": {"type": "string"},
+                      "content": {"type": "string", "description": "First 80 chars of matched text"}
+                    }
+                  }
+                },
+                "fix_required": {"type": "string", "description": "Guidance on how to fix this issue"}
+              },
+              "required": ["BLOCKED", "find_phrase", "match_count", "matches", "fix_required"]
+            }
+          },
+          "details": {
+            "type": "array",
+            "description": "Detailed results for each replacement operation",
+            "items": {
+              "type": "object",
+              "properties": {
+                "find": {"type": "string", "description": "Placeholder text that was searched"},
+                "replace": {"type": "string", "description": "Replacement text"},
+                "matches_found": {"type": "integer", "description": "Number of times this placeholder was found"},
+                "status": {"type": "string", "enum": ["replaced", "not_found", "blocked"], "description": "Status: replaced (success), not_found (no matches), blocked (multiple matches without replace_all)"}
+              },
+              "required": ["find", "replace", "matches_found", "status"]
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable summary of what happened. Use this to understand the result."
+          },
+          "warning": {
+            "type": "string",
+            "description": "Warning message if some placeholders were not found or blocked (null if all succeeded)"
+          },
+          "file": {
+            "type": "object",
+            "description": "Modified presentation file with replacements applied",
+            "properties": {
+              "content": {"type": "string", "description": "Base64-encoded PPTX content"},
+              "name": {"type": "string", "description": "Filename (with _filled suffix)"},
+              "contentType": {"type": "string"}
+            },
+            "required": ["content", "name", "contentType"]
+          }
+        },
+        "required": ["success", "total_replacements", "replacements_requested", "replacements_found", "replacements_not_found", "blocked_count", "blocked", "details", "message", "file"]
+      }
+    }
+  }
+}
