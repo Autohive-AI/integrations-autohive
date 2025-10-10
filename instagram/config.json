@@ -1,0 +1,49 @@
+{
+    "name": "instagram",
+    "version": "1.0.0",
+    "description": "Instagram integration for retrieving posts and media",
+    "entry_point": "instagram.py",
+    "auth": {
+        "type": "platform",
+        "provider": "facebook",
+        "scopes": ["instagram_basic", "pages_read_engagement"]
+    },
+    "actions": {
+        "get_recent_posts": {
+            "display_name": "Get Recent Posts",
+            "description": "Retrieve recent Instagram posts from your business account",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "number",
+                        "description": "Number of posts to retrieve (max 25)",
+                        "default": 10,
+                        "minimum": 1,
+                        "maximum": 25
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "posts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Post ID"},
+                                "media_type": {"type": "string", "description": "Type of media (IMAGE, VIDEO, CAROUSEL_ALBUM)"},
+                                "media_url": {"type": "string", "description": "URL of the media"},
+                                "caption": {"type": "string", "description": "Post caption"},
+                                "timestamp": {"type": "string", "description": "When the post was published"},
+                                "permalink": {"type": "string", "description": "Instagram permalink to the post"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
