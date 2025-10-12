@@ -71,6 +71,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, and Calendar through Microsoft Graph API. Supports email management (send, list, read, organize), calendar operations (create, update, list events), file operations (upload to OneDrive, list files), and contact management. Features timezone-aware operations, folder management, HTML email support, and OAuth2 authentication with proper scope handling for enterprise-grade Microsoft 365 workflows.
 
+### Spreadsheet Tools
+
+[spreadsheet-tools](spreadsheet-tools): Tools for working with spreadsheet files including conversion to JSON format with automatic header sanitization and type inference. Supports Excel (.xlsx/.xls) and CSV file formats. Features automatic data type detection, header sanitization for valid JSON property names, duplicate header handling, and UTF-8/BOM encoding support. Ideal for data transformation, spreadsheet parsing, and converting tabular data into structured JSON for workflow automation.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
