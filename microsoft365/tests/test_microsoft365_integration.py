@@ -348,6 +348,78 @@ class TestMicrosoft365Integration(unittest.TestCase):
         self.assertIn("Access denied", result["error"])
 
 
+class TestListCalendarEventsAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for calendar events listing tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_list_calendar_events_with_date_range(self):
+        """Test listing calendar events with date range filtering using calendarView."""
+        # Mock API response from calendarView
+        mock_response = {
+            "value": [
+                {
+                    "id": "event123",
+                    "subject": "Team Meeting",
+                    "start": {
+                        "dateTime": "2024-08-20T14:00:00.0000000",
+                        "timeZone": "UTC"
+                    },
+                    "end": {
+                        "dateTime": "2024-08-20T15:00:00.0000000",
+                        "timeZone": "UTC"
+                    },
+                    "location": {
+                        "displayName": "Conference Room A"
+                    },
+                    "bodyPreview": "Weekly team sync",
+                    "organizer": {
+                        "emailAddress": {
+                            "address": "organizer@example.com",
+                            "name": "Organizer Name"
+                        }
+                    },
+                    "attendees": [
+                        {
+                            "emailAddress": {
+                                "address": "attendee@example.com",
+                                "name": "Attendee Name"
+                            },
+                            "status": {
+                                "response": "accepted"
+                            }
+                        }
+                    ],
+                    "webLink": "https://outlook.office365.com/calendar/item123",
+                    "isAllDay": False
+                }
+            ]
+        }
+
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListCalendarEventsAction()
+        inputs = {
+            "start_datetime": "2024-08-20T00:00:00Z",
+            "end_datetime": "2024-08-20T23:59:59Z",
+            "limit": 50
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(len(result["events"]), 1)
+        self.assertEqual(result["events"][0]["subject"], "Team Meeting")
+        self.assertEqual(result["events"][0]["location"], "Conference Room A")
+
+        # Verify calendarView endpoint is called with date parameters
+        call_args = self.mock_context.fetch.call_args[0][0]
+        self.assertIn("/me/calendarView", call_args)
+        self.assertIn("startDateTime=2024-08-20T00:00:00Z", call_args)
+        self.assertIn("endDateTime=2024-08-20T23:59:59Z", call_args)
+
+
 class TestCreateDraftEmailAction(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures for draft email tests."""
@@ -563,10 +635,16 @@ class TestDownloadEmailAttachmentAction(unittest.TestCase):
         result = await handler.execute(inputs, self.mock_context)
 
         self.assertTrue(result["result"])
-        self.assertEqual(result["attachment"]["id"], "att123")
-        self.assertEqual(result["attachment"]["name"], "document.pdf")
-        self.assertEqual(result["attachment"]["content_type"], "application/pdf")
-        self.assertIsNotNone(result["attachment"]["content"])  # Base64 encoded
+        # Verify file structure (matches OneDrive/SharePoint format)
+        self.assertEqual(result["file"]["name"], "document.pdf")
+        self.assertEqual(result["file"]["contentType"], "application/pdf")
+        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded
+        # Verify metadata structure
+        self.assertEqual(result["metadata"]["id"], "att123")
+        self.assertEqual(result["metadata"]["name"], "document.pdf")
+        self.assertEqual(result["metadata"]["size"], 1024)
+        self.assertEqual(result["metadata"]["message_id"], "msg123")
+        self.assertFalse(result["metadata"]["is_inline"])
 
         # Verify API calls
         self.mock_context.fetch.assert_called_once()
@@ -593,9 +671,10 @@ class TestDownloadEmailAttachmentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["attachment"]["content"], "")  # No content
-        self.assertTrue(result["attachment"]["is_inline"])
+        self.assertFalse(result["result"])  # False because content not retrieved
+        self.assertEqual(result["file"]["content"], "")  # No content
+        self.assertEqual(result["file"]["name"], "image.jpg")
+        self.assertTrue(result["metadata"]["is_inline"])
 
 
 class TestSearchEmailsAction(unittest.TestCase):

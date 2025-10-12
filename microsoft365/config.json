@@ -1286,11 +1286,25 @@
             "output_schema": {
                 "type": "object",
                 "properties": {
-                    "result": {
-                        "type": "boolean",
-                        "description": "Whether the attachment was downloaded successfully"
+                    "file": {
+                        "type": "object",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "Base64 encoded attachment content"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Attachment filename"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "MIME type of the attachment"
+                            }
+                        },
+                        "required": ["content", "name", "contentType"]
                     },
-                    "attachment": {
+                    "metadata": {
                         "type": "object",
                         "properties": {
                             "id": {
@@ -1301,31 +1315,35 @@
                                 "type": "string",
                                 "description": "Attachment filename"
                             },
-                            "content_type": {
-                                "type": "string",
-                                "description": "MIME type of the attachment"
-                            },
                             "size": {
                                 "type": "integer",
                                 "description": "File size in bytes"
                             },
-                            "content": {
+                            "contentType": {
                                 "type": "string",
-                                "description": "Base64 encoded attachment content"
+                                "description": "MIME type of the attachment"
+                            },
+                            "message_id": {
+                                "type": "string",
+                                "description": "ID of the message containing this attachment"
                             },
                             "is_inline": {
                                 "type": "boolean",
                                 "description": "Whether attachment is inline"
                             }
                         },
-                        "required": ["id", "name", "content_type", "size", "content", "is_inline"]
+                        "required": ["id", "name", "size", "contentType", "message_id", "is_inline"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result", "attachment"]
+                "required": ["file", "metadata", "result"]
             }
         },
         "search_emails": {

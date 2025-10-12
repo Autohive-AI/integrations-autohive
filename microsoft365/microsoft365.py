@@ -306,18 +306,20 @@ class ListCalendarEventsAction(ActionHandler):
                 end_datetime = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             
             limit = inputs.get("limit", 100)
-            
-            # Build query parameters  
+
+            # Build query parameters using calendarView for proper date filtering
+            # CalendarView is recommended for date range queries per Microsoft Graph docs
             params = {
                 "$top": limit,
                 "$orderby": "start/dateTime",
                 "$select": "id,subject,start,end,location,bodyPreview,organizer,attendees,webLink,isAllDay"
             }
-            
-            # Skip date filtering for calendar events due to API issues
-            # TODO: Fix datetime filter compatibility
-            
-            response = await context.fetch(f"{GRAPH_API_BASE}/me/events", params=params)
+
+            # Use calendarView endpoint with startDateTime/endDateTime query parameters
+            # GET /me/calendarView?startDateTime={start}&endDateTime={end}
+            api_url = f"{GRAPH_API_BASE}/me/calendarView?startDateTime={start_datetime}&endDateTime={end_datetime}"
+
+            response = await context.fetch(api_url, params=params)
             
             # Format events
             events = []
@@ -1107,49 +1109,92 @@ class DownloadEmailAttachmentAction(ActionHandler):
                 method="GET"
             )
 
-            attachment_data = {
-                "id": attachment_response["id"],
-                "name": attachment_response.get("name", ""),
-                "content_type": attachment_response.get("contentType", ""),
-                "size": attachment_response.get("size", 0),
-                "is_inline": attachment_response.get("isInline", False),
-                "content": ""
-            }
+            # Extract metadata
+            attachment_id_val = attachment_response["id"]
+            attachment_name = attachment_response.get("name") or ""
+            content_type = attachment_response.get("contentType") or "application/octet-stream"
+            size = attachment_response.get("size", 0)
+            is_inline = attachment_response.get("isInline", False)
 
             # Get attachment content if requested
+            content = ""
+            content_available = False
+            content_error_msg = None
+
             if include_content:
                 try:
                     # Use binary fetch helper for /$value endpoint to get raw content
+                    # GET /me/messages/{message-id}/attachments/{attachment-id}/$value
                     content_url = f"{GRAPH_API_BASE}/me/messages/{message_id}/attachments/{attachment_id}/$value"
                     content_bytes = await fetch_binary_content(content_url, context)
 
-                    # Base64 encode for JSON serialization
-                    attachment_data["content"] = base64.b64encode(content_bytes).decode('utf-8')
+                    # Base64 encode for JSON serialization (same as OneDrive/SharePoint)
+                    content = base64.b64encode(content_bytes).decode('utf-8')
+                    content_available = True
 
                 except Exception as content_error:
-                    # If binary content fails, try getting content from attachment object
+                    # If binary content fails, try getting contentBytes from attachment object
                     if "contentBytes" in attachment_response:
-                        attachment_data["content"] = attachment_response["contentBytes"]
+                        content = attachment_response["contentBytes"]
+                        content_available = True
                     else:
-                        attachment_data["content"] = ""
-                        attachment_data["content_error"] = f"Content retrieval failed: {str(content_error)}"
+                        content = ""
+                        content_available = False
+                        content_error_msg = f"Content retrieval failed: {str(content_error)}"
 
-            return {
-                "result": True,
-                "attachment": attachment_data
-            }
+            # Return in same format as OneDrive/SharePoint for consistency
+            if content_available and content:
+                return {
+                    "file": {
+                        "content": content,
+                        "name": attachment_name,
+                        "contentType": content_type
+                    },
+                    "metadata": {
+                        "id": attachment_id_val,
+                        "name": attachment_name,
+                        "size": size,
+                        "contentType": content_type,
+                        "message_id": message_id,
+                        "is_inline": is_inline
+                    },
+                    "result": True
+                }
+            else:
+                return {
+                    "file": {
+                        "content": "",
+                        "name": attachment_name,
+                        "contentType": content_type
+                    },
+                    "metadata": {
+                        "id": attachment_id_val,
+                        "name": attachment_name,
+                        "size": size,
+                        "contentType": content_type,
+                        "message_id": message_id,
+                        "is_inline": is_inline
+                    },
+                    "result": False,
+                    "error": content_error_msg or "Content not available"
+                }
 
         except Exception as e:
             return {
-                "result": False,
-                "attachment": {
+                "file": {
+                    "content": "",
+                    "name": "",
+                    "contentType": "application/octet-stream"
+                },
+                "metadata": {
                     "id": inputs.get("attachment_id", ""),
                     "name": "",
-                    "content_type": "",
                     "size": 0,
-                    "content": "",
+                    "contentType": "",
+                    "message_id": inputs.get("message_id", ""),
                     "is_inline": False
                 },
+                "result": False,
                 "error": str(e)
             }
 

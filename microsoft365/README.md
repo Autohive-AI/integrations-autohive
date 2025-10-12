@@ -158,21 +158,26 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 
 ### Action: `download_email_attachment`
 
-*   **Description:** Download the content of an email attachment
+*   **Description:** Download the content of an email attachment with automatic file attachment to conversation
 *   **Inputs:**
     *   `message_id`: ID of the message containing the attachment
     *   `attachment_id`: ID of the attachment to download
     *   `include_content`: Whether to include attachment content (default: true)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
-    *   `attachment`: Object with attachment details including base64 encoded content
+    *   `file`: Object with file content (same format as OneDrive/SharePoint for automatic attachment)
+        *   `content`: Base64 encoded attachment content
+        *   `name`: Attachment filename
+        *   `contentType`: MIME type of the attachment
+    *   `metadata`: Attachment metadata
         *   `id`: Attachment ID
         *   `name`: Attachment filename
-        *   `content_type`: MIME type of the attachment
         *   `size`: File size in bytes
-        *   `content`: Base64 encoded attachment content
+        *   `contentType`: MIME type
+        *   `message_id`: ID of the message containing this attachment
         *   `is_inline`: Whether attachment is inline
     *   `error`: Error message if operation failed
+*   **Note:** Uses Microsoft Graph `/$value` endpoint to download raw attachment content. Returns in same format as OneDrive/SharePoint files for consistent file handling.
 
 ### Action: `search_emails`
 
@@ -222,15 +227,19 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 
 ### Action: `list_calendar_events`
 
-*   **Description:** List calendar events for specific dates or date ranges
+*   **Description:** List calendar events for specific dates or date ranges using Microsoft Graph calendarView for accurate date filtering
 *   **Inputs:**
-    *   `start_datetime`: Start datetime for filtering (UTC)
-    *   `end_datetime`: End datetime for filtering (UTC)
-    *   `limit`: Maximum number of events to return
+    *   `start_datetime`: Start datetime for filtering (ISO 8601 format in UTC, e.g., "2024-08-20T00:00:00Z")
+    *   `end_datetime`: End datetime for filtering (ISO 8601 format in UTC, e.g., "2024-08-20T23:59:59Z")
+    *   `start_date`: Legacy date-only support (ISO 8601 date, e.g., "2024-08-20")
+    *   `end_date`: Legacy date-only support (ISO 8601 date)
+    *   `limit`: Maximum number of events to return (default: 100)
+    *   `user_timezone`: User's timezone for intelligent defaults (optional)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
-    *   `events`: List of calendar event objects
+    *   `events`: List of calendar event objects with full details including subject, start, end, location, organizer, attendees
     *   `error`: Error message if operation failed
+*   **Note:** Uses Microsoft Graph calendarView endpoint which properly filters events by date range and expands recurring events. If no date parameters provided, defaults to next 30 days.
 
 ### Action: `upload_file`
 
@@ -428,7 +437,17 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 3: Upload a file to OneDrive**
+**Example 3: List calendar events for a specific day**
+
+```json
+{
+  "start_datetime": "2024-08-20T00:00:00Z",
+  "end_datetime": "2024-08-20T23:59:59Z",
+  "limit": 50
+}
+```
+
+**Example 4: Upload a file to OneDrive**
 
 ```json
 {
@@ -439,7 +458,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 4: List recent emails with timezone handling**
+**Example 5: List recent emails with timezone handling**
 
 ```json
 {
@@ -450,7 +469,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 5: Create and send a draft email**
+**Example 6: Create and send a draft email**
 
 ```json
 {
@@ -465,7 +484,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 6: Reply to an email**
+**Example 7: Reply to an email**
 
 ```json
 {
@@ -474,7 +493,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 7: Search emails for specific content**
+**Example 8: Search emails for specific content**
 
 ```json
 {
@@ -484,7 +503,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 8: Download an email attachment**
+**Example 9: Download an email attachment**
 
 ```json
 {
@@ -494,7 +513,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 9: Search OneDrive files**
+**Example 10: Search OneDrive files**
 
 ```json
 {
@@ -503,7 +522,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 10: Read OneDrive file content**
+**Example 11: Read OneDrive file content**
 
 ```json
 {
@@ -511,7 +530,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 11: Search SharePoint sites**
+**Example 12: Search SharePoint sites**
 
 ```json
 {
@@ -520,7 +539,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 12: Search SharePoint documents across all libraries**
+**Example 13: Search SharePoint documents across all libraries**
 
 ```json
 {
@@ -530,7 +549,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 13: Read SharePoint document from specific library**
+**Example 14: Read SharePoint document from specific library**
 
 ```json
 {
