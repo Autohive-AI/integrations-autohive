@@ -37,7 +37,11 @@
                                     "description": "The file content encoded as base64"
                                 }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     },
                     "custom_filename": {
@@ -83,14 +87,24 @@
                                 "description": "The content type of the file"
                             }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["presentation_id", "slide_count", "saved", "file_path", "file"]
+                "required": [
+                    "presentation_id",
+                    "slide_count",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "add_slide": {
@@ -122,11 +136,17 @@
                                     "description": "The file content encoded as base64"
                                 }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id"]
+                "required": [
+                    "presentation_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -164,14 +184,24 @@
                                 "description": "The content type of the file"
                             }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["slide_index", "slide_count", "saved", "file_path", "file"]
+                "required": [
+                    "slide_index",
+                    "slide_count",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "add_image": {
@@ -191,12 +221,27 @@
                     "position": {
                         "type": "object",
                         "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Width in inches (optional)"},
-                            "height": {"type": "number", "description": "Height in inches (optional)"}
+                            "left": {
+                                "type": "number",
+                                "description": "Left position in inches"
+                            },
+                            "top": {
+                                "type": "number",
+                                "description": "Top position in inches"
+                            },
+                            "width": {
+                                "type": "number",
+                                "description": "Width in inches (optional)"
+                            },
+                            "height": {
+                                "type": "number",
+                                "description": "Height in inches (optional)"
+                            }
                         },
-                        "required": ["left", "top"]
+                        "required": [
+                            "left",
+                            "top"
+                        ]
                     },
                     "files": {
                         "type": "array",
@@ -217,11 +262,19 @@
                                     "description": "The file content encoded as base64"
                                 }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "position"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "position"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -242,18 +295,36 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["shape_id", "saved", "file_path", "file"]
+                "required": [
+                    "shape_id",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "add_chart": {
@@ -272,25 +343,51 @@
                     },
                     "chart_type": {
                         "type": "string",
-                        "enum": ["column_clustered", "line", "pie", "bar_clustered", "area", "xy_scatter"],
+                        "enum": [
+                            "column_clustered",
+                            "line",
+                            "pie",
+                            "bar_clustered",
+                            "area",
+                            "xy_scatter"
+                        ],
                         "description": "Type of chart to create"
                     },
                     "position": {
                         "type": "object",
                         "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Chart width in inches"},
-                            "height": {"type": "number", "description": "Chart height in inches"}
+                            "left": {
+                                "type": "number",
+                                "description": "Left position in inches"
+                            },
+                            "top": {
+                                "type": "number",
+                                "description": "Top position in inches"
+                            },
+                            "width": {
+                                "type": "number",
+                                "description": "Chart width in inches"
+                            },
+                            "height": {
+                                "type": "number",
+                                "description": "Chart height in inches"
+                            }
                         },
-                        "required": ["left", "top", "width", "height"]
+                        "required": [
+                            "left",
+                            "top",
+                            "width",
+                            "height"
+                        ]
                     },
                     "data": {
                         "type": "object",
                         "properties": {
                             "categories": {
                                 "type": "array",
-                                "items": {"type": "string"},
+                                "items": {
+                                    "type": "string"
+                                },
                                 "description": "Chart categories/labels"
                             },
                             "series": {
@@ -298,18 +395,28 @@
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": {"type": "string"},
+                                        "name": {
+                                            "type": "string"
+                                        },
                                         "values": {
                                             "type": "array",
-                                            "items": {"type": "number"}
+                                            "items": {
+                                                "type": "number"
+                                            }
                                         }
                                     },
-                                    "required": ["name", "values"]
+                                    "required": [
+                                        "name",
+                                        "values"
+                                    ]
                                 },
                                 "description": "Chart data series"
                             }
                         },
-                        "required": ["categories", "series"]
+                        "required": [
+                            "categories",
+                            "series"
+                        ]
                     },
                     "files": {
                         "type": "array",
@@ -317,15 +424,31 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "chart_type", "position", "data"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "chart_type",
+                    "position",
+                    "data"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -346,18 +469,36 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["chart_id", "saved", "file_path", "file"]
+                "required": [
+                    "chart_id",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "set_text_autosize": {
@@ -380,7 +521,11 @@
                     },
                     "autosize_type": {
                         "type": "string",
-                        "enum": ["NONE", "SHAPE_TO_FIT_TEXT", "TEXT_TO_FIT_SHAPE"],
+                        "enum": [
+                            "NONE",
+                            "SHAPE_TO_FIT_TEXT",
+                            "TEXT_TO_FIT_SHAPE"
+                        ],
                         "description": "Type of automatic sizing: NONE (no auto-sizing), SHAPE_TO_FIT_TEXT (resize shape to fit text), TEXT_TO_FIT_SHAPE (resize text to fit shape)"
                     },
                     "word_wrap": {
@@ -393,15 +538,30 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "shape_index", "autosize_type"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "shape_index",
+                    "autosize_type"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -430,18 +590,37 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "autosize_type", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "autosize_type",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "set_text_margins": {
@@ -490,15 +669,30 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "shape_index", "margins"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "shape_index",
+                    "margins"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -523,18 +717,37 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "margins_set", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "margins_set",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "set_text_alignment": {
@@ -557,7 +770,11 @@
                     },
                     "vertical_anchor": {
                         "type": "string",
-                        "enum": ["TOP", "MIDDLE", "BOTTOM"],
+                        "enum": [
+                            "TOP",
+                            "MIDDLE",
+                            "BOTTOM"
+                        ],
                         "description": "Vertical alignment of text within the shape"
                     },
                     "files": {
@@ -566,15 +783,29 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "shape_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "shape_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -599,18 +830,36 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "set_slide_background_color": {
@@ -640,13 +889,19 @@
                                 "properties": {
                                     "rgb": {
                                         "type": "array",
-                                        "items": {"type": "integer", "minimum": 0, "maximum": 255},
+                                        "items": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 255
+                                        },
                                         "minItems": 3,
                                         "maxItems": 3,
                                         "description": "RGB color values [r, g, b]"
                                     }
                                 },
-                                "required": ["rgb"],
+                                "required": [
+                                    "rgb"
+                                ],
                                 "additionalProperties": false
                             },
                             {
@@ -654,11 +909,26 @@
                                 "properties": {
                                     "theme_color": {
                                         "type": "string",
-                                        "enum": ["ACCENT_1", "ACCENT_2", "ACCENT_3", "ACCENT_4", "ACCENT_5", "ACCENT_6", "BACKGROUND_1", "BACKGROUND_2", "DARK_1", "DARK_2", "LIGHT_1", "LIGHT_2"],
+                                        "enum": [
+                                            "ACCENT_1",
+                                            "ACCENT_2",
+                                            "ACCENT_3",
+                                            "ACCENT_4",
+                                            "ACCENT_5",
+                                            "ACCENT_6",
+                                            "BACKGROUND_1",
+                                            "BACKGROUND_2",
+                                            "DARK_1",
+                                            "DARK_2",
+                                            "LIGHT_1",
+                                            "LIGHT_2"
+                                        ],
                                         "description": "PowerPoint theme color"
                                     }
                                 },
-                                "required": ["theme_color"],
+                                "required": [
+                                    "theme_color"
+                                ],
                                 "additionalProperties": false
                             }
                         ]
@@ -669,15 +939,29 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "color"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "color"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -701,18 +985,37 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "color_set", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "color_set",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "set_slide_background_gradient": {
@@ -754,22 +1057,37 @@
                                             "properties": {
                                                 "rgb": {
                                                     "type": "array",
-                                                    "items": {"type": "integer", "minimum": 0, "maximum": 255},
+                                                    "items": {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 255
+                                                    },
                                                     "minItems": 3,
                                                     "maxItems": 3
                                                 }
                                             },
-                                            "required": ["rgb"]
+                                            "required": [
+                                                "rgb"
+                                            ]
                                         },
                                         {
                                             "type": "object",
                                             "properties": {
                                                 "theme_color": {
                                                     "type": "string",
-                                                    "enum": ["ACCENT_1", "ACCENT_2", "ACCENT_3", "ACCENT_4", "ACCENT_5", "ACCENT_6"]
+                                                    "enum": [
+                                                        "ACCENT_1",
+                                                        "ACCENT_2",
+                                                        "ACCENT_3",
+                                                        "ACCENT_4",
+                                                        "ACCENT_5",
+                                                        "ACCENT_6"
+                                                    ]
                                                 }
                                             },
-                                            "required": ["theme_color"]
+                                            "required": [
+                                                "theme_color"
+                                            ]
                                         }
                                     ]
                                 }
@@ -782,15 +1100,28 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -819,18 +1150,38 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "gradient_angle", "gradient_stops_applied", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "gradient_angle",
+                    "gradient_stops_applied",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "add_background_image_workaround": {
@@ -866,11 +1217,18 @@
                                     "description": "The file content encoded as base64"
                                 }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -907,18 +1265,40 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "method", "picture_width", "picture_height", "note", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "method",
+                    "picture_width",
+                    "picture_height",
+                    "note",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "reset_slide_background": {
@@ -941,15 +1321,28 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -978,18 +1371,38 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "follow_master_background", "note", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "follow_master_background",
+                    "note",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "delete_element": {
@@ -1016,15 +1429,29 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "shape_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "shape_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1053,23 +1480,42 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["deleted", "remaining_shapes", "saved", "file_path", "file"]
+                "required": [
+                    "deleted",
+                    "remaining_shapes",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "get_slide_elements": {
             "display_name": "Get Slide Elements",
-            "description": "Get detailed information about all elements (shapes, text boxes, images, charts, tables, etc.) on a slide, including their positions, sizes, types, and boundary/overlap analysis. Content is automatically included for elements with detected problems (boundary violations, overlaps). Use the include_content parameter only when you need to see content for elements that have no issues. Requires the current presentation file in the 'files' parameter. Elements are listed in the order they appear on the slide, with index numbers that correspond to the delete_element action.",
+            "description": "Get detailed information about elements on a slide or entire presentation. SINGLE SLIDE MODE: Provide slide_index to get elements for that specific slide. ALL SLIDES MODE: Omit slide_index to get elements for all slides with summary statistics. Content is automatically included for elements with detected problems (boundary violations, overlaps). Use the include_content parameter only when you need to see content for elements that have no issues. Requires the current presentation file in the files parameter. Elements are listed in the order they appear on the slide, with index numbers that correspond to the delete_element action.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -1079,7 +1525,7 @@
                     },
                     "slide_index": {
                         "type": "integer",
-                        "description": "Index of the slide (0-based)"
+                        "description": "Index of the slide (0-based). OPTIONAL: Omit this to get elements for ALL slides instead of a single slide."
                     },
                     "include_content": {
                         "type": "boolean",
@@ -1092,171 +1538,140 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
-                            },
-                            "required": ["name", "contentType", "content"]
-                        }
-                    }
-                },
-                "required": ["presentation_id", "slide_index"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "slide_index": {
-                        "type": "integer",
-                        "description": "Index of the slide that was inspected"
-                    },
-                    "total_elements": {
-                        "type": "integer",
-                        "description": "Total number of elements on the slide"
-                    },
-                    "layout_status": {
-                        "type": "string",
-                        "enum": ["no_issues", "issues_detected"],
-                        "description": "Overall layout status: 'no_issues' if all elements are properly positioned, 'issues_detected' if there are boundary or overlap problems"
-                    },
-                    "slide_dimensions": {
-                        "type": "object",
-                        "description": "Slide dimensions in inches",
-                        "properties": {
-                            "width": {"type": "number", "description": "Slide width in inches"},
-                            "height": {"type": "number", "description": "Slide height in inches"}
-                        },
-                        "required": ["width", "height"]
-                    },
-                    "elements_outside_boundary": {
-                        "type": "integer",
-                        "description": "Number of elements that extend beyond the slide boundaries"
-                    },
-                    "total_overlapping_pairs": {
-                        "type": "integer",
-                        "description": "Total number of element pairs that overlap with each other"
-                    },
-                    "boundary_warning": {
-                        "type": "string",
-                        "description": "Summary warning message if any elements are outside slide boundaries"
-                    },
-                    "overlap_warning": {
-                        "type": "string",
-                        "description": "Summary warning message if any elements overlap with each other"
-                    },
-                    "overall_warning": {
-                        "type": "string",
-                        "description": "Combined summary of all layout issues (boundary and overlaps)"
-                    },
-                    "detailed_warnings": {
-                        "type": "array",
-                        "description": "Detailed warning messages for boundary issues",
-                        "items": {"type": "string"}
-                    },
-                    "element_overlaps": {
-                        "type": "array",
-                        "description": "Detailed information about all overlapping element pairs",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "element1_index": {"type": "integer", "description": "Index of first overlapping element"},
-                                "element1_type": {"type": "string", "description": "Type of first element"},
-                                "element1_name": {"type": "string", "description": "Name of first element"},
-                                "element2_index": {"type": "integer", "description": "Index of second overlapping element"},
-                                "element2_type": {"type": "string", "description": "Type of second element"},
-                                "element2_name": {"type": "string", "description": "Name of second element"},
-                                "overlap_area": {"type": "number", "description": "Area of overlap in square inches"},
-                                "overlap_dimensions": {
-                                    "type": "object",
-                                    "properties": {
-                                        "width": {"type": "number", "description": "Width of overlap area in inches"},
-                                        "height": {"type": "number", "description": "Height of overlap area in inches"}
-                                    },
-                                    "required": ["width", "height"]
+                                "name": {
+                                    "type": "string"
                                 },
-                                "overlap_position": {
-                                    "type": "object",
-                                    "properties": {
-                                        "left": {"type": "number", "description": "Left edge of overlap area"},
-                                        "top": {"type": "number", "description": "Top edge of overlap area"},
-                                        "right": {"type": "number", "description": "Right edge of overlap area"},
-                                        "bottom": {"type": "number", "description": "Bottom edge of overlap area"}
-                                    },
-                                    "required": ["left", "top", "right", "bottom"]
-                                },
-                                "overlap_percentages": {
-                                    "type": "object",
-                                    "properties": {
-                                        "element1_coverage": {"type": "number", "description": "Percentage of element1 covered by overlap"},
-                                        "element2_coverage": {"type": "number", "description": "Percentage of element2 covered by overlap"}
-                                    },
-                                    "required": ["element1_coverage", "element2_coverage"]
-                                },
-                                "severity": {
-                                    "type": "string",
-                                    "enum": ["low", "medium", "high"],
-                                    "description": "Overlap severity based on coverage percentage (high: >50%, medium: >20%, low: ≤20%)"
-                                },
-                                "description": {"type": "string", "description": "Human-readable description of the overlap"}
-                            },
-                            "required": ["element1_index", "element1_type", "element2_index", "element2_type", "overlap_area", "overlap_dimensions", "overlap_position", "overlap_percentages", "severity", "description"]
-                        }
-                    },
-                    "elements": {
-                        "type": "array",
-                        "description": "List of all elements on the slide",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "index": {
-                                    "type": "integer",
-                                    "description": "0-based index of the element (use this with delete_element action)"
-                                },
-                                "type": {
-                                    "type": "string",
-                                    "description": "Type of element (text_box, image, chart, table, shape, text_element, etc.)"
-                                },
-                                "shape_id": {
-                                    "type": "string",
-                                    "description": "PowerPoint shape ID"
-                                },
-                                "position": {
-                                    "type": "object",
-                                    "properties": {
-                                        "left": {"type": "number", "description": "Left position in inches"},
-                                        "top": {"type": "number", "description": "Top position in inches"},
-                                        "width": {"type": "number", "description": "Width in inches"},
-                                        "height": {"type": "number", "description": "Height in inches"}
-                                    },
-                                    "required": ["left", "top", "width", "height"]
+                                "contentType": {
+                                    "type": "string"
                                 },
                                 "content": {
-                                    "type": "string",
-                                    "description": "Text content if the element contains text, otherwise empty"
-                                },
-                                "has_text": {
-                                    "type": "boolean",
-                                    "description": "Whether this element contains text"
-                                },
-                                "name": {
-                                    "type": "string",
-                                    "description": "Element name if available"
-                                },
-                                "boundary_status": {
-                                    "type": "string",
-                                    "enum": ["inside", "outside"],
-                                    "description": "Element boundary status: 'inside' = fully contained within slide boundaries, 'outside' = extends beyond slide boundaries"
-                                },
-                                "boundary_warnings": {
-                                    "type": "array",
-                                    "description": "Specific warnings about boundary issues",
-                                    "items": {"type": "string"}
+                                    "type": "string"
                                 }
                             },
-                            "required": ["index", "type", "shape_id", "position"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["slide_index", "total_elements", "layout_status", "slide_dimensions", "elements"]
+                "required": [
+                    "presentation_id"
+                ]
+            },
+            "output_schema": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "description": "SINGLE SLIDE MODE: When slide_index is provided",
+                        "properties": {
+                            "slide_index": {
+                                "type": "integer",
+                                "description": "Index of the slide that was inspected"
+                            },
+                            "total_elements": {
+                                "type": "integer",
+                                "description": "Total number of elements on the slide"
+                            },
+                            "layout_status": {
+                                "type": "string",
+                                "enum": [
+                                    "no_issues",
+                                    "issues_detected"
+                                ],
+                                "description": "Overall layout status"
+                            },
+                            "slide_dimensions": {
+                                "type": "object",
+                                "properties": {
+                                    "width": {
+                                        "type": "number"
+                                    },
+                                    "height": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": [
+                                    "width",
+                                    "height"
+                                ]
+                            },
+                            "elements": {
+                                "type": "array",
+                                "description": "List of all elements on the slide"
+                            }
+                        },
+                        "required": [
+                            "slide_index",
+                            "total_elements",
+                            "layout_status",
+                            "slide_dimensions",
+                            "elements"
+                        ]
+                    },
+                    {
+                        "type": "object",
+                        "description": "ALL SLIDES MODE: When slide_index is omitted",
+                        "properties": {
+                            "total_slides": {
+                                "type": "integer",
+                                "description": "Total number of slides in the presentation"
+                            },
+                            "slides_with_issues": {
+                                "type": "integer",
+                                "description": "Number of slides that have layout issues"
+                            },
+                            "total_elements": {
+                                "type": "integer",
+                                "description": "Total number of elements across all slides"
+                            },
+                            "slide_dimensions": {
+                                "type": "object",
+                                "properties": {
+                                    "width": {
+                                        "type": "number"
+                                    },
+                                    "height": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": [
+                                    "width",
+                                    "height"
+                                ]
+                            },
+                            "slides": {
+                                "type": "array",
+                                "description": "Array of slide data (same format as single-slide mode)",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "slide_index": {
+                                            "type": "integer"
+                                        },
+                                        "total_elements": {
+                                            "type": "integer"
+                                        },
+                                        "layout_status": {
+                                            "type": "string"
+                                        },
+                                        "elements": {
+                                            "type": "array"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "total_slides",
+                            "slides_with_issues",
+                            "total_elements",
+                            "slide_dimensions",
+                            "slides"
+                        ]
+                    }
+                ]
             }
         },
         "reposition_element": {
@@ -1281,10 +1696,22 @@
                         "type": "object",
                         "description": "New position and size for the element (optional)",
                         "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Width in inches"},
-                            "height": {"type": "number", "description": "Height in inches"}
+                            "left": {
+                                "type": "number",
+                                "description": "Left position in inches"
+                            },
+                            "top": {
+                                "type": "number",
+                                "description": "Top position in inches"
+                            },
+                            "width": {
+                                "type": "number",
+                                "description": "Width in inches"
+                            },
+                            "height": {
+                                "type": "number",
+                                "description": "Height in inches"
+                            }
                         }
                     },
                     "table_cell_updates": {
@@ -1308,7 +1735,10 @@
                                     "description": "New text content for the cell in markdown format (replaces existing text). Use **bold**, *italic*, __underline__, `code` for inline formatting."
                                 }
                             },
-                            "required": ["row", "col"]
+                            "required": [
+                                "row",
+                                "col"
+                            ]
                         }
                     },
                     "files": {
@@ -1317,15 +1747,29 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "element_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "element_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1345,20 +1789,41 @@
                     "changes_made": {
                         "type": "array",
                         "description": "List of changes that were applied to the element",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string"
+                        }
                     },
                     "new_position": {
                         "type": "object",
                         "description": "Updated position and size of the element",
                         "properties": {
-                            "left": {"type": "number"},
-                            "top": {"type": "number"},
-                            "width": {"type": "number"},
-                            "height": {"type": "number"},
-                            "right": {"type": "number"},
-                            "bottom": {"type": "number"}
+                            "left": {
+                                "type": "number"
+                            },
+                            "top": {
+                                "type": "number"
+                            },
+                            "width": {
+                                "type": "number"
+                            },
+                            "height": {
+                                "type": "number"
+                            },
+                            "right": {
+                                "type": "number"
+                            },
+                            "bottom": {
+                                "type": "number"
+                            }
                         },
-                        "required": ["left", "top", "width", "height", "right", "bottom"]
+                        "required": [
+                            "left",
+                            "top",
+                            "width",
+                            "height",
+                            "right",
+                            "bottom"
+                        ]
                     },
                     "saved": {
                         "type": "boolean",
@@ -1372,18 +1837,40 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["modified", "element_index", "element_type", "changes_made", "new_position", "saved", "file_path", "file"]
+                "required": [
+                    "modified",
+                    "element_index",
+                    "element_type",
+                    "changes_made",
+                    "new_position",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "get_element_styling": {
@@ -1410,15 +1897,29 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index", "element_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index",
+                    "element_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1439,15 +1940,37 @@
                         "type": "object",
                         "description": "Element position and dimensions",
                         "properties": {
-                            "left": {"type": "number", "description": "Left position in inches"},
-                            "top": {"type": "number", "description": "Top position in inches"},
-                            "width": {"type": "number", "description": "Width in inches"},
-                            "height": {"type": "number", "description": "Height in inches"}
+                            "left": {
+                                "type": "number",
+                                "description": "Left position in inches"
+                            },
+                            "top": {
+                                "type": "number",
+                                "description": "Top position in inches"
+                            },
+                            "width": {
+                                "type": "number",
+                                "description": "Width in inches"
+                            },
+                            "height": {
+                                "type": "number",
+                                "description": "Height in inches"
+                            }
                         },
-                        "required": ["left", "top", "width", "height"]
+                        "required": [
+                            "left",
+                            "top",
+                            "width",
+                            "height"
+                        ]
                     }
                 },
-                "required": ["element_index", "element_type", "styling_description", "position"]
+                "required": [
+                    "element_index",
+                    "element_type",
+                    "styling_description",
+                    "position"
+                ]
             }
         },
         "find_and_replace": {
@@ -1480,7 +2003,10 @@
                                     "default": false
                                 }
                             },
-                            "required": ["find", "replace"]
+                            "required": [
+                                "find",
+                                "replace"
+                            ]
                         },
                         "minItems": 1
                     },
@@ -1490,15 +2016,28 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "replacements"]
+                "required": [
+                    "presentation_id",
+                    "replacements"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1521,21 +2060,32 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "BLOCKED": {"type": "string", "description": "Block reason"},
-                                "find_phrase": {"type": "string"},
-                                "match_count": {"type": "integer"},
+                                "BLOCKED": {
+                                    "type": "string",
+                                    "description": "Block reason"
+                                },
+                                "find_phrase": {
+                                    "type": "string"
+                                },
+                                "match_count": {
+                                    "type": "integer"
+                                },
                                 "matches": {
                                     "type": "array",
                                     "description": "First 5 match locations"
                                 },
-                                "fix_required": {"type": "string"}
+                                "fix_required": {
+                                    "type": "string"
+                                }
                             }
                         }
                     },
                     "warnings": {
                         "type": "array",
                         "description": "Warning messages (no matches found, blocked operations, etc.)",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string"
+                        }
                     },
                     "saved": {
                         "type": "boolean",
@@ -1549,18 +2099,40 @@
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
                     }
                 },
-                "required": ["success", "total_replacements", "processed", "blocked", "warnings", "saved", "file_path", "file"]
+                "required": [
+                    "success",
+                    "total_replacements",
+                    "processed",
+                    "blocked",
+                    "warnings",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         },
         "add_elements": {
@@ -1600,12 +2172,29 @@
                                     "type": "object",
                                     "description": "Optional preferred position and size. If omitted, default positions are used with vertical stacking. If auto_position is enabled, this serves as a starting point for position search.",
                                     "properties": {
-                                        "left": {"type": "number", "description": "Left position in inches"},
-                                        "top": {"type": "number", "description": "Top position in inches"},
-                                        "width": {"type": "number", "description": "Width in inches"},
-                                        "height": {"type": "number", "description": "Height in inches"}
+                                        "left": {
+                                            "type": "number",
+                                            "description": "Left position in inches"
+                                        },
+                                        "top": {
+                                            "type": "number",
+                                            "description": "Top position in inches"
+                                        },
+                                        "width": {
+                                            "type": "number",
+                                            "description": "Width in inches"
+                                        },
+                                        "height": {
+                                            "type": "number",
+                                            "description": "Height in inches"
+                                        }
                                     },
-                                    "required": ["left", "top", "width", "height"]
+                                    "required": [
+                                        "left",
+                                        "top",
+                                        "width",
+                                        "height"
+                                    ]
                                 },
                                 "auto_position": {
                                     "type": "boolean",
@@ -1613,7 +2202,9 @@
                                     "default": false
                                 }
                             },
-                            "required": ["content"]
+                            "required": [
+                                "content"
+                            ]
                         },
                         "minItems": 1
                     },
@@ -1623,22 +2214,38 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "name": {"type": "string"},
-                                "contentType": {"type": "string"},
-                                "content": {"type": "string"}
+                                "name": {
+                                    "type": "string"
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "content": {
+                                    "type": "string"
+                                }
                             },
-                            "required": ["name", "contentType", "content"]
+                            "required": [
+                                "name",
+                                "contentType",
+                                "content"
+                            ]
                         }
                     }
                 },
-                "required": ["presentation_id", "slide_index"]
+                "required": [
+                    "presentation_id",
+                    "slide_index"
+                ]
             },
             "output_schema": {
                 "type": "object",
                 "properties": {
                     "mode": {
                         "type": "string",
-                        "enum": ["granular", "auto_layout"],
+                        "enum": [
+                            "granular",
+                            "auto_layout"
+                        ],
                         "description": "Mode used: 'granular' for element array, 'auto_layout' for markdown document"
                     },
                     "total_requested": {
@@ -1659,19 +2266,38 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "index": {"type": "integer", "description": "Index in the original elements array"},
-                                "type": {"type": "string", "description": "Auto-detected element type: granular mode (text/table/bullets), auto_layout mode (h1/h2/h3/h4/h5/h6/p/ul/ol/table/blockquote/pre)"},
-                                "shape_id": {"type": "string", "description": "PowerPoint shape ID of created element"},
+                                "index": {
+                                    "type": "integer",
+                                    "description": "Index in the original elements array"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Auto-detected element type: granular mode (text/table/bullets), auto_layout mode (h1/h2/h3/h4/h5/h6/p/ul/ol/table/blockquote/pre)"
+                                },
+                                "shape_id": {
+                                    "type": "string",
+                                    "description": "PowerPoint shape ID of created element"
+                                },
                                 "requested_position": {
                                     "oneOf": [
-                                        {"type": "null"},
+                                        {
+                                            "type": "null"
+                                        },
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "left": {"type": "number"},
-                                                "top": {"type": "number"},
-                                                "width": {"type": "number"},
-                                                "height": {"type": "number"}
+                                                "left": {
+                                                    "type": "number"
+                                                },
+                                                "top": {
+                                                    "type": "number"
+                                                },
+                                                "width": {
+                                                    "type": "number"
+                                                },
+                                                "height": {
+                                                    "type": "number"
+                                                }
                                             }
                                         }
                                     ],
@@ -1679,24 +2305,55 @@
                                 },
                                 "final_position": {
                                     "oneOf": [
-                                        {"type": "null"},
+                                        {
+                                            "type": "null"
+                                        },
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "left": {"type": "number", "description": "Left position in inches"},
-                                                "top": {"type": "number", "description": "Top position in inches"},
-                                                "width": {"type": "number", "description": "Width in inches"},
-                                                "height": {"type": "number", "description": "Height in inches"}
+                                                "left": {
+                                                    "type": "number",
+                                                    "description": "Left position in inches"
+                                                },
+                                                "top": {
+                                                    "type": "number",
+                                                    "description": "Top position in inches"
+                                                },
+                                                "width": {
+                                                    "type": "number",
+                                                    "description": "Width in inches"
+                                                },
+                                                "height": {
+                                                    "type": "number",
+                                                    "description": "Height in inches"
+                                                }
                                             },
-                                            "required": ["left", "top", "width", "height"]
+                                            "required": [
+                                                "left",
+                                                "top",
+                                                "width",
+                                                "height"
+                                            ]
                                         }
                                     ],
                                     "description": "Actual position where element was placed (null in auto-layout mode where positions are calculated by flow algorithm)"
                                 },
-                                "position_adjusted": {"type": "boolean", "description": "Whether position was adjusted from requested"},
-                                "adjustment_reason": {"type": "string", "description": "Reason for position adjustment (if adjusted)"}
+                                "position_adjusted": {
+                                    "type": "boolean",
+                                    "description": "Whether position was adjusted from requested"
+                                },
+                                "adjustment_reason": {
+                                    "type": "string",
+                                    "description": "Reason for position adjustment (if adjusted)"
+                                }
                             },
-                            "required": ["index", "type", "shape_id", "final_position", "position_adjusted"]
+                            "required": [
+                                "index",
+                                "type",
+                                "shape_id",
+                                "final_position",
+                                "position_adjusted"
+                            ]
                         }
                     },
                     "elements_skipped": {
@@ -1705,29 +2362,77 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "index": {"type": "integer", "description": "Index in the original elements array"},
-                                "content_preview": {"type": "string", "description": "Preview of the content that failed"},
-                                "skip_reason": {"type": "string", "description": "Reason element was skipped"},
-                                "suggestion": {"type": "string", "description": "Suggestion for how to fix the issue"}
+                                "index": {
+                                    "type": "integer",
+                                    "description": "Index in the original elements array"
+                                },
+                                "content_preview": {
+                                    "type": "string",
+                                    "description": "Preview of the content that failed"
+                                },
+                                "skip_reason": {
+                                    "type": "string",
+                                    "description": "Reason element was skipped"
+                                },
+                                "suggestion": {
+                                    "type": "string",
+                                    "description": "Suggestion for how to fix the issue"
+                                }
                             },
-                            "required": ["index", "skip_reason", "suggestion"]
+                            "required": [
+                                "index",
+                                "skip_reason",
+                                "suggestion"
+                            ]
                         }
                     },
-                    "saved": {"type": "boolean", "description": "Whether the presentation was successfully saved"},
-                    "file_path": {"type": "string", "description": "Path where the presentation was saved"},
+                    "saved": {
+                        "type": "boolean",
+                        "description": "Whether the presentation was successfully saved"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path where the presentation was saved"
+                    },
                     "file": {
                         "type": "object",
                         "description": "The saved presentation file for streaming",
                         "properties": {
-                            "content": {"type": "string", "description": "The file content encoded as base64"},
-                            "name": {"type": "string", "description": "The name of the file"},
-                            "contentType": {"type": "string", "description": "The content type of the file"}
+                            "content": {
+                                "type": "string",
+                                "description": "The file content encoded as base64"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the file"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the file"
+                            }
                         },
-                        "required": ["content", "name", "contentType"]
+                        "required": [
+                            "content",
+                            "name",
+                            "contentType"
+                        ]
                     },
-                    "error": {"type": "string", "description": "Error message if file streaming failed"}
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if file streaming failed"
+                    }
                 },
-                "required": ["mode", "total_requested", "successfully_added", "skipped", "elements_added", "elements_skipped", "saved", "file_path", "file"]
+                "required": [
+                    "mode",
+                    "total_requested",
+                    "successfully_added",
+                    "skipped",
+                    "elements_added",
+                    "elements_skipped",
+                    "saved",
+                    "file_path",
+                    "file"
+                ]
             }
         }
     }
