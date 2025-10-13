@@ -2001,6 +2001,12 @@
                                     "type": "boolean",
                                     "description": "Set to true to allow replacing multiple matches. If false (default), operation is BLOCKED if multiple matches found (safety feature).",
                                     "default": false
+                                },
+                                "forced_font_size": {
+                                    "type": "integer",
+                                    "minimum": 8,
+                                    "maximum": 72,
+                                    "description": "Optional: Force specific font size instead of auto-calculating. Use this for titles, headers, or when exact size must be maintained for design consistency. If omitted, size is auto-calculated based on content and box dimensions."
                                 }
                             },
                             "required": [
@@ -2121,9 +2127,132 @@
                     "error": {
                         "type": "string",
                         "description": "Error message if file streaming failed"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "all_successful",
+                            "partial_success",
+                            "all_failed",
+                            "all_blocked"
+                        ],
+                        "description": "Overall status: all_successful (all replaced), partial_success (some replaced/some failed), all_failed (nothing found), all_blocked (all blocked by safety checks)"
+                    },
+                    "summary": {
+                        "type": "object",
+                        "description": "Clear summary statistics (no math needed)",
+                        "properties": {
+                            "requested": {
+                                "type": "integer",
+                                "description": "Total replacement operations requested"
+                            },
+                            "successful": {
+                                "type": "integer",
+                                "description": "Number of replacements that succeeded"
+                            },
+                            "failed": {
+                                "type": "integer",
+                                "description": "Number that failed (not found)"
+                            },
+                            "blocked": {
+                                "type": "integer",
+                                "description": "Number blocked by safety checks"
+                            }
+                        },
+                        "required": [
+                            "requested",
+                            "successful",
+                            "failed",
+                            "blocked"
+                        ]
+                    },
+                    "changes": {
+                        "type": "array",
+                        "description": "Detailed changelog showing each replacement attempt with locations, status, and font sizes applied",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "find": {
+                                    "type": "string",
+                                    "description": "Text that was searched for"
+                                },
+                                "replace": {
+                                    "type": "string",
+                                    "description": "Replacement text"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "enum": [
+                                        "replaced",
+                                        "not_found",
+                                        "blocked"
+                                    ],
+                                    "description": "Status of this replacement"
+                                },
+                                "occurrences": {
+                                    "type": "integer",
+                                    "description": "Number of times found and replaced"
+                                },
+                                "locations": {
+                                    "type": "array",
+                                    "description": "Specific locations where replacements were made",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "slide": {
+                                                "type": "integer"
+                                            },
+                                            "element": {
+                                                "type": "integer"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "text_box",
+                                                    "table_cell"
+                                                ]
+                                            },
+                                            "row": {
+                                                "type": "integer",
+                                                "description": "For table cells only"
+                                            },
+                                            "col": {
+                                                "type": "integer",
+                                                "description": "For table cells only"
+                                            }
+                                        }
+                                    }
+                                },
+                                "font_size_applied": {
+                                    "type": "integer",
+                                    "description": "Font size applied to replaced text"
+                                },
+                                "forced": {
+                                    "type": "boolean",
+                                    "description": "True if forced_font_size was used"
+                                },
+                                "suggestion": {
+                                    "type": "string",
+                                    "description": "Suggestion for failed replacements"
+                                },
+                                "reason": {
+                                    "type": "string",
+                                    "description": "Reason for blocked replacements"
+                                }
+                            },
+                            "required": [
+                                "find",
+                                "replace",
+                                "status",
+                                "occurrences"
+                            ]
+                        }
                     }
                 },
                 "required": [
+                    "status",
+                    "summary",
+                    "changes",
                     "success",
                     "total_replacements",
                     "processed",

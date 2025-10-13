@@ -1,0 +1,63 @@
+{
+  "description": "Mapping of commercial fonts to Google Fonts alternatives for auto-downloading",
+  "mappings": {
+    "sofia pro": "Poppins",
+    "sofia pro light": "Poppins Light",
+    "sofia pro regular": "Poppins Regular",
+    "sofia pro bold": "Poppins Bold",
+    "sofia pro medium": "Poppins Medium",
+
+    "helvetica neue": "Roboto",
+    "helvetica": "Roboto",
+    "helvetica neue light": "Roboto Light",
+    "helvetica neue bold": "Roboto Bold",
+
+    "proxima nova": "Montserrat",
+    "proxima nova light": "Montserrat Light",
+    "proxima nova regular": "Montserrat Regular",
+    "proxima nova bold": "Montserrat Bold",
+
+    "avenir": "Nunito Sans",
+    "avenir next": "Nunito Sans",
+    "avenir light": "Nunito Sans Light",
+    "avenir medium": "Nunito Sans Medium",
+    "avenir bold": "Nunito Sans Bold",
+
+    "futura": "Spartan",
+    "futura pt": "Spartan",
+    "futura medium": "Spartan Medium",
+    "futura bold": "Spartan Bold",
+
+    "gotham": "Montserrat",
+    "gotham book": "Montserrat Regular",
+    "gotham medium": "Montserrat Medium",
+    "gotham bold": "Montserrat Bold",
+
+    "brandon grotesque": "Raleway",
+    "brandon grotesque light": "Raleway Light",
+    "brandon grotesque regular": "Raleway Regular",
+    "brandon grotesque bold": "Raleway Bold",
+
+    "trade gothic": "Work Sans",
+    "trade gothic next": "Work Sans",
+    "trade gothic lt": "Work Sans Light",
+
+    "din": "Barlow",
+    "din next": "Barlow",
+    "din pro": "Barlow",
+    "din light": "Barlow Light",
+    "din bold": "Barlow Bold",
+
+    "circular": "Nunito",
+    "circular std": "Nunito",
+
+    "museo sans": "Roboto",
+    "museo": "Roboto Slab",
+
+    "gill sans": "Lato",
+    "gill sans mt": "Lato",
+
+    "myriad pro": "Source Sans Pro",
+    "myriad": "Source Sans Pro"
+  }
+}

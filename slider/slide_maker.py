@@ -1104,8 +1104,8 @@ def calculate_best_fit_font_size_heuristic(text, width_inches, height_inches, ma
     # Add safety margin (reduce by 10% to ensure it fits)
     calculated_size = calculated_size * 0.9
 
-    # Minimum readable size
-    min_size = 8
+    # Minimum readable size (matches Pillow minimum for consistency)
+    min_size = 10
     final_size = max(min_size, min(calculated_size, max_font_size))
 
     if debug:
@@ -3040,11 +3040,13 @@ class FindAndReplaceAction(ActionHandler):
         total_replacements = 0
         warnings = []
         blocked_replacements = []
+        changes = []  # Track detailed changelog for each replacement
 
         for replacement in replacements:
             find_text = replacement["find"]
             replace_text = replacement.get("replace", "")
             replace_all = replacement.get("replace_all", False)
+            forced_font_size = replacement.get("forced_font_size")  # Optional: force specific size
 
             # Validation
             if not find_text or len(find_text.strip()) == 0:
@@ -3092,6 +3094,14 @@ class FindAndReplaceAction(ActionHandler):
             # STEP 2: Safety check
             if len(matches_found) == 0:
                 warnings.append(f"No matches found for '{find_text}'")
+                # Track as not found
+                changes.append({
+                    "find": find_text,
+                    "replace": replace_text,
+                    "status": "not_found",
+                    "occurrences": 0,
+                    "suggestion": "Placeholder not found in template - check spelling or verify template has this placeholder"
+                })
                 continue
 
             if len(matches_found) > 1 and not replace_all:
@@ -3104,10 +3114,30 @@ class FindAndReplaceAction(ActionHandler):
                     "fix_required": "Either add more context to find phrase to make it unique, OR set replace_all=true to confirm replacing all instances"
                 })
                 warnings.append(f"BLOCKED '{find_text}': {len(matches_found)} matches found, replace_all not set")
+                # Track as blocked
+                changes.append({
+                    "find": find_text,
+                    "replace": replace_text,
+                    "status": "blocked",
+                    "occurrences": len(matches_found),
+                    "reason": "Multiple matches require replace_all=true confirmation"
+                })
                 continue
 
             # STEP 3: Safe to proceed - perform replacements
             replacement_count = 0
+
+            # Initialize change record for successful replacement
+            change_record = {
+                "find": find_text,
+                "replace": replace_text,
+                "status": "replaced",
+                "occurrences": len(matches_found),
+                "locations": [],
+                "font_size_applied": None
+            }
+            if forced_font_size:
+                change_record["forced"] = True
 
             for match in matches_found:
                 slide = prs.slides[match["slide_index"]]
@@ -3141,10 +3171,18 @@ class FindAndReplaceAction(ActionHandler):
                         print(f"\n[FIND_REPLACE] Text box replacement:")
                         print(f"  Original placeholder size: {original_font_size}pt")
                         print(f"  Final text length: {len(final_text)} chars")
+                        if forced_font_size:
+                            print(f"  Forced font size requested: {forced_font_size}pt")
 
-                    has_markdown = has_markdown_formatting(final_text)
-                    has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
-                    best_fit_size = calculate_best_fit_font_size(final_text, width_inches, height_inches, max_font_size=original_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
+                    # Check if forced font size specified (overrides auto-sizing)
+                    if forced_font_size:
+                        best_fit_size = forced_font_size
+                        if FONT_SIZE_DEBUG:
+                            print(f"  [FORCED SIZE] Using forced size: {forced_font_size}pt (skipping calculation)")
+                    else:
+                        has_markdown = has_markdown_formatting(final_text)
+                        has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
+                        best_fit_size = calculate_best_fit_font_size(final_text, width_inches, height_inches, max_font_size=original_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
 
                     # Step 4: Apply size uniformly to ALL runs (keeps everything else)
                     for paragraph in text_frame.paragraphs:
@@ -3154,6 +3192,15 @@ class FindAndReplaceAction(ActionHandler):
                     # Disable auto-sizing to respect our calculated font size
                     text_frame.auto_size = MSO_AUTO_SIZE.NONE
                     text_frame.word_wrap = True
+
+                    # Track this replacement location and font size
+                    change_record["locations"].append({
+                        "slide": match["slide_index"],
+                        "element": match["element_index"],
+                        "type": "text_box"
+                    })
+                    change_record["font_size_applied"] = best_fit_size
+
                     replacement_count += 1
 
                 elif match["type"] == "table_cell":
@@ -3183,9 +3230,15 @@ class FindAndReplaceAction(ActionHandler):
                         cell_width = table.columns[match["col"]].width / 914400
                         cell_height = table.rows[match["row"]].height / 914400
 
-                        has_markdown = has_markdown_formatting(final_text)
-                        has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
-                        best_fit_size = calculate_best_fit_font_size(final_text, cell_width, cell_height, max_font_size=original_cell_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
+                        # Check if forced font size specified (overrides auto-sizing)
+                        if forced_font_size:
+                            best_fit_size = forced_font_size
+                            if FONT_SIZE_DEBUG:
+                                print(f"  [FORCED SIZE] Table cell using forced size: {forced_font_size}pt")
+                        else:
+                            has_markdown = has_markdown_formatting(final_text)
+                            has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
+                            best_fit_size = calculate_best_fit_font_size(final_text, cell_width, cell_height, max_font_size=original_cell_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
 
                         # Step 4: Apply size uniformly to all runs
                         for paragraph in cell.text_frame.paragraphs:
@@ -3193,14 +3246,57 @@ class FindAndReplaceAction(ActionHandler):
                                 run.font.size = Pt(best_fit_size)
 
                         cell.text_frame.word_wrap = True
+
+                        # Track this replacement location and font size
+                        change_record["locations"].append({
+                            "slide": match["slide_index"],
+                            "element": match["element_index"],
+                            "type": "table_cell",
+                            "row": match["row"],
+                            "col": match["col"]
+                        })
+                        change_record["font_size_applied"] = best_fit_size
+
                         replacement_count += 1
                     except:
                         # Skip if table access fails
                         pass
 
+            # Add this replacement's change record to changes array
+            if change_record.get("locations"):
+                changes.append(change_record)
+
             total_replacements += replacement_count
 
+        # Calculate summary statistics
+        successful_count = sum(1 for c in changes if c["status"] == "replaced")
+        failed_count = sum(1 for c in changes if c["status"] == "not_found")
+        blocked_count = sum(1 for c in changes if c["status"] == "blocked")
+
+        # Determine overall status
+        if successful_count == len(replacements):
+            status = "all_successful"
+        elif blocked_count == len(replacements):
+            status = "all_blocked"
+        elif failed_count == len(replacements):
+            status = "all_failed"
+        elif successful_count > 0:
+            status = "partial_success"
+        else:
+            status = "all_failed"
+
         result = {
+            # New clear fields
+            "status": status,
+            "summary": {
+                "requested": len(replacements),
+                "successful": successful_count,
+                "failed": failed_count,
+                "blocked": blocked_count
+            },
+            "changes": changes,
+
+            # Existing fields (kept for backward compatibility)
             "success": total_replacements > 0 and len(blocked_replacements) == 0,
             "total_replacements": total_replacements,
             "processed": len(replacements),
