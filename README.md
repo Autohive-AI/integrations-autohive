@@ -73,7 +73,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Microsoft 365
 
-[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, and Calendar through Microsoft Graph API. Supports email management (send, list, read, organize), calendar operations (create, update, list events), file operations (upload to OneDrive, list files), and contact management. Features timezone-aware operations, folder management, HTML email support, and OAuth2 authentication with proper scope handling for enterprise-grade Microsoft 365 workflows.
+[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
 
 ### Spreadsheet Tools
 
