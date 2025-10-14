@@ -10,7 +10,7 @@ Key features:
 - Search videos, channels, and playlists with advanced filtering
 - Get detailed video information including views, likes, duration, and statistics
 - Update video metadata (title, description, tags, privacy settings)
-- Upload videos and custom thumbnails
+- Upload custom thumbnails
 - Complete playlist management (create, update, delete, add/remove videos)
 - Full comment functionality (read, post, reply, update, delete, moderate)
 - Access channel analytics (subscribers, total views, video count)
@@ -24,7 +24,7 @@ The integration uses Google's OAuth2 platform authentication for YouTube access.
 
 **Required Scopes:**
 - `https://www.googleapis.com/auth/youtube` - Full YouTube access
-- `https://www.googleapis.com/auth/youtube.upload` - Upload videos and thumbnails
+- `https://www.googleapis.com/auth/youtube.upload` - Upload thumbnails
 - `https://www.googleapis.com/auth/youtube.force-ssl` - Secure SSL access
 
 No additional configuration fields are required as authentication is handled through Google's OAuth2 flow.
@@ -36,7 +36,6 @@ YouTube Data API v3 uses a quota system (default: 10,000 units/day). Different o
 - **Read operations** (list, get): 1 unit
 - **Search**: 100 units
 - **Write operations** (insert, update, delete): 50 units
-- **Video upload**: 1,600 units
 
 Plan your automation workflows accordingly to stay within quota limits.
 
@@ -111,30 +110,6 @@ Update video metadata including title, description, tags, privacy status, and mo
 - `error`: Error message if failed
 
 **Quota Cost:** 50 units
-
----
-
-#### Action: `upload_video`
-
-Upload a new video to YouTube. Note: This requires special file handling for resumable uploads.
-
-**Inputs:**
-- `title` *(required)*: Video title
-- `description`: Video description
-- `category_id` *(required)*: Video category ID (e.g., '22' for People & Blogs)
-- `tags`: Array of video tags
-- `privacy_status` *(required)*: Privacy setting (private, public, unlisted)
-- `file_url` *(required)*: URL or path to video file
-- `made_for_kids`: Boolean indicating if video is made for kids
-
-**Outputs:**
-- `video`: Uploaded video details with ID and URL
-- `result`: Success status
-- `error`: Error message if failed
-
-**Quota Cost:** 1,600 units
-
-**Note:** Video uploads require special file handling with resumable upload protocol. The current implementation provides the structure but may need platform-specific file upload support.
 
 ---
 
@@ -515,11 +490,10 @@ Returns your channel's subscriber count, total views, and video count.
 ## Limitations & Notes
 
 1. **Quota Limits**: Default quota is 10,000 units/day. Monitor usage carefully.
-2. **Video Uploads**: Large file uploads require resumable upload protocol with proper file handling.
-3. **Thumbnail Uploads**: Image uploads require multipart form data support.
-4. **Moderation**: Comment moderation features only work for channel owners.
-5. **Private Videos**: Some operations may fail on private videos you don't own.
-6. **Rate Limiting**: Implement exponential backoff for API errors.
+2. **Thumbnail Uploads**: Image uploads require multipart form data support.
+3. **Moderation**: Comment moderation features only work for channel owners.
+4. **Private Videos**: Some operations may fail on private videos you don't own.
+5. **Rate Limiting**: Implement exponential backoff for API errors.
 
 ## Error Handling
 
@@ -575,9 +549,9 @@ For issues or questions:
 
 ## Version History
 
-- **v1.0.0** - Initial release with complete YouTube Data API v3 support
+- **v1.0.1** - Current version with complete YouTube Data API v3 support
   - Search functionality
-  - Video management (get, update, upload)
+  - Video management (get, update)
   - Playlist management
   - Comment management and moderation
   - Channel analytics

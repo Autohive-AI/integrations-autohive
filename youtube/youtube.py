@@ -348,44 +348,6 @@ class UpdateVideo(ActionHandler):
             }
 
 
-@youtube.action("upload_video")
-class UploadVideo(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            # Note: This is a simplified version.
-            # Actual video upload requires multipart/resumable upload which may need special handling
-            video_metadata = {
-                "snippet": {
-                    "title": inputs['title'],
-                    "description": inputs.get('description', ''),
-                    "categoryId": inputs['category_id']
-                },
-                "status": {
-                    "privacyStatus": inputs['privacy_status']
-                }
-            }
-
-            if 'tags' in inputs:
-                video_metadata['snippet']['tags'] = inputs['tags']
-            if 'made_for_kids' in inputs:
-                video_metadata['status']['selfDeclaredMadeForKids'] = inputs['made_for_kids']
-
-            # This would need to be implemented with proper file upload handling
-            # For now, return a message indicating this needs platform-specific implementation
-            return {
-                "video": {},
-                "result": False,
-                "error": "Video upload requires special file handling. Please use the YouTube API directly or implement resumable upload."
-            }
-
-        except Exception as e:
-            return {
-                "video": {},
-                "result": False,
-                "error": str(e)
-            }
-
-
 @youtube.action("upload_thumbnail")
 class UploadThumbnail(ActionHandler):
     def _compress_image(self, image_data: bytes, max_size_mb: float = 2.0) -> tuple[bytes, str]:
