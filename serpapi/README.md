@@ -1,4 +1,4 @@
-# SerpAPI Integration
+# App and Business Reviews Integration
 
 Unified Autohive integration for accessing reviews from Apple App Store, Google Play Store, and Google Maps using SerpAPI.
 
