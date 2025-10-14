@@ -222,6 +222,80 @@ def analyze_all_element_overlaps(elements):
     
     return overlaps, total_overlaps
 
+def detect_placeholders_with_metadata(text):
+    """
+    Detect placeholder patterns in text and extract embedded metadata.
+
+    Patterns supported:
+    - [Placeholder] - Simple bracket placeholder
+    - {Placeholder} - Curly brace placeholder
+    - {{Placeholder}} - Double curly placeholder
+
+    Metadata format: [Field, Key=Value, Key=Value]
+    Example: [Title, Fontsize=32pt, Bold=true, Font=Sofia Pro, Color=#FF0000]
+
+    Supported metadata keys:
+    - Fontsize=32pt - Force specific font size
+    - Font=Sofia Pro - Font face to use
+    - Bold=true/false - Apply bold formatting
+    - Italic=true/false - Apply italic formatting
+    - Underline=true/false - Apply underline
+    - Color=#HEX or rgb(r,g,b) - Text color
+    - Format=... - Hint for data formatting (dates, numbers, etc.)
+    - Required=true/false - Validation hint
+    - Fallback=text - Default value hint
+
+    Returns:
+        tuple: (list of placeholder strings, dict of metadata by placeholder)
+    """
+    import re
+
+    if not text:
+        return [], {}
+
+    patterns = {
+        'double_curly': r'\{\{([^\}]+)\}\}',  # {{Placeholder}} - check first (greedy)
+        'bracket': r'\[([^\]]+)\]',            # [Placeholder]
+        'curly': r'\{([^\}]+)\}'               # {Placeholder}
+    }
+
+    placeholders = []
+    metadata = {}
+
+    for pattern_type, regex in patterns.items():
+        matches = re.findall(regex, text)
+        for match in matches:
+            # Reconstruct full placeholder
+            if pattern_type == 'bracket':
+                full_placeholder = f"[{match}]"
+            elif pattern_type == 'curly':
+                full_placeholder = f"{{{match}}}"
+            else:  # double_curly
+                full_placeholder = f"{{{{{match}}}}}"
+
+            # Skip if already found (double_curly might overlap with curly)
+            if full_placeholder in placeholders:
+                continue
+
+            placeholders.append(full_placeholder)
+
+            # Extract metadata if contains comma-separated key=value pairs
+            if ',' in match and '=' in match:
+                parts = [p.strip() for p in match.split(',')]
+                field_name = parts[0]
+
+                meta = {"field": field_name}
+                for part in parts[1:]:
+                    if '=' in part:
+                        key, value = part.split('=', 1)
+                        meta[key.strip().lower()] = value.strip()
+
+                # Only add if has metadata beyond field name
+                if len(meta) > 1:
+                    metadata[full_placeholder] = meta
+
+    return placeholders, metadata
+
 def get_element_info(shape, index: int, slide_width_inches: float, slide_height_inches: float) -> dict:
     """Extract detailed information about a shape/element including boundary checking"""
     from pptx.util import Inches
@@ -299,6 +373,21 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
     if hasattr(shape, 'name'):
         name = shape.name or ""
 
+    # Detect placeholders and extract metadata
+    placeholders = []
+    placeholder_metadata = {}
+    is_fillable = False
+
+    if has_text and content:
+        placeholders, placeholder_metadata = detect_placeholders_with_metadata(content)
+        is_fillable = len(placeholders) > 0
+
+        # Debug logging
+        if FONT_SIZE_DEBUG and is_fillable:
+            print(f"[PLACEHOLDER DETECTION] Element {index}:")
+            print(f"  Content: {content[:60]}")
+            print(f"  Placeholders: {placeholders}")
+            print(f"  Metadata: {placeholder_metadata}")
 
     result = {
         "index": index,
@@ -318,7 +407,14 @@ def get_element_info(shape, index: int, slide_width_inches: float, slide_height_
         "boundary_status": boundary_status,
         "boundary_warnings": warnings
     }
-    
+
+    # Add placeholder info if detected
+    if is_fillable:
+        result["is_fillable"] = True
+        result["placeholders"] = placeholders
+        if placeholder_metadata:
+            result["placeholder_metadata"] = placeholder_metadata
+
     return result
 
 
@@ -2452,6 +2548,13 @@ class GetSlideElementsAction(ActionHandler):
             if element["boundary_warnings"]:
                 optimized_element["boundary_warnings"] = element["boundary_warnings"]
 
+            # Include placeholder detection fields if present
+            if element.get("is_fillable"):
+                optimized_element["is_fillable"] = element["is_fillable"]
+                optimized_element["placeholders"] = element["placeholders"]
+                if element.get("placeholder_metadata"):
+                    optimized_element["placeholder_metadata"] = element["placeholder_metadata"]
+
             optimized_elements.append(optimized_element)
 
         result["elements"] = optimized_elements
@@ -3048,6 +3151,10 @@ class FindAndReplaceAction(ActionHandler):
             replace_all = replacement.get("replace_all", False)
             forced_font_size = replacement.get("forced_font_size")  # Optional: force specific size
 
+            # Extract metadata from placeholder (e.g., "[Title, Fontsize=32pt, Bold=true]")
+            _, placeholder_meta_dict = detect_placeholders_with_metadata(find_text)
+            placeholder_meta = placeholder_meta_dict.get(find_text, {}) if placeholder_meta_dict else {}
+
             # Validation
             if not find_text or len(find_text.strip()) == 0:
                 warnings.append(f"Skipped: 'find' text cannot be empty")
@@ -3173,21 +3280,67 @@ class FindAndReplaceAction(ActionHandler):
                         print(f"  Final text length: {len(final_text)} chars")
                         if forced_font_size:
                             print(f"  Forced font size requested: {forced_font_size}pt")
+                        if placeholder_meta:
+                            print(f"  Placeholder metadata: {placeholder_meta}")
 
-                    # Check if forced font size specified (overrides auto-sizing)
+                    # Determine font size (priority: forced > metadata > auto-calculate)
                     if forced_font_size:
+                        # Priority 1: Explicit forced_font_size parameter
                         best_fit_size = forced_font_size
                         if FONT_SIZE_DEBUG:
                             print(f"  [FORCED SIZE] Using forced size: {forced_font_size}pt (skipping calculation)")
+                    elif 'fontsize' in placeholder_meta:
+                        # Priority 2: Fontsize in placeholder metadata
+                        meta_size = placeholder_meta['fontsize'].replace('pt', '').strip()
+                        try:
+                            best_fit_size = int(meta_size)
+                            if FONT_SIZE_DEBUG:
+                                print(f"  [METADATA SIZE] Using size from placeholder: {best_fit_size}pt")
+                        except:
+                            # Invalid fontsize format, fall back to auto-calculate
+                            has_markdown = has_markdown_formatting(final_text)
+                            has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
+                            best_fit_size = calculate_best_fit_font_size(final_text, width_inches, height_inches, max_font_size=original_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
                     else:
+                        # Priority 3: Auto-calculate
                         has_markdown = has_markdown_formatting(final_text)
                         has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
                         best_fit_size = calculate_best_fit_font_size(final_text, width_inches, height_inches, max_font_size=original_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
 
-                    # Step 4: Apply size uniformly to ALL runs (keeps everything else)
+                    # Step 4: Apply size and metadata-specified formatting uniformly to ALL runs
                     for paragraph in text_frame.paragraphs:
                         for run in paragraph.runs:
+                            # Apply font size
                             run.font.size = Pt(best_fit_size)
+
+                            # Apply metadata formatting if specified
+                            if placeholder_meta:
+                                # Bold
+                                if 'bold' in placeholder_meta:
+                                    run.font.bold = placeholder_meta['bold'].lower() == 'true'
+
+                                # Italic
+                                if 'italic' in placeholder_meta:
+                                    run.font.italic = placeholder_meta['italic'].lower() == 'true'
+
+                                # Underline
+                                if 'underline' in placeholder_meta:
+                                    run.font.underline = placeholder_meta['underline'].lower() == 'true'
+
+                                # Font face
+                                if 'font' in placeholder_meta:
+                                    run.font.name = placeholder_meta['font']
+
+                                # Color
+                                if 'color' in placeholder_meta:
+                                    color_value = placeholder_meta['color']
+                                    if color_value.startswith('#'):
+                                        # Hex color
+                                        hex_color = color_value.lstrip('#')
+                                        r = int(hex_color[0:2], 16)
+                                        g = int(hex_color[2:4], 16)
+                                        b = int(hex_color[4:6], 16)
+                                        run.font.color.rgb = RGBColor(r, g, b)
 
                     # Disable auto-sizing to respect our calculated font size
                     text_frame.auto_size = MSO_AUTO_SIZE.NONE
@@ -3230,20 +3383,49 @@ class FindAndReplaceAction(ActionHandler):
                         cell_width = table.columns[match["col"]].width / 914400
                         cell_height = table.rows[match["row"]].height / 914400
 
-                        # Check if forced font size specified (overrides auto-sizing)
+                        # Determine font size (priority: forced > metadata > auto-calculate)
                         if forced_font_size:
                             best_fit_size = forced_font_size
                             if FONT_SIZE_DEBUG:
                                 print(f"  [FORCED SIZE] Table cell using forced size: {forced_font_size}pt")
+                        elif 'fontsize' in placeholder_meta:
+                            meta_size = placeholder_meta['fontsize'].replace('pt', '').strip()
+                            try:
+                                best_fit_size = int(meta_size)
+                                if FONT_SIZE_DEBUG:
+                                    print(f"  [METADATA SIZE] Table cell using size from placeholder: {best_fit_size}pt")
+                            except:
+                                has_markdown = has_markdown_formatting(final_text)
+                                has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
+                                best_fit_size = calculate_best_fit_font_size(final_text, cell_width, cell_height, max_font_size=original_cell_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
                         else:
                             has_markdown = has_markdown_formatting(final_text)
                             has_bullets = any(bullet in final_text for bullet in ['•', '◦', '▪', '▫', '‣', '-', '*'])
                             best_fit_size = calculate_best_fit_font_size(final_text, cell_width, cell_height, max_font_size=original_cell_font_size, has_formatting=has_markdown, is_bullets=has_bullets, font_face='Calibri', debug=FONT_SIZE_DEBUG)
 
-                        # Step 4: Apply size uniformly to all runs
+                        # Step 4: Apply size and metadata-specified formatting uniformly to all runs
                         for paragraph in cell.text_frame.paragraphs:
                             for run in paragraph.runs:
                                 run.font.size = Pt(best_fit_size)
+
+                                # Apply metadata formatting if specified
+                                if placeholder_meta:
+                                    if 'bold' in placeholder_meta:
+                                        run.font.bold = placeholder_meta['bold'].lower() == 'true'
+                                    if 'italic' in placeholder_meta:
+                                        run.font.italic = placeholder_meta['italic'].lower() == 'true'
+                                    if 'underline' in placeholder_meta:
+                                        run.font.underline = placeholder_meta['underline'].lower() == 'true'
+                                    if 'font' in placeholder_meta:
+                                        run.font.name = placeholder_meta['font']
+                                    if 'color' in placeholder_meta:
+                                        color_value = placeholder_meta['color']
+                                        if color_value.startswith('#'):
+                                            hex_color = color_value.lstrip('#')
+                                            r = int(hex_color[0:2], 16)
+                                            g = int(hex_color[2:4], 16)
+                                            b = int(hex_color[4:6], 16)
+                                            run.font.color.rgb = RGBColor(r, g, b)
 
                         cell.text_frame.word_wrap = True
 

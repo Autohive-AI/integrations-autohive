@@ -1599,7 +1599,7 @@
                             },
                             "elements": {
                                 "type": "array",
-                                "description": "List of all elements on the slide"
+                                "description": "List of all elements on the slide. Each element may include: index, type, shape_id, position, content, has_text, name, boundary_status, boundary_warnings, is_fillable (true if contains placeholders), placeholders (array of detected placeholder strings), placeholder_metadata (extracted formatting metadata like fontsize, bold, italic, color, font)"
                             }
                         },
                         "required": [
@@ -1643,7 +1643,7 @@
                             },
                             "slides": {
                                 "type": "array",
-                                "description": "Array of slide data (same format as single-slide mode)",
+                                "description": "Array of slide data (same format as single-slide mode). Each slide contains elements with optional is_fillable, placeholders, and placeholder_metadata fields for template filling workflows.",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -1975,7 +1975,7 @@
         },
         "find_and_replace": {
             "display_name": "Find and Replace",
-            "description": "Find and replace text across entire presentation. Scans all text boxes and table cells on all slides. Supports multiple find/replace operations in one call (batch processing). Replacement text is parsed as markdown with automatic font sizing and color preservation. SAFETY: Blocks replacements if multiple matches found without replace_all=true confirmation. USE THIS FOR: Filling templates with placeholders ({{COMPANY}}, {{DATE}}, etc.), updating text content without knowing element positions, batch text updates across multiple slides. This is the PREFERRED method for text-based updates - you don't need modify_element for simple text replacements. Perfect for filling presentation templates with multiple placeholders in a single call.",
+            "description": "Find and replace text across entire presentation. Preserves template formatting (bullets, indentation, colors, structure). Replacement text is plain text - markdown is NOT parsed. USE forced_font_size parameter ONLY if template placeholder contains 'Fontsize=XXpt' (e.g., [Title, Fontsize=32pt] -> use forced_font_size: 32). Otherwise omit it - font size auto-calculates or extracts from placeholder metadata. SAFETY: Blocks replacements if multiple matches found without replace_all=true. RESPONSE: Includes status, summary (requested/successful/failed/blocked counts), and changes array (detailed changelog with locations and applied formatting).",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -2006,7 +2006,7 @@
                                     "type": "integer",
                                     "minimum": 8,
                                     "maximum": 72,
-                                    "description": "Optional: Force specific font size instead of auto-calculating. Use this for titles, headers, or when exact size must be maintained for design consistency. If omitted, size is auto-calculated based on content and box dimensions."
+                                    "description": "Optional: Force specific font size. ONLY use if template placeholder specifies 'Fontsize=XXpt'. DO NOT use otherwise - auto-calculation respects template design."
                                 }
                             },
                             "required": [
