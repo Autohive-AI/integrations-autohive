@@ -194,15 +194,15 @@
                                 "description": "Full name of the contact"
                             },
                             "Email": {
-                                "type": "string",
+                                "type": ["string", "null"],
                                 "description": "Email address"
                             },
                             "Phone": {
-                                "type": "string",
+                                "type": ["string", "null"],
                                 "description": "Phone number"
                             },
                             "Mobile": {
-                                "type": "string",
+                                "type": ["string", "null"],
                                 "description": "Mobile number"
                             },
                             "Account_Name": {
@@ -488,11 +488,11 @@
                                     "description": "Full name"
                                 },
                                 "Email": {
-                                    "type": "string",
+                                    "type": ["string", "null"],
                                     "description": "Email address"
                                 },
                                 "Phone": {
-                                    "type": "string",
+                                    "type": ["string", "null"],
                                     "description": "Phone number"
                                 },
                                 "Account_Name": {
@@ -656,11 +656,11 @@
                                     "description": "First name"
                                 },
                                 "Email": {
-                                    "type": "string",
+                                    "type": ["string", "null"],
                                     "description": "Email address"
                                 },
                                 "Phone": {
-                                    "type": "string",
+                                    "type": ["string", "null"],
                                     "description": "Phone number"
                                 }
                             }
@@ -904,11 +904,11 @@
                                 "description": "Annual revenue"
                             },
                             "Phone": {
-                                "type": "string",
+                                "type": ["string", "null"],
                                 "description": "Phone number"
                             },
                             "Website": {
-                                "type": "string",
+                                "type": ["string", "null"],
                                 "description": "Website URL"
                             },
                             "Owner": {
