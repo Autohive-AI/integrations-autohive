@@ -1,7 +1,7 @@
 {
     "name": "Front",
     "display_name": "Front",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Front integration for customer communication, inbox management, and team collaboration",
     "entry_point": "front.py",
     "auth": {
@@ -117,23 +117,200 @@
                                 },
                                 "status": {
                                     "type": "string",
-                                    "description": "Conversation status"
+                                    "enum": ["archived", "unassigned", "deleted", "assigned"],
+                                    "description": "Status of the conversation"
+                                },
+                                "status_id": {
+                                    "type": "string",
+                                    "description": "Unique identifier of the conversation status category, only present if ticketing is enabled"
+                                },
+                                "status_category": {
+                                    "type": "string",
+                                    "enum": ["open", "waiting", "resolved"],
+                                    "description": "Status category of the conversation"
+                                },
+                                "ticket_ids": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "List of ticket ids associated with the conversation"
                                 },
                                 "assignee": {
-                                    "type": "object",
-                                    "description": "Assigned teammate"
+                                    "type": ["object", "null"],
+                                    "description": "Assigned teammate (full teammate object or null if unassigned)",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Unique identifier of the teammate"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "Email address of the teammate"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "Username of the teammate (used for @ mentions)"
+                                        },
+                                        "first_name": {
+                                            "type": "string",
+                                            "description": "First name of the teammate"
+                                        },
+                                        "last_name": {
+                                            "type": "string",
+                                            "description": "Last name of the teammate"
+                                        },
+                                        "is_admin": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate is an admin"
+                                        },
+                                        "is_available": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate is available"
+                                        },
+                                        "is_blocked": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate account has been blocked"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"],
+                                            "description": "Type of the teammate"
+                                        },
+                                        "custom_fields": {
+                                            "type": "object",
+                                            "description": "Custom fields for this teammate"
+                                        }
+                                    }
                                 },
                                 "recipient": {
-                                    "type": "object",
-                                    "description": "Conversation recipient"
+                                    "type": ["object", "null"],
+                                    "description": "Conversation recipient (contact information or null)",
+                                    "properties": {
+                                        "handle": {
+                                            "type": "string",
+                                            "description": "Recipient handle/email address"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Recipient display name"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "description": "Recipient role"
+                                        }
+                                    }
                                 },
                                 "tags": {
                                     "type": "array",
-                                    "description": "Conversation tags"
+                                    "description": "Conversation tags",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Unique identifier of the tag"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Name of the tag"
+                                            },
+                                            "description": {
+                                                "type": ["string", "null"],
+                                                "description": "Description of the tag"
+                                            },
+                                            "highlight": {
+                                                "type": ["string", "null"],
+                                                "description": "Highlight color or emoji of the tag. Null if the tag does not have a highlight"
+                                            },
+                                            "is_private": {
+                                                "type": "boolean",
+                                                "description": "Whether or not the tag is individual"
+                                            },
+                                            "is_visible_in_conversation_lists": {
+                                                "type": "boolean",
+                                                "description": "Whether the tag is visible in conversation lists"
+                                            },
+                                            "created_at": {
+                                                "type": "number",
+                                                "description": "Timestamp of tag creation"
+                                            },
+                                            "updated_at": {
+                                                "type": "number",
+                                                "description": "Timestamp of the last tag update"
+                                            }
+                                        }
+                                    }
                                 },
-                                "last_message": {
+                                "links": {
+                                    "type": "array",
+                                    "description": "List of the links for this conversation",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Unique identifier of the link"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Display name of the link"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Type of the link"
+                                            },
+                                            "external_url": {
+                                                "type": "string",
+                                                "description": "Underlying identifying external URL of the link"
+                                            },
+                                            "custom_fields": {
+                                                "type": "object",
+                                                "description": "Custom fields for this link"
+                                            }
+                                        }
+                                    }
+                                },
+                                "scheduled_reminders": {
+                                    "type": "array",
+                                    "description": "List of scheduled (non-expired and non-canceled) reminders",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "created_at": {
+                                                "type": "number",
+                                                "description": "Timestamp at which the reminder was created"
+                                            },
+                                            "scheduled_at": {
+                                                "type": "number",
+                                                "description": "Timestamp that the reminder is scheduled for"
+                                            },
+                                            "updated_at": {
+                                                "type": "number",
+                                                "description": "Timestamp at which the reminder was updated"
+                                            }
+                                        }
+                                    }
+                                },
+                                "custom_fields": {
                                     "type": "object",
-                                    "description": "Last message in conversation"
+                                    "description": "Custom fields for this conversation"
+                                },
+                                "metadata": {
+                                    "type": "object",
+                                    "description": "Optional metadata about the conversation"
+                                },
+                                "created_at": {
+                                    "type": "number",
+                                    "description": "Timestamp at which the conversation was created"
+                                },
+                                "waiting_since": {
+                                    "type": "number",
+                                    "description": "Timestamp of the oldest unreplied message"
+                                },
+                                "is_private": {
+                                    "type": "boolean",
+                                    "description": "Whether or not the conversation is private"
                                 }
                             },
                             "required": ["id", "subject", "status"]
@@ -181,23 +358,196 @@
                             },
                             "status": {
                                 "type": "string",
-                                "description": "Conversation status"
+                                "enum": ["archived", "unassigned", "deleted", "assigned"],
+                                "description": "Status of the conversation"
+                            },
+                            "status_id": {
+                                "type": "string",
+                                "description": "Unique identifier of the conversation status category, only present if ticketing is enabled"
+                            },
+                            "status_category": {
+                                "type": "string",
+                                "enum": ["open", "waiting", "resolved"],
+                                "description": "Status category of the conversation"
+                            },
+                            "ticket_ids": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "List of ticket ids associated with the conversation"
                             },
                             "assignee": {
-                                "type": "object",
-                                "description": "Assigned teammate"
+                                "type": ["object", "null"],
+                                "description": "Assigned teammate (full teammate object or null if unassigned)",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Unique identifier of the teammate"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email address of the teammate"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username of the teammate (used for @ mentions)"
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "description": "First name of the teammate"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "description": "Last name of the teammate"
+                                    },
+                                    "is_admin": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is an admin"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is available"
+                                    },
+                                    "is_blocked": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate account has been blocked"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"],
+                                        "description": "Type of the teammate"
+                                    },
+                                    "custom_fields": {
+                                        "type": "object",
+                                        "description": "Custom fields for this teammate"
+                                    }
+                                }
                             },
                             "recipient": {
-                                "type": "object",
-                                "description": "Conversation recipient"
+                                "type": ["object", "null"],
+                                "description": "Conversation recipient (contact information or null)",
+                                "properties": {
+                                    "handle": {
+                                        "type": "string",
+                                        "description": "Recipient handle/email address"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Recipient display name"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "description": "Recipient role"
+                                    }
+                                }
                             },
                             "tags": {
                                 "type": "array",
-                                "description": "Conversation tags"
+                                "description": "Conversation tags",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Unique identifier of the tag"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Name of the tag"
+                                        },
+                                        "description": {
+                                            "type": ["string", "null"],
+                                            "description": "Description of the tag"
+                                        },
+                                        "highlight": {
+                                            "type": ["string", "null"],
+                                            "description": "Highlight color or emoji of the tag. Null if the tag does not have a highlight"
+                                        },
+                                        "is_private": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the tag is individual"
+                                        },
+                                        "is_visible_in_conversation_lists": {
+                                            "type": "boolean",
+                                            "description": "Whether the tag is visible in conversation lists"
+                                        },
+                                        "created_at": {
+                                            "type": "number",
+                                            "description": "Timestamp of tag creation"
+                                        },
+                                        "updated_at": {
+                                            "type": "number",
+                                            "description": "Timestamp of the last tag update"
+                                        }
+                                    }
+                                }
+                            },
+                            "links": {
+                                "type": "array",
+                                "description": "List of the links for this conversation",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Unique identifier of the link"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Display name of the link"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "Type of the link"
+                                        },
+                                        "external_url": {
+                                            "type": "string",
+                                            "description": "Underlying identifying external URL of the link"
+                                        },
+                                        "custom_fields": {
+                                            "type": "object",
+                                            "description": "Custom fields for this link"
+                                        }
+                                    }
+                                }
+                            },
+                            "scheduled_reminders": {
+                                "type": "array",
+                                "description": "List of scheduled (non-expired and non-canceled) reminders",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "created_at": {
+                                            "type": "number",
+                                            "description": "Timestamp at which the reminder was created"
+                                        },
+                                        "scheduled_at": {
+                                            "type": "number",
+                                            "description": "Timestamp that the reminder is scheduled for"
+                                        },
+                                        "updated_at": {
+                                            "type": "number",
+                                            "description": "Timestamp at which the reminder was updated"
+                                        }
+                                    }
+                                }
+                            },
+                            "custom_fields": {
+                                "type": "object",
+                                "description": "Custom fields for this conversation"
+                            },
+                            "metadata": {
+                                "type": "object",
+                                "description": "Optional metadata about the conversation"
                             },
                             "created_at": {
-                                "type": "integer",
+                                "type": "number",
                                 "description": "Creation timestamp"
+                            },
+                            "waiting_since": {
+                                "type": "number",
+                                "description": "Timestamp of the oldest unreplied message"
                             },
                             "is_private": {
                                 "type": "boolean",
@@ -259,11 +609,72 @@
                                 },
                                 "author": {
                                     "type": "object",
-                                    "description": "Message author"
+                                    "description": "Front teammate who sent this message",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Unique identifier of the teammate"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "Email address of the teammate"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "Username of the teammate (used for @ mentions)"
+                                        },
+                                        "first_name": {
+                                            "type": "string",
+                                            "description": "First name of the teammate"
+                                        },
+                                        "last_name": {
+                                            "type": "string",
+                                            "description": "Last name of the teammate"
+                                        },
+                                        "is_admin": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate is an admin"
+                                        },
+                                        "is_available": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate is available"
+                                        },
+                                        "is_blocked": {
+                                            "type": "boolean",
+                                            "description": "Whether or not the teammate account has been blocked"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"],
+                                            "description": "Type of the teammate"
+                                        },
+                                        "custom_fields": {
+                                            "type": "object",
+                                            "description": "Custom fields for this teammate"
+                                        }
+                                    }
                                 },
                                 "recipients": {
                                     "type": "array",
-                                    "description": "Message recipients"
+                                    "description": "Message recipients",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": ["string", "null"],
+                                                "description": "Name of the recipient"
+                                            },
+                                            "handle": {
+                                                "type": "string",
+                                                "description": "Handle of the contact (email, phone, etc.)"
+                                            },
+                                            "role": {
+                                                "type": "string",
+                                                "enum": ["from", "to", "cc", "bcc", "reply-to"],
+                                                "description": "Role of the recipient"
+                                            }
+                                        }
+                                    }
                                 },
                                 "subject": {
                                     "type": "string",
@@ -274,7 +685,7 @@
                                     "description": "Message body"
                                 },
                                 "created_at": {
-                                    "type": "integer",
+                                    "type": "number",
                                     "description": "Message timestamp"
                                 }
                             },
@@ -497,11 +908,72 @@
                             },
                             "author": {
                                 "type": "object",
-                                "description": "Message author"
+                                "description": "Front teammate who sent this message",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Unique identifier of the teammate"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email address of the teammate"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username of the teammate (used for @ mentions)"
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "description": "First name of the teammate"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "description": "Last name of the teammate"
+                                    },
+                                    "is_admin": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is an admin"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is available"
+                                    },
+                                    "is_blocked": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate account has been blocked"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"],
+                                        "description": "Type of the teammate"
+                                    },
+                                    "custom_fields": {
+                                        "type": "object",
+                                        "description": "Custom fields for this teammate"
+                                    }
+                                }
                             },
                             "recipients": {
                                 "type": "array",
-                                "description": "Message recipients"
+                                "description": "Message recipients",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": ["string", "null"],
+                                            "description": "Name of the recipient"
+                                        },
+                                        "handle": {
+                                            "type": "string",
+                                            "description": "Handle of the contact (email, phone, etc.)"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "enum": ["from", "to", "cc", "bcc", "reply-to"],
+                                            "description": "Role of the recipient"
+                                        }
+                                    }
+                                }
                             },
                             "subject": {
                                 "type": "string",
@@ -512,7 +984,7 @@
                                 "description": "Message body"
                             },
                             "created_at": {
-                                "type": "integer",
+                                "type": "number",
                                 "description": "Message timestamp"
                             }
                         },
@@ -844,20 +1316,32 @@
                         "description": "The conversation ID to update"
                     },
                     "assignee_id": {
+                        "type": ["string", "null"],
+                        "description": "ID of teammate to assign conversation to. Set to null to unassign"
+                    },
+                    "inbox_id": {
                         "type": "string",
-                        "description": "ID of teammate to assign conversation to"
+                        "description": "ID of the inbox to move the conversation to"
                     },
                     "status": {
                         "type": "string",
                         "description": "New conversation status",
-                        "enum": ["archived", "deleted", "open"]
+                        "enum": ["archived", "deleted", "open", "spam"]
+                    },
+                    "status_id": {
+                        "type": "string",
+                        "description": "Unique identifier of the status to set. Only one of status and status_id should be provided. Ticketing must be enabled"
                     },
                     "tags": {
                         "type": "array",
-                        "description": "List of tag IDs to apply",
+                        "description": "List of all tag IDs replacing the old conversation tags",
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "custom_fields": {
+                        "type": "object",
+                        "description": "Custom fields for this conversation. Include all custom fields, not just ones to update"
                     }
                 },
                 "required": ["conversation_id"]
@@ -873,20 +1357,116 @@
                                 "type": "string",
                                 "description": "Conversation ID"
                             },
+                            "subject": {
+                                "type": "string",
+                                "description": "Conversation subject"
+                            },
                             "status": {
                                 "type": "string",
                                 "description": "Updated status"
                             },
+                            "status_id": {
+                                "type": "string",
+                                "description": "Unique identifier of the conversation status category"
+                            },
+                            "status_category": {
+                                "type": "string",
+                                "enum": ["open", "waiting", "resolved"],
+                                "description": "Status category of the conversation"
+                            },
+                            "ticket_ids": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "List of ticket IDs"
+                            },
                             "assignee": {
-                                "type": "object",
-                                "description": "Assigned teammate"
+                                "type": ["object", "null"],
+                                "description": "Assigned teammate (full teammate object or null if unassigned)",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Unique identifier of the teammate"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email address of the teammate"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username of the teammate (used for @ mentions)"
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "description": "First name of the teammate"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "description": "Last name of the teammate"
+                                    },
+                                    "is_admin": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is an admin"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate is available"
+                                    },
+                                    "is_blocked": {
+                                        "type": "boolean",
+                                        "description": "Whether or not the teammate account has been blocked"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["user", "visitor", "rule", "macro", "API", "integration", "CSAT"],
+                                        "description": "Type of the teammate"
+                                    },
+                                    "custom_fields": {
+                                        "type": "object",
+                                        "description": "Custom fields for this teammate"
+                                    }
+                                }
+                            },
+                            "recipient": {
+                                "type": ["object", "null"],
+                                "description": "Conversation recipient (contact information or null)",
+                                "properties": {
+                                    "handle": {
+                                        "type": "string",
+                                        "description": "Recipient handle/email address"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Recipient display name"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "description": "Recipient role"
+                                    }
+                                }
                             },
                             "tags": {
                                 "type": "array",
-                                "description": "Applied tags"
+                                "description": "Conversation tags",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            "created_at": {
+                                "type": "number",
+                                "description": "Timestamp at which the conversation was created"
+                            },
+                            "waiting_since": {
+                                "type": "number",
+                                "description": "Timestamp of the oldest unreplied message"
+                            },
+                            "is_private": {
+                                "type": "boolean",
+                                "description": "Whether or not the conversation is private"
                             }
                         },
-                        "required": ["id"]
+                        "required": []
                     },
                     "result": {
                         "type": "boolean",
@@ -1113,6 +1693,189 @@
                     }
                 },
                 "required": ["teammate", "result"]
+            }
+        },
+        "find_teammate": {
+            "display_name": "Find Teammate",
+            "description": "Find a teammate by name or email (helper function that searches through all teammates)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "search_query": {
+                        "type": "string",
+                        "description": "Name or email to search for (case-insensitive, partial match supported)"
+                    }
+                },
+                "required": ["search_query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "teammates": {
+                        "type": "array",
+                        "description": "List of matching teammates",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Teammate ID (use as assignee_id or author_id)"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Teammate email address"
+                                },
+                                "username": {
+                                    "type": "string",
+                                    "description": "Teammate username"
+                                },
+                                "first_name": {
+                                    "type": "string",
+                                    "description": "Teammate first name"
+                                },
+                                "last_name": {
+                                    "type": "string",
+                                    "description": "Teammate last name"
+                                }
+                            },
+                            "required": ["id", "email", "first_name", "last_name"]
+                        }
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of matching teammates found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["teammates", "result"]
+            }
+        },
+        "find_inbox": {
+            "display_name": "Find Inbox",
+            "description": "Find an inbox by name (helper function that searches through all inboxes)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox_name": {
+                        "type": "string",
+                        "description": "Inbox name to search for (case-insensitive, partial match supported)"
+                    }
+                },
+                "required": ["inbox_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "inboxes": {
+                        "type": "array",
+                        "description": "List of matching inboxes",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Inbox ID (use for list_inbox_conversations)"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Inbox name"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "description": "Inbox email address"
+                                }
+                            },
+                            "required": ["id", "name", "address"]
+                        }
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of matching inboxes found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["inboxes", "result"]
+            }
+        },
+        "find_conversation": {
+            "display_name": "Find Conversation",
+            "description": "Find conversations by recipient name, email, or subject (helper function that searches through inbox conversations)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inbox_id": {
+                        "type": "string",
+                        "description": "The inbox ID to search in"
+                    },
+                    "search_query": {
+                        "type": "string",
+                        "description": "Search term for recipient name, email, or subject (case-insensitive, partial match)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of conversations to search through (default: 50)",
+                        "default": 50
+                    }
+                },
+                "required": ["inbox_id", "search_query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "conversations": {
+                        "type": "array",
+                        "description": "List of matching conversations",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Conversation ID (use for get_conversation or update_conversation)"
+                                },
+                                "subject": {
+                                    "type": "string",
+                                    "description": "Conversation subject"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Conversation status"
+                                },
+                                "recipient": {
+                                    "type": ["object", "null"],
+                                    "description": "Conversation recipient"
+                                }
+                            },
+                            "required": ["id", "subject", "status"]
+                        }
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of matching conversations found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["conversations", "result"]
             }
         }
     }

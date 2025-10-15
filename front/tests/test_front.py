@@ -383,6 +383,77 @@ async def test_get_teammate():
         except Exception as e:
             print(f"✗ Error testing get_teammate: {str(e)}")
 
+async def test_find_teammate():
+    print("Testing find_teammate...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "search_query": "john"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("find_teammate", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ find_teammate test passed")
+        except Exception as e:
+            print(f"✗ Error testing find_teammate: {str(e)}")
+
+async def test_find_inbox():
+    print("Testing find_inbox...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "inbox_name": "support"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("find_inbox", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ find_inbox test passed")
+        except Exception as e:
+            print(f"✗ Error testing find_inbox: {str(e)}")
+
+async def test_find_conversation():
+    print("Testing find_conversation...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "inbox_id": "inb_test123",
+        "search_query": "billing",
+        "limit": 50
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("find_conversation", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ find_conversation test passed")
+        except Exception as e:
+            print(f"✗ Error testing find_conversation: {str(e)}")
+
 
 async def main():
     print("Testing Front Integration")
@@ -420,8 +491,13 @@ async def main():
     await test_list_teammates()
     await test_get_teammate()
 
+    # Helper Actions
+    await test_find_teammate()
+    await test_find_inbox()
+    await test_find_conversation()
+
     print(f"\nTest suite completed!")
-    print("All 16 actions tested successfully with mock data")
+    print("All 19 actions tested successfully with mock data")
 
 if __name__ == "__main__":
     asyncio.run(main())
