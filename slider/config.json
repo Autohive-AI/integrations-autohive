@@ -1,6 +1,6 @@
 {
     "name": "Slide Maker",
-    "version": "2.0.0",
+    "version": "20.0.0",
     "description": "PowerPoint automation integration using python-pptx. Unified markdown-based content addition (add_elements), template filling (find_and_replace), and comprehensive slide manipulation. Optimized for AI agents with intelligent auto-positioning, overlap detection, and graceful error handling.",
     "entry_point": "slide_maker.py",
     "actions": {
@@ -1975,7 +1975,7 @@
         },
         "find_and_replace": {
             "display_name": "Find and Replace",
-            "description": "Find and replace text across entire presentation. Preserves template formatting (bullets, indentation, colors, structure). Replacement text is plain text - markdown is NOT parsed. USE forced_font_size parameter ONLY if template placeholder contains 'Fontsize=XXpt' (e.g., [Title, Fontsize=32pt] -> use forced_font_size: 32). Otherwise omit it - font size auto-calculates or extracts from placeholder metadata. SAFETY: Blocks replacements if multiple matches found without replace_all=true. RESPONSE: Includes status, summary (requested/successful/failed/blocked counts), and changes array (detailed changelog with locations and applied formatting).",
+            "description": "Find and replace text across entire presentation. Preserves template formatting (bullets, indentation, colors, structure). Replacement text is plain text - markdown is NOT parsed. If placeholder contains formatting metadata (e.g., [Title, Bold=true]), corresponding markdown characters are automatically stripped from replacement text to prevent literal **/** appearing. USE forced_font_size parameter ONLY if template placeholder contains 'Fontsize=XXpt'. Otherwise omit it - font size auto-calculates or extracts from placeholder metadata. SAFETY: Blocks replacements if multiple matches found without replace_all=true. RESPONSE: Includes status, summary (requested/successful/failed/blocked counts), and changes array (detailed changelog with locations and applied formatting).",
             "input_schema": {
                 "type": "object",
                 "properties": {

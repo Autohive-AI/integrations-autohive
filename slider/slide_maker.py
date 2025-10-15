@@ -279,22 +279,75 @@ def detect_placeholders_with_metadata(text):
 
             placeholders.append(full_placeholder)
 
-            # Extract metadata if contains comma-separated key=value pairs
-            if ',' in match and '=' in match:
+            # Extract metadata if contains commas
+            if ',' in match:
                 parts = [p.strip() for p in match.split(',')]
                 field_name = parts[0]
 
                 meta = {"field": field_name}
                 for part in parts[1:]:
-                    if '=' in part:
-                        key, value = part.split('=', 1)
+                    part_clean = part.strip()
+
+                    if '=' in part_clean:
+                        # Explicit key=value format
+                        key, value = part_clean.split('=', 1)
                         meta[key.strip().lower()] = value.strip()
+                    else:
+                        # Check for negation prefix (!)
+                        if part_clean.startswith('!'):
+                            # Negation: !Bold → Bold=false
+                            flag_name = part_clean[1:].strip().lower()
+                            if flag_name in ['bold', 'italic', 'underline']:
+                                meta[flag_name] = 'false'
+                        else:
+                            # Shorthand boolean: Bold → Bold=true
+                            part_lower = part_clean.lower()
+                            if part_lower in ['bold', 'italic', 'underline']:
+                                meta[part_lower] = 'true'
 
                 # Only add if has metadata beyond field name
                 if len(meta) > 1:
                     metadata[full_placeholder] = meta
 
     return placeholders, metadata
+
+def strip_conflicting_markdown(text, metadata):
+    """
+    Strip markdown formatting characters that conflict with metadata formatting.
+
+    If metadata specifies Bold=true, we'll apply bold formatting, so we should
+    strip ** and __ from the text to avoid literal asterisks appearing.
+
+    Args:
+        text (str): Replacement text that may contain markdown
+        metadata (dict): Placeholder metadata (e.g., {'bold': 'true', 'italic': 'false'})
+
+    Returns:
+        str: Text with conflicting markdown characters removed
+    """
+    if not metadata:
+        return text
+
+    cleaned = text
+
+    # Strip bold markers if Bold=true in metadata
+    if metadata.get('bold', '').lower() == 'true':
+        cleaned = cleaned.replace('**', '').replace('__', '')
+
+    # Strip italic markers if Italic=true in metadata
+    if metadata.get('italic', '').lower() == 'true':
+        # Only strip single * and _, not ** or __ (those are for bold)
+        # This is tricky - for simplicity, remove all * and _ if italic specified
+        cleaned = cleaned.replace('*', '').replace('_', '')
+
+    # Strip strikethrough if metadata has underline/strikethrough
+    # (Less common, but included for completeness)
+    cleaned = cleaned.replace('~~', '')
+
+    # Strip code backticks (always, since we're not in a code context)
+    cleaned = cleaned.replace('`', '')
+
+    return cleaned
 
 def get_element_info(shape, index: int, slide_width_inches: float, slide_height_inches: float) -> dict:
     """Extract detailed information about a shape/element including boundary checking"""
@@ -3155,6 +3208,10 @@ class FindAndReplaceAction(ActionHandler):
             _, placeholder_meta_dict = detect_placeholders_with_metadata(find_text)
             placeholder_meta = placeholder_meta_dict.get(find_text, {}) if placeholder_meta_dict else {}
 
+            # Always strip ALL markdown from replacement text (form-filling doesn't parse markdown)
+            # This prevents literal **/** appearing in output regardless of metadata
+            replace_text = replace_text.replace('**', '').replace('__', '').replace('*', '').replace('_', '').replace('`', '').replace('~~', '')
+
             # Validation
             if not find_text or len(find_text.strip()) == 0:
                 warnings.append(f"Skipped: 'find' text cannot be empty")
@@ -3264,10 +3321,29 @@ class FindAndReplaceAction(ActionHandler):
                             original_font_size = int(first_run.font.size.pt)
 
                     # Step 2: In-place text replacement (preserves bullets, levels, colors, bold/italic)
+                    # Handle both single-run and multi-run placeholders
                     for paragraph in text_frame.paragraphs:
+                        # Try run-level replacement first (preserves run formatting perfectly)
+                        replaced_in_run = False
                         for run in paragraph.runs:
                             if find_text in run.text:
                                 run.text = run.text.replace(find_text, replace_text)
+                                replaced_in_run = True
+
+                        # If not found in any individual run, check if spans multiple runs
+                        if not replaced_in_run and find_text in paragraph.text:
+                            # Placeholder spans multiple runs - use paragraph-level replacement
+                            new_text = paragraph.text.replace(find_text, replace_text)
+
+                            # Clear all runs and set new text (keeps paragraph formatting)
+                            for run in paragraph.runs:
+                                run.text = ""
+
+                            # Set first run to new text (or create if none)
+                            if paragraph.runs:
+                                paragraph.runs[0].text = new_text
+                            else:
+                                paragraph.text = new_text
 
                     # Step 3: Calculate size for ENTIRE text box (after replacement)
                     final_text = text_frame.text
@@ -3291,9 +3367,11 @@ class FindAndReplaceAction(ActionHandler):
                             print(f"  [FORCED SIZE] Using forced size: {forced_font_size}pt (skipping calculation)")
                     elif 'fontsize' in placeholder_meta:
                         # Priority 2: Fontsize in placeholder metadata
-                        meta_size = placeholder_meta['fontsize'].replace('pt', '').strip()
+                        meta_size_str = placeholder_meta['fontsize']
+                        # Strip 'pt' suffix (case-insensitive: 32pt, 32PT, 32Pt all work)
+                        meta_size_str = meta_size_str.lower().replace('pt', '').strip()
                         try:
-                            best_fit_size = int(meta_size)
+                            best_fit_size = int(meta_size_str)
                             if FONT_SIZE_DEBUG:
                                 print(f"  [METADATA SIZE] Using size from placeholder: {best_fit_size}pt")
                         except:
@@ -3373,10 +3451,29 @@ class FindAndReplaceAction(ActionHandler):
                                 original_cell_font_size = int(first_run.font.size.pt)
 
                         # Step 2: In-place text replacement (preserves structure)
+                        # Handle both single-run and multi-run placeholders
                         for paragraph in cell.text_frame.paragraphs:
+                            # Try run-level replacement first
+                            replaced_in_run = False
                             for run in paragraph.runs:
                                 if find_text in run.text:
                                     run.text = run.text.replace(find_text, replace_text)
+                                    replaced_in_run = True
+
+                            # If not found in any individual run, check if spans multiple runs
+                            if not replaced_in_run and find_text in paragraph.text:
+                                # Placeholder spans multiple runs - use paragraph-level replacement
+                                new_text = paragraph.text.replace(find_text, replace_text)
+
+                                # Clear all runs and set new text
+                                for run in paragraph.runs:
+                                    run.text = ""
+
+                                # Set first run to new text
+                                if paragraph.runs:
+                                    paragraph.runs[0].text = new_text
+                                else:
+                                    paragraph.text = new_text
 
                         # Step 3: Calculate size for entire cell (after replacement)
                         final_text = cell.text
@@ -3389,9 +3486,11 @@ class FindAndReplaceAction(ActionHandler):
                             if FONT_SIZE_DEBUG:
                                 print(f"  [FORCED SIZE] Table cell using forced size: {forced_font_size}pt")
                         elif 'fontsize' in placeholder_meta:
-                            meta_size = placeholder_meta['fontsize'].replace('pt', '').strip()
+                            meta_size_str = placeholder_meta['fontsize']
+                            # Strip 'pt' suffix (case-insensitive)
+                            meta_size_str = meta_size_str.lower().replace('pt', '').strip()
                             try:
-                                best_fit_size = int(meta_size)
+                                best_fit_size = int(meta_size_str)
                                 if FONT_SIZE_DEBUG:
                                     print(f"  [METADATA SIZE] Table cell using size from placeholder: {best_fit_size}pt")
                             except:
