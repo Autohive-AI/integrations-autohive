@@ -608,8 +608,8 @@
                                     "description": "Whether message is inbound"
                                 },
                                 "author": {
-                                    "type": "object",
-                                    "description": "Front teammate who sent this message",
+                                    "type": ["object", "null"],
+                                    "description": "Front teammate who sent this message (null for inbound messages from external contacts)",
                                     "properties": {
                                         "id": {
                                             "type": "string",
@@ -907,8 +907,8 @@
                                 "description": "Whether message is inbound"
                             },
                             "author": {
-                                "type": "object",
-                                "description": "Front teammate who sent this message",
+                                "type": ["object", "null"],
+                                "description": "Front teammate who sent this message (null for inbound messages from external contacts)",
                                 "properties": {
                                     "id": {
                                         "type": "string",
@@ -1044,6 +1044,10 @@
                                 "send_as": {
                                     "type": "string",
                                     "description": "Send as email address"
+                                },
+                                "settings": {
+                                    "type": "object",
+                                    "description": "Channel settings"
                                 }
                             },
                             "required": ["id", "name", "type"]
@@ -1107,6 +1111,10 @@
                                 "send_as": {
                                     "type": "string",
                                     "description": "Send as email address"
+                                },
+                                "settings": {
+                                    "type": "object",
+                                    "description": "Channel settings"
                                 }
                             },
                             "required": ["id", "name", "type"]
@@ -1167,6 +1175,10 @@
                             "is_private": {
                                 "type": "boolean",
                                 "description": "Whether channel is private"
+                            },
+                            "settings": {
+                                "type": "object",
+                                "description": "Channel settings"
                             }
                         },
                         "required": ["id", "name", "type"]

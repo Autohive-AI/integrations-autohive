@@ -56,7 +56,7 @@ class FrontDataParser:
             "id": raw_message.get('id', ''),
             "type": raw_message.get('type', ''),
             "is_inbound": raw_message.get('is_inbound', False),
-            "author": raw_message.get('author', {}),
+            "author": raw_message.get('author'),  # Can be None for external messages
         }
 
         # Add optional fields if they exist
@@ -533,10 +533,10 @@ class GetChannelAction(ActionHandler):
                 channel['address'] = response['address']
             if 'send_as' in response:
                 channel['send_as'] = response['send_as']
-            if 'settings' in response:
-                channel['settings'] = response['settings']
             if 'is_private' in response:
                 channel['is_private'] = response['is_private']
+            if 'settings' in response:
+                channel['settings'] = response['settings']
 
             return {
                 "channel": channel,
@@ -578,7 +578,7 @@ class ListMessageTemplatesAction(ActionHandler):
                 template = {
                     "id": raw_template.get("id", ""),
                     "name": raw_template.get("name", ""),
-                    "subject": raw_template.get("subject"),
+                    "subject": raw_template.get("subject", ""),
                     "body": raw_template.get("body", ""),
                     "attachments": raw_template.get("attachments", []),
                     "metadata": raw_template.get("metadata", {})
@@ -621,7 +621,7 @@ class GetMessageTemplateAction(ActionHandler):
             template = {
                 "id": response.get("id", ""),
                 "name": response.get("name", ""),
-                "subject": response.get("subject"),
+                "subject": response.get("subject", ""),
                 "body": response.get("body", ""),
                 "attachments": response.get("attachments", []),
                 "metadata": response.get("metadata", {})
