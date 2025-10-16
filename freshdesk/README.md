@@ -6,7 +6,7 @@ Connects Autohive to the Freshdesk API to enable comprehensive customer support 
 
 This integration provides a complete connection to Freshdesk's help desk platform. It allows users to automate customer support workflows by managing tickets, contacts, companies, and conversations directly from Autohive.
 
-The integration uses Freshdesk API v2 and implements 13 core actions covering all essential help desk operations.
+The integration uses Freshdesk API v2 and implements 15 core actions covering all essential help desk operations.
 
 ## Setup & Authentication
 
@@ -46,7 +46,7 @@ Freshdesk uses Basic Authentication with your API key. The integration handles t
 
 ## Actions
 
-### Companies (5 actions)
+### Companies (6 actions)
 
 #### `list_companies`
 Lists all companies in your Freshdesk account with pagination support.
@@ -59,6 +59,26 @@ Lists all companies in your Freshdesk account with pagination support.
 - `companies`: Array of company objects
 - `total`: Number of companies returned
 - `result`: Success status
+
+---
+
+#### `search_companies`
+Search for companies by name using autocomplete. The search is case insensitive but requires complete words (no substring matching).
+
+**Inputs:**
+- `name` (required): Company name or keyword to search for
+
+**Outputs:**
+- `companies`: Array of matching company objects (id and name only)
+- `total`: Number of companies found
+- `result`: Success status
+
+**Search Behavior:**
+- Case insensitive (e.g., "acme" matches "Acme Corporation")
+- Requires word prefix matching (not substrings)
+- Examples:
+  - ✅ "Acme Corporation" matches: "acme", "Ac", "Corporation", "Co"
+  - ❌ "Acme Corporation" does NOT match: "cme", "orporation"
 
 ---
 
@@ -194,7 +214,7 @@ Deletes a ticket (can be restored within 30 days).
 
 ---
 
-### Contacts (5 actions)
+### Contacts (6 actions)
 
 #### `create_contact`
 Creates a new contact in Freshdesk.
@@ -212,6 +232,26 @@ Creates a new contact in Freshdesk.
 **Outputs:**
 - `contact`: Created contact object
 - `result`: Success status
+
+---
+
+#### `search_contacts`
+Search for contacts by name using autocomplete. The search is case insensitive but requires complete words (no substring matching).
+
+**Inputs:**
+- `term` (required): Contact name or keyword to search for
+
+**Outputs:**
+- `contacts`: Array of matching contact objects (id and name only)
+- `total`: Number of contacts found
+- `result`: Success status
+
+**Search Behavior:**
+- Case insensitive (e.g., "john" matches "John Jonz")
+- Requires word prefix matching (not substrings)
+- Examples:
+  - ✅ "John Jonz" matches: "john", "Joh", "Jonz", "jon"
+  - ❌ "John Jonz" does NOT match: "hn", "nz"
 
 ---
 
@@ -358,6 +398,10 @@ To test the integration:
 3. Track all support tickets by company
 
 ## Version History
+
+- **1.1.0** - Added search functionality
+  - Companies: Added `search_companies` (autocomplete search by name)
+  - Contacts: Added `search_contacts` (autocomplete search by name)
 
 - **1.0.0** - Initial release with 13 core actions
   - Companies: list, create, get, update, delete

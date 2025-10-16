@@ -369,6 +369,55 @@
                 "required": ["result"]
             }
         },
+        "search_companies": {
+            "display_name": "Search Companies",
+            "description": "Search for companies by name using autocomplete. The search is case insensitive but requires complete words (no substring matching). For example, 'Acme Corporation' can be found with 'acme', 'Ac', 'Corporation', or 'Co', but not 'cme' or 'orporation'.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Company name or keyword to search for (case insensitive, requires word prefix matching)"
+                    }
+                },
+                "required": ["name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "companies": {
+                        "type": "array",
+                        "description": "List of matching companies",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "description": "Unique company ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Company name"
+                                }
+                            }
+                        }
+                    },
+                    "total": {
+                        "type": "integer",
+                        "description": "Total number of companies found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["companies", "result"]
+            }
+        },
         "create_ticket": {
             "display_name": "Create Ticket",
             "description": "Creates a new support ticket in Freshdesk. Email and subject are required, along with either description or priority and status.",
@@ -819,6 +868,55 @@
                     }
                 },
                 "required": ["result"]
+            }
+        },
+        "search_contacts": {
+            "display_name": "Search Contacts",
+            "description": "Search for contacts by name using autocomplete. The search is case insensitive but requires complete words (no substring matching). For example, 'John Jonz' can be found with 'john', 'Joh', 'Jonz', or 'jon', but not 'hn' or 'nz'.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "term": {
+                        "type": "string",
+                        "description": "Contact name or keyword to search for (case insensitive, requires word prefix matching)"
+                    }
+                },
+                "required": ["term"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "contacts": {
+                        "type": "array",
+                        "description": "List of matching contacts",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "description": "Unique contact ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Contact name"
+                                }
+                            }
+                        }
+                    },
+                    "total": {
+                        "type": "integer",
+                        "description": "Total number of contacts found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["contacts", "result"]
             }
         },
         "list_conversations": {

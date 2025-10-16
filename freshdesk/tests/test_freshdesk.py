@@ -25,6 +25,27 @@ async def test_list_companies():
             return None
 
 
+async def test_search_companies():
+    """Test searching for companies by name."""
+    auth = {
+        "credentials": {
+            "api_key": "your_api_key_here",
+            "domain": "your_domain_here"
+        }
+    }
+
+    inputs = {"name": "Acme"}  # Replace with a company name that exists in your account
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await freshdesk.execute_action("search_companies", inputs, context)
+            print(f"Search Companies Result: {result}")
+            return result
+        except Exception as e:
+            print(f"Error testing search_companies: {e}")
+            return None
+
+
 async def test_create_company():
     """Test creating a new company."""
     auth = {
@@ -188,6 +209,27 @@ async def test_list_contacts():
             return None
 
 
+async def test_search_contacts():
+    """Test searching for contacts by name."""
+    auth = {
+        "credentials": {
+            "api_key": "your_api_key_here",
+            "domain": "your_domain_here"
+        }
+    }
+
+    inputs = {"term": "John"}  # Replace with a contact name that exists in your account
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await freshdesk.execute_action("search_contacts", inputs, context)
+            print(f"Search Contacts Result: {result}")
+            return result
+        except Exception as e:
+            print(f"Error testing search_contacts: {e}")
+            return None
+
+
 async def test_list_conversations():
     """Test listing conversations for a ticket."""
     auth = {
@@ -272,46 +314,54 @@ async def main():
     await test_list_companies()
     print()
 
-    print("2. Testing create_company...")
+    print("2. Testing search_companies...")
+    await test_search_companies()
+    print()
+
+    print("3. Testing create_company...")
     created_company = await test_create_company()
     print()
 
-    print("3. Testing get_company...")
+    print("4. Testing get_company...")
     await test_get_company()
     print()
 
     # Test ticket actions
-    print("4. Testing create_ticket...")
+    print("5. Testing create_ticket...")
     created_ticket = await test_create_ticket()
     print()
 
-    print("5. Testing list_tickets...")
+    print("6. Testing list_tickets...")
     await test_list_tickets()
     print()
 
-    print("6. Testing get_ticket...")
+    print("7. Testing get_ticket...")
     await test_get_ticket()
     print()
 
     # Test contact actions
-    print("7. Testing create_contact...")
+    print("8. Testing create_contact...")
     created_contact = await test_create_contact()
     print()
 
-    print("8. Testing list_contacts...")
+    print("9. Testing list_contacts...")
     await test_list_contacts()
     print()
 
+    print("10. Testing search_contacts...")
+    await test_search_contacts()
+    print()
+
     # Test conversation actions
-    print("9. Testing list_conversations...")
+    print("11. Testing list_conversations...")
     await test_list_conversations()
     print()
 
-    print("10. Testing create_note...")
+    print("12. Testing create_note...")
     await test_create_note()
     print()
 
-    print("11. Testing create_reply...")
+    print("13. Testing create_reply...")
     await test_create_reply()
     print()
 

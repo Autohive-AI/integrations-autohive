@@ -286,6 +286,56 @@ class DeleteCompanyAction(ActionHandler):
             }
 
 
+@freshdesk.action("search_companies")
+class SearchCompaniesAction(ActionHandler):
+    """
+    Search for companies by name using autocomplete.
+    The search is case insensitive but requires complete words (no substring matching).
+    For example, 'Acme Corporation' can be found with 'acme', 'Ac', 'Corporation',
+    or 'Co', but not 'cme' or 'orporation'.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract search keyword
+            name = inputs['name']
+
+            # Get auth headers and base URL
+            headers = get_auth_headers(context)
+            base_url = get_base_url(context)
+
+            # Build query parameters
+            params = {
+                'name': name
+            }
+
+            # Make API request to autocomplete endpoint
+            url = f"{base_url}/companies/autocomplete"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Extract companies from response
+            companies = response.get('companies', []) if isinstance(response, dict) else []
+
+            return {
+                "companies": companies,
+                "total": len(companies),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "companies": [],
+                "total": 0,
+                "result": False,
+                "error": str(e)
+            }
+
+
 # ---- Ticket Handlers ----
 
 @freshdesk.action("create_ticket")
@@ -594,6 +644,56 @@ class DeleteContactAction(ActionHandler):
 
         except Exception as e:
             return {"result": False, "error": str(e)}
+
+
+@freshdesk.action("search_contacts")
+class SearchContactsAction(ActionHandler):
+    """
+    Search for contacts by name using autocomplete.
+    The search is case insensitive but requires complete words (no substring matching).
+    For example, 'John Jonz' can be found with 'john', 'Joh', 'Jonz', or 'jon',
+    but not 'hn' or 'nz'.
+    """
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            # Extract search term
+            term = inputs['term']
+
+            # Get auth headers and base URL
+            headers = get_auth_headers(context)
+            base_url = get_base_url(context)
+
+            # Build query parameters
+            params = {
+                'term': term
+            }
+
+            # Make API request to autocomplete endpoint
+            url = f"{base_url}/contacts/autocomplete"
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Response is directly an array of contacts
+            contacts = response if isinstance(response, list) else []
+
+            return {
+                "contacts": contacts,
+                "total": len(contacts),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "contacts": [],
+                "total": 0,
+                "result": False,
+                "error": str(e)
+            }
 
 
 # ---- Conversation Handlers ----
