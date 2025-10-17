@@ -52,21 +52,20 @@ async def test_template_analysis_and_filling():
             analysis_result = await doc_maker.execute_action("get_document_elements", analysis_inputs, context)
 
             print(f"[ANALYSIS] Template structure:")
-            print(f"   Total elements: {analysis_result['total_elements']}")
-            print(f"   Paragraphs: {analysis_result['paragraphs']}")
-            print(f"   Tables: {analysis_result['tables']}")
-            print(f"   Fillable paragraphs: {analysis_result['fillable_paragraphs']}")
-            print(f"   Fillable cells: {analysis_result['fillable_cells']}")
+            print(f"   Template summary: {analysis_result['template_summary']}")
+            print(f"   Fillable total: {analysis_result['template_summary']['fillable_total']}")
+            print(f"   Fillable paragraphs: {len(analysis_result['fillable_paragraphs'])}")
+            print(f"   Fillable cells: {len(analysis_result['fillable_cells'])}")
 
             # Show some fillable elements
-            fillable_elements = [e for e in analysis_result['elements'] if e.get('is_fillable')]
             print(f"   Detected fillable elements:")
-            for elem in fillable_elements[:5]:  # Show first 5
-                if elem['type'] == 'paragraph':
-                    print(f"     - Paragraph {elem['index']}: '{elem['content'][:50]}...'")
-                elif elem['type'] == 'table':
-                    fillable_cells = [c for c in elem['cells'] if c['is_fillable']]
-                    print(f"     - Table {elem['index']}: {len(fillable_cells)} fillable cells")
+            for elem in analysis_result['fillable_paragraphs'][:5]:  # Show first 5
+                print(f"     - {elem['id']}: '{elem['content'][:50]}...' (pattern: {elem['pattern']})")
+
+            if analysis_result['fillable_cells']:
+                print(f"   First fillable cells:")
+                for cell in analysis_result['fillable_cells'][:3]:
+                    print(f"     - {cell['id']}: '{cell['content']}' at {cell['location']}")
 
             # Step 3: Fill template using comprehensive approach
             template_data = {
@@ -106,10 +105,13 @@ async def test_template_analysis_and_filling():
             filled_result = await doc_maker.execute_action("fill_template_fields", fill_inputs, context)
 
             print(f"[SUCCESS] Template filled successfully!")
-            print(f"   Fields filled: {filled_result['fields_filled']}")
-            print(f"   Changes made:")
-            for change in filled_result['changes_made'][:10]:  # Show first 10 changes
-                print(f"     - {change}")
+            print(f"   Success: {filled_result['success']}")
+            print(f"   Completed operations: {filled_result['completed_operations']}")
+            print(f"   Template status: {filled_result['template_status']}")
+            if filled_result.get('filled_summary'):
+                print(f"   Filled summary: {filled_result['filled_summary']}")
+            if filled_result.get('safety_warnings'):
+                print(f"   Safety warnings: {len(filled_result['safety_warnings'])} warnings")
 
             # Save filled template with new name
             file_content = base64.b64decode(filled_result['file']['content'])
@@ -198,7 +200,11 @@ async def test_natural_language_placeholders():
             filled_result = await doc_maker.execute_action("find_and_replace", replace_inputs, context)
 
             print(f"[SUCCESS] Natural language template filled!")
-            print(f"   Total replacements: {filled_result['total_replacements']}")
+            print(f"   Success: {filled_result['success']}")
+            print(f"   Replacements made: {filled_result['replaced']}")
+            print(f"   Processed: {filled_result['processed']} replacement patterns")
+            if filled_result.get('alerts'):
+                print(f"   Alerts: {filled_result['alerts']}")
 
             # Save edited natural template with new name
             file_content = base64.b64decode(filled_result['file']['content'])
@@ -248,9 +254,9 @@ async def main():
     if passed == len(test_results):
         print("\n[SUCCESS] All template filling tests passed!")
         print("[FILES] Template comparison files:")
-        print("   ORIGINAL → EDITED:")
-        print("   - ORIGINAL_COMPREHENSIVE_TEMPLATE.docx → COMPREHENSIVE_TEMPLATE_EDITED.docx")
-        print("   - ORIGINAL_NATURAL_TEMPLATE.docx → NATURAL_TEMPLATE_EDITED.docx")
+        print("   ORIGINAL -> EDITED:")
+        print("   - ORIGINAL_COMPREHENSIVE_TEMPLATE.docx -> COMPREHENSIVE_TEMPLATE_EDITED.docx")
+        print("   - ORIGINAL_NATURAL_TEMPLATE.docx -> NATURAL_TEMPLATE_EDITED.docx")
         print("\n[INFO] Open original and edited files side-by-side to see template modifications!")
     else:
         print("\n[WARNING] Some template tests failed.")

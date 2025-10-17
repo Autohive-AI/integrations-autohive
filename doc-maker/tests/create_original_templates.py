@@ -167,9 +167,9 @@ Additional notes here.
 
             print("\n[COMPLETE] All original templates created!")
             print("[INFO] You can now compare these with their filled versions:")
-            print("   ORIGINAL_COMPREHENSIVE_TEMPLATE.docx → FILLED_TEMPLATE.docx")
-            print("   ORIGINAL_NATURAL_TEMPLATE.docx → FILLED_NATURAL_TEMPLATE.docx")
-            print("   ORIGINAL_INVOICE_TEMPLATE.docx → (create your own filled version!)")
+            print("   ORIGINAL_COMPREHENSIVE_TEMPLATE.docx -> FILLED_TEMPLATE.docx")
+            print("   ORIGINAL_NATURAL_TEMPLATE.docx -> FILLED_NATURAL_TEMPLATE.docx")
+            print("   ORIGINAL_INVOICE_TEMPLATE.docx -> (create your own filled version!)")
 
         except Exception as e:
             print(f"[ERROR] Error creating templates: {e}")
