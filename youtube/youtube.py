@@ -1,25 +1,4 @@
-"""
-YouTube Data API v3 Integration for Autohive
 
-This module provides comprehensive integration with YouTube's Data API v3, enabling
-full management of videos, channels, playlists, comments, and more through Autohive workflows.
-
-Features:
-    - Search videos, channels, and playlists with advanced filtering
-    - Video management (get details, update metadata, upload, thumbnail management)
-    - Channel information and analytics
-    - Complete playlist operations (create, update, delete, add/remove videos)
-    - Full comment functionality (read, post, reply, update, delete, moderate)
-
-Authentication:
-    Uses Google OAuth2 platform authentication with required scopes:
-    - https://www.googleapis.com/auth/youtube
-    - https://www.googleapis.com/auth/youtube.upload
-    - https://www.googleapis.com/auth/youtube.force-ssl
-
-API Reference:
-    https://developers.google.com/youtube/v3
-"""
 
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler
