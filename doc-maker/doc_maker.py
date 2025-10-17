@@ -3,11 +3,8 @@ from autohive_integrations_sdk import (
 )
 from typing import Dict, Any, List, Optional
 from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
-from docx.enum.style import WD_STYLE_TYPE
-from docx.shared import RGBColor
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.shared import Inches
+from docx.enum.text import WD_BREAK
 from docx.document import Document as _Document
 from docx.oxml.text.paragraph import CT_P
 from docx.oxml.table import CT_Tbl
@@ -17,7 +14,6 @@ import uuid
 import os
 import base64
 from io import BytesIO
-from PIL import Image
 import markdown
 from bs4 import BeautifulSoup
 import re
@@ -26,7 +22,6 @@ import json
 doc_maker = Integration.load()
 
 documents = {}
-uploaded_images = {}
 
 
 def process_files(files: List[Dict[str, Any]]) -> Dict[str, BytesIO]:
@@ -90,11 +85,6 @@ async def save_and_return_document(original_result: Dict[str, Any], document_id:
         "error": save_result.get("error", "")
     })
     return combined_result
-
-def hex_to_rgb(hex_color: str) -> tuple:
-    """Convert hex color to RGB tuple"""
-    hex_color = hex_color.lstrip('#')
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 def iter_block_items(parent):
     """
