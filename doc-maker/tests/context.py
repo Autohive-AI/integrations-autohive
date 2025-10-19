@@ -23,7 +23,9 @@ try:
     # Restore original directory
     os.chdir(original_cwd)
 
+    # Export both the integration instance and the module (for unit tests)
     doc_maker = doc_maker_module.doc_maker
+    doc_maker_functions = doc_maker_module  # For accessing utility functions in unit tests
 except ImportError as e:
     print(f"Import error: {e}")
     print("Available sys.path entries:")
