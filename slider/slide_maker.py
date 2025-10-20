@@ -273,11 +273,26 @@ def detect_placeholders_with_metadata(text):
             else:  # double_curly
                 full_placeholder = f"{{{{{match}}}}}"
 
-            # Skip if already found (double_curly might overlap with curly)
-            if full_placeholder in placeholders:
-                continue
+            # Skip if already found or if substring of existing placeholder
+            # (prevents {{Date}} being detected twice as both {{Date}} and {{Date})
+            skip = False
 
-            placeholders.append(full_placeholder)
+            if full_placeholder in placeholders:
+                skip = True
+            else:
+                # Check if this placeholder is a substring of any existing placeholder
+                # or if any existing is a substring of this (overlapping matches)
+                for existing in placeholders:
+                    if full_placeholder in existing or existing in full_placeholder:
+                        # Only skip if they're actually overlapping, not just similar
+                        # Check: do they share the same text content?
+                        if (full_placeholder.strip('{}[]') in existing or
+                            existing.strip('{}[]') in full_placeholder):
+                            skip = True
+                            break
+
+            if not skip:
+                placeholders.append(full_placeholder)
 
             # Extract metadata if contains commas
             if ',' in match:
