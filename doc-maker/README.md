@@ -708,23 +708,4 @@ Automatically detected patterns:
 - `has_markdown_formatting()` - Detect formatting markers
 - `is_likely_placeholder_context()` - Context-based detection
 
-### AWS Lambda Deployment
-
-
-**Optimizations:**
-- All file operations use `BytesIO` (in-memory)
-- No disk writes - only memory buffers
-- Base64 streaming for stateless operation
-- LLM-optimized responses reduce token usage
-
-### Stateless File Streaming
-
-The integration works statelessly - perfect for Lambda:
-
-1. **Receive:** Base64-encoded document from platform
-2. **Process:** All operations in memory (BytesIO)
-3. **Return:** Base64-encoded result for platform
-
-No files touch disk. Each action is completely independent.
-
 **Doc Maker Integration v1.0.0** | Built for Autohive Platform
