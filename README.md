@@ -67,6 +67,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-calendar](google-calendar): Integrates with Google Calendar API for comprehensive calendar and event management within Autohive workflows. Supports listing accessible calendars, creating and managing calendar events (both timed and all-day), attendee management, and event lifecycle operations. Features secure OAuth2 authentication and pagination support for large event datasets.
 
+### Harvest
+
+[harvest](harvest): Time tracking and project management integration with Harvest API for logging work hours, managing projects, clients, and teams. Supports creating and managing time entries with running timers, listing and filtering time entries by project, client, user, and date range, managing projects and clients, tracking tasks and team members, and comprehensive resource management operations. Features OAuth2 authentication, flexible time logging (manual hours or running timers), pagination support for large datasets, and full CRUD operations for time entries. Includes 10 core actions covering time tracking workflows, project organization, and team collaboration.
+
 ### Google Sheets
 
 [google-sheets](google-sheets): Connects to Google Sheets and Drive APIs to list accessible spreadsheets, read and write A1 ranges, append rows, apply formatting, freeze panes, run batch updates, and duplicate spreadsheets. Uses Google OAuth2 platform authentication with appropriate scopes for Sheets and Drive.
