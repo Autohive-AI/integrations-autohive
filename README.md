@@ -47,9 +47,9 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [reddit](reddit): Connect workflows to Reddit with automated engagement capabilities. Search posts across subreddits with customizable filtering options and automatically post comments to join conversations. Includes authentication via Reddit OAuth with read and submit permissions, comprehensive post data extraction, and support for brand monitoring and community engagement workflows.
 
-### SerpAPI
+### App and Business Reviews
 
-[serpapi](serpapi): Unified review aggregation integration powered by SerpAPI. Access reviews from Apple App Store (iOS apps), Google Play Store (Android apps), and Google Maps (business locations) through a single integration. Supports searching for apps and places, fetching reviews with advanced sorting and filtering, pagination for large datasets, and automatic ID resolution from names. Features customizable sort orders (newest, most helpful, rating-based), platform filtering for Android apps, and flexible location-based searches. Includes comprehensive error handling with helpful Place ID guidance and single API key authentication for all three review sources.
+[app-business-reviews](app-business-reviews): Unified review aggregation integration powered by SerpAPI. Access reviews from Apple App Store (iOS apps), Google Play Store (Android apps), and Google Maps (business locations) through a single integration. Supports searching for apps and places, fetching reviews with advanced sorting and filtering, pagination for large datasets, and automatic ID resolution from names. Features customizable sort orders (newest, most helpful, rating-based), platform filtering for Android apps, and flexible location-based searches. Includes comprehensive error handling with helpful Place ID guidance and single API key authentication for all three review sources.
 
 ### Supadata
 

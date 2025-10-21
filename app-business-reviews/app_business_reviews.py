@@ -4,11 +4,11 @@ from autohive_integrations_sdk import (
 from typing import Dict, Any, List, Optional
 
 # Create the integration using the config.json
-serpapi = Integration.load()
+app_business_reviews = Integration.load()
 
 # ---- Apple App Store Actions ----
 
-@serpapi.action("search_apps_ios")
+@app_business_reviews.action("search_apps_ios")
 class SearchAppsIOS(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
@@ -62,7 +62,7 @@ class SearchAppsIOS(ActionHandler):
             "total_results": len(apps)
         }
 
-@serpapi.action("get_reviews_app_store")
+@app_business_reviews.action("get_reviews_app_store")
 class GetReviewsAppStore(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
@@ -180,7 +180,7 @@ class GetReviewsAppStore(ActionHandler):
 
 # ---- Google Play Store Actions ----
 
-@serpapi.action("search_apps_android")
+@app_business_reviews.action("search_apps_android")
 class SearchAppsAndroid(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
@@ -229,7 +229,7 @@ class SearchAppsAndroid(ActionHandler):
             "total_results": len(apps)
         }
 
-@serpapi.action("get_reviews_google_play")
+@app_business_reviews.action("get_reviews_google_play")
 class GetReviewsGooglePlay(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
@@ -353,7 +353,7 @@ class GetReviewsGooglePlay(ActionHandler):
 
 # ---- Google Maps Actions ----
 
-@serpapi.action("search_places_google_maps")
+@app_business_reviews.action("search_places_google_maps")
 class SearchPlacesGoogleMaps(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
@@ -402,7 +402,7 @@ class SearchPlacesGoogleMaps(ActionHandler):
             "total_results": len(places)
         }
 
-@serpapi.action("get_reviews_google_maps")
+@app_business_reviews.action("get_reviews_google_maps")
 class GetReviewsGoogleMaps(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})

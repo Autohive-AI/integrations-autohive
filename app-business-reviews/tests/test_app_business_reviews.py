@@ -1,7 +1,7 @@
 # Comprehensive testbed for the unified SerpAPI integration
 # Tests all three review sources: App Store, Google Play, and Google Maps
 import asyncio
-from context import serpapi
+from context import app_business_reviews
 from autohive_integrations_sdk import ExecutionContext
 
 # ============ Apple App Store Tests ============
@@ -20,7 +20,7 @@ async def test_search_apps_ios():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("search_apps_ios", inputs, context)
+            result = await app_business_reviews.execute_action("search_apps_ios", inputs, context)
             print(f"[iOS] Found {result['total_results']} apps for 'WhatsApp'")
 
             for i, app in enumerate(result['apps']):
@@ -48,7 +48,7 @@ async def test_get_reviews_app_store_by_id():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_app_store", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_app_store", inputs, context)
             print(f"[iOS] Found {result['total_reviews']} reviews for {result['app_name']}")
             print(f"[iOS] Product ID: {result['product_id']}")
 
@@ -77,7 +77,7 @@ async def test_get_reviews_app_store_by_name():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_app_store", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_app_store", inputs, context)
             print(f"[iOS] Auto-resolved '{inputs['app_name']}' to ID: {result['product_id']}")
             print(f"[iOS] Fetched {result['total_reviews']} favorable reviews")
 
@@ -103,7 +103,7 @@ async def test_search_apps_android():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("search_apps_android", inputs, context)
+            result = await app_business_reviews.execute_action("search_apps_android", inputs, context)
             print(f"[Android] Found {result['total_results']} apps for 'Spotify'")
 
             for i, app in enumerate(result['apps']):
@@ -130,7 +130,7 @@ async def test_get_reviews_google_play_basic():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_play", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_play", inputs, context)
             print(f"[Android] Found {result['total_reviews']} reviews for {result['app_name']}")
             print(f"[Android] App rating: {result['app_rating']}")
             print(f"[Android] Product ID: {result['product_id']}")
@@ -161,7 +161,7 @@ async def test_get_reviews_google_play_with_filters():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_play", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_play", inputs, context)
             print(f"[Android] Found {result['total_reviews']} 5-star phone reviews for {result['app_name']}")
 
             # Verify filter worked
@@ -186,7 +186,7 @@ async def test_get_reviews_google_play_by_name():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_play", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_play", inputs, context)
             print(f"[Android] Auto-resolved '{inputs['app_name']}' to: {result['product_id']}")
             print(f"[Android] Fetched {result['total_reviews']} reviews")
             print(f"[Android] App: {result['app_name']} (Rating: {result['app_rating']})")
@@ -210,7 +210,7 @@ async def test_search_places_google_maps():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("search_places_google_maps", inputs, context)
+            result = await app_business_reviews.execute_action("search_places_google_maps", inputs, context)
             print(f"[Maps] Found {result['total_results']} places for 'Pizza restaurant' in San Francisco")
 
             for i, place in enumerate(result['places']):
@@ -237,7 +237,7 @@ async def test_get_reviews_google_maps_by_place_id():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_maps", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_maps", inputs, context)
             print(f"[Maps] Found {result['total_reviews']} reviews for {result['business_name']}")
             print(f"[Maps] Average rating: {result['average_rating']}")
             print(f"[Maps] Place ID: {result['place_id']}")
@@ -267,7 +267,7 @@ async def test_get_reviews_google_maps_by_query():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_maps", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_maps", inputs, context)
             print(f"[Maps] Auto-resolved business to: {result['business_name']}")
             print(f"[Maps] Place ID: {result['place_id']}")
             print(f"[Maps] Fetched {result['total_reviews']} reviews")
@@ -295,7 +295,7 @@ async def test_get_reviews_google_maps_with_data_id():
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await serpapi.execute_action("get_reviews_google_maps", inputs, context)
+            result = await app_business_reviews.execute_action("get_reviews_google_maps", inputs, context)
             print(f"[Maps] Found {result['total_reviews']} high-rated reviews")
             print(f"[Maps] Business: {result['business_name']}")
 
