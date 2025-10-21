@@ -71,6 +71,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-sheets](google-sheets): Connects to Google Sheets and Drive APIs to list accessible spreadsheets, read and write A1 ranges, append rows, apply formatting, freeze panes, run batch updates, and duplicate spreadsheets. Uses Google OAuth2 platform authentication with appropriate scopes for Sheets and Drive.
 
+### Google Tasks
+
+[google-tasks](google-tasks): Integrates with Google Tasks API for comprehensive task management within Autohive workflows. Supports listing and accessing task lists, and full CRUD operations for tasks including creating tasks with due dates and notes, managing subtasks with parent-child relationships, updating task status and properties, repositioning tasks, and filtering by completion status and date ranges. Features secure OAuth2 authentication, pagination support for large task collections (up to 2,000 lists and 20,000 tasks per list), and comprehensive error handling for productivity and workflow automation.
+
 ### Google Business Profile
 
 [google-business-profile](google-business-profile): Connects to Google My Business API for comprehensive business profile and review management. Supports listing business accounts and locations, reading customer reviews with ratings and comments, replying to customer reviews professionally, and managing review interactions. Features secure OAuth2 authentication with Google Maps Reviews provider and comprehensive error handling for reputation management workflows.
@@ -87,9 +91,17 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
 
+### Freshdesk
+
+[freshdesk](freshdesk): Comprehensive help desk integration with Freshdesk API v2 for complete customer support operations. Supports ticket management (create, list, get, update, delete tickets with priority and status control), contact management (full CRUD operations for customer contacts with company associations), company management (create and manage organizations with domain associations), and conversation tracking (list ticket conversations, add private notes for agents, create public replies to customers). Features custom API key authentication with automatic Basic Auth encoding, pagination support for all list operations, and robust error handling. Ideal for automating support workflows, ticket routing, customer communication, and help desk operations.
+
 ### Doc Maker
 
 [doc-maker](doc-maker): Word document automation integration with markdown-first content creation and intelligent template filling. Supports creating professional documents from markdown syntax, safely filling templates with context-aware placeholder detection, find-and-replace operations with safety checks, and adding images, tables, and formatted content. Features LLM-optimized responses, stateless file streaming for AWS Lambda deployment, and comprehensive safety mechanisms to prevent unintended content corruption. No authentication required.
+
+### Slide Maker
+
+[slider](slider): PowerPoint automation integration with markdown-first content creation and intelligent template filling. Supports creating professional presentations from markdown syntax with two powerful modes: auto-layout for automatic vertical content flow and granular mode for precise positioning control. Features safe template filling with placeholder metadata support (font size, color, formatting), find-and-replace with automatic font sizing and safety checks, chart creation (column, line, pie, bar, area, scatter), image insertion, and intelligent overlap detection. Includes markdown support for headings (H1-H6), bullets, tables, blockquotes, and code blocks. Features stateless file streaming for AWS Lambda deployment, comprehensive positioning validation, and graceful error handling. No authentication required.
 
 ## Template
 
