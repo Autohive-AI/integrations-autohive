@@ -330,6 +330,13 @@ class ParseStructure(ActionHandler):
             # Parse the structure
             structure = []
             for element in content:
+                # Skip elements without proper indices
+                start_index = element.get('startIndex')
+                end_index = element.get('endIndex')
+
+                if start_index is None or end_index is None:
+                    continue
+
                 if 'paragraph' in element:
                     paragraph = element['paragraph']
                     para_style = paragraph.get('paragraphStyle', {})
@@ -348,8 +355,8 @@ class ParseStructure(ActionHandler):
                         'type': element_type,
                         'style': named_style,
                         'text': text_content.strip(),
-                        'startIndex': element.get('startIndex'),
-                        'endIndex': element.get('endIndex')
+                        'startIndex': start_index,
+                        'endIndex': end_index
                     }
 
                     # Add alignment if present
@@ -360,14 +367,14 @@ class ParseStructure(ActionHandler):
                 elif 'table' in element:
                     structure.append({
                         'type': 'table',
-                        'startIndex': element.get('startIndex'),
-                        'endIndex': element.get('endIndex')
+                        'startIndex': start_index,
+                        'endIndex': end_index
                     })
                 elif 'sectionBreak' in element:
                     structure.append({
                         'type': 'section_break',
-                        'startIndex': element.get('startIndex'),
-                        'endIndex': element.get('endIndex')
+                        'startIndex': start_index,
+                        'endIndex': end_index
                     })
 
             return {

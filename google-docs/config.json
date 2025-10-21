@@ -102,7 +102,7 @@
     },
     "docs_batch_update": {
       "display_name": "Batch Update",
-      "description": "Execute multiple document updates in a single batch request.",
+      "description": "Execute multiple document updates in a single batch request. Use this for text formatting (bold, italic, colors, font size), paragraph styling, and custom Google Docs API operations. IMPORTANT: You must provide the 'requests' parameter as an array of Google Docs API request objects.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -113,7 +113,7 @@
           "requests": {
             "type": "array",
             "items": { "type": "object" },
-            "description": "Array of request objects per Google Docs API."
+            "description": "REQUIRED: Array of Google Docs API request objects. Example for bold: [{\"updateTextStyle\": {\"range\": {\"startIndex\": 1, \"endIndex\": 10}, \"textStyle\": {\"bold\": true}, \"fields\": \"bold\"}}]"
           }
         },
         "required": ["document_id", "requests"]
