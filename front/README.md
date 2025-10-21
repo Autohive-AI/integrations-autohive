@@ -52,12 +52,14 @@ No additional configuration fields are required as authentication is handled thr
 #### Action: `list_inbox_conversations`
 - **Description:** List conversations from a specific inbox with filtering options
 - **Inputs:**
-  - `inbox_id`: The inbox ID to get conversations from
+  - `inbox_id`: The inbox ID to get conversations from (required)
   - `status`: Filter by conversation status - archived, deleted, open, assigned, unassigned (optional)
   - `tag_id`: Filter conversations by tag ID (optional)
   - `limit`: Maximum number of conversations to return (optional, default: 50)
 - **Outputs:**
-  - `conversations`: Array of conversation objects with ID, subject, status, assignee, recipient, tags, and last message
+  - `conversations`: Array of conversation objects with:
+    - Required fields: `id`, `subject`, `status`
+    - Optional fields: `status_id` (only present if ticketing is enabled), `status_category` (open/waiting/resolved), `ticket_ids`, `assignee`, `recipient`, `tags`, `links`, `scheduled_reminders`, `custom_fields`, `metadata`, `created_at`, `waiting_since`, `is_private`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
@@ -66,21 +68,26 @@ No additional configuration fields are required as authentication is handled thr
 #### Action: `get_conversation`
 - **Description:** Retrieve detailed information about a specific conversation including metadata
 - **Inputs:**
-  - `conversation_id`: The conversation ID to retrieve
+  - `conversation_id`: The conversation ID to retrieve (required)
 - **Outputs:**
-  - `conversation`: Complete conversation object with all metadata
+  - `conversation`: Complete conversation object with:
+    - Required fields: `id`, `subject`, `status`
+    - Optional fields: `status_id` (only present if ticketing is enabled), `status_category` (open/waiting/resolved), `ticket_ids`, `assignee`, `recipient`, `tags`, `links`, `scheduled_reminders`, `custom_fields`, `metadata`, `created_at`, `waiting_since`, `is_private`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
 #### Action: `update_conversation`
-- **Description:** Update conversation properties including assignee, status, and tags
+- **Description:** Update conversation properties including assignee, inbox, status, and tags
 - **Inputs:**
-  - `conversation_id`: The conversation ID to update
-  - `assignee_id`: ID of teammate to assign conversation to (optional)
-  - `status`: New conversation status - archived, deleted, open (optional)
-  - `tags`: Array of tag IDs to apply to conversation (optional)
+  - `conversation_id`: The conversation ID to update (required)
+  - `assignee_id`: ID of teammate to assign conversation to (optional, can be null to unassign)
+  - `inbox_id`: ID of the inbox to move the conversation to (optional)
+  - `status`: New conversation status - archived, deleted, open, spam (optional)
+  - `status_id`: Unique identifier of the status to set. Only one of status and status_id should be provided. Ticketing must be enabled (optional)
+  - `tags`: Array of all tag IDs replacing the old conversation tags (optional)
+  - `custom_fields`: Custom fields for this conversation. Include all custom fields, not just ones to update (optional)
 - **Outputs:**
-  - `conversation`: Updated conversation object with changes reflected
+  - `conversation`: Updated conversation object with fields including `id`, `subject`, `status`, `status_id`, `status_category`, `ticket_ids`, `assignee`, `recipient`, `tags`, `created_at`, `waiting_since`, `is_private`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
@@ -89,28 +96,32 @@ No additional configuration fields are required as authentication is handled thr
 #### Action: `list_conversation_messages`
 - **Description:** List all messages within a specific conversation with pagination support
 - **Inputs:**
-  - `conversation_id`: The conversation ID to get messages from
+  - `conversation_id`: The conversation ID to get messages from (required)
   - `limit`: Maximum number of messages to return (optional, default: 50)
 - **Outputs:**
-  - `messages`: Array of message objects with ID, type, author, recipients, subject, body, and timestamps
+  - `messages`: Array of message objects with:
+    - Required fields: `id`, `type`, `is_inbound`, `author`
+    - Optional fields: `recipients`, `subject`, `body`, `created_at`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
 #### Action: `get_message`
 - **Description:** Get details of a specific message
 - **Inputs:**
-  - `message_id`: The message ID to retrieve
+  - `message_id`: The message ID to retrieve (required)
 - **Outputs:**
-  - `message`: Message object with detailed information
+  - `message`: Message object with:
+    - Required fields: `id`, `type`, `is_inbound`, `author`
+    - Optional fields: `recipients`, `subject`, `body`, `created_at`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
 #### Action: `create_message`
 - **Description:** Create a new message (starts new conversation) via a channel
 - **Inputs:**
-  - `channel_id`: Channel ID to send from
-  - `body`: Message body content
-  - `to`: Array of recipient email addresses
+  - `channel_id`: Channel ID to send from (required)
+  - `body`: Message body content (required)
+  - `to`: Array of recipient email addresses (required)
   - `cc`: Array of CC email addresses (optional)
   - `bcc`: Array of BCC email addresses (optional)
   - `sender_name`: Name used for the sender info of the message (optional)
@@ -127,8 +138,8 @@ No additional configuration fields are required as authentication is handled thr
 #### Action: `create_message_reply`
 - **Description:** Reply to an existing conversation
 - **Inputs:**
-  - `conversation_id`: The conversation ID to reply to
-  - `body`: Message body content
+  - `conversation_id`: The conversation ID to reply to (required)
+  - `body`: Message body content (required)
   - `to`: Array of recipient email addresses (optional)
   - `cc`: Array of CC email addresses (optional)
   - `bcc`: Array of BCC email addresses (optional)
@@ -182,16 +193,16 @@ No additional configuration fields are required as authentication is handled thr
 - **Inputs:**
   - `limit`: Maximum number of templates to return (optional, default: 50)
 - **Outputs:**
-  - `templates`: Array of template objects with ID, name, subject, body, attachments, and metadata
+  - `templates`: Array of template objects with required fields: `id`, `name`, `subject`, `body`, `attachments`, `metadata`
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
 #### Action: `get_message_template`
 - **Description:** Get details of a specific message template
 - **Inputs:**
-  - `message_template_id`: The message template ID to retrieve
+  - `message_template_id`: The message template ID to retrieve (required)
 - **Outputs:**
-  - `template`: Template object with complete details including subject, body, attachments, and metadata
+  - `template`: Template object with required fields: `id`, `name`, `subject`, `body`, `attachments`, `metadata` (includes inbox availability)
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
@@ -202,7 +213,52 @@ No additional configuration fields are required as authentication is handled thr
 - **Inputs:**
   - `limit`: Maximum number of teammates to return (optional, default: 50)
 - **Outputs:**
-  - `teammates`: Array of teammate objects with ID, username, first_name, last_name, email, and metadata
+  - `teammates`: Array of teammate objects with required fields: `id`, `email`, `username`, `first_name`, `last_name`, `is_admin`, `is_available`, `is_blocked`, `type` (user/visitor/rule/macro/API/integration/CSAT), `custom_fields`
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
+
+#### Action: `get_teammate`
+- **Description:** Get details of a specific teammate by their ID
+- **Inputs:**
+  - `teammate_id`: The teammate ID to retrieve (required)
+- **Outputs:**
+  - `teammate`: Teammate object with required fields: `id`, `email`, `username`, `first_name`, `last_name`, `is_admin`, `is_available`, `is_blocked`, `type` (user/visitor/rule/macro/API/integration/CSAT), `custom_fields`
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
+
+### Helper Actions
+
+These actions provide convenient search functionality using client-side filtering, since the Front API doesn't support server-side search.
+
+#### Action: `find_teammate`
+- **Description:** Find teammates by searching name or email (case-insensitive partial match)
+- **Inputs:**
+  - `search_query`: Name or email to search for (case-insensitive, partial match supported) (required)
+- **Outputs:**
+  - `teammates`: Array of matching teammate objects with required fields: `id`, `email`, `first_name`, `last_name`
+  - `count`: Number of matches found
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
+
+#### Action: `find_inbox`
+- **Description:** Find inboxes by name (case-insensitive partial match)
+- **Inputs:**
+  - `inbox_name`: Inbox name to search for (case-insensitive, partial match supported) (required)
+- **Outputs:**
+  - `inboxes`: Array of matching inbox objects with required fields: `id`, `name`, `address`
+  - `count`: Number of matches found
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
+
+#### Action: `find_conversation`
+- **Description:** Find conversations by recipient name, email, or subject (case-insensitive partial match)
+- **Inputs:**
+  - `inbox_id`: The inbox ID to search in (required)
+  - `search_query`: Search term for recipient name, email, or subject (case-insensitive, partial match) (required)
+  - `limit`: Maximum number of conversations to search through (optional, default: 50)
+- **Outputs:**
+  - `conversations`: Array of matching conversation objects with required fields: `id`, `subject`, `status`
+  - `count`: Number of matches found
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
@@ -312,6 +368,38 @@ Step 3 - Use template content in reply:
   "tags": ["tag_urgent", "tag_billing"]
 }
 ```
+
+**Example 6: Find teammate by name using helper action**
+
+```json
+{
+  "search_query": "john"
+}
+```
+
+This will return all teammates whose first name, last name, username, or email contains "john" (case-insensitive).
+
+**Example 7: Find inbox by name using helper action**
+
+```json
+{
+  "inbox_name": "support"
+}
+```
+
+This will return all inboxes whose name contains "support" (case-insensitive).
+
+**Example 8: Find conversations by subject or recipient using helper action**
+
+```json
+{
+  "inbox_id": "inb_billing123",
+  "search_query": "billing issue",
+  "limit": 50
+}
+```
+
+This will search through conversations in the specified inbox and return those whose subject or recipient contains "billing issue" (case-insensitive).
 
 ## Testing
 

@@ -14,11 +14,13 @@ class GongAPIClient:
     
     def __init__(self, context: ExecutionContext):
         self.context = context
-        self.base_url = "https://us-10552.api.gong.io/v2"
+        self.base_url = context.metadata.get("api_base_url")
+        if not self.base_url:
+            raise ValueError("api_base_url is required in auth context. This should be provided by Gong's OAuth flow as 'api_base_url_for_customer'.")
     
     async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict] = None, data: Optional[Dict] = None):
         """Make an authenticated request to the Gong API"""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/v2/{endpoint}"
         
         headers = {
             "Content-Type": "application/json"

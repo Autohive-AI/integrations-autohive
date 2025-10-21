@@ -23,6 +23,14 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Coda
+
+[coda](coda): Comprehensive Coda integration for managing documents, pages, tables, and rows. Supports full CRUD operations for docs (list, get, create, update, delete) and pages (list, get, create with HTML/Markdown content, update metadata, delete). Includes table and column discovery (list tables/columns, get table/column details) and complete row management (list with filtering/sorting, get, upsert with keyColumns, update, delete single/multiple). Features Bearer token authentication, pagination support, async processing (HTTP 202 responses), multiple value formats (simple/rich), and comprehensive error handling. Ideal for document automation, content management, and data synchronization workflows.
+
+### ElevenLabs
+
+[elevenlabs](elevenlabs): AI-powered text-to-speech integration with ElevenLabs API for voice generation and audio management. Supports converting text to realistic speech with customizable voice settings, browsing and filtering available voices by category and use case, accessing voice metadata and settings, tracking generation history, downloading previously generated audio files, and monitoring subscription usage and credits. Features 7 actions (1 paid, 6 free), API key authentication, multiple output formats (MP3, PCM), voice customization controls (stability, similarity, style), and base64-encoded audio file outputs. Includes 20 premade professional voices with various accents. Ideal for content creation, audiobook narration, voiceovers, and automated audio generation workflows.
+
 ### Front
 
 [front](front): Customer service integration for Front's communication platform. Supports comprehensive inbox and conversation management, including listing and accessing inboxes, managing conversations and messages, creating new messages and replies through channels, accessing message templates for consistent responses, and managing conversation assignments and tags. Features channel-based message creation, conversation filtering, teammate and tag management, and complete message lifecycle operations for customer support workflows.
@@ -69,7 +77,15 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Microsoft 365
 
-[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, and Calendar through Microsoft Graph API. Supports email management (send, list, read, organize), calendar operations (create, update, list events), file operations (upload to OneDrive, list files), and contact management. Features timezone-aware operations, folder management, HTML email support, and OAuth2 authentication with proper scope handling for enterprise-grade Microsoft 365 workflows.
+[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
+
+### Spreadsheet Tools
+
+[spreadsheet-tools](spreadsheet-tools): Tools for working with spreadsheet files including conversion to JSON format with automatic header sanitization and type inference. Supports Excel (.xlsx/.xls) and CSV file formats. Features automatic data type detection, header sanitization for valid JSON property names, duplicate header handling, and UTF-8/BOM encoding support. Ideal for data transformation, spreadsheet parsing, and converting tabular data into structured JSON for workflow automation.
+
+### Doc Maker
+
+[doc-maker](doc-maker): Word document automation integration with markdown-first content creation and intelligent template filling. Supports creating professional documents from markdown syntax, safely filling templates with context-aware placeholder detection, find-and-replace operations with safety checks, and adding images, tables, and formatted content. Features LLM-optimized responses, stateless file streaming for AWS Lambda deployment, and comprehensive safety mechanisms to prevent unintended content corruption. No authentication required.
 
 ## Template
 
