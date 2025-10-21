@@ -16,23 +16,34 @@ class FrontDataParser:
     @staticmethod
     def parse_conversation(raw_conversation: Dict[str, Any]) -> Dict[str, Any]:
         """Parse raw Front conversation into standardized format."""
+        # Required fields
         conversation = {
             "id": raw_conversation.get('id', ''),
             "subject": raw_conversation.get('subject', ''),
             "status": raw_conversation.get('status', ''),
         }
 
-        # Add optional fields if they exist
-        if 'assignee' in raw_conversation:
-            conversation['assignee'] = raw_conversation['assignee']
-        if 'recipient' in raw_conversation:
-            conversation['recipient'] = raw_conversation['recipient']
-        if 'tags' in raw_conversation:
-            conversation['tags'] = raw_conversation['tags']
-        if 'last_message' in raw_conversation:
-            conversation['last_message'] = raw_conversation['last_message']
+        # Add optional status fields
+        if 'status_id' in raw_conversation:
+            conversation['status_id'] = raw_conversation['status_id']
+        if 'status_category' in raw_conversation:
+            conversation['status_category'] = raw_conversation['status_category']
+        if 'ticket_ids' in raw_conversation:
+            conversation['ticket_ids'] = raw_conversation['ticket_ids']
+
+        # Add optional fields if they exist (these may be None/null which is valid)
+        conversation['assignee'] = raw_conversation.get('assignee')
+        conversation['recipient'] = raw_conversation.get('recipient')
+        conversation['tags'] = raw_conversation.get('tags', [])
+        conversation['links'] = raw_conversation.get('links', [])
+        conversation['scheduled_reminders'] = raw_conversation.get('scheduled_reminders', [])
+        conversation['custom_fields'] = raw_conversation.get('custom_fields', {})
+        conversation['metadata'] = raw_conversation.get('metadata', {})
+
         if 'created_at' in raw_conversation:
             conversation['created_at'] = raw_conversation['created_at']
+        if 'waiting_since' in raw_conversation:
+            conversation['waiting_since'] = raw_conversation['waiting_since']
         if 'is_private' in raw_conversation:
             conversation['is_private'] = raw_conversation['is_private']
 
@@ -45,7 +56,7 @@ class FrontDataParser:
             "id": raw_message.get('id', ''),
             "type": raw_message.get('type', ''),
             "is_inbound": raw_message.get('is_inbound', False),
-            "author": raw_message.get('author', {}),
+            "author": raw_message.get('author'),  # Can be None for external messages
         }
 
         # Add optional fields if they exist
@@ -522,10 +533,10 @@ class GetChannelAction(ActionHandler):
                 channel['address'] = response['address']
             if 'send_as' in response:
                 channel['send_as'] = response['send_as']
-            if 'settings' in response:
-                channel['settings'] = response['settings']
             if 'is_private' in response:
                 channel['is_private'] = response['is_private']
+            if 'settings' in response:
+                channel['settings'] = response['settings']
 
             return {
                 "channel": channel,
@@ -567,7 +578,7 @@ class ListMessageTemplatesAction(ActionHandler):
                 template = {
                     "id": raw_template.get("id", ""),
                     "name": raw_template.get("name", ""),
-                    "subject": raw_template.get("subject"),
+                    "subject": raw_template.get("subject", ""),
                     "body": raw_template.get("body", ""),
                     "attachments": raw_template.get("attachments", []),
                     "metadata": raw_template.get("metadata", {})
@@ -610,7 +621,7 @@ class GetMessageTemplateAction(ActionHandler):
             template = {
                 "id": response.get("id", ""),
                 "name": response.get("name", ""),
-                "subject": response.get("subject"),
+                "subject": response.get("subject", ""),
                 "body": response.get("body", ""),
                 "attachments": response.get("attachments", []),
                 "metadata": response.get("metadata", {})
@@ -637,12 +648,19 @@ class UpdateConversationAction(ActionHandler):
             # Build update payload
             update_data = {}
 
-            if inputs.get("assignee_id"):
+            # Use 'in' to check if key exists, allows None values (for unassigning)
+            if "assignee_id" in inputs:
                 update_data["assignee_id"] = inputs["assignee_id"]
-            if inputs.get("status"):
+            if "inbox_id" in inputs and inputs["inbox_id"]:
+                update_data["inbox_id"] = inputs["inbox_id"]
+            if "status" in inputs and inputs["status"]:
                 update_data["status"] = inputs["status"]
-            if inputs.get("tags"):
+            if "status_id" in inputs and inputs["status_id"]:
+                update_data["status_id"] = inputs["status_id"]
+            if "tags" in inputs and inputs["tags"]:
                 update_data["tag_ids"] = inputs["tags"]
+            if "custom_fields" in inputs and inputs["custom_fields"]:
+                update_data["custom_fields"] = inputs["custom_fields"]
 
             if not update_data:
                 return {
@@ -658,7 +676,28 @@ class UpdateConversationAction(ActionHandler):
                 json=update_data
             )
 
-            # Check for API errors
+            # Front API may return None for successful PATCH (HTTP 204 No Content)
+            # In that case, fetch the updated conversation
+            if response is None:
+                # Fetch the updated conversation to return
+                get_response = await context.fetch(
+                    f"{FRONT_API_BASE}/conversations/{conversation_id}"
+                )
+
+                if get_response is None or "error" in get_response:
+                    return {
+                        "conversation": {},
+                        "result": False,
+                        "error": f"Update may have succeeded but failed to fetch updated conversation: {get_response.get('error', 'Unknown error') if get_response else 'No response'}"
+                    }
+
+                conversation = FrontDataParser.parse_conversation(get_response)
+                return {
+                    "conversation": conversation,
+                    "result": True
+                }
+
+            # Check for API errors in response
             if "error" in response:
                 return {
                     "conversation": {},
@@ -828,5 +867,165 @@ class GetTeammateAction(ActionHandler):
                 "error": f"Error getting teammate: {str(e)}"
             }
 
+# ---- Helper Actions for Name-Based Lookups ----
+
+@front.action("find_teammate")
+class FindTeammateAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Find teammates by searching name or email (client-side filtering).
+        This is a helper function since Front API doesn't support search.
+        """
+        try:
+            search_query = inputs["search_query"].lower()
+
+            # Use the existing list_teammates action
+            list_action = ListTeammatesAction()
+            list_result = await list_action.execute({"limit": 100}, context)
+
+            if not list_result["result"]:
+                return {
+                    "teammates": [],
+                    "result": False,
+                    "error": f"Failed to fetch teammates: {list_result.get('error', 'Unknown error')}"
+                }
+
+            # Filter teammates by search query (case-insensitive partial match)
+            teammates = list_result["teammates"]
+            matching_teammates = []
+
+            for teammate in teammates:
+                # Search in first_name, last_name, username, email
+                first_name = (teammate.get("first_name") or "").lower()
+                last_name = (teammate.get("last_name") or "").lower()
+                full_name = f"{first_name} {last_name}".strip()
+                username = (teammate.get("username") or "").lower()
+                email = (teammate.get("email") or "").lower()
+
+                # Check if search query matches any field
+                if (search_query in first_name or
+                    search_query in last_name or
+                    search_query in full_name or
+                    search_query in username or
+                    search_query in email):
+                    matching_teammates.append(teammate)
+
+            return {
+                "teammates": matching_teammates,
+                "result": True,
+                "count": len(matching_teammates)
+            }
+
+        except Exception as e:
+            return {
+                "teammates": [],
+                "result": False,
+                "error": f"Error finding teammate: {str(e)}"
+            }
+
+@front.action("find_inbox")
+class FindInboxAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Find inboxes by searching name (client-side filtering).
+        This is a helper function since Front API doesn't support search.
+        """
+        try:
+            inbox_name = inputs["inbox_name"].lower()
+
+            # Use the existing list_inboxes action
+            list_action = ListInboxesAction()
+            list_result = await list_action.execute({"limit": 100}, context)
+
+            if not list_result["result"]:
+                return {
+                    "inboxes": [],
+                    "result": False,
+                    "error": f"Failed to fetch inboxes: {list_result.get('error', 'Unknown error')}"
+                }
+
+            # Filter inboxes by name (case-insensitive partial match)
+            inboxes = list_result["inboxes"]
+            matching_inboxes = []
+
+            for inbox in inboxes:
+                name = (inbox.get("name") or "").lower()
+
+                # Check if search query matches name
+                if inbox_name in name:
+                    matching_inboxes.append(inbox)
+
+            return {
+                "inboxes": matching_inboxes,
+                "result": True,
+                "count": len(matching_inboxes)
+            }
+
+        except Exception as e:
+            return {
+                "inboxes": [],
+                "result": False,
+                "error": f"Error finding inbox: {str(e)}"
+            }
+
+@front.action("find_conversation")
+class FindConversationAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Find conversations by searching recipient or subject (client-side filtering).
+        This is a helper function since Front API doesn't support search.
+        """
+        try:
+            inbox_id = inputs["inbox_id"]
+            search_query = inputs["search_query"].lower()
+
+            # Use the existing list_inbox_conversations action
+            list_action = ListInboxConversationsAction()
+            list_result = await list_action.execute({
+                "inbox_id": inbox_id,
+                "limit": 100
+            }, context)
+
+            if not list_result["result"]:
+                return {
+                    "conversations": [],
+                    "result": False,
+                    "error": f"Failed to fetch conversations: {list_result.get('error', 'Unknown error')}"
+                }
+
+            # Filter conversations by search query (case-insensitive partial match)
+            conversations = list_result["conversations"]
+            matching_conversations = []
+
+            for conversation in conversations:
+                # Search in subject
+                subject = (conversation.get("subject") or "").lower()
+
+                # Search in recipient fields (handle, name, email)
+                recipient = conversation.get("recipient") or {}
+                recipient_handle = (recipient.get("handle") or "").lower()
+                recipient_name = (recipient.get("name") or "").lower()
+                # Some recipients may have email in handle or other fields
+                recipient_str = f"{recipient_handle} {recipient_name}".lower()
+
+                # Check if search query matches any field
+                if (search_query in subject or
+                    search_query in recipient_handle or
+                    search_query in recipient_name or
+                    search_query in recipient_str):
+                    matching_conversations.append(conversation)
+
+            return {
+                "conversations": matching_conversations,
+                "result": True,
+                "count": len(matching_conversations)
+            }
+
+        except Exception as e:
+            return {
+                "conversations": [],
+                "result": False,
+                "error": f"Error finding conversation: {str(e)}"
+            }
 
 
