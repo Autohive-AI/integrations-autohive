@@ -87,6 +87,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [doc-maker](doc-maker): Word document automation integration with markdown-first content creation and intelligent template filling. Supports creating professional documents from markdown syntax, safely filling templates with context-aware placeholder detection, find-and-replace operations with safety checks, and adding images, tables, and formatted content. Features LLM-optimized responses, stateless file streaming for AWS Lambda deployment, and comprehensive safety mechanisms to prevent unintended content corruption. No authentication required.
 
+### Slide Maker
+
+[slider](slider): PowerPoint automation integration with markdown-first content creation and intelligent template filling. Supports creating professional presentations from markdown syntax with two powerful modes: auto-layout for automatic vertical content flow and granular mode for precise positioning control. Features safe template filling with placeholder metadata support (font size, color, formatting), find-and-replace with automatic font sizing and safety checks, chart creation (column, line, pie, bar, area, scatter), image insertion, and intelligent overlap detection. Includes markdown support for headings (H1-H6), bullets, tables, blockquotes, and code blocks. Features stateless file streaming for AWS Lambda deployment, comprehensive positioning validation, and graceful error handling. No authentication required.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
