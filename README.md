@@ -87,6 +87,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [spreadsheet-tools](spreadsheet-tools): Tools for working with spreadsheet files including conversion to JSON format with automatic header sanitization and type inference. Supports Excel (.xlsx/.xls) and CSV file formats. Features automatic data type detection, header sanitization for valid JSON property names, duplicate header handling, and UTF-8/BOM encoding support. Ideal for data transformation, spreadsheet parsing, and converting tabular data into structured JSON for workflow automation.
 
+### Google Chat
+
+[google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
 ### Freshdesk
 
 [freshdesk](freshdesk): Comprehensive help desk integration with Freshdesk API v2 for complete customer support operations. Supports ticket management (create, list, get, update, delete tickets with priority and status control), contact management (full CRUD operations for customer contacts with company associations), company management (create and manage organizations with domain associations), and conversation tracking (list ticket conversations, add private notes for agents, create public replies to customers). Features custom API key authentication with automatic Basic Auth encoding, pagination support for all list operations, and robust error handling. Ideal for automating support workflows, ticket routing, customer communication, and help desk operations.
