@@ -210,6 +210,27 @@ async def test_delete_project():
             return None
 
 
+async def test_get_project_by_name():
+    """Test getting a project by name."""
+    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    inputs = {
+        "name": "Your Project Name Here",  # Replace with actual project name
+        "workspace": "your_workspace_gid_here"  # Optional but recommended
+    }
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await asana.execute_action("get_project_by_name", inputs, context)
+            print(f"Get Project by Name Result: {result}")
+            if result.get('not_found'):
+                print("  -> Project not found")
+            else:
+                print(f"  -> Found: {result.get('name')} (GID: {result.get('gid')})")
+            return result
+        except Exception as e:
+            print(f"Error testing get_project_by_name: {e}")
+            return None
+
+
 async def test_list_sections():
     """Test listing sections in a project."""
     auth = {"credentials": {"personal_access_token": "your_token_here"}}
@@ -309,7 +330,7 @@ async def test_create_subtask():
 
 
 async def main():
-    print("Testing Asana Integration - 17 Actions")
+    print("Testing Asana Integration - 18 Actions")
     print("=" * 60)
     print()
     print("NOTE: Replace placeholders with actual values:")
@@ -325,7 +346,7 @@ async def main():
     print("=" * 60)
     print()
 
-    # Test project actions (5)
+    # Test project actions (6)
     print("1. Testing list_projects...")
     await test_list_projects()
     print()
@@ -334,72 +355,76 @@ async def main():
     await test_get_project()
     print()
 
-    print("3. Testing create_project...")
+    print("3. Testing get_project_by_name...")
+    await test_get_project_by_name()
+    print()
+
+    print("4. Testing create_project...")
     await test_create_project()
     print()
 
-    print("4. Testing update_project...")
+    print("5. Testing update_project...")
     await test_update_project()
     print()
 
-    print("5. Testing delete_project...")
+    print("6. Testing delete_project...")
     await test_delete_project()
     print()
 
     # Test task actions (5)
-    print("6. Testing create_task...")
+    print("7. Testing create_task...")
     await test_create_task()
     print()
 
-    print("7. Testing get_task...")
+    print("8. Testing get_task...")
     await test_get_task()
     print()
 
-    print("8. Testing update_task...")
+    print("9. Testing update_task...")
     await test_update_task()
     print()
 
-    print("9. Testing list_tasks...")
+    print("10. Testing list_tasks...")
     await test_list_tasks()
     print()
 
-    print("10. Testing delete_task...")
+    print("11. Testing delete_task...")
     await test_delete_task()
     print()
 
     # Test section actions (4)
-    print("11. Testing list_sections...")
+    print("12. Testing list_sections...")
     await test_list_sections()
     print()
 
-    print("12. Testing create_section...")
+    print("13. Testing create_section...")
     await test_create_section()
     print()
 
-    print("13. Testing update_section...")
+    print("14. Testing update_section...")
     await test_update_section()
     print()
 
-    print("14. Testing add_task_to_section...")
+    print("15. Testing add_task_to_section...")
     await test_add_task_to_section()
     print()
 
     # Test comment actions (2)
-    print("15. Testing create_story...")
+    print("16. Testing create_story...")
     await test_create_story()
     print()
 
-    print("16. Testing list_stories...")
+    print("17. Testing list_stories...")
     await test_list_stories()
     print()
 
     # Test subtask action (1)
-    print("17. Testing create_subtask...")
+    print("18. Testing create_subtask...")
     await test_create_subtask()
     print()
 
     print("=" * 60)
-    print("Testing completed - 17 actions total!")
+    print("Testing completed - 18 actions total!")
     print("=" * 60)
 
 

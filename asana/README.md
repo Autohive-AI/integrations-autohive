@@ -6,7 +6,7 @@ Connects Autohive to the Asana API to enable task management, project organizati
 
 This integration provides a comprehensive connection to Asana's project management platform. It allows users to automate task creation, project management, team collaboration, and workflow automation directly from Autohive.
 
-The integration uses Asana API v1.0 with Personal Access Token authentication and implements 17 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
+The integration uses Asana API v1.0 with Personal Access Token authentication and implements 18 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
 
 ## Setup & Authentication
 
@@ -129,7 +129,7 @@ Deletes a task permanently.
 
 ---
 
-### Projects (5 actions)
+### Projects (6 actions)
 
 #### `list_projects`
 Returns projects in a workspace or team.
@@ -156,6 +156,29 @@ Retrieves details of a specific project by GID.
 **Outputs:**
 - `project`: Project object with details
 - `result`: Success status
+
+---
+
+#### `get_project_by_name`
+Get a project by its exact name. This action paginates through all projects to find a match by name.
+
+**Inputs:**
+- `name` (required): The exact name of the project to find
+- `workspace` (optional): Workspace GID to search in (recommended for better performance)
+- `team` (optional): Team GID to search in
+- `archived` (optional): Whether to include archived projects in search (default: false)
+
+**Outputs:**
+- `gid`: The project GID (null if not found)
+- `name`: The project name (null if not found)
+- `workspace`: The workspace object (null if not found)
+- `team`: The team object (null if not found)
+- `archived`: Whether the project is archived (null if not found)
+- `color`: Project color (null if not found)
+- `notes`: Project notes (null if not found)
+- `not_found`: Boolean indicating if project was not found
+
+**Note:** This action iterates through all accessible projects to find a name match. For better performance, provide a `workspace` parameter to narrow the search scope.
 
 ---
 
@@ -348,11 +371,12 @@ To test the integration:
 
 **Project Management:**
 1. List all projects in workspace
-2. Create new projects automatically
-3. Update project details and status
-4. Archive completed projects
-5. Delete unnecessary projects
-6. Get project details for reporting
+2. Find projects by name (no need to know GID)
+3. Create new projects automatically
+4. Update project details and status
+5. Archive completed projects
+6. Delete unnecessary projects
+7. Get project details for reporting
 
 **Section Organization:**
 1. Create sections for workflow stages (To Do, In Progress, Done)
@@ -374,6 +398,11 @@ To test the integration:
 5. Break down epics into subtasks
 
 ## Version History
+
+- **1.1.0** - Added name-based lookup capability
+  - Projects: Added get_project_by_name action for finding projects by name without needing GID
+  - Follows pagination pattern from Slack integration for efficient searching
+  - Total actions: 18
 
 - **1.0.0** - Initial release with 17 comprehensive actions
   - Tasks: create, get, update, list, delete (5 actions)

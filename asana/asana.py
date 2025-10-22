@@ -360,6 +360,77 @@ class DeleteProjectAction(ActionHandler):
             return {"result": False, "error": str(e)}
 
 
+@asana.action("get_project_by_name")
+class GetProjectByNameAction(ActionHandler):
+    """Get a project by its exact name."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        target_name = inputs['name']
+        projects_checked = 0
+        offset = None
+
+        while True:
+            params = {
+                "limit": 100  # Maximum allowed by Asana API
+            }
+
+            # Add optional filter parameters for better performance
+            if 'workspace' in inputs and inputs['workspace']:
+                params['workspace'] = inputs['workspace']
+            if 'team' in inputs and inputs['team']:
+                params['team'] = inputs['team']
+            if 'archived' in inputs and inputs['archived'] is not None:
+                params['archived'] = str(inputs['archived']).lower()
+
+            if offset:
+                params['offset'] = offset
+
+            headers = get_auth_headers(context)
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/projects",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Check if response is successful
+            data = response.get('data', [])
+
+            for project in data:
+                projects_checked += 1
+                if project.get('name') == target_name:
+                    return {
+                        "gid": project.get('gid'),
+                        "name": project.get('name'),
+                        "workspace": project.get('workspace'),
+                        "team": project.get('team'),
+                        "archived": project.get('archived', False),
+                        "color": project.get('color'),
+                        "notes": project.get('notes'),
+                        "not_found": False,
+                    }
+
+            # Check for next page
+            next_page = response.get('next_page')
+            if next_page and next_page.get('offset'):
+                offset = next_page['offset']
+            else:
+                break
+
+        # Project not found after checking all pages
+        return {
+            "gid": None,
+            "name": None,
+            "workspace": None,
+            "team": None,
+            "archived": None,
+            "color": None,
+            "notes": None,
+            "not_found": True,
+        }
+
+
 # ---- Section Handlers ----
 
 @asana.action("list_sections")

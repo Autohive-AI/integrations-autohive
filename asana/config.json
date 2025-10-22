@@ -482,6 +482,70 @@
                 "required": ["result"]
             }
         },
+        "get_project_by_name": {
+            "display_name": "Get Project by Name",
+            "description": "Get a project by its exact name.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The exact name of the project to find."
+                    },
+                    "workspace": {
+                        "type": "string",
+                        "description": "Workspace GID to search in (optional but recommended for better performance)"
+                    },
+                    "team": {
+                        "type": "string",
+                        "description": "Team GID to search in (optional)"
+                    },
+                    "archived": {
+                        "type": "boolean",
+                        "description": "Whether to include archived projects in search",
+                        "default": false
+                    }
+                },
+                "required": ["name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "gid": {
+                        "type": ["string", "null"],
+                        "description": "The project GID, null if not found"
+                    },
+                    "name": {
+                        "type": ["string", "null"],
+                        "description": "The project name, null if not found"
+                    },
+                    "workspace": {
+                        "type": ["object", "null"],
+                        "description": "The workspace the project belongs to, null if not found"
+                    },
+                    "team": {
+                        "type": ["object", "null"],
+                        "description": "The team the project belongs to, null if not found"
+                    },
+                    "archived": {
+                        "type": ["boolean", "null"],
+                        "description": "Whether the project is archived, null if not found"
+                    },
+                    "color": {
+                        "type": ["string", "null"],
+                        "description": "Project color, null if not found"
+                    },
+                    "notes": {
+                        "type": ["string", "null"],
+                        "description": "Project notes, null if not found"
+                    },
+                    "not_found": {
+                        "type": "boolean",
+                        "description": "Whether the project was not found"
+                    }
+                }
+            }
+        },
         "list_sections": {
             "display_name": "List Sections",
             "description": "Returns sections in a project (columns in board view or headers in list view).",
