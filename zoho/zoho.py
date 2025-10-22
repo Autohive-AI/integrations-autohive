@@ -553,6 +553,53 @@ def build_search_params(inputs: Dict[str, Any]) -> Dict[str, str]:
     
     return params
 
+def build_note_data(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Build note data object from inputs for creating notes."""
+    note_data = {}
+
+    # Note_Content is mandatory
+    if 'Note_Content' in inputs and inputs['Note_Content']:
+        note_data['Note_Content'] = inputs['Note_Content']
+
+    # Note_Title is optional
+    if 'Note_Title' in inputs and inputs['Note_Title']:
+        note_data['Note_Title'] = inputs['Note_Title']
+
+    # Parent_Id is required for creating notes (when not using module endpoint)
+    if 'Parent_Id' in inputs and inputs['Parent_Id']:
+        parent_id = inputs['Parent_Id']
+        if isinstance(parent_id, dict):
+            note_data['Parent_Id'] = parent_id
+        else:
+            # If just an ID is provided, construct the Parent_Id object
+            module = inputs.get('module', 'Contacts')
+            note_data['Parent_Id'] = {
+                'id': parent_id
+            }
+
+    return note_data
+
+def build_notes_query_params(inputs: Dict[str, Any]) -> Dict[str, str]:
+    """Build query parameters for notes list operations."""
+    params = {}
+
+    # Add pagination parameters
+    if 'page' in inputs and inputs['page']:
+        params['page'] = str(inputs['page'])
+
+    if 'per_page' in inputs and inputs['per_page']:
+        per_page = min(int(inputs['per_page']), 200)  # Max 200 per Zoho API
+        params['per_page'] = str(per_page)
+
+    # Add fields parameter
+    if 'fields' in inputs and inputs['fields']:
+        if isinstance(inputs['fields'], list):
+            params['fields'] = ','.join(inputs['fields'])
+        else:
+            params['fields'] = inputs['fields']
+
+    return params
+
 # ---- Action Handlers ----
 
 @zoho.action("create_contact")
@@ -2982,4 +3029,250 @@ class UpdateRelatedRecords(ActionHandler):
                 "updated_record": {},
                 "result": False,
                 "error": f"Error updating related record: {str(e)}"
+            }
+
+@zoho.action("create_note")
+class CreateNote(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_zoho_headers(context)
+            contact_id = inputs["contact_id"]
+            url = get_zoho_api_url(f"/Contacts/{contact_id}/Notes")
+
+            # Build note data
+            note_data = {
+                "Note_Content": inputs["Note_Content"]
+            }
+
+            if 'Note_Title' in inputs and inputs['Note_Title']:
+                note_data['Note_Title'] = inputs['Note_Title']
+
+            # Create request payload
+            payload = {
+                "data": [note_data]
+            }
+
+            # Make API request
+            response = await context.fetch(
+                url,
+                method="POST",
+                headers=headers,
+                json=payload
+            )
+
+            # Process response
+            if response.get("data") and len(response["data"]) > 0:
+                note_result = response["data"][0]
+
+                if note_result.get("code") == "SUCCESS":
+                    return {
+                        "note": {
+                            "id": note_result.get("details", {}).get("id", ""),
+                            "details": note_result.get("details", {})
+                        },
+                        "result": True
+                    }
+                else:
+                    return {
+                        "note": {},
+                        "result": False,
+                        "error": note_result.get("message", "Unknown error occurred")
+                    }
+            else:
+                return {
+                    "note": {},
+                    "result": False,
+                    "error": "No response data received"
+                }
+
+        except Exception as e:
+            return {
+                "note": {},
+                "result": False,
+                "error": f"Error creating note: {str(e)}"
+            }
+
+@zoho.action("get_contact_notes")
+class GetContactNotes(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_zoho_headers(context)
+            contact_id = inputs["contact_id"]
+            url = get_zoho_api_url(f"/Contacts/{contact_id}/Notes")
+
+            # Build query parameters
+            params = build_notes_query_params(inputs)
+
+            # Make API request
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Process response
+            notes_data = response.get("data", [])
+            info = response.get("info", {})
+
+            return {
+                "notes": notes_data,
+                "info": info,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "notes": [],
+                "info": {},
+                "result": False,
+                "error": f"Error getting contact notes: {str(e)}"
+            }
+
+@zoho.action("get_note")
+class GetNote(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_zoho_headers(context)
+            note_id = inputs["note_id"]
+            url = get_zoho_api_url(f"/Notes/{note_id}")
+
+            # Build query parameters
+            params = {}
+            if 'fields' in inputs and inputs['fields']:
+                if isinstance(inputs['fields'], list):
+                    params['fields'] = ','.join(inputs['fields'])
+                else:
+                    params['fields'] = inputs['fields']
+
+            # Make API request
+            response = await context.fetch(
+                url,
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            # Process response
+            if response.get("data") and len(response["data"]) > 0:
+                note_data = response["data"][0]
+                return {
+                    "note": note_data,
+                    "result": True
+                }
+            else:
+                return {
+                    "note": {},
+                    "result": False,
+                    "error": "Note not found"
+                }
+
+        except Exception as e:
+            return {
+                "note": {},
+                "result": False,
+                "error": f"Error getting note: {str(e)}"
+            }
+
+@zoho.action("update_note")
+class UpdateNote(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_zoho_headers(context)
+            note_id = inputs["note_id"]
+            url = get_zoho_api_url(f"/Notes/{note_id}")
+
+            # Build update data - only Note_Title and Note_Content can be updated
+            update_data = {}
+
+            if 'Note_Title' in inputs and inputs['Note_Title']:
+                update_data['Note_Title'] = inputs['Note_Title']
+
+            if 'Note_Content' in inputs and inputs['Note_Content']:
+                update_data['Note_Content'] = inputs['Note_Content']
+
+            # Create request payload
+            payload = {
+                "data": [update_data]
+            }
+
+            # Make API request
+            response = await context.fetch(
+                url,
+                method="PUT",
+                headers=headers,
+                json=payload
+            )
+
+            # Process response
+            if response.get("data") and len(response["data"]) > 0:
+                note_result = response["data"][0]
+
+                if note_result.get("code") == "SUCCESS":
+                    return {
+                        "note": {
+                            "id": note_result.get("details", {}).get("id", ""),
+                            "details": note_result.get("details", {})
+                        },
+                        "result": True
+                    }
+                else:
+                    return {
+                        "note": {},
+                        "result": False,
+                        "error": note_result.get("message", "Unknown error occurred")
+                    }
+            else:
+                return {
+                    "note": {},
+                    "result": False,
+                    "error": "No response data received"
+                }
+
+        except Exception as e:
+            return {
+                "note": {},
+                "result": False,
+                "error": f"Error updating note: {str(e)}"
+            }
+
+@zoho.action("delete_note")
+class DeleteNote(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_zoho_headers(context)
+            note_id = inputs["note_id"]
+            url = get_zoho_api_url(f"/Notes/{note_id}")
+
+            # Make API request
+            response = await context.fetch(
+                url,
+                method="DELETE",
+                headers=headers
+            )
+
+            # Process response
+            if response.get("data") and len(response["data"]) > 0:
+                delete_result = response["data"][0]
+
+                if delete_result.get("code") == "SUCCESS":
+                    return {
+                        "result": True,
+                        "message": "Note deleted successfully"
+                    }
+                else:
+                    return {
+                        "result": False,
+                        "error": delete_result.get("message", "Unknown error occurred")
+                    }
+            else:
+                return {
+                    "result": False,
+                    "error": "No response data received"
+                }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "error": f"Error deleting note: {str(e)}"
             }

@@ -304,12 +304,165 @@ class TestZohoIntegration(unittest.TestCase):
     def test_api_url_building(self):
         """Test API URL building helper function."""
         from zoho import get_zoho_api_url
-        
+
         base_url = get_zoho_api_url()
         self.assertEqual(base_url, "https://www.zohoapis.com.au/crm/v8")
-        
+
         contacts_url = get_zoho_api_url("/Contacts")
         self.assertEqual(contacts_url, "https://www.zohoapis.com.au/crm/v8/Contacts")
+
+    async def test_create_note_success(self):
+        """Test successful note creation for a contact."""
+        mock_response = {
+            "data": [{
+                "code": "SUCCESS",
+                "details": {
+                    "id": "note123456789",
+                    "Created_Time": "2024-01-15T10:00:00+00:00",
+                    "Modified_Time": "2024-01-15T10:00:00+00:00"
+                },
+                "message": "record added"
+            }]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.CreateNoteAction()
+        inputs = {
+            "contact_id": "123456789",
+            "Note_Content": "Discussion about Q4 requirements",
+            "Note_Title": "Q4 Planning Meeting"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertEqual(result["note"]["id"], "note123456789")
+        self.assertTrue(result["result"])
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/Contacts/123456789/Notes", call_args[0][0])
+        self.assertEqual(call_args[1]["method"], "POST")
+
+    async def test_get_contact_notes_success(self):
+        """Test successful retrieval of notes for a contact."""
+        mock_response = {
+            "data": [
+                {
+                    "id": "note123",
+                    "Note_Title": "Meeting Notes",
+                    "Note_Content": "Discussed project timeline",
+                    "Owner": {"name": "John Doe", "id": "111"},
+                    "Created_Time": "2024-01-15T10:00:00+00:00"
+                },
+                {
+                    "id": "note456",
+                    "Note_Title": "Follow-up",
+                    "Note_Content": "Send proposal by EOD",
+                    "Owner": {"name": "Jane Smith", "id": "222"},
+                    "Created_Time": "2024-01-16T14:30:00+00:00"
+                }
+            ],
+            "info": {
+                "count": 2,
+                "page": 1,
+                "per_page": 200,
+                "more_records": False
+            }
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.GetContactNotesAction()
+        inputs = {
+            "contact_id": "123456789",
+            "page": 1,
+            "per_page": 200
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertEqual(len(result["notes"]), 2)
+        self.assertEqual(result["notes"][0]["Note_Title"], "Meeting Notes")
+        self.assertEqual(result["info"]["count"], 2)
+        self.assertTrue(result["result"])
+
+    async def test_get_note_success(self):
+        """Test successful retrieval of a specific note."""
+        mock_response = {
+            "data": [{
+                "id": "note123456789",
+                "Note_Title": "Important Note",
+                "Note_Content": "This is the note content",
+                "Parent_Id": {"module": "Contacts", "id": "123456789"},
+                "Owner": {"name": "John Doe", "id": "111"},
+                "Created_Time": "2024-01-15T10:00:00+00:00",
+                "Modified_Time": "2024-01-15T10:00:00+00:00"
+            }]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.GetNoteAction()
+        inputs = {"note_id": "note123456789"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertEqual(result["note"]["id"], "note123456789")
+        self.assertEqual(result["note"]["Note_Title"], "Important Note")
+        self.assertTrue(result["result"])
+
+    async def test_update_note_success(self):
+        """Test successful note update."""
+        mock_response = {
+            "data": [{
+                "code": "SUCCESS",
+                "details": {
+                    "id": "note123456789",
+                    "Modified_Time": "2024-01-16T11:00:00+00:00"
+                },
+                "message": "record updated"
+            }]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.UpdateNoteAction()
+        inputs = {
+            "note_id": "note123456789",
+            "Note_Title": "Updated Note Title",
+            "Note_Content": "Updated note content"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertEqual(result["note"]["id"], "note123456789")
+        self.assertTrue(result["result"])
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/Notes/note123456789", call_args[0][0])
+        self.assertEqual(call_args[1]["method"], "PUT")
+
+    async def test_delete_note_success(self):
+        """Test successful note deletion."""
+        mock_response = {
+            "data": [{
+                "code": "SUCCESS",
+                "details": {"id": "note123456789"},
+                "message": "record deleted"
+            }]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.DeleteNoteAction()
+        inputs = {"note_id": "note123456789"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result["result"])
+        self.assertEqual(result["message"], "Note deleted successfully")
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/Notes/note123456789", call_args[0][0])
+        self.assertEqual(call_args[1]["method"], "DELETE")
 
 if __name__ == '__main__':
     unittest.main()
