@@ -1,6 +1,5 @@
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
 from typing import Dict, Any, List, Optional
-import requests
 
 google_docs = Integration.load()
 
@@ -9,24 +8,9 @@ DOCS_API_BASE = "https://docs.googleapis.com/v1"
 DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 
 
-def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
-    """Build authorization headers from the execution context."""
-    access_token = context.auth['credentials']['access_token']
-    return {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json'
-    }
-
-
-def handle_api_error(response: requests.Response) -> Dict[str, Any]:
+def handle_api_error(error: Exception, message: str = "Google API error") -> Dict[str, Any]:
     """Handle API error responses."""
-    try:
-        error_data = response.json()
-        error_msg = error_data.get('error', {}).get('message', response.text)
-    except Exception:
-        error_msg = response.text or f"HTTP {response.status_code}"
-
-    return {'result': False, 'error': f'Google API error: {error_msg}'}
+    return {'result': False, 'error': f'{message}: {str(error)}'}
 
 
 # ---- Action Handlers ----
@@ -36,18 +20,11 @@ class CreateDocument(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """Create a new Google Doc."""
         try:
-            headers = get_auth_headers(context)
             title = inputs.get('title', 'Untitled Document')
-
             url = f"{DOCS_API_BASE}/documents"
             payload = {'title': title}
 
-            response = requests.post(url, headers=headers, json=payload)
-
-            if not response.ok:
-                return handle_api_error(response)
-
-            document = response.json()
+            document = await context.fetch(url, method="POST", json=payload)
 
             return {
                 'documentId': document.get('documentId'),
@@ -55,7 +32,7 @@ class CreateDocument(ActionHandler):
                 'result': True
             }
         except Exception as e:
-            return {'result': False, 'error': str(e)}
+            return handle_api_error(e, "Failed to create document")
 
 
 @google_docs.action("docs_get")
@@ -63,7 +40,6 @@ class GetDocument(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """Retrieve full document content."""
         try:
-            headers = get_auth_headers(context)
             document_id = inputs['document_id']
             include_tabs = inputs.get('include_tabs_content', True)
 
@@ -74,21 +50,16 @@ class GetDocument(ActionHandler):
             if include_tabs:
                 params['includeTabsContent'] = 'true'
 
-            response = requests.get(url, headers=headers, params=params)
-
-            if not response.ok:
-                error_result = handle_api_error(response)
-                error_result['document'] = {}
-                return error_result
-
-            document = response.json()
+            document = await context.fetch(url, method="GET", params=params)
 
             return {
                 'document': document,
                 'result': True
             }
         except Exception as e:
-            return {'document': {}, 'result': False, 'error': str(e)}
+            error_result = handle_api_error(e, "Failed to get document")
+            error_result['document'] = {}
+            return error_result
 
 
 @google_docs.action("docs_insert_paragraphs")
@@ -109,7 +80,6 @@ class InsertParagraphs(ActionHandler):
         - tab_id: Optional tab ID if working with a specific tab
         """
         try:
-            headers = get_auth_headers(context)
             document_id = inputs['document_id']
             paragraphs = inputs['paragraphs']
             tab_id = inputs.get('tab_id')
@@ -134,12 +104,7 @@ class InsertParagraphs(ActionHandler):
                 else:
                     params['fields'] = 'body/content(endIndex)'
 
-                response = requests.get(url, headers=headers, params=params)
-
-                if not response.ok:
-                    return handle_api_error(response)
-
-                document = response.json()
+                document = await context.fetch(url, method="GET", params=params)
 
                 if tab_id:
                     index = None
@@ -183,10 +148,7 @@ class InsertParagraphs(ActionHandler):
             url = f"{DOCS_API_BASE}/documents/{document_id}:batchUpdate"
             payload = {'requests': batch_requests}
 
-            response = requests.post(url, headers=headers, json=payload)
-
-            if not response.ok:
-                return handle_api_error(response)
+            await context.fetch(url, method="POST", json=payload)
 
             return {
                 'result': True,
@@ -194,7 +156,7 @@ class InsertParagraphs(ActionHandler):
                 'inserted_at_index': index
             }
         except Exception as e:
-            return {'result': False, 'error': str(e)}
+            return handle_api_error(e, "Failed to insert paragraphs")
 
 
 @google_docs.action("docs_batch_update")
@@ -258,7 +220,6 @@ class BatchUpdate(ActionHandler):
         - requests: Array of Google Docs API request objects
         """
         try:
-            headers = get_auth_headers(context)
             document_id = inputs['document_id']
             batch_requests = inputs['requests']
 
@@ -269,21 +230,16 @@ class BatchUpdate(ActionHandler):
             url = f"{DOCS_API_BASE}/documents/{document_id}:batchUpdate"
             payload = {'requests': batch_requests}
 
-            response = requests.post(url, headers=headers, json=payload)
-
-            if not response.ok:
-                error_result = handle_api_error(response)
-                error_result['replies'] = []
-                return error_result
-
-            result = response.json()
+            result = await context.fetch(url, method="POST", json=payload)
 
             return {
                 'replies': result.get('replies', []),
                 'result': True
             }
         except Exception as e:
-            return {'replies': [], 'result': False, 'error': str(e)}
+            error_result = handle_api_error(e, "Failed to execute batch update")
+            error_result['replies'] = []
+            return error_result
 
 
 @google_docs.action("docs_parse_structure")
@@ -291,7 +247,6 @@ class ParseStructure(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """Parse document structure to identify headings, paragraphs, and their positions."""
         try:
-            headers = get_auth_headers(context)
             document_id = inputs['document_id']
             tab_id = inputs.get('tab_id')
 
@@ -302,14 +257,7 @@ class ParseStructure(ActionHandler):
             if tab_id:
                 params['includeTabsContent'] = 'true'
 
-            response = requests.get(url, headers=headers, params=params)
-
-            if not response.ok:
-                error_result = handle_api_error(response)
-                error_result['structure'] = []
-                return error_result
-
-            document = response.json()
+            document = await context.fetch(url, method="GET", params=params)
 
             # Get the body content
             if tab_id:
@@ -382,7 +330,9 @@ class ParseStructure(ActionHandler):
                 'result': True
             }
         except Exception as e:
-            return {'structure': [], 'result': False, 'error': str(e)}
+            error_result = handle_api_error(e, "Failed to parse document structure")
+            error_result['structure'] = []
+            return error_result
 
 
 @google_docs.action("docs_insert_markdown_content")
@@ -408,7 +358,6 @@ class InsertMarkdownContent(ActionHandler):
         - append: If true, append to end of document (default: True)
         """
         try:
-            headers = get_auth_headers(context)
             document_id = inputs['document_id']
             content = inputs['content']
             heading_level = inputs.get('heading_level', 1)
@@ -423,18 +372,18 @@ class InsertMarkdownContent(ActionHandler):
 
             # Step 2: Get the insertion index
             insertion_index = await self._get_insertion_index(
-                headers, document_id, tab_id, append
+                context, document_id, tab_id, append
             )
 
             # Step 3: Insert all content with styles in a single batch operation
             result = await self._insert_and_style_sections(
-                headers, document_id, tab_id, sections, insertion_index, heading_level
+                context, document_id, tab_id, sections, insertion_index, heading_level
             )
 
             return result
 
         except Exception as e:
-            return {'result': False, 'error': str(e)}
+            return handle_api_error(e, "Failed to insert markdown content")
 
     def _parse_sections(self, content: str, heading_level: int) -> List[Dict[str, Any]]:
         """Parse content into sections based on heading level."""
@@ -487,7 +436,7 @@ class InsertMarkdownContent(ActionHandler):
 
         return sections
 
-    async def _get_insertion_index(self, headers: Dict[str, str],
+    async def _get_insertion_index(self, context: ExecutionContext,
                                    document_id: str, tab_id: Optional[str],
                                    append: bool) -> int:
         """Get the index where content should be inserted."""
@@ -504,12 +453,10 @@ class InsertMarkdownContent(ActionHandler):
         else:
             params['fields'] = 'body/content(endIndex)'
 
-        response = requests.get(url, headers=headers, params=params)
-
-        if not response.ok:
+        try:
+            document = await context.fetch(url, method="GET", params=params)
+        except Exception:
             return 1  # Default to beginning on error
-
-        document = response.json()
 
         if tab_id:
             for tab in document.get('tabs', []):
@@ -524,7 +471,7 @@ class InsertMarkdownContent(ActionHandler):
             content = body.get('content', [])
             return content[-1].get('endIndex', 1) - 1 if content else 1
 
-    async def _insert_and_style_sections(self, headers: Dict[str, str],
+    async def _insert_and_style_sections(self, context: ExecutionContext,
                                          document_id: str, tab_id: Optional[str],
                                          sections: List[Dict[str, Any]],
                                          start_index: int,
@@ -603,10 +550,7 @@ class InsertMarkdownContent(ActionHandler):
             url = f"{DOCS_API_BASE}/documents/{document_id}:batchUpdate"
             payload = {'requests': batch_requests}
 
-            response = requests.post(url, headers=headers, json=payload)
-
-            if not response.ok:
-                return handle_api_error(response)
+            await context.fetch(url, method="POST", json=payload)
 
             return {
                 'result': True,
@@ -615,5 +559,5 @@ class InsertMarkdownContent(ActionHandler):
             }
 
         except Exception as e:
-            return {'result': False, 'error': str(e)}
+            return handle_api_error(e, "Failed to insert and style sections")
 
