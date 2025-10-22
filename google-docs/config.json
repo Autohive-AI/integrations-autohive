@@ -28,8 +28,9 @@
       "output_schema": {
         "type": "object",
         "properties": {
-          "documentId": { "type": "string" },
-          "title": { "type": "string" },
+          "documentId": { "type": "string", "description": "The unique ID of the created document" },
+          "documentUrl": { "type": "string", "description": "The shareable URL to view/edit the document" },
+          "title": { "type": "string", "description": "The title of the created document" },
           "result": { "type": "boolean" },
           "error": { "type": "string" }
         },

@@ -26,8 +26,12 @@ class CreateDocument(ActionHandler):
 
             document = await context.fetch(url, method="POST", json=payload)
 
+            document_id = document.get('documentId')
+            document_url = f"https://docs.google.com/document/d/{document_id}/edit"
+
             return {
-                'documentId': document.get('documentId'),
+                'documentId': document_id,
+                'documentUrl': document_url,
                 'title': document.get('title'),
                 'result': True
             }
