@@ -10,7 +10,8 @@
         "scopes": [
             "https://www.googleapis.com/auth/chat.messages",
             "https://www.googleapis.com/auth/chat.spaces",
-            "https://www.googleapis.com/auth/chat.messages.reactions"
+            "https://www.googleapis.com/auth/chat.messages.reactions",
+            "https://www.googleapis.com/auth/chat.memberships.readonly"
         ]
     },
     "actions": {
