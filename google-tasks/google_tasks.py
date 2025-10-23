@@ -179,7 +179,9 @@ class UpdateTaskAction(ActionHandler):
             task_id = inputs['task']
 
             # Build update body with only provided fields
-            body = {}
+            # NOTE: Google Tasks API requires 'id' in the body even though it's in the URL
+            body = {'id': task_id}
+
             if 'title' in inputs and inputs['title']:
                 body['title'] = inputs['title']
             if 'notes' in inputs and inputs['notes']:
