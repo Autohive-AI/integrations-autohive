@@ -40,7 +40,7 @@ The integration automatically requests the following Zoho CRM permissions:
 
 ## Actions
 
-This integration provides 33 actions covering complete CRUD operations for all major Zoho CRM modules:
+This integration provides 38 actions covering complete CRUD operations for all major Zoho CRM modules:
 
 ### Contact Management
 
@@ -83,6 +83,36 @@ This integration provides 33 actions covering complete CRUD operations for all m
 - **Description:** Search contacts using various criteria
 - **Inputs:** Search parameters and filters
 - **Outputs:** Array of matching contact objects
+
+### Notes Management
+
+#### Action: `create_note`
+- **Description:** Creates a note attached to a contact
+- **Inputs:**
+  - `contact_id` (required): ID of the contact
+  - `Note_Content` (required): Content of the note
+  - `Note_Title`: Title of the note (optional)
+- **Outputs:** Note object with `id` and note details
+
+#### Action: `get_contact_notes`
+- **Description:** Retrieves all notes for a specific contact with pagination
+- **Inputs:** `contact_id` (required), optional `page`, `per_page`, `fields`
+- **Outputs:** Array of note objects with pagination info
+
+#### Action: `get_note`
+- **Description:** Retrieves a specific note by ID
+- **Inputs:** `note_id` (required): Note to retrieve
+- **Outputs:** Complete note record
+
+#### Action: `update_note`
+- **Description:** Updates a note's title or content
+- **Inputs:** `note_id` (required), `Note_Title`, `Note_Content` (at least one required)
+- **Outputs:** Updated note object
+
+#### Action: `delete_note`
+- **Description:** Permanently deletes a note
+- **Inputs:** `note_id` (required): Note to delete
+- **Outputs:** Confirmation of deletion
 
 ### Account Management
 
@@ -291,6 +321,15 @@ The integration has the following dependencies:
   "module_api_name": "Accounts",
   "record_id": "123456789",
   "related_list_api_name": "Contacts"
+}
+```
+
+**Example 6: Creating a note for a contact**
+```json
+{
+  "contact_id": "123456789",
+  "Note_Title": "Q4 Planning Discussion",
+  "Note_Content": "Discussed Q4 requirements and timeline. Follow up needed on budget approval."
 }
 ```
 
