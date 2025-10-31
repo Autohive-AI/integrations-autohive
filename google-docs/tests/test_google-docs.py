@@ -71,17 +71,34 @@ async def test_insert_paragraphs():
 
 
 async def test_insert_markdown_content():
-    """Test inserting markdown content with automatic heading styling."""
+    """Test inserting markdown content with automatic styling (all heading levels and inline formatting)."""
     auth = {
         "credentials": {
             "access_token": "test_access_token"
         }
     }
 
+    # Test content with multiple heading levels and inline formatting
+    markdown_content = """# Main Heading
+
+This is a paragraph with **bold text** and *italic text*.
+
+## Subheading Level 2
+
+Another paragraph with **important** information.
+
+### Subheading Level 3
+
+- This has **bold** and *italic* inline formatting
+- Multiple formatting in one paragraph
+
+## Another Section
+
+Final paragraph with mixed **bold** and *italic* styles."""
+
     inputs = {
         "document_id": "test_document_id",
-        "content": "# Overview\n\nThis is the overview section.\n\n# Details\n\nThis section has more details.",
-        "heading_level": 1,
+        "content": markdown_content,
         "append": True
     }
 
@@ -89,6 +106,9 @@ async def test_insert_markdown_content():
         try:
             result = await google_docs.execute_action("docs_insert_markdown_content", inputs, context)
             print(f"Insert Markdown Content Result: {result}")
+            print(f"  - Headings inserted: {result.get('headings_inserted', 0)}")
+            print(f"  - Paragraphs inserted: {result.get('paragraphs_inserted', 0)}")
+            print(f"  - Total elements: {result.get('total_elements', 0)}")
         except Exception as e:
             print(f"Error testing docs_insert_markdown_content: {e}")
 
