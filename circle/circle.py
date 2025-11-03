@@ -1145,3 +1145,121 @@ class ListSpaceGroupsAction(ActionHandler):
                 "result": False,
                 "error": f"Error listing space groups: {str(e)}"
             }
+
+
+@circle.action("list_access_groups")
+class ListAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+
+            # Build query parameters
+            params = build_search_params(inputs, ["per_page", "page"])
+            
+            # Default per_page if not provided
+            if "per_page" not in params:
+                params["per_page"] = 100
+
+            # Make API call
+            response = await context.fetch(
+                f"{CIRCLE_API_BASE}/access_groups",
+                headers=headers,
+                params=params
+            )
+
+            # Check for API errors or HTML responses
+            error_response = handle_api_response(response, {"access_groups": [], "count": 0})
+            if error_response:
+                return error_response
+
+            # Parse response
+            access_groups = response.get("records", [])
+            count = response.get("count", 0)
+
+            return {
+                "access_groups": access_groups,
+                "count": count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "access_groups": [],
+                "count": 0,
+                "result": False,
+                "error": f"Error listing access groups: {str(e)}"
+            }
+
+
+@circle.action("add_member_to_access_groups")
+class AddMemberToAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            access_group_ids = inputs["access_group_ids"]
+
+            # Add member to each access group
+            results = []
+            for group_id in access_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/access_groups/{group_id}/community_members",
+                    headers=headers,
+                    method="POST",
+                    json={"email": email}
+                )
+                
+                error_response = handle_api_response(response, {"member": {}})
+                if error_response:
+                    return error_response
+                
+                results.append(response)
+
+            return {
+                "member": results[0] if results else {},
+                "groups_added": len(results),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "member": {},
+                "result": False,
+                "error": f"Error adding member to access groups: {str(e)}"
+            }
+
+
+@circle.action("remove_member_from_access_groups")
+class RemoveMemberFromAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            access_group_ids = inputs["access_group_ids"]
+
+            # Remove member from each access group
+            removed_count = 0
+            for group_id in access_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/access_groups/{group_id}/community_members",
+                    headers=headers,
+                    method="DELETE",
+                    params={"email": email}
+                )
+                
+                # DELETE may return empty response on success
+                if response or response == {}:
+                    removed_count += 1
+
+            return {
+                "groups_removed": removed_count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "error": f"Error removing member from access groups: {str(e)}"
+            }

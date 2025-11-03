@@ -696,7 +696,7 @@
     },
     "list_space_groups": {
       "display_name": "List Space Groups",
-      "description": "List all space groups (access groups) in the community",
+      "description": "List all space groups in the community (controls access to specific spaces)",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -723,6 +723,111 @@
           "count": {
             "type": "integer",
             "description": "Total number of space groups"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "list_access_groups": {
+      "display_name": "List Access Groups",
+      "description": "List all access groups in the community (general access control groups)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer",
+            "description": "Number of access groups to return (default: 100)",
+            "default": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination (default: 1)",
+            "default": 1
+          }
+        },
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "access_groups": {
+            "type": "array",
+            "description": "List of all access groups"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total number of access groups"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "add_member_to_access_groups": {
+      "display_name": "Add Member to Access Groups",
+      "description": "Add a member to one or more access groups by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email of the member to add to access groups"
+          },
+          "access_group_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of access group IDs to add the member to (use list_access_groups to get available group IDs)"
+          }
+        },
+        "required": ["email", "access_group_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "remove_member_from_access_groups": {
+      "display_name": "Remove Member from Access Groups",
+      "description": "Remove a member from one or more access groups by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email of the member to remove from access groups"
+          },
+          "access_group_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of access group IDs to remove the member from"
+          }
+        },
+        "required": ["email", "access_group_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
           },
           "result": {
             "type": "boolean",
