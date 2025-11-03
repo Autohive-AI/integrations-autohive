@@ -520,6 +520,216 @@
           }
         }
       }
+    },
+    "add_member_tags": {
+      "display_name": "Add Member Tags",
+      "description": "Add tags to a community member by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string",
+            "description": "The email of the member to add tags to"
+          },
+          "member_tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of member tag IDs to add (use list_tags to get available tag IDs)"
+          }
+        },
+        "required": ["user_email", "member_tag_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "remove_member_tags": {
+      "display_name": "Remove Member Tags",
+      "description": "Remove tags from a community member by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "user_email": {
+            "type": "string",
+            "description": "The email of the member to remove tags from"
+          },
+          "member_tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of member tag IDs to remove"
+          }
+        },
+        "required": ["user_email", "member_tag_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "add_member_to_space_groups": {
+      "display_name": "Add Member to Space Groups",
+      "description": "Add a member to one or more space groups (access groups) by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email of the member to add to space groups"
+          },
+          "space_group_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of space group IDs to add the member to (use list_space_groups to get available group IDs)"
+          }
+        },
+        "required": ["email", "space_group_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "remove_member_from_space_groups": {
+      "display_name": "Remove Member from Space Groups",
+      "description": "Remove a member from one or more space groups (access groups) by email",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The email of the member to remove from space groups"
+          },
+          "space_group_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "List of space group IDs to remove the member from"
+          }
+        },
+        "required": ["email", "space_group_ids"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "object",
+            "description": "Updated member details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "list_tags": {
+      "display_name": "List Tags",
+      "description": "List all tags available in the community",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer",
+            "description": "Number of tags to return (default: 100)",
+            "default": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination (default: 1)",
+            "default": 1
+          }
+        },
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "description": "List of all tags"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total number of tags"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
+    },
+    "list_space_groups": {
+      "display_name": "List Space Groups",
+      "description": "List all space groups (access groups) in the community",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer",
+            "description": "Number of space groups to return (default: 100)",
+            "default": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination (default: 1)",
+            "default": 1
+          }
+        },
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "space_groups": {
+            "type": "array",
+            "description": "List of all space groups"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total number of space groups"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          }
+        }
+      }
     }
   }
 }
