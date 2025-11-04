@@ -178,13 +178,29 @@ class UpdateTaskAction(ActionHandler):
             tasklist_id = inputs['tasklist']
             task_id = inputs['task']
 
-            # Build update body with only provided fields
-            # NOTE: Google Tasks API requires 'id' in the body even though it's in the URL
-            body = {'id': task_id}
+            # First, fetch the existing task to preserve unmodified fields
+            existing_task = await context.fetch(
+                f"{GOOGLE_TASKS_API_BASE_URL}/lists/{tasklist_id}/tasks/{task_id}",
+                method="GET"
+            )
 
+            # Build update body starting with existing task data
+            # NOTE: Google Tasks API requires 'id' in the body even though it's in the URL
+            body = {
+                'id': task_id,
+                'title': existing_task.get('title', ''),
+                'notes': existing_task.get('notes', ''),
+                'status': existing_task.get('status', 'needsAction')
+            }
+
+            # Preserve 'due' field if it exists
+            if 'due' in existing_task:
+                body['due'] = existing_task['due']
+
+            # Override with any provided fields
             if 'title' in inputs and inputs['title']:
                 body['title'] = inputs['title']
-            if 'notes' in inputs and inputs['notes']:
+            if 'notes' in inputs and inputs['notes'] is not None:
                 body['notes'] = inputs['notes']
             if 'due' in inputs:
                 body['due'] = inputs['due']
