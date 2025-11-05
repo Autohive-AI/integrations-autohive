@@ -23,7 +23,6 @@ This integration uses OAuth2 authentication via the Autohive platform. The requi
 **Required Scopes:**
 
 *   `https://www.googleapis.com/auth/documents` - Full access to Google Docs
-*   `https://www.googleapis.com/auth/drive.file` - Access to files created by this application
 
 **Setup Steps:**
 
