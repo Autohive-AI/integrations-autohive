@@ -425,7 +425,7 @@ class ListChannelsAction(ActionHandler):
                 channel = {
                     "id": raw_channel.get("id", ""),
                     "name": raw_channel.get("name", ""),
-                    "type": raw_channel.get("type", ""),
+                    "type": raw_channel.get("types", raw_channel.get("type", "")),  # Front API uses "types" field
                 }
                 # Add optional fields
                 if 'address' in raw_channel:
@@ -478,7 +478,7 @@ class ListInboxChannelsAction(ActionHandler):
                 channel = {
                     "id": raw_channel.get("id", ""),
                     "name": raw_channel.get("name", ""),
-                    "type": raw_channel.get("type", ""),
+                    "type": raw_channel.get("types", raw_channel.get("type", "")),  # Front API uses "types" field
                 }
                 # Add optional fields
                 if 'address' in raw_channel:
@@ -516,16 +516,20 @@ class GetChannelAction(ActionHandler):
             # Check for API errors
             if "error" in response:
                 return {
-                    "channel": {},
+                    "channel": {
+                        "id": "",
+                        "name": "",
+                        "type": ""
+                    },
                     "result": False,
                     "error": f"API request failed: {response.get('error', 'Unknown error')}"
                 }
 
-            # Parse channel
+            # Parse channel - Note: Front API returns "types" but we standardize to "type"
             channel = {
                 "id": response.get("id", ""),
                 "name": response.get("name", ""),
-                "type": response.get("type", ""),
+                "type": response.get("types", response.get("type", "")),  # Front API uses "types" field
             }
 
             # Add optional fields
@@ -545,7 +549,11 @@ class GetChannelAction(ActionHandler):
 
         except Exception as e:
             return {
-                "channel": {},
+                "channel": {
+                    "id": "",
+                    "name": "",
+                    "type": ""
+                },
                 "result": False,
                 "error": f"Error getting channel: {str(e)}"
             }
