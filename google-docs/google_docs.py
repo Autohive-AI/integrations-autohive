@@ -5,7 +5,6 @@ google_docs = Integration.load()
 
 # Google Docs API base URL
 DOCS_API_BASE = "https://docs.googleapis.com/v1"
-DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 
 
 def handle_api_error(error: Exception, message: str = "Google API error") -> Dict[str, Any]:
