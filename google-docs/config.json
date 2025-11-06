@@ -8,8 +8,7 @@
     "type": "platform",
     "provider": "Google Docs",
     "scopes": [
-      "https://www.googleapis.com/auth/documents",
-      "https://www.googleapis.com/auth/drive.file"
+      "https://www.googleapis.com/auth/documents"
     ]
   },
   "actions": {
