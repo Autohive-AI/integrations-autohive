@@ -1,7 +1,7 @@
 {
     "name": "Xero",
-    "version": "1.2.0",
-    "description": "Xero accounting integration for invoice and bill management, reporting, and file attachments",
+    "version": "1.3.0",
+    "description": "Xero accounting integration for invoice and bill management, reporting, file attachments, and PDF invoice retrieval",
     "entry_point": "xero.py",
     "auth": {
         "type": "platform",
@@ -592,6 +592,56 @@
                     }
                 },
                 "description": "Raw Xero API response for Invoices"
+            }
+        },
+        "get_invoice_pdf": {
+            "display_name": "Get Invoice PDF",
+            "description": "Retrieves a specific invoice as a PDF file from Xero API. Works with both sales invoices (ACCREC) and purchase bills (ACCPAY)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "description": "Xero tenant ID"
+                    },
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "Invoice ID (GUID) to retrieve as PDF. Example: 97c2dc5-cc47-4afd-8ec8-74990b8761e9"
+                    }
+                },
+                "required": ["tenant_id", "invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "File name of the PDF"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Base64 encoded PDF content"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "MIME type of the file (application/pdf)"
+                            }
+                        },
+                        "required": ["name", "content", "contentType"]
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the PDF download was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if download failed"
+                    }
+                },
+                "required": ["file", "success"]
             }
         },
         "get_bank_transactions": {
