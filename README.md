@@ -23,6 +23,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Circle
+
+[circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
+
 ### Coda
 
 [coda](coda): Comprehensive Coda integration for managing documents, pages, tables, and rows. Supports full CRUD operations for docs (list, get, create, update, delete) and pages (list, get, create with HTML/Markdown content, update metadata, delete). Includes table and column discovery (list tables/columns, get table/column details) and complete row management (list with filtering/sorting, get, upsert with keyColumns, update, delete single/multiple). Features Bearer token authentication, pagination support, async processing (HTTP 202 responses), multiple value formats (simple/rich), and comprehensive error handling. Ideal for document automation, content management, and data synchronization workflows.
@@ -55,6 +59,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [reddit](reddit): Connect workflows to Reddit with automated engagement capabilities. Search posts across subreddits with customizable filtering options and automatically post comments to join conversations. Includes authentication via Reddit OAuth with read and submit permissions, comprehensive post data extraction, and support for brand monitoring and community engagement workflows.
 
+### App and Business Reviews
+
+[app-business-reviews](app-business-reviews): Unified review aggregation integration powered by SerpAPI. Access reviews from Apple App Store (iOS apps), Google Play Store (Android apps), and Google Maps (business locations) through a single integration. Supports searching for apps and places, fetching reviews with advanced sorting and filtering, pagination for large datasets, and automatic ID resolution from names. Features customizable sort orders (newest, most helpful, rating-based), platform filtering for Android apps, and flexible location-based searches. Includes comprehensive error handling with helpful Place ID guidance and single API key authentication for all three review sources.
+
 ### Supadata
 
 [supadata](supadata): Video transcription integration that extracts text transcripts from social media videos using the Supadata API. Supports YouTube, TikTok, Instagram, and X (Twitter) platforms with timestamped SRT-format output. Ideal for content analysis, accessibility features, and creating searchable text archives from video content.
@@ -66,6 +74,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Google Calendar
 
 [google-calendar](google-calendar): Integrates with Google Calendar API for comprehensive calendar and event management within Autohive workflows. Supports listing accessible calendars, creating and managing calendar events (both timed and all-day), attendee management, and event lifecycle operations. Features secure OAuth2 authentication and pagination support for large event datasets.
+
+### Harvest
+
+[harvest](harvest): Time tracking and project management integration with Harvest API for logging work hours, managing projects, clients, and teams. Supports creating and managing time entries with running timers, listing and filtering time entries by project, client, user, and date range, managing projects and clients, tracking tasks and team members, and comprehensive resource management operations. Features OAuth2 authentication, flexible time logging (manual hours or running timers), pagination support for large datasets, and full CRUD operations for time entries. Includes 10 core actions covering time tracking workflows, project organization, and team collaboration.
 
 ### Google Sheets
 
@@ -86,6 +98,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Spreadsheet Tools
 
 [spreadsheet-tools](spreadsheet-tools): Tools for working with spreadsheet files including conversion to JSON format with automatic header sanitization and type inference. Supports Excel (.xlsx/.xls) and CSV file formats. Features automatic data type detection, header sanitization for valid JSON property names, duplicate header handling, and UTF-8/BOM encoding support. Ideal for data transformation, spreadsheet parsing, and converting tabular data into structured JSON for workflow automation.
+
+### Asana
+
+[asana](asana): Comprehensive project management integration with Asana API v1.0 for task and team collaboration automation. Supports complete task lifecycle management (create, get, update, list, delete tasks with assignees, due dates, and completion tracking), full project CRUD operations (list, get, create, update, delete projects with team associations and archiving), section organization (list, create, update sections, move tasks between sections for board/column workflows), team communication (create and list comments/stories on tasks), and subtask creation for breaking down complex work. Features Personal Access Token authentication with Bearer token headers, Asana data object wrapper handling, GID-based resource identification, and flexible task filtering. Includes 17 comprehensive actions covering tasks, projects, sections, comments, and subtasks. Ideal for workflow automation, task capture from external sources, project template creation, team collaboration, and productivity tracking across workspaces.
 
 ### Google Chat
 
