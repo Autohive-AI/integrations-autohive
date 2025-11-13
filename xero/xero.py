@@ -6,6 +6,7 @@ from datetime import datetime
 import asyncio
 import base64
 import io
+import aiohttp
 
 # Create the integration using the config.json
 xero = Integration.load()
@@ -725,6 +726,95 @@ class GetInvoicesAction(ActionHandler):
             }
         except Exception as e:
             raise Exception(f"Failed to fetch invoices: {str(e)}")
+
+
+@xero.action("get_invoice_pdf")
+class GetInvoicePdfAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Retrieves a specific invoice as PDF from Xero API
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - invoice_id: ID of the invoice to retrieve as PDF (GUID)
+
+        Returns:
+        - file: Object containing content (base64), contentType, and name
+        - success: Boolean indicating if the download was successful
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        invoice_id = inputs.get("invoice_id")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not invoice_id:
+            raise ValueError("invoice_id is required")
+
+        try:
+            # Build URL for specific invoice
+            url = f"https://api.xero.com/api.xro/2.0/Invoices/{invoice_id}"
+
+            # Set Accept header to application/pdf to get PDF format
+            headers = {
+                "Accept": "application/pdf",
+                "xero-tenant-id": tenant_id
+            }
+
+            # Need to handle binary data manually for PDF download
+            # Get auth token from context
+            auth_token = None
+            if context.auth and "credentials" in context.auth:
+                credentials = context.auth["credentials"]
+                if "access_token" in credentials:
+                    auth_token = credentials["access_token"]
+
+            if not auth_token:
+                raise ValueError("No authentication token available")
+
+            headers["Authorization"] = f"Bearer {auth_token}"
+
+            # Use aiohttp to download the PDF
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        return {
+                            "file": {"name": f"invoice_{invoice_id}.pdf", "content": "", "contentType": ""},
+                            "success": False,
+                            "error": f"Xero API error: {response.status} - {error_text}"
+                        }
+
+                    # Read binary content and encode as base64
+                    pdf_content = await response.read()
+                    content_base64 = base64.b64encode(pdf_content).decode('utf-8')
+
+                    # Determine content type from response headers
+                    content_type = response.headers.get('content-type', 'application/pdf')
+
+                    return {
+                        "file": {
+                            "name": f"invoice_{invoice_id}.pdf",
+                            "content": content_base64,
+                            "contentType": content_type
+                        },
+                        "success": True
+                    }
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            return {
+                "file": {"name": f"invoice_{invoice_id}.pdf", "content": "", "contentType": ""},
+                "success": False,
+                "error": str(e)
+            }
 
 
 @xero.action("get_bank_transactions")

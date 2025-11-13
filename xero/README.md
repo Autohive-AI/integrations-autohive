@@ -8,6 +8,7 @@ A comprehensive integration for accessing Xero accounting data including financi
 - **Get Available Connections** - Retrieve all available Xero tenant connections with company names and IDs
 - **Find Contact by Name** - Search for contacts by name within a specific tenant using tenant ID
 - **Get Invoices** - Retrieve invoices (sales/purchase) with optimized filtering, pagination, and specific invoice lookup using tenant ID
+- **Get Invoice PDF** - Download individual invoices as PDF files using tenant ID and invoice ID
 - **Create Sales Invoice** - Create new sales invoices (ACCREC) for billing customers using tenant ID
 - **Create Purchase Bill** - Create new purchase bills (ACCPAY) for recording supplier invoices using tenant ID
 - **Update Sales Invoice** - Update existing sales invoices (DRAFT/SUBMITTED only) using tenant ID
@@ -114,6 +115,42 @@ result = await integration.execute_action("get_invoices", {
 
 invoice = result["Invoices"][0]
 print(f"Invoice Details: {invoice['InvoiceNumber']} - Status: {invoice['Status']}")
+```
+
+### Get Invoice as PDF
+```python
+# Download a specific invoice as PDF using tenant ID and invoice ID
+result = await integration.execute_action("get_invoice_pdf", {
+    "tenant_id": "tenant-guid-123",
+    "invoice_id": "243216c5-369e-4056-ac67-05388f86dc81"
+})
+
+if result["success"]:
+    pdf_file = result["file"]
+    print(f"Downloaded PDF: {pdf_file['name']}")
+    print(f"Content Type: {pdf_file['contentType']}")
+
+    # Save the PDF to disk
+    import base64
+    pdf_bytes = base64.b64decode(pdf_file['content'])
+    with open(pdf_file['name'], 'wb') as f:
+        f.write(pdf_bytes)
+    print(f"Saved to {pdf_file['name']}")
+
+# Example: Download multiple overdue invoices as PDFs
+overdue_result = await integration.execute_action("get_invoices", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Status==\"AUTHORISED\" AND DueDate<DateTime.Today",
+    "pageSize": 10
+})
+
+for invoice in overdue_result["Invoices"]:
+    pdf_result = await integration.execute_action("get_invoice_pdf", {
+        "tenant_id": "tenant-guid-123",
+        "invoice_id": invoice["InvoiceID"]
+    })
+    if pdf_result["success"]:
+        print(f"Downloaded PDF for invoice {invoice['InvoiceNumber']}")
 ```
 
 ### Get Balance Sheet
@@ -362,6 +399,30 @@ Retrieve invoices from Xero API with optimized filtering and pagination.
 
 **Output:**
 - `invoices`: Array containing Xero invoice objects with invoice details, line items, and contact information
+
+#### `get_invoice_pdf`
+Download a specific invoice as a PDF file from Xero API. Works with both sales invoices (ACCREC) and purchase bills (ACCPAY).
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `invoice_id` (required): Invoice ID (GUID) to retrieve as PDF
+
+**Output:**
+- `file`: Object containing name, content (base64 encoded), and contentType (application/pdf)
+- `success`: Boolean indicating if download was successful
+- `error`: Error message if download failed
+
+**Use Cases:**
+- Download overdue invoices for customer follow-up
+- Archive invoices for record-keeping
+- Generate invoice reports for accounting purposes
+- Export invoices for external systems
+
+**Example Workflow:**
+1. Use `get_invoices` with filters to find specific invoices (e.g., overdue, by status)
+2. Extract invoice IDs from the response
+3. Call `get_invoice_pdf` for each invoice ID to download PDFs
+4. Decode base64 content and save to disk or send via email
 
 #### `find_contact_by_name`
 Search for contacts by name within a tenant.
