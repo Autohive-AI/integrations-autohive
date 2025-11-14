@@ -5316,14 +5316,20 @@
 
         "create_note": {
             "display_name": "Create Note",
-            "description": "Create a note for a contact in Zoho CRM",
+            "description": "Create a note for a record (Lead, Contact, Account, Deal, etc.) in Zoho CRM",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "contact_id": {
+                    "module": {
                         "type": "string",
-                        "description": "ID of the contact to attach the note to",
-                        "label": "Contact ID"
+                        "description": "Module name (e.g., Leads, Contacts, Accounts, Deals)",
+                        "label": "Module",
+                        "enum": ["Leads", "Contacts", "Accounts", "Deals", "Tasks", "Events", "Calls", "Campaigns", "Products", "Vendors", "Price_Books", "Quotes", "Sales_Orders", "Purchase_Orders", "Invoices", "Cases", "Solutions"]
+                    },
+                    "record_id": {
+                        "type": "string",
+                        "description": "ID of the record to attach the note to",
+                        "label": "Record ID"
                     },
                     "Note_Content": {
                         "type": "string",
@@ -5336,7 +5342,7 @@
                         "label": "Note Title"
                     }
                 },
-                "required": ["contact_id", "Note_Content"]
+                "required": ["module", "record_id", "Note_Content"]
             },
             "output_schema": {
                 "type": "object",
@@ -5369,15 +5375,21 @@
         },
 
         "get_contact_notes": {
-            "display_name": "Get Contact Notes",
-            "description": "Retrieve all notes for a specific contact",
+            "display_name": "Get Record Notes",
+            "description": "Retrieve all notes for a specific record (Lead, Contact, Account, Deal, etc.)",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "contact_id": {
+                    "module": {
                         "type": "string",
-                        "description": "ID of the contact",
-                        "label": "Contact ID"
+                        "description": "Module name (e.g., Leads, Contacts, Accounts, Deals)",
+                        "label": "Module",
+                        "enum": ["Leads", "Contacts", "Accounts", "Deals", "Tasks", "Events", "Calls", "Campaigns", "Products", "Vendors", "Price_Books", "Quotes", "Sales_Orders", "Purchase_Orders", "Invoices", "Cases", "Solutions"]
+                    },
+                    "record_id": {
+                        "type": "string",
+                        "description": "ID of the record",
+                        "label": "Record ID"
                     },
                     "page": {
                         "type": "integer",
@@ -5398,7 +5410,7 @@
                         }
                     }
                 },
-                "required": ["contact_id"]
+                "required": ["module", "record_id"]
             },
             "output_schema": {
                 "type": "object",
