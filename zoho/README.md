@@ -40,7 +40,7 @@ The integration automatically requests the following Zoho CRM permissions:
 
 ## Actions
 
-This integration provides 38 actions covering complete CRUD operations for all major Zoho CRM modules:
+This integration provides 54 actions covering complete CRUD operations for all major Zoho CRM modules:
 
 ### Contact Management
 
@@ -87,16 +87,22 @@ This integration provides 38 actions covering complete CRUD operations for all m
 ### Notes Management
 
 #### Action: `create_note`
-- **Description:** Creates a note attached to a contact
+- **Description:** Creates a note attached to any record (Lead, Contact, Account, Deal, etc.)
 - **Inputs:**
-  - `contact_id` (required): ID of the contact
+  - `module` (required): Module name (e.g., Leads, Contacts, Accounts, Deals, Tasks, Events, Calls, Campaigns, Products, Vendors, Price_Books, Quotes, Sales_Orders, Purchase_Orders, Invoices, Cases, Solutions)
+  - `record_id` (required): ID of the record to attach the note to
   - `Note_Content` (required): Content of the note
   - `Note_Title`: Title of the note (optional)
 - **Outputs:** Note object with `id` and note details
 
 #### Action: `get_contact_notes`
-- **Description:** Retrieves all notes for a specific contact with pagination
-- **Inputs:** `contact_id` (required), optional `page`, `per_page`, `fields`
+- **Description:** Retrieves all notes for a specific record with pagination
+- **Inputs:**
+  - `module` (required): Module name (e.g., Leads, Contacts, Accounts, Deals)
+  - `record_id` (required): ID of the record
+  - `page`: Page number for pagination (optional)
+  - `per_page`: Number of records per page, max 200 (optional)
+  - `fields`: Array of specific fields to retrieve (optional)
 - **Outputs:** Array of note objects with pagination info
 
 #### Action: `get_note`
@@ -327,9 +333,20 @@ The integration has the following dependencies:
 **Example 6: Creating a note for a contact**
 ```json
 {
-  "contact_id": "123456789",
+  "module": "Contacts",
+  "record_id": "123456789",
   "Note_Title": "Q4 Planning Discussion",
   "Note_Content": "Discussed Q4 requirements and timeline. Follow up needed on budget approval."
+}
+```
+
+**Example 7: Creating a note for a deal**
+```json
+{
+  "module": "Deals",
+  "record_id": "987654321",
+  "Note_Title": "Contract Negotiation",
+  "Note_Content": "Client requested 15% discount. Approved by sales manager. Updated proposal sent."
 }
 ```
 
