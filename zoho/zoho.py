@@ -3036,8 +3036,9 @@ class CreateNote(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             headers = build_zoho_headers(context)
-            contact_id = inputs["contact_id"]
-            url = get_zoho_api_url(f"/Contacts/{contact_id}/Notes")
+            module = inputs["module"]
+            record_id = inputs["record_id"]
+            url = get_zoho_api_url(f"/{module}/{record_id}/Notes")
 
             # Build note data
             note_data = {
@@ -3097,8 +3098,9 @@ class GetContactNotes(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             headers = build_zoho_headers(context)
-            contact_id = inputs["contact_id"]
-            url = get_zoho_api_url(f"/Contacts/{contact_id}/Notes")
+            module = inputs["module"]
+            record_id = inputs["record_id"]
+            url = get_zoho_api_url(f"/{module}/{record_id}/Notes")
 
             # Build query parameters
             params = build_notes_query_params(inputs)
@@ -3126,7 +3128,7 @@ class GetContactNotes(ActionHandler):
                 "notes": [],
                 "info": {},
                 "result": False,
-                "error": f"Error getting contact notes: {str(e)}"
+                "error": f"Error getting record notes: {str(e)}"
             }
 
 @zoho.action("get_note")
