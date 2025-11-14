@@ -5324,7 +5324,7 @@
                         "type": "string",
                         "description": "Module name (e.g., Leads, Contacts, Accounts, Deals)",
                         "label": "Module",
-                        "enum": ["Leads", "Contacts", "Accounts", "Deals", "Tasks", "Events", "Calls", "Campaigns", "Products", "Vendors", "Price_Books", "Quotes", "Sales_Orders", "Purchase_Orders", "Invoices", "Cases", "Solutions"]
+                        "enum": ["Contacts", "Accounts", "Deals", "Leads", "Tasks", "Events", "Calls"]
                     },
                     "record_id": {
                         "type": "string",
@@ -5384,7 +5384,7 @@
                         "type": "string",
                         "description": "Module name (e.g., Leads, Contacts, Accounts, Deals)",
                         "label": "Module",
-                        "enum": ["Leads", "Contacts", "Accounts", "Deals", "Tasks", "Events", "Calls", "Campaigns", "Products", "Vendors", "Price_Books", "Quotes", "Sales_Orders", "Purchase_Orders", "Invoices", "Cases", "Solutions"]
+                        "enum": ["Contacts", "Accounts", "Deals", "Leads", "Tasks", "Events", "Calls"]
                     },
                     "record_id": {
                         "type": "string",

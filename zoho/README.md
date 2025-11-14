@@ -89,7 +89,7 @@ This integration provides 54 actions covering complete CRUD operations for all m
 #### Action: `create_note`
 - **Description:** Creates a note attached to any record (Lead, Contact, Account, Deal, etc.)
 - **Inputs:**
-  - `module` (required): Module name (e.g., Leads, Contacts, Accounts, Deals, Tasks, Events, Calls, Campaigns, Products, Vendors, Price_Books, Quotes, Sales_Orders, Purchase_Orders, Invoices, Cases, Solutions)
+  - `module` (required): Module name - one of: Contacts, Accounts, Deals, Leads, Tasks, Events, Calls
   - `record_id` (required): ID of the record to attach the note to
   - `Note_Content` (required): Content of the note
   - `Note_Title`: Title of the note (optional)
@@ -98,7 +98,7 @@ This integration provides 54 actions covering complete CRUD operations for all m
 #### Action: `get_contact_notes`
 - **Description:** Retrieves all notes for a specific record with pagination
 - **Inputs:**
-  - `module` (required): Module name (e.g., Leads, Contacts, Accounts, Deals)
+  - `module` (required): Module name - one of: Contacts, Accounts, Deals, Leads, Tasks, Events, Calls
   - `record_id` (required): ID of the record
   - `page`: Page number for pagination (optional)
   - `per_page`: Number of records per page, max 200 (optional)
