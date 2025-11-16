@@ -97,6 +97,51 @@ async def test_get_specific_invoice():
             print(f"Error testing specific invoice: {str(e)}")
             return None
 
+async def test_get_invoice_pdf_with_specific_tenant():
+    """
+    Test downloading invoice as PDF
+    """
+    # First get available connections
+    connections_result = await test_get_available_connections()
+    if not connections_result or not connections_result.get('companies'):
+        print("Cannot test invoice PDF without tenant information")
+        return
+
+    # Use the first available tenant
+    tenant_id = connections_result['companies'][0]['tenant_id']
+    print(f"Using tenant ID: {tenant_id}")
+
+    # First get some invoices to get a valid invoice ID
+    invoices_result = await test_get_invoices_with_specific_tenant()
+    if not invoices_result or not invoices_result.get('Invoices'):
+        print("Cannot test PDF download without invoice information")
+        return
+
+    # Use the first invoice
+    invoice_id = invoices_result['Invoices'][0]['InvoiceID']
+    print(f"Using invoice ID: {invoice_id}")
+
+    auth = {}
+    inputs = {
+        "tenant_id": tenant_id,
+        "invoice_id": invoice_id
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+            if result.get("success"):
+                print(f"Success: Downloaded invoice PDF")
+                print(f"  - File name: {result['file']['name']}")
+                print(f"  - Content type: {result['file']['contentType']}")
+                print(f"  - Content size: {len(result['file']['content'])} characters (base64)")
+            else:
+                print(f"Failed: {result.get('error')}")
+            return result
+        except Exception as e:
+            print(f"Error testing invoice PDF download: {str(e)}")
+            return None
+
 async def test_get_aged_payables_with_specific_tenant():
     """
     Test fetching aged payables with a specific tenant ID
@@ -139,10 +184,13 @@ async def main():
     print("\n3. Testing get specific invoice by ID...")
     await test_get_specific_invoice()
 
-    print("\n4. Testing aged payables with tenant ID...")
+    print("\n4. Testing invoice PDF download...")
+    await test_get_invoice_pdf_with_specific_tenant()
+
+    print("\n5. Testing aged payables with tenant ID...")
     await test_get_aged_payables_with_specific_tenant()
 
-    print("\n5. Running rate limiting tests...")
+    print("\n6. Running rate limiting tests...")
     print("To run rate limiting tests, use: pytest tests/test_xero.py -v")
 
 # ---- Rate Limiting Tests ----
@@ -777,6 +825,84 @@ async def test_attach_file_to_bill_with_base64():
             # Check that the data parameter contains the decoded bytes
             assert call_args[1]["data"] == test_content
             assert call_args[1]["method"] == "POST"
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_pdf_success():
+    """Test that get_invoice_pdf successfully downloads a PDF invoice"""
+    from context import xero
+
+    # Create mock PDF content
+    mock_pdf_content = b"%PDF-1.4\n%Mock PDF content for testing"
+    base64_pdf = base64.b64encode(mock_pdf_content).decode('utf-8')
+
+    auth = {
+        "credentials": {
+            "access_token": "test-access-token-123"
+        }
+    }
+    inputs = {
+        "tenant_id": "test-tenant-456",
+        "invoice_id": "test-invoice-789"
+    }
+
+    # Mock aiohttp response for PDF download
+    mock_response = Mock()
+    mock_response.status = 200
+    mock_response.headers = {"content-type": "application/pdf"}
+    mock_response.read = AsyncMock(return_value=mock_pdf_content)
+
+    mock_session = Mock()
+    mock_session.get = Mock()
+    mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+
+            # Verify the PDF was successfully downloaded
+            assert result["success"] is True
+            assert result["file"]["name"] == "invoice_test-invoice-789.pdf"
+            assert result["file"]["contentType"] == "application/pdf"
+            assert result["file"]["content"] == base64_pdf
+            assert "error" not in result or result.get("error") is None
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_pdf_not_found():
+    """Test that get_invoice_pdf handles 404 errors correctly"""
+    from context import xero
+
+    auth = {
+        "credentials": {
+            "access_token": "test-access-token-123"
+        }
+    }
+    inputs = {
+        "tenant_id": "test-tenant-456",
+        "invoice_id": "non-existent-invoice"
+    }
+
+    # Mock aiohttp response for 404 error
+    mock_response = Mock()
+    mock_response.status = 404
+    mock_response.text = AsyncMock(return_value="Invoice not found")
+
+    mock_session = Mock()
+    mock_session.get = Mock()
+    mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+
+            # Verify the error is properly handled
+            assert result["success"] is False
+            assert "error" in result
+            assert "404" in result["error"]
+            assert result["file"]["content"] == ""
 
 
 if __name__ == "__main__":
