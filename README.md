@@ -111,6 +111,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
 
+### Google Docs
+
+[google-docs](google-docs): Comprehensive integration with Google Docs API v1 for document creation, content formatting, and document analysis. Supports creating new documents, retrieving full document content and structure, inserting plain text paragraphs, inserting markdown-formatted content with automatic styling (headings H1-H6, bold, italic), applying text formatting (bold, italic, font size, colors), parsing document structure to identify headings and paragraphs, and executing complex batch update operations. Features OAuth2 authentication, markdown-to-Google Docs style conversion, and 6 core actions for document automation workflows.
+
 ### Freshdesk
 
 [freshdesk](freshdesk): Comprehensive help desk integration with Freshdesk API v2 for complete customer support operations. Supports ticket management (create, list, get, update, delete tickets with priority and status control), contact management (full CRUD operations for customer contacts with company associations), company management (create and manage organizations with domain associations), and conversation tracking (list ticket conversations, add private notes for agents, create public replies to customers). Features custom API key authentication with automatic Basic Auth encoding, pagination support for all list operations, and robust error handling. Ideal for automating support workflows, ticket routing, customer communication, and help desk operations.
