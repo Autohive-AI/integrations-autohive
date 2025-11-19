@@ -4,8 +4,8 @@
   "description": "Access images from google images using SerpAPI",
   "entry_point": "google_images.py",
   "auth": {
-    "identifier": "serpapi_key",
     "type": "custom",
+    "title": "SerpApi Configuration",
     "fields": {
       "type": "object",
       "properties": {
@@ -15,14 +15,12 @@
           "label": "SerpApi Key",
           "help_text": "Your Private API Key from SerpApi."
         }
-      },
-      "required": [
-        "api_key"
-      ]
+      }
     }
   },
   "actions": {
     "google_images_search": {
+      "display_name": "Search Google Images",
       "description": "Search for images using Google Images engine.",
       "input_schema": {
         "type": "object",

@@ -8,6 +8,7 @@ google_images = Integration.load()
 
 @google_images.action("google_images_search")
 class GoogleImagesSearch(ActionHandler):
+    """Takes in a query and searches the google images engine for results."""
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         api_key = context.auth.get("credentials", {}).get("api_key", {})
         
@@ -16,7 +17,6 @@ class GoogleImagesSearch(ActionHandler):
             "api_key": api_key,
             "engine": "google_images",
             "q": inputs["q"],
-            "location": inputs["location"],
             "hl": "en",
             "gl": "us"
         }
