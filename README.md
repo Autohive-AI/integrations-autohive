@@ -71,6 +71,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [heartbeat](heartbeat): Connects to Heartbeat.chat community platform for comprehensive access to channels, threads, comments, users, and events. Supports retrieving channel information, managing thread discussions, creating and viewing comments, accessing user profiles, and viewing community events. Includes full CRUD operations for community engagement and content management.
 
+### HeyGen
+
+[heygen](heygen): AI-powered video avatar integration for creating realistic talking avatar videos. Supports generating AI photo avatars, creating and training avatar groups, generating new looks, creating videos with avatars and voice synthesis, and checking generation/video status. Includes voice and avatar discovery, motion and sound effects, and avatar group management. Features 19 actions with API key authentication.
+
 ### Google Calendar
 
 [google-calendar](google-calendar): Integrates with Google Calendar API for comprehensive calendar and event management within Autohive workflows. Supports listing accessible calendars, creating and managing calendar events (both timed and all-day), attendee management, and event lifecycle operations. Features secure OAuth2 authentication and pagination support for large event datasets.
