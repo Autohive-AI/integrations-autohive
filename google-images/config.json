@@ -1,0 +1,57 @@
+{
+  "name": "Google Images",
+  "version": "0.0.1",
+  "description": "Access images from google images using SerpAPI",
+  "entry_point": "google_images.py",
+  "auth": {
+    "identifier": "serpapi_key",
+    "type": "custom",
+    "fields": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "format": "password",
+          "label": "SerpApi Key",
+          "help_text": "Your Private API Key from SerpApi."
+        }
+      },
+      "required": [
+        "api_key"
+      ]
+    }
+  },
+  "actions": {
+    "google_images_search": {
+      "description": "Search for images using Google Images engine.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "num": {
+            "type": "integer",
+            "description": "Number of results",
+            "default": 10
+          }
+        },
+        "required": [
+          "q"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array"
+          },
+          "total_results": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}
