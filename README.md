@@ -53,7 +53,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Zoho CRM
 
-[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 33 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls, with notes management across all 7 modules. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 54 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
 
 ### Reddit
 
