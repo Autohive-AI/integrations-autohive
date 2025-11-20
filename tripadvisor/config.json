@@ -1,0 +1,541 @@
+{
+  "name": "TripAdvisor",
+  "version": "1.0.0",
+  "description": "TripAdvisor Content API integration for retrieving location details, reviews, photos, and search capabilities",
+  "display_name": "TripAdvisor",
+  "entry_point": "tripadvisor.py",
+  "auth": {
+    "type": "custom",
+    "title": "TripAdvisor Content API Key",
+    "fields": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "format": "password",
+          "label": "API Key",
+          "help_text": "Your TripAdvisor Content API Key. You can obtain this from the TripAdvisor Developer Portal at https://www.tripadvisor.com/developers"
+        }
+      },
+      "required": ["api_key"]
+    }
+  },
+  "actions": {
+    "search_locations": {
+      "display_name": "Search Locations",
+      "description": "Search for hotels, restaurants, or attractions on TripAdvisor",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "search_query": {
+            "type": "string",
+            "description": "Search query string (e.g., hotel name, restaurant, attraction)"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter by category",
+            "enum": ["hotels", "restaurants", "attractions", "geos"],
+            "default": "hotels"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for results (e.g., en, es, fr, de)",
+            "default": "en"
+          }
+        },
+        "required": ["search_query"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "address_obj": {
+                  "type": "object",
+                  "properties": {
+                    "street1": {
+                      "type": "string"
+                    },
+                    "city": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "type": "string"
+                    },
+                    "postalcode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "get_location_details": {
+      "display_name": "Get Location Details",
+      "description": "Get detailed information about a specific TripAdvisor location",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "type": "string",
+            "description": "TripAdvisor location ID (e.g., '60745' for Eiffel Tower)"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for results (e.g., en, es, fr, de)",
+            "default": "en"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code for prices (e.g., USD, EUR, GBP)",
+            "default": "USD"
+          }
+        },
+        "required": ["location_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "web_url": {
+            "type": "string"
+          },
+          "address_obj": {
+            "type": "object",
+            "properties": {
+              "street1": {
+                "type": "string"
+              },
+              "street2": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              },
+              "postalcode": {
+                "type": "string"
+              },
+              "address_string": {
+                "type": "string"
+              }
+            }
+          },
+          "rating": {
+            "type": "number"
+          },
+          "rating_image_url": {
+            "type": "string"
+          },
+          "num_reviews": {
+            "type": "integer"
+          },
+          "price_level": {
+            "type": "string"
+          },
+          "category": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "localized_name": {
+                "type": "string"
+              }
+            }
+          },
+          "subcategory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "localized_name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "website": {
+            "type": "string"
+          },
+          "write_review": {
+            "type": "string"
+          },
+          "ranking_data": {
+            "type": "object",
+            "properties": {
+              "ranking_string": {
+                "type": "string"
+              },
+              "ranking": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "get_location_reviews": {
+      "display_name": "Get Location Reviews",
+      "description": "Get reviews for a specific TripAdvisor location (up to 5 most recent reviews)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "type": "string",
+            "description": "TripAdvisor location ID"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for reviews (e.g., en, es, fr, de)",
+            "default": "en"
+          }
+        },
+        "required": ["location_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "lang": {
+                  "type": "string"
+                },
+                "location_id": {
+                  "type": "string"
+                },
+                "published_date": {
+                  "type": "string"
+                },
+                "rating": {
+                  "type": "integer"
+                },
+                "helpful_votes": {
+                  "type": "integer"
+                },
+                "rating_image_url": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "trip_type": {
+                  "type": "string"
+                },
+                "travel_date": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string"
+                    },
+                    "user_location": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "avatar": {
+                      "type": "object",
+                      "properties": {
+                        "thumbnail": {
+                          "type": "string"
+                        },
+                        "small": {
+                          "type": "string"
+                        },
+                        "medium": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "get_location_photos": {
+      "display_name": "Get Location Photos",
+      "description": "Get photos for a specific TripAdvisor location (up to 5 most recent photos)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location_id": {
+            "type": "string",
+            "description": "TripAdvisor location ID"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for photo captions (e.g., en, es, fr, de)",
+            "default": "en"
+          }
+        },
+        "required": ["location_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "is_blessed": {
+                  "type": "boolean"
+                },
+                "caption": {
+                  "type": "string"
+                },
+                "published_date": {
+                  "type": "string"
+                },
+                "images": {
+                  "type": "object",
+                  "properties": {
+                    "thumbnail": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "small": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "medium": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "large": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "original": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "album": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "localized_name": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "search_nearby_locations": {
+      "display_name": "Search Nearby Locations",
+      "description": "Search for locations near specified coordinates (latitude/longitude)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "description": "Latitude coordinate"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude coordinate"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter by category",
+            "enum": ["hotels", "restaurants", "attractions"],
+            "default": "hotels"
+          },
+          "radius": {
+            "type": "number",
+            "description": "Search radius in kilometers",
+            "default": 5
+          },
+          "radius_unit": {
+            "type": "string",
+            "description": "Unit for radius",
+            "enum": ["km", "mi"],
+            "default": "km"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code for results (e.g., en, es, fr, de)",
+            "default": "en"
+          }
+        },
+        "required": ["latitude", "longitude"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "distance": {
+                  "type": "string"
+                },
+                "rating": {
+                  "type": "number"
+                },
+                "bearing": {
+                  "type": "string"
+                },
+                "address_obj": {
+                  "type": "object",
+                  "properties": {
+                    "street1": {
+                      "type": "string"
+                    },
+                    "city": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "polling_triggers": {}
+}
