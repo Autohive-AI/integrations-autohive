@@ -2,6 +2,9 @@
     Integration, ExecutionContext, ActionHandler
 )
 from typing import Dict, Any, List, Optional
+import base64
+import aiohttp
+from urllib.parse import urlparse
 
 # Create the integration using the config.json
 google_images = Integration.load()
@@ -184,3 +187,102 @@ class GoogleImagesSearch(ActionHandler):
             "images": images,
             "total_results": len(images)
         }
+
+@google_images.action("download_image")
+class DownloadImage(ActionHandler):
+    """
+    Download an image from a URL and return it as a file object.
+    Useful for getting actual image data instead of just URLs.
+    """
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        """
+        Download an image and return it as a file object.
+        
+        Args:
+            inputs: Dictionary containing:
+                - image_url (str, required): URL of the image to download
+                - max_size_mb (float, optional): Maximum file size in MB (default: 10)
+            context: Execution context
+            
+        Returns:
+            Dictionary containing:
+                - file: {
+                    - content: Base64-encoded image data
+                    - name: Filename
+                    - contentType: MIME type (e.g., "image/jpeg")
+                    - size: File size in bytes
+                }
+                - result: True if successful
+        """
+        image_url = inputs.get("image_url", "").strip()
+        if not image_url:
+            raise ValueError("Image URL is required")
+        
+        max_size_bytes = (inputs.get("max_size_mb", 10) * 1024 * 1024)  # Default 10MB
+        
+        try:
+            # Download the image using aiohttp with timeout
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url, timeout=timeout) as response:
+                    if response.status >= 400:
+                        raise Exception(f"Failed to download image: HTTP {response.status}")
+                    
+                    # Check content-length if available
+                    content_length = response.headers.get('content-length')
+                    if content_length and int(content_length) > max_size_bytes:
+                        raise ValueError(f"Image too large: {content_length} bytes (max: {max_size_bytes} bytes)")
+                    
+                    # Read binary content
+                    image_bytes = await response.read()
+                    
+                    # Check actual size after download
+                    if len(image_bytes) > max_size_bytes:
+                        raise ValueError(f"Image too large: {len(image_bytes)} bytes (max: {max_size_bytes} bytes)")
+                    
+                    # Get content type from headers and strip charset
+                    content_type = response.headers.get('content-type', 'image/jpeg')
+                    if ';' in content_type:
+                        content_type = content_type.split(';')[0].strip()
+                    
+                    # Extract filename from URL
+                    parsed_url = urlparse(image_url)
+                    filename = "image"
+                    if parsed_url.path:
+                        filename = parsed_url.path.split('/')[-1] or "image"
+                        # Remove query parameters if they got included
+                        if '?' in filename:
+                            filename = filename.split('?')[0]
+                    
+                    # Add extension if missing
+                    if '.' not in filename:
+                        # Try to infer from content type
+                        if 'jpeg' in content_type or 'jpg' in content_type:
+                            filename += ".jpg"
+                        elif 'png' in content_type:
+                            filename += ".png"
+                        elif 'gif' in content_type:
+                            filename += ".gif"
+                        elif 'webp' in content_type:
+                            filename += ".webp"
+                        else:
+                            filename += ".jpg"
+                    
+                    # Encode to base64
+                    content_b64 = base64.b64encode(image_bytes).decode('utf-8')
+                    
+                    return {
+                        "file": {
+                            "content": content_b64,
+                            "name": filename,
+                            "contentType": content_type,
+                            "size": len(image_bytes)
+                        },
+                        "result": True
+                    }
+        
+        except aiohttp.ClientError as e:
+            raise Exception(f"Network error downloading image: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Failed to download image: {str(e)}")

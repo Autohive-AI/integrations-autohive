@@ -74,6 +74,46 @@
           }
         }
       }
+    },
+    "download_image": {
+      "display_name": "Download Image",
+      "description": "Download an image from a URL and return it as a file object with base64 content",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "image_url": {
+            "type": "string",
+            "description": "URL of the image to download"
+          }
+        },
+        "required": ["image_url"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string",
+                "description": "Base64-encoded image data"
+              },
+              "name": {
+                "type": "string",
+                "description": "Filename"
+              },
+              "contentType": {
+                "type": "string",
+                "description": "MIME type (e.g., image/jpeg)"
+              },
+              "size": {
+                "type": "integer",
+                "description": "File size in bytes"
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
