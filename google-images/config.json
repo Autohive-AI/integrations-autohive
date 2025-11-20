@@ -21,7 +21,7 @@
   "actions": {
     "google_images_search": {
       "display_name": "Search Google Images",
-      "description": "Search for images using Google Images engine.",
+      "description": "Search query string. Supports advanced operators like inurl:, site:, intitle:",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -32,7 +32,31 @@
           "num": {
             "type": "integer",
             "description": "Number of results",
+            "minimum": 1,
+            "maximum": 100,
             "default": 10
+          },
+          "location": {
+            "type": "string",
+            "description": "Geographic location for search (city level recommended, e.g., 'Austin, Texas, United States')"
+          },
+          "gl": {
+            "type": "string",
+            "description": "Country code for search results (e.g., 'us', 'uk', 'fr')"
+          },
+          "hl": {
+            "type": "string",
+            "description": "Language code for search results (e.g., 'en', 'fr', 'de')"
+          },
+          "tbs": {
+            "type": "string",
+            "description": "Advanced search filters. Image filters: isz:l (large), ic:color (color), itp:photo (photo), qdr:w (week). Combine with commas."
+          },
+          "filter": {
+            "type": "integer",
+            "description": "Enable/disable 'Similar Results' and 'Omitted Results' filters",
+            "enum": [0, 1],
+            "default": 1
           }
         },
         "required": [
