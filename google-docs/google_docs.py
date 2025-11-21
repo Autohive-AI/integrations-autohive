@@ -5,7 +5,6 @@ google_docs = Integration.load()
 
 # Google Docs API base URL
 DOCS_API_BASE = "https://docs.googleapis.com/v1"
-DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 
 
 def handle_api_error(error: Exception, message: str = "Google API error") -> Dict[str, Any]:
@@ -343,36 +342,32 @@ class ParseStructure(ActionHandler):
 class InsertMarkdownContent(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         """
-        Insert markdown-formatted content with automatic heading detection and styling.
-
-        IMPORTANT: This action requires markdown format with headings (# for H1, ## for H2).
-        For plain paragraphs without headings, use docs_insert_paragraphs instead.
+        Insert markdown-formatted content with automatic styling.
 
         Features:
-        - Parses markdown headings (# H1, ## H2, ### H3, etc.)
-        - Automatically applies Google Docs heading styles (HEADING_1, HEADING_2, etc.)
+        - Parses ALL markdown headings (# H1, ## H2, ### H3, etc.) in a single call
+        - Parses inline formatting: **bold** and *italic*
+        - Automatically applies Google Docs styles (headings, bold, italic)
         - Inserts and styles in a single batch operation
         - No duplicate content
 
         Inputs:
         - document_id: The document ID
-        - content: Markdown text with headings (# Heading, ## Subheading, etc.)
-        - heading_level: Which heading level to parse (default: 1 for #)
+        - content: Markdown text with headings and inline formatting
         - tab_id: Optional tab ID if working with a specific tab
         - append: If true, append to end of document (default: True)
         """
         try:
             document_id = inputs['document_id']
             content = inputs['content']
-            heading_level = inputs.get('heading_level', 1)
             tab_id = inputs.get('tab_id')
             append = inputs.get('append', True)
 
-            # Step 1: Parse content into sections
-            sections = self._parse_sections(content, heading_level)
+            # Step 1: Parse content into structured elements
+            elements = self._parse_markdown(content)
 
-            if not sections:
-                return {'result': False, 'error': 'No sections found in content'}
+            if not elements:
+                return {'result': False, 'error': 'No content found to insert'}
 
             # Step 2: Get the insertion index
             insertion_index = await self._get_insertion_index(
@@ -380,8 +375,8 @@ class InsertMarkdownContent(ActionHandler):
             )
 
             # Step 3: Insert all content with styles in a single batch operation
-            result = await self._insert_and_style_sections(
-                context, document_id, tab_id, sections, insertion_index, heading_level
+            result = await self._insert_and_style_content(
+                context, document_id, tab_id, elements, insertion_index
             )
 
             return result
@@ -389,56 +384,131 @@ class InsertMarkdownContent(ActionHandler):
         except Exception as e:
             return handle_api_error(e, "Failed to insert markdown content")
 
-    def _parse_sections(self, content: str, heading_level: int) -> List[Dict[str, Any]]:
-        """Parse content into sections based on heading level."""
-        sections = []
-        heading_marker = '#' * heading_level + ' '
+    def _parse_markdown(self, content: str) -> List[Dict[str, Any]]:
+        """
+        Parse markdown content into structured elements with heading levels and inline formatting.
 
+        Returns a list of elements, each with:
+        - type: 'heading' or 'paragraph'
+        - text: plain text (without markdown symbols)
+        - level: heading level (1-6) if type is 'heading'
+        - formatting: list of {type, start, end} for inline formatting
+        """
+        import re
+
+        elements = []
         lines = content.split('\n')
-        current_heading = None
-        current_paragraphs = []
-        current_buffer = []
+        i = 0
 
-        for line in lines:
+        while i < len(lines):
+            line = lines[i]
             stripped = line.strip()
 
-            # Check if it's a heading at the target level
-            if stripped.startswith(heading_marker):
-                # Save previous section
-                if current_heading is not None:
-                    if current_buffer:
-                        # Join lines with space to preserve word boundaries
-                        current_paragraphs.append(' '.join(current_buffer).strip())
-                    sections.append({
-                        'heading': current_heading,
-                        'paragraphs': [p for p in current_paragraphs if p]
+            # Skip empty lines
+            if not stripped:
+                i += 1
+                continue
+
+            # Check for headings (# to ######)
+            heading_match = re.match(r'^(#{1,6})\s+(.+)$', stripped)
+            if heading_match:
+                level = len(heading_match.group(1))
+                heading_text = heading_match.group(2)
+
+                # Parse inline formatting in heading
+                plain_text, formatting = self._parse_inline_formatting(heading_text)
+
+                elements.append({
+                    'type': 'heading',
+                    'level': level,
+                    'text': plain_text,
+                    'formatting': formatting
+                })
+                i += 1
+                continue
+
+            # Otherwise, it's a paragraph - collect until empty line
+            para_lines = []
+            while i < len(lines) and lines[i].strip():
+                para_lines.append(lines[i].strip())
+                i += 1
+
+            if para_lines:
+                para_text = ' '.join(para_lines)
+                plain_text, formatting = self._parse_inline_formatting(para_text)
+
+                elements.append({
+                    'type': 'paragraph',
+                    'text': plain_text,
+                    'formatting': formatting
+                })
+
+        return elements
+
+    def _parse_inline_formatting(self, text: str) -> tuple:
+        """
+        Parse inline formatting (bold, italic) from markdown text.
+
+        Returns:
+        - plain_text: text without markdown symbols
+        - formatting: list of {type: 'bold'/'italic', start: int, end: int}
+        """
+        import re
+
+        formatting = []
+        plain_text = ""
+        offset = 0  # Track position in plain text
+
+        # Process text character by character to handle nested/overlapping formatting
+        i = 0
+        while i < len(text):
+            # Check for bold (**text**)
+            if i + 1 < len(text) and text[i:i+2] == '**':
+                # Find closing **
+                end = text.find('**', i + 2)
+                if end != -1:
+                    bold_text = text[i+2:end]
+                    start_pos = offset
+                    plain_text += bold_text
+                    end_pos = offset + len(bold_text)
+                    formatting.append({
+                        'type': 'bold',
+                        'start': start_pos,
+                        'end': end_pos
                     })
+                    offset += len(bold_text)
+                    i = end + 2
+                    continue
 
-                # Start new section
-                current_heading = stripped[len(heading_marker):].strip()
-                current_paragraphs = []
-                current_buffer = []
+            # Check for italic (*text*) - but not part of **
+            if text[i] == '*' and (i == 0 or text[i-1] != '*') and (i + 1 >= len(text) or text[i+1] != '*'):
+                # Find closing *
+                end = i + 1
+                while end < len(text):
+                    if text[end] == '*' and (end + 1 >= len(text) or text[end+1] != '*'):
+                        break
+                    end += 1
 
-            # Check for paragraph breaks (empty lines separate paragraphs)
-            elif not stripped:
-                if current_buffer:
-                    # Join lines with space to preserve word boundaries
-                    current_paragraphs.append(' '.join(current_buffer).strip())
-                    current_buffer = []
-            else:
-                current_buffer.append(line)
+                if end < len(text):
+                    italic_text = text[i+1:end]
+                    start_pos = offset
+                    plain_text += italic_text
+                    end_pos = offset + len(italic_text)
+                    formatting.append({
+                        'type': 'italic',
+                        'start': start_pos,
+                        'end': end_pos
+                    })
+                    offset += len(italic_text)
+                    i = end + 1
+                    continue
 
-        # Save last section
-        if current_heading is not None:
-            if current_buffer:
-                # Join lines with space to preserve word boundaries
-                current_paragraphs.append(' '.join(current_buffer).strip())
-            sections.append({
-                'heading': current_heading,
-                'paragraphs': [p for p in current_paragraphs if p]
-            })
+            # Regular character
+            plain_text += text[i]
+            offset += 1
+            i += 1
 
-        return sections
+        return plain_text, formatting
 
     async def _get_insertion_index(self, context: ExecutionContext,
                                    document_id: str, tab_id: Optional[str],
@@ -475,14 +545,12 @@ class InsertMarkdownContent(ActionHandler):
             content = body.get('content', [])
             return content[-1].get('endIndex', 1) - 1 if content else 1
 
-    async def _insert_and_style_sections(self, context: ExecutionContext,
-                                         document_id: str, tab_id: Optional[str],
-                                         sections: List[Dict[str, Any]],
-                                         start_index: int,
-                                         heading_level: int) -> Dict[str, Any]:
+    async def _insert_and_style_content(self, context: ExecutionContext,
+                                        document_id: str, tab_id: Optional[str],
+                                        elements: List[Dict[str, Any]],
+                                        start_index: int) -> Dict[str, Any]:
         """
-        Insert all sections with content and apply styles in a single batch operation.
-        This prevents duplicate content by doing everything in one go.
+        Insert all content and apply styles in a single batch operation.
         """
         try:
             batch_requests = []
@@ -497,58 +565,89 @@ class InsertMarkdownContent(ActionHandler):
                 5: 'HEADING_5',
                 6: 'HEADING_6'
             }
-            heading_style = heading_style_map.get(heading_level, 'HEADING_1')
+
+            heading_count = 0
+            paragraph_count = 0
 
             # Build all insertion and styling requests
-            for section in sections:
-                heading = section['heading']
-                paragraphs = section['paragraphs']
+            for element in elements:
+                element_type = element['type']
+                text = element['text']
+                formatting = element.get('formatting', [])
 
-                # Insert heading text
-                heading_text = heading + '\n'
-                heading_insert = {
+                # Add newline for proper spacing
+                if element_type == 'heading':
+                    full_text = text + '\n'
+                else:
+                    full_text = text + '\n\n'
+
+                # Insert text
+                insert_request = {
                     'insertText': {
-                        'text': heading_text,
+                        'text': full_text,
                         'location': {'index': current_index}
                     }
                 }
                 if tab_id:
-                    heading_insert['insertText']['location']['tabId'] = tab_id
-                batch_requests.append(heading_insert)
+                    insert_request['insertText']['location']['tabId'] = tab_id
+                batch_requests.append(insert_request)
 
-                # Apply heading style
-                heading_style_request = {
-                    'updateParagraphStyle': {
-                        'range': {
-                            'startIndex': current_index,
-                            'endIndex': current_index + len(heading_text)
-                        },
-                        'paragraphStyle': {
-                            'namedStyleType': heading_style
-                        },
-                        'fields': 'namedStyleType'
-                    }
-                }
-                if tab_id:
-                    heading_style_request['updateParagraphStyle']['range']['tabId'] = tab_id
-                batch_requests.append(heading_style_request)
+                # Apply paragraph-level style for headings
+                if element_type == 'heading':
+                    level = element['level']
+                    heading_style = heading_style_map.get(level, 'HEADING_1')
 
-                current_index += len(heading_text)
-
-                # Insert paragraphs
-                for paragraph in paragraphs:
-                    para_text = paragraph + '\n\n'
-                    para_insert = {
-                        'insertText': {
-                            'text': para_text,
-                            'location': {'index': current_index}
+                    style_request = {
+                        'updateParagraphStyle': {
+                            'range': {
+                                'startIndex': current_index,
+                                'endIndex': current_index + len(full_text)
+                            },
+                            'paragraphStyle': {
+                                'namedStyleType': heading_style
+                            },
+                            'fields': 'namedStyleType'
                         }
                     }
                     if tab_id:
-                        para_insert['insertText']['location']['tabId'] = tab_id
-                    batch_requests.append(para_insert)
+                        style_request['updateParagraphStyle']['range']['tabId'] = tab_id
+                    batch_requests.append(style_request)
+                    heading_count += 1
+                else:
+                    paragraph_count += 1
 
-                    current_index += len(para_text)
+                # Apply inline formatting (bold, italic)
+                for fmt in formatting:
+                    fmt_type = fmt['type']
+                    fmt_start = current_index + fmt['start']
+                    fmt_end = current_index + fmt['end']
+
+                    text_style = {}
+                    fields = []
+
+                    if fmt_type == 'bold':
+                        text_style['bold'] = True
+                        fields.append('bold')
+                    elif fmt_type == 'italic':
+                        text_style['italic'] = True
+                        fields.append('italic')
+
+                    if text_style:
+                        style_request = {
+                            'updateTextStyle': {
+                                'range': {
+                                    'startIndex': fmt_start,
+                                    'endIndex': fmt_end
+                                },
+                                'textStyle': text_style,
+                                'fields': ','.join(fields)
+                            }
+                        }
+                        if tab_id:
+                            style_request['updateTextStyle']['range']['tabId'] = tab_id
+                        batch_requests.append(style_request)
+
+                current_index += len(full_text)
 
             # Execute all insertions and styling in a single batch
             url = f"{DOCS_API_BASE}/documents/{document_id}:batchUpdate"
@@ -558,10 +657,11 @@ class InsertMarkdownContent(ActionHandler):
 
             return {
                 'result': True,
-                'sections_inserted': len(sections),
-                'total_paragraphs': sum(len(s['paragraphs']) for s in sections)
+                'headings_inserted': heading_count,
+                'paragraphs_inserted': paragraph_count,
+                'total_elements': len(elements)
             }
 
         except Exception as e:
-            return handle_api_error(e, "Failed to insert and style sections")
+            return handle_api_error(e, "Failed to insert and style content")
 

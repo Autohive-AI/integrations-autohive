@@ -9,7 +9,7 @@ This integration provides comprehensive access to Google Docs functionality thro
 - Create new Google Docs documents
 - Retrieve full document content and structure
 - Insert plain text paragraphs
-- Insert markdown-formatted content with automatic heading styling
+- Insert markdown-formatted content with automatic styling (headings, bold, italic)
 - Apply text formatting (bold, italic, font size, colors)
 - Parse document structure to identify headings and paragraphs
 - Execute complex batch update operations
@@ -23,7 +23,6 @@ This integration uses OAuth2 authentication via the Autohive platform. The requi
 **Required Scopes:**
 
 *   `https://www.googleapis.com/auth/documents` - Full access to Google Docs
-*   `https://www.googleapis.com/auth/drive.file` - Access to files created by this application
 
 **Setup Steps:**
 
@@ -71,18 +70,22 @@ This integration uses OAuth2 authentication via the Autohive platform. The requi
 
 ### Action: `docs_insert_markdown_content`
 
-*   **Description:** Insert markdown-formatted content with automatic heading detection and styling. Requires markdown format with headings (# for H1, ## for H2). For plain paragraphs, use `docs_insert_paragraphs` instead.
+*   **Description:** Insert markdown-formatted content with automatic styling. Detects ALL heading levels (# through ######) and inline formatting (**bold**, *italic*) in a single operation. Automatically applies Google Docs styles (HEADING_1-6, bold, italic) without showing markdown symbols. For plain paragraphs without any formatting, use `docs_insert_paragraphs` instead.
 *   **Inputs:**
     *   `document_id` (required): The ID of the document
-    *   `content` (required): Markdown text with headings (e.g., "# Overview\nParagraph text\n\n## Details\nMore text")
-    *   `heading_level` (optional): Which heading level to parse (default: 1 for #). Use 1 for #, 2 for ##, etc.
+    *   `content` (required): Markdown text with headings and inline formatting (e.g., "# Overview\n**Bold text** and *italic text*\n\n## Details\nMore text")
     *   `tab_id` (optional): Optional tab ID if working with a specific tab
     *   `append` (optional): If true, append to end of document (default: true)
 *   **Outputs:**
     *   `result`: Boolean indicating success
-    *   `sections_inserted`: Number of sections processed
-    *   `total_paragraphs`: Total paragraphs inserted
+    *   `headings_inserted`: Number of headings inserted
+    *   `paragraphs_inserted`: Number of paragraphs inserted
+    *   `total_elements`: Total elements inserted
     *   `error`: Error message if operation failed
+*   **Supported Markdown Features:**
+    *   Headings: `#` through `######` (H1 through H6)
+    *   Bold: `**text**`
+    *   Italic: `*text*`
 
 ### Action: `docs_batch_update`
 
@@ -151,17 +154,16 @@ This integration uses OAuth2 authentication via the Autohive platform. The requi
 **Example 2: Inserting structured content with markdown**
 
 ```json
-// Insert content with automatic heading styling
+// Insert content with automatic styling (all heading levels and inline formatting)
 {
   "action": "docs_insert_markdown_content",
   "inputs": {
     "document_id": "abc123...",
-    "content": "# Overview\n\nThis is the overview section with important details.\n\n# Historical Background\n\nThis section covers the historical context.\n\n# Conclusion\n\nFinal thoughts and summary.",
-    "heading_level": 1,
+    "content": "# Lead Analysis Report\n\n**Prepared for:** Autohive **Date:** October 23, 2025\n\n## 1. Executive Summary\n\nThis is a paragraph with **bold** and *italic* text.\n\n### Key Findings\n\n- Point one with **emphasis**\n- Point two with *italic style*\n\n## 2. Detailed Analysis\n\nFinal paragraph with mixed formatting.",
     "append": true
   }
 }
-// Response: { "result": true, "sections_inserted": 3, "total_paragraphs": 3 }
+// Response: { "result": true, "headings_inserted": 4, "paragraphs_inserted": 3, "total_elements": 7 }
 ```
 
 **Example 3: Applying text formatting with batch update**

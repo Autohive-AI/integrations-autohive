@@ -291,6 +291,10 @@
                             "use_speaker_boost": {
                                 "type": "boolean",
                                 "description": "Enable speaker boost"
+                            },
+                            "speed": {
+                                "type": "number",
+                                "description": "Playback speed/rate (0.25-4.0, default: 1.0)"
                             }
                         }
                     }
