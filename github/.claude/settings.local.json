@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(python expand_schemas.py:*)",
+      "Bash(del \"C:\\Users\\tamil\\Projects\\integrations-autohive\\github\\expand_schemas.py\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
