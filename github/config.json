@@ -116,7 +116,10 @@
                         "description": "Repository web URL"
                     },
                     "description": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Repository description"
                     },
                     "fork": {
@@ -160,7 +163,10 @@
                         "description": "Default branch name"
                     },
                     "language": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Primary programming language"
                     },
                     "has_issues": {
@@ -299,7 +305,10 @@
                         "description": "Repository web URL"
                     },
                     "description": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Repository description"
                     },
                     "fork": {
@@ -343,7 +352,10 @@
                         "description": "Default branch name"
                     },
                     "language": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Primary programming language"
                     },
                     "has_issues": {
@@ -484,103 +496,107 @@
                 "required": []
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "repositories": {
-                        "type": "array",
-                        "description": "List of repositories",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "name": {
-                                    "type": "string"
-                                },
-                                "full_name": {
-                                    "type": "string"
-                                },
-                                "owner": {
-                                    "type": "object",
-                                    "properties": {
-                                        "login": {
-                                            "type": "string"
-                                        },
-                                        "id": {
-                                            "type": "integer"
-                                        },
-                                        "avatar_url": {
-                                            "type": "string"
-                                        },
-                                        "type": {
-                                            "type": "string"
+                "type": "array",
+                "description": "List of repositories",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "repositories": {
+                            "type": "array",
+                            "description": "List of repositories",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "owner": {
+                                        "type": "object",
+                                        "properties": {
+                                            "login": {
+                                                "type": "string"
+                                            },
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "avatar_url": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            }
                                         }
+                                    },
+                                    "private": {
+                                        "type": "boolean"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "fork": {
+                                        "type": "boolean"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "pushed_at": {
+                                        "type": "string"
+                                    },
+                                    "size": {
+                                        "type": "integer"
+                                    },
+                                    "stargazers_count": {
+                                        "type": "integer"
+                                    },
+                                    "watchers_count": {
+                                        "type": "integer"
+                                    },
+                                    "forks_count": {
+                                        "type": "integer"
+                                    },
+                                    "open_issues_count": {
+                                        "type": "integer"
+                                    },
+                                    "default_branch": {
+                                        "type": "string"
+                                    },
+                                    "language": {
+                                        "type": "string"
+                                    },
+                                    "archived": {
+                                        "type": "boolean"
+                                    },
+                                    "disabled": {
+                                        "type": "boolean"
+                                    },
+                                    "visibility": {
+                                        "type": "string"
                                     }
-                                },
-                                "private": {
-                                    "type": "boolean"
-                                },
-                                "html_url": {
-                                    "type": "string"
-                                },
-                                "description": {
-                                    "type": "string"
-                                },
-                                "fork": {
-                                    "type": "boolean"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "pushed_at": {
-                                    "type": "string"
-                                },
-                                "size": {
-                                    "type": "integer"
-                                },
-                                "stargazers_count": {
-                                    "type": "integer"
-                                },
-                                "watchers_count": {
-                                    "type": "integer"
-                                },
-                                "forks_count": {
-                                    "type": "integer"
-                                },
-                                "open_issues_count": {
-                                    "type": "integer"
-                                },
-                                "default_branch": {
-                                    "type": "string"
-                                },
-                                "language": {
-                                    "type": "string"
-                                },
-                                "archived": {
-                                    "type": "boolean"
-                                },
-                                "disabled": {
-                                    "type": "boolean"
-                                },
-                                "visibility": {
-                                    "type": "string"
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer",
+                            "description": "Total number of repositories returned"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer",
-                        "description": "Total number of repositories returned"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -639,7 +655,10 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "private": {
                         "type": "boolean"
@@ -1034,72 +1053,76 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "issues": {
-                        "type": "array",
-                        "description": "List of issues",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "number": {
-                                    "type": "integer"
-                                },
-                                "title": {
-                                    "type": "string"
-                                },
-                                "body": {
-                                    "type": "string"
-                                },
-                                "state": {
-                                    "type": "string"
-                                },
-                                "user": {
-                                    "type": "object",
-                                    "properties": {
-                                        "login": {
-                                            "type": "string"
-                                        },
-                                        "avatar_url": {
-                                            "type": "string"
+                "type": "array",
+                "description": "List of issues",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "issues": {
+                            "type": "array",
+                            "description": "List of issues",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "number": {
+                                        "type": "integer"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "body": {
+                                        "type": "string"
+                                    },
+                                    "state": {
+                                        "type": "string"
+                                    },
+                                    "user": {
+                                        "type": "object",
+                                        "properties": {
+                                            "login": {
+                                                "type": "string"
+                                            },
+                                            "avatar_url": {
+                                                "type": "string"
+                                            }
                                         }
+                                    },
+                                    "assignees": {
+                                        "type": "array"
+                                    },
+                                    "labels": {
+                                        "type": "array"
+                                    },
+                                    "comments": {
+                                        "type": "integer"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "closed_at": {
+                                        "type": "string"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
                                     }
-                                },
-                                "assignees": {
-                                    "type": "array"
-                                },
-                                "labels": {
-                                    "type": "array"
-                                },
-                                "comments": {
-                                    "type": "integer"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "closed_at": {
-                                    "type": "string"
-                                },
-                                "html_url": {
-                                    "type": "string"
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -1405,11 +1428,17 @@
                         "description": "Whether PR is merged"
                     },
                     "mergeable": {
-                        "type": "boolean",
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
                         "description": "Whether PR can be merged"
                     },
                     "mergeable_state": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Merge state (clean/dirty/unstable)"
                     },
                     "merged_by": {
@@ -1443,10 +1472,16 @@
                         "type": "string"
                     },
                     "closed_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "merged_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "html_url": {
                         "type": "string",
@@ -1528,10 +1563,16 @@
                         "type": "boolean"
                     },
                     "mergeable": {
-                        "type": "boolean"
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
                     },
                     "mergeable_state": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "comments": {
                         "type": "integer"
@@ -1614,57 +1655,61 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "pull_requests": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "number": {
-                                    "type": "integer"
-                                },
-                                "title": {
-                                    "type": "string"
-                                },
-                                "state": {
-                                    "type": "string"
-                                },
-                                "draft": {
-                                    "type": "boolean"
-                                },
-                                "user": {
-                                    "type": "object"
-                                },
-                                "head": {
-                                    "type": "object"
-                                },
-                                "base": {
-                                    "type": "object"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "html_url": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of pull_requests",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "pull_requests": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "number": {
+                                        "type": "integer"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "state": {
+                                        "type": "string"
+                                    },
+                                    "draft": {
+                                        "type": "boolean"
+                                    },
+                                    "user": {
+                                        "type": "object"
+                                    },
+                                    "head": {
+                                        "type": "object"
+                                    },
+                                    "base": {
+                                        "type": "object"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -1946,53 +1991,57 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "commits": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "sha": {
-                                    "type": "string"
-                                },
-                                "commit": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "author": {
-                                            "type": "object"
-                                        },
-                                        "committer": {
-                                            "type": "object"
+                "type": "array",
+                "description": "List of commits",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "commits": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "sha": {
+                                        "type": "string"
+                                    },
+                                    "commit": {
+                                        "type": "object",
+                                        "properties": {
+                                            "message": {
+                                                "type": "string"
+                                            },
+                                            "author": {
+                                                "type": "object"
+                                            },
+                                            "committer": {
+                                                "type": "object"
+                                            }
                                         }
+                                    },
+                                    "author": {
+                                        "type": "object"
+                                    },
+                                    "committer": {
+                                        "type": "object"
+                                    },
+                                    "parents": {
+                                        "type": "array"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
                                     }
-                                },
-                                "author": {
-                                    "type": "object"
-                                },
-                                "committer": {
-                                    "type": "object"
-                                },
-                                "parents": {
-                                    "type": "array"
-                                },
-                                "html_url": {
-                                    "type": "string"
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -2102,41 +2151,45 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "branches": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "commit": {
-                                    "type": "object",
-                                    "properties": {
-                                        "sha": {
-                                            "type": "string"
-                                        },
-                                        "url": {
-                                            "type": "string"
+                "type": "array",
+                "description": "List of branches",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "branches": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "commit": {
+                                        "type": "object",
+                                        "properties": {
+                                            "sha": {
+                                                "type": "string"
+                                            },
+                                            "url": {
+                                                "type": "string"
+                                            }
                                         }
+                                    },
+                                    "protected": {
+                                        "type": "boolean"
                                     }
-                                },
-                                "protected": {
-                                    "type": "boolean"
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -2368,45 +2421,49 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "webhooks": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "name": {
-                                    "type": "string"
-                                },
-                                "active": {
-                                    "type": "boolean"
-                                },
-                                "events": {
-                                    "type": "array"
-                                },
-                                "config": {
-                                    "type": "object"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of webhooks",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "webhooks": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "active": {
+                                        "type": "boolean"
+                                    },
+                                    "events": {
+                                        "type": "array"
+                                    },
+                                    "config": {
+                                        "type": "object"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -2963,51 +3020,55 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "comments": {
-                        "type": "array",
-                        "description": "List of issue comments",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "body": {
-                                    "type": "string"
-                                },
-                                "user": {
-                                    "type": "object",
-                                    "properties": {
-                                        "login": {
-                                            "type": "string"
-                                        },
-                                        "avatar_url": {
-                                            "type": "string"
+                "type": "array",
+                "description": "List of issue_comments",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "comments": {
+                            "type": "array",
+                            "description": "List of issue comments",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "body": {
+                                        "type": "string"
+                                    },
+                                    "user": {
+                                        "type": "object",
+                                        "properties": {
+                                            "login": {
+                                                "type": "string"
+                                            },
+                                            "avatar_url": {
+                                                "type": "string"
+                                            }
                                         }
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
                                     }
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "html_url": {
-                                    "type": "string"
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -3688,43 +3749,47 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "members": {
-                        "type": "array",
-                        "description": "Organization members",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "login": {
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "avatar_url": {
-                                    "type": "string"
-                                },
-                                "type": {
-                                    "type": "string"
-                                },
-                                "site_admin": {
-                                    "type": "boolean"
-                                },
-                                "url": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of organization_members",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "members": {
+                            "type": "array",
+                            "description": "Organization members",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "avatar_url": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "site_admin": {
+                                        "type": "boolean"
+                                    },
+                                    "url": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -3750,55 +3815,59 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "workflows": {
-                        "type": "array",
-                        "description": "GitHub Actions workflows",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "node_id": {
-                                    "type": "string"
-                                },
-                                "name": {
-                                    "type": "string"
-                                },
-                                "path": {
-                                    "type": "string"
-                                },
-                                "state": {
-                                    "type": "string"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "url": {
-                                    "type": "string"
-                                },
-                                "html_url": {
-                                    "type": "string"
-                                },
-                                "badge_url": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of workflows",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "workflows": {
+                            "type": "array",
+                            "description": "GitHub Actions workflows",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "node_id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "path": {
+                                        "type": "string"
+                                    },
+                                    "state": {
+                                        "type": "string"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "url": {
+                                        "type": "string"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
+                                    },
+                                    "badge_url": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -3966,67 +4035,71 @@
                 "required": []
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "repositories": {
-                        "type": "array",
-                        "description": "User repositories",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "name": {
-                                    "type": "string"
-                                },
-                                "full_name": {
-                                    "type": "string"
-                                },
-                                "description": {
-                                    "type": "string"
-                                },
-                                "private": {
-                                    "type": "boolean"
-                                },
-                                "fork": {
-                                    "type": "boolean"
-                                },
-                                "html_url": {
-                                    "type": "string"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "language": {
-                                    "type": "string"
-                                },
-                                "stargazers_count": {
-                                    "type": "integer"
-                                },
-                                "forks_count": {
-                                    "type": "integer"
-                                },
-                                "open_issues_count": {
-                                    "type": "integer"
-                                },
-                                "default_branch": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of repositories",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "repositories": {
+                            "type": "array",
+                            "description": "User repositories",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "private": {
+                                        "type": "boolean"
+                                    },
+                                    "fork": {
+                                        "type": "boolean"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "language": {
+                                        "type": "string"
+                                    },
+                                    "stargazers_count": {
+                                        "type": "integer"
+                                    },
+                                    "forks_count": {
+                                        "type": "integer"
+                                    },
+                                    "open_issues_count": {
+                                        "type": "integer"
+                                    },
+                                    "default_branch": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
@@ -4080,70 +4153,76 @@
                 ]
             },
             "output_schema": {
-                "type": "object",
-                "properties": {
-                    "repositories": {
-                        "type": "array",
-                        "description": "Organization repositories",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "name": {
-                                    "type": "string"
-                                },
-                                "full_name": {
-                                    "type": "string"
-                                },
-                                "description": {
-                                    "type": "string"
-                                },
-                                "private": {
-                                    "type": "boolean"
-                                },
-                                "fork": {
-                                    "type": "boolean"
-                                },
-                                "html_url": {
-                                    "type": "string"
-                                },
-                                "created_at": {
-                                    "type": "string"
-                                },
-                                "updated_at": {
-                                    "type": "string"
-                                },
-                                "language": {
-                                    "type": "string"
-                                },
-                                "stargazers_count": {
-                                    "type": "integer"
-                                },
-                                "forks_count": {
-                                    "type": "integer"
-                                },
-                                "open_issues_count": {
-                                    "type": "integer"
-                                },
-                                "default_branch": {
-                                    "type": "string"
+                "type": "array",
+                "description": "List of repositories",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "repositories": {
+                            "type": "array",
+                            "description": "Organization repositories",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "private": {
+                                        "type": "boolean"
+                                    },
+                                    "fork": {
+                                        "type": "boolean"
+                                    },
+                                    "html_url": {
+                                        "type": "string"
+                                    },
+                                    "created_at": {
+                                        "type": "string"
+                                    },
+                                    "updated_at": {
+                                        "type": "string"
+                                    },
+                                    "language": {
+                                        "type": "string"
+                                    },
+                                    "stargazers_count": {
+                                        "type": "integer"
+                                    },
+                                    "forks_count": {
+                                        "type": "integer"
+                                    },
+                                    "open_issues_count": {
+                                        "type": "integer"
+                                    },
+                                    "default_branch": {
+                                        "type": "string"
+                                    }
                                 }
                             }
+                        },
+                        "total_count": {
+                            "type": "integer"
+                        },
+                        "result": {
+                            "type": "boolean"
+                        },
+                        "error": {
+                            "type": "string"
                         }
-                    },
-                    "total_count": {
-                        "type": "integer"
-                    },
-                    "result": {
-                        "type": "boolean"
-                    },
-                    "error": {
-                        "type": "string"
                     }
                 }
             }
         }
-    }
+    },
+    "supports_billing": false,
+    "supports_connected_account": true
 }
