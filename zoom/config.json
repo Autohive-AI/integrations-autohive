@@ -1,0 +1,1111 @@
+{
+    "name": "zoom",
+    "display_name": "Zoom",
+    "version": "1.0.0",
+    "description": "Integration with Zoom to manage meetings, access recordings, transcripts, and automate meeting workflows.",
+    "entry_point": "zoom.py",
+    "auth": {
+        "type": "platform",
+        "provider": "zoom",
+        "scopes": [
+            "meeting:read:meeting:admin",
+            "meeting:read:list_meetings:admin",
+            "meeting:write:meeting:admin",
+            "meeting:update:meeting:admin",
+            "meeting:delete:meeting:admin",
+            "user:read:user:admin",
+            "user:read:list_users:admin",
+            "cloud_recording:read:list_recording_files:admin",
+            "cloud_recording:read:list_user_recordings:admin",
+            "cloud_recording:read:recording_file:admin"
+        ]
+    },
+    "actions": {
+        "list_meetings": {
+            "display_name": "List Meetings",
+            "description": "List all scheduled meetings for a user. Returns upcoming and past meetings with details like topic, start time, and duration.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The user ID or email address. Use 'me' for the authenticated user.",
+                        "default": "me"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The meeting type filter.",
+                        "enum": ["scheduled", "live", "upcoming", "upcoming_meetings", "previous_meetings"],
+                        "default": "scheduled"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Number of meetings to return per page (max 300).",
+                        "default": 30,
+                        "minimum": 1,
+                        "maximum": 300
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for pagination to get the next page of results."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "meetings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "description": "Meeting ID"
+                                },
+                                "uuid": {
+                                    "type": "string",
+                                    "description": "Meeting UUID"
+                                },
+                                "topic": {
+                                    "type": "string",
+                                    "description": "Meeting topic"
+                                },
+                                "type": {
+                                    "type": "integer",
+                                    "description": "Meeting type (1=instant, 2=scheduled, 3=recurring no fixed time, 8=recurring fixed time)"
+                                },
+                                "start_time": {
+                                    "type": "string",
+                                    "description": "Meeting start time in ISO format"
+                                },
+                                "duration": {
+                                    "type": "integer",
+                                    "description": "Meeting duration in minutes"
+                                },
+                                "timezone": {
+                                    "type": "string",
+                                    "description": "Timezone of the meeting"
+                                },
+                                "join_url": {
+                                    "type": "string",
+                                    "description": "URL for participants to join"
+                                },
+                                "created_at": {
+                                    "type": "string",
+                                    "description": "Meeting creation time"
+                                }
+                            }
+                        },
+                        "description": "List of meetings"
+                    },
+                    "next_page_token": {
+                        "type": ["string", "null"],
+                        "description": "Token for next page of results"
+                    },
+                    "page_count": {
+                        "type": "integer",
+                        "description": "Total number of pages"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Number of items per page"
+                    },
+                    "total_records": {
+                        "type": "integer",
+                        "description": "Total number of meetings"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["meetings", "result"]
+            }
+        },
+        "get_meeting": {
+            "display_name": "Get Meeting Details",
+            "description": "Retrieve detailed information about a specific meeting including settings, host info, and join URLs.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID or UUID."
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Meeting ID"
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "description": "Meeting UUID"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic"
+                    },
+                    "type": {
+                        "type": "integer",
+                        "description": "Meeting type"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Meeting status (waiting, started)"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Meeting start time"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Meeting duration in minutes"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "Timezone"
+                    },
+                    "agenda": {
+                        "type": "string",
+                        "description": "Meeting agenda"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "description": "Creation time"
+                    },
+                    "start_url": {
+                        "type": "string",
+                        "description": "URL for host to start the meeting"
+                    },
+                    "join_url": {
+                        "type": "string",
+                        "description": "URL for participants to join"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Meeting password"
+                    },
+                    "host_id": {
+                        "type": "string",
+                        "description": "Host user ID"
+                    },
+                    "host_email": {
+                        "type": "string",
+                        "description": "Host email address"
+                    },
+                    "settings": {
+                        "type": "object",
+                        "description": "Meeting settings"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "create_meeting": {
+            "display_name": "Create Meeting",
+            "description": "Create a new Zoom meeting with customizable settings including topic, time, duration, and meeting options.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The user ID or email address of the host. Use 'me' for authenticated user.",
+                        "default": "me"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic/title."
+                    },
+                    "type": {
+                        "type": "integer",
+                        "description": "Meeting type: 1=instant, 2=scheduled, 3=recurring no fixed time, 8=recurring fixed time.",
+                        "enum": [1, 2, 3, 8],
+                        "default": 2
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Meeting start time in ISO 8601 format (e.g., 2024-01-15T10:00:00Z). Required for scheduled meetings."
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Meeting duration in minutes.",
+                        "default": 60
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "Timezone for the meeting (e.g., 'America/New_York')."
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Meeting password (max 10 characters)."
+                    },
+                    "agenda": {
+                        "type": "string",
+                        "description": "Meeting agenda/description."
+                    },
+                    "waiting_room": {
+                        "type": "boolean",
+                        "description": "Enable waiting room.",
+                        "default": true
+                    },
+                    "join_before_host": {
+                        "type": "boolean",
+                        "description": "Allow participants to join before host.",
+                        "default": false
+                    },
+                    "mute_upon_entry": {
+                        "type": "boolean",
+                        "description": "Mute participants upon entry.",
+                        "default": false
+                    },
+                    "auto_recording": {
+                        "type": "string",
+                        "description": "Auto-recording option.",
+                        "enum": ["local", "cloud", "none"],
+                        "default": "none"
+                    }
+                },
+                "required": ["topic"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Created meeting ID"
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "description": "Meeting UUID"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Meeting start time"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Meeting duration"
+                    },
+                    "start_url": {
+                        "type": "string",
+                        "description": "URL for host to start the meeting"
+                    },
+                    "join_url": {
+                        "type": "string",
+                        "description": "URL for participants to join"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Meeting password"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "update_meeting": {
+            "display_name": "Update Meeting",
+            "description": "Update an existing meeting's details including topic, time, duration, and settings.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID to update."
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "New meeting topic."
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "New start time in ISO 8601 format."
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "New duration in minutes."
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "New timezone."
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "New meeting password."
+                    },
+                    "agenda": {
+                        "type": "string",
+                        "description": "New meeting agenda."
+                    },
+                    "waiting_room": {
+                        "type": "boolean",
+                        "description": "Enable/disable waiting room."
+                    },
+                    "join_before_host": {
+                        "type": "boolean",
+                        "description": "Allow/disallow join before host."
+                    },
+                    "mute_upon_entry": {
+                        "type": "boolean",
+                        "description": "Enable/disable mute upon entry."
+                    },
+                    "auto_recording": {
+                        "type": "string",
+                        "description": "Auto-recording option.",
+                        "enum": ["local", "cloud", "none"]
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "Updated meeting ID"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the update succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["meeting_id", "result"]
+            }
+        },
+        "delete_meeting": {
+            "display_name": "Delete Meeting",
+            "description": "Delete a scheduled meeting. Cannot delete meetings that have already ended.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID to delete."
+                    },
+                    "occurrence_id": {
+                        "type": "string",
+                        "description": "For recurring meetings, specify the occurrence ID to delete a single occurrence."
+                    },
+                    "schedule_for_reminder": {
+                        "type": "boolean",
+                        "description": "Send cancellation email to registrants.",
+                        "default": true
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "Deleted meeting ID"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the deletion succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["meeting_id", "result"]
+            }
+        },
+        "list_recordings": {
+            "display_name": "List Cloud Recordings",
+            "description": "List all cloud recordings for a user within a date range. Requires Pro plan or higher.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The user ID or email address. Use 'me' for authenticated user.",
+                        "default": "me"
+                    },
+                    "from_date": {
+                        "type": "string",
+                        "description": "Start date for recordings (YYYY-MM-DD format). Defaults to 30 days ago."
+                    },
+                    "to_date": {
+                        "type": "string",
+                        "description": "End date for recordings (YYYY-MM-DD format). Defaults to today."
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Number of recordings per page (max 300).",
+                        "default": 30,
+                        "minimum": 1,
+                        "maximum": 300
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for pagination."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "meetings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "uuid": {
+                                    "type": "string",
+                                    "description": "Meeting UUID"
+                                },
+                                "id": {
+                                    "type": "integer",
+                                    "description": "Meeting ID"
+                                },
+                                "topic": {
+                                    "type": "string",
+                                    "description": "Meeting topic"
+                                },
+                                "start_time": {
+                                    "type": "string",
+                                    "description": "Meeting start time"
+                                },
+                                "duration": {
+                                    "type": "integer",
+                                    "description": "Meeting duration in minutes"
+                                },
+                                "total_size": {
+                                    "type": "integer",
+                                    "description": "Total file size in bytes"
+                                },
+                                "recording_count": {
+                                    "type": "integer",
+                                    "description": "Number of recording files"
+                                },
+                                "recording_files": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Recording file ID"
+                                            },
+                                            "meeting_id": {
+                                                "type": "string",
+                                                "description": "Meeting ID"
+                                            },
+                                            "recording_type": {
+                                                "type": "string",
+                                                "description": "Type of recording (shared_screen_with_speaker_view, etc.)"
+                                            },
+                                            "file_type": {
+                                                "type": "string",
+                                                "description": "File type (MP4, M4A, TRANSCRIPT, etc.)"
+                                            },
+                                            "file_size": {
+                                                "type": "integer",
+                                                "description": "File size in bytes"
+                                            },
+                                            "download_url": {
+                                                "type": "string",
+                                                "description": "URL to download the file"
+                                            },
+                                            "play_url": {
+                                                "type": "string",
+                                                "description": "URL to play the recording"
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "description": "Processing status"
+                                            }
+                                        }
+                                    },
+                                    "description": "Recording files for this meeting"
+                                }
+                            }
+                        },
+                        "description": "List of meetings with recordings"
+                    },
+                    "next_page_token": {
+                        "type": ["string", "null"],
+                        "description": "Token for next page"
+                    },
+                    "page_count": {
+                        "type": "integer",
+                        "description": "Total pages"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Items per page"
+                    },
+                    "total_records": {
+                        "type": "integer",
+                        "description": "Total recordings"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["meetings", "result"]
+            }
+        },
+        "get_meeting_recordings": {
+            "display_name": "Get Meeting Recordings",
+            "description": "Get all recording files for a specific meeting including video, audio, and transcript files.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID or UUID."
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "description": "Meeting UUID"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Meeting ID"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Meeting start time"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Duration in minutes"
+                    },
+                    "total_size": {
+                        "type": "integer",
+                        "description": "Total size of all files"
+                    },
+                    "recording_files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Recording file ID"
+                                },
+                                "recording_type": {
+                                    "type": "string",
+                                    "description": "Type of recording"
+                                },
+                                "file_type": {
+                                    "type": "string",
+                                    "description": "File type"
+                                },
+                                "file_size": {
+                                    "type": "integer",
+                                    "description": "File size in bytes"
+                                },
+                                "download_url": {
+                                    "type": "string",
+                                    "description": "Download URL"
+                                },
+                                "play_url": {
+                                    "type": "string",
+                                    "description": "Play URL"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Processing status"
+                                },
+                                "recording_start": {
+                                    "type": "string",
+                                    "description": "Recording start time"
+                                },
+                                "recording_end": {
+                                    "type": "string",
+                                    "description": "Recording end time"
+                                }
+                            }
+                        },
+                        "description": "Recording files"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Recording access password"
+                    },
+                    "share_url": {
+                        "type": "string",
+                        "description": "Share URL for the recording"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "get_meeting_transcript": {
+            "display_name": "Get Meeting Transcript",
+            "description": "Retrieve the transcript for a recorded meeting. Requires cloud recording with transcription enabled.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID or UUID."
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "Meeting ID"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic"
+                    },
+                    "transcript_url": {
+                        "type": ["string", "null"],
+                        "description": "URL to download the VTT transcript file"
+                    },
+                    "transcript_content": {
+                        "type": ["string", "null"],
+                        "description": "Raw transcript content if available"
+                    },
+                    "transcript_segments": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "speaker": {
+                                    "type": "string",
+                                    "description": "Speaker name"
+                                },
+                                "start_time": {
+                                    "type": "string",
+                                    "description": "Start timestamp"
+                                },
+                                "end_time": {
+                                    "type": "string",
+                                    "description": "End timestamp"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Spoken text"
+                                }
+                            }
+                        },
+                        "description": "Parsed transcript segments"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["meeting_id", "result"]
+            }
+        },
+        "list_users": {
+            "display_name": "List Users",
+            "description": "List all users in the Zoom account. Requires admin privileges.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "User status filter.",
+                        "enum": ["active", "inactive", "pending"],
+                        "default": "active"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Number of users per page (max 300).",
+                        "default": 30,
+                        "minimum": 1,
+                        "maximum": 300
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for pagination."
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "description": "Filter by role ID."
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "users": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "User ID"
+                                },
+                                "first_name": {
+                                    "type": "string",
+                                    "description": "First name"
+                                },
+                                "last_name": {
+                                    "type": "string",
+                                    "description": "Last name"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email address"
+                                },
+                                "type": {
+                                    "type": "integer",
+                                    "description": "User type (1=basic, 2=licensed, 3=on-prem)"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "User status"
+                                },
+                                "department": {
+                                    "type": "string",
+                                    "description": "Department"
+                                },
+                                "created_at": {
+                                    "type": "string",
+                                    "description": "Account creation time"
+                                },
+                                "last_login_time": {
+                                    "type": "string",
+                                    "description": "Last login time"
+                                }
+                            }
+                        },
+                        "description": "List of users"
+                    },
+                    "next_page_token": {
+                        "type": ["string", "null"],
+                        "description": "Token for next page"
+                    },
+                    "page_count": {
+                        "type": "integer",
+                        "description": "Total pages"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Items per page"
+                    },
+                    "total_records": {
+                        "type": "integer",
+                        "description": "Total users"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["users", "result"]
+            }
+        },
+        "get_user": {
+            "display_name": "Get User Details",
+            "description": "Get detailed information about a specific user including settings and permissions.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The user ID or email address. Use 'me' for authenticated user.",
+                        "default": "me"
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "User ID"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "description": "First name"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Last name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email address"
+                    },
+                    "type": {
+                        "type": "integer",
+                        "description": "User type"
+                    },
+                    "role_name": {
+                        "type": "string",
+                        "description": "Role name"
+                    },
+                    "pmi": {
+                        "type": "integer",
+                        "description": "Personal Meeting ID"
+                    },
+                    "use_pmi": {
+                        "type": "boolean",
+                        "description": "Use PMI for instant meetings"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "User timezone"
+                    },
+                    "dept": {
+                        "type": "string",
+                        "description": "Department"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "description": "Account creation time"
+                    },
+                    "last_login_time": {
+                        "type": "string",
+                        "description": "Last login time"
+                    },
+                    "pic_url": {
+                        "type": "string",
+                        "description": "Profile picture URL"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        },
+        "get_meeting_participants": {
+            "display_name": "Get Meeting Participants",
+            "description": "Get the list of participants who attended a past meeting. Only works for ended meetings.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID or UUID."
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Number of participants per page (max 300).",
+                        "default": 30,
+                        "minimum": 1,
+                        "maximum": 300
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "description": "Token for pagination."
+                    }
+                },
+                "required": ["meeting_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "participants": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Participant ID"
+                                },
+                                "user_id": {
+                                    "type": "string",
+                                    "description": "User ID if authenticated"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Participant name"
+                                },
+                                "user_email": {
+                                    "type": "string",
+                                    "description": "Email if available"
+                                },
+                                "join_time": {
+                                    "type": "string",
+                                    "description": "Join time"
+                                },
+                                "leave_time": {
+                                    "type": "string",
+                                    "description": "Leave time"
+                                },
+                                "duration": {
+                                    "type": "integer",
+                                    "description": "Time in meeting (seconds)"
+                                },
+                                "attentiveness_score": {
+                                    "type": "string",
+                                    "description": "Attentiveness score"
+                                }
+                            }
+                        },
+                        "description": "List of participants"
+                    },
+                    "next_page_token": {
+                        "type": ["string", "null"],
+                        "description": "Token for next page"
+                    },
+                    "page_count": {
+                        "type": "integer",
+                        "description": "Total pages"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "description": "Items per page"
+                    },
+                    "total_records": {
+                        "type": "integer",
+                        "description": "Total participants"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["participants", "result"]
+            }
+        },
+        "add_meeting_registrant": {
+            "display_name": "Add Meeting Registrant",
+            "description": "Register a participant for a scheduled meeting that requires registration.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": {
+                        "type": "string",
+                        "description": "The meeting ID."
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Registrant's email address."
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "description": "Registrant's first name."
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Registrant's last name."
+                    },
+                    "auto_approve": {
+                        "type": "boolean",
+                        "description": "Automatically approve the registrant.",
+                        "default": true
+                    }
+                },
+                "required": ["meeting_id", "email", "first_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "registrant_id": {
+                        "type": "string",
+                        "description": "Registrant ID"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "description": "Meeting ID"
+                    },
+                    "topic": {
+                        "type": "string",
+                        "description": "Meeting topic"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Meeting start time"
+                    },
+                    "join_url": {
+                        "type": "string",
+                        "description": "Unique join URL for registrant"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation succeeded"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if operation failed"
+                    }
+                },
+                "required": ["result"]
+            }
+        }
+    }
+}
