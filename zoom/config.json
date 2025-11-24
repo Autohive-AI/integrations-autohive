@@ -4,6 +4,8 @@
     "version": "1.0.0",
     "description": "Integration with Zoom to manage meetings, access recordings, transcripts, and automate meeting workflows.",
     "entry_point": "zoom.py",
+    "supports_billing": false,
+    "supports_connected_account": true,
     "auth": {
         "type": "platform",
         "provider": "zoom",

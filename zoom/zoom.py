@@ -1,6 +1,4 @@
-from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
-)
+from autohive_integrations_sdk import Integration,ExecutionContext,ActionHandler,ActionResult,ConnectedAccountHandler, ConnectedAccountInfo
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from urllib.parse import quote
@@ -132,13 +130,49 @@ class ZoomAPIClient:
             raise ValueError(f"Unsupported HTTP method: {method}")
 
 
+# ---- Connected Account Handler ----
+
+@zoom.connected_account()
+class ZoomConnectedAccountHandler(ConnectedAccountHandler):
+    """Handler to fetch connected Zoom account information."""
+
+    async def get_account_info(self, context: ExecutionContext) -> ConnectedAccountInfo:
+        """
+        Fetch Zoom user information for the connected account.
+
+        Args:
+            context: ExecutionContext containing auth credentials
+
+        Returns:
+            ConnectedAccountInfo with user information
+        """
+        client = ZoomAPIClient(context)
+
+        # Fetch current user info from Zoom API
+        user_data = await client._make_request("users/me")
+
+        # Parse name into first/last
+        first_name = user_data.get("first_name", "")
+        last_name = user_data.get("last_name", "")
+
+        return ConnectedAccountInfo(
+            email=user_data.get("email"),
+            username=user_data.get("display_name") or f"{first_name} {last_name}".strip(),
+            first_name=first_name if first_name else None,
+            last_name=last_name if last_name else None,
+            avatar_url=user_data.get("pic_url"),
+            organization=user_data.get("company") or user_data.get("dept"),
+            user_id=user_data.get("id")
+        )
+
+
 # ---- Action Handlers ----
 
 @zoom.action("list_meetings")
 class ListMeetingsAction(ActionHandler):
     """List all scheduled meetings for a user."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             user_id = inputs.get("user_id", "me")
@@ -168,84 +202,96 @@ class ListMeetingsAction(ActionHandler):
                     "created_at": meeting.get("created_at", "")
                 })
 
-            return {
-                "meetings": meetings,
-                "next_page_token": response.get("next_page_token"),
-                "page_count": response.get("page_count", 0),
-                "page_size": response.get("page_size", 0),
-                "total_records": response.get("total_records", len(meetings)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "meetings": meetings,
+                    "next_page_token": response.get("next_page_token"),
+                    "page_count": response.get("page_count", 0),
+                    "page_size": response.get("page_size", 0),
+                    "total_records": response.get("total_records", len(meetings)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "meetings": [],
-                "next_page_token": None,
-                "page_count": 0,
-                "page_size": 0,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "meetings": [],
+                    "next_page_token": None,
+                    "page_count": 0,
+                    "page_size": 0,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("get_meeting")
 class GetMeetingAction(ActionHandler):
     """Retrieve detailed information about a specific meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
 
             response = await client._make_request(f"meetings/{meeting_id}")
 
-            return {
-                "id": response.get("id"),
-                "uuid": response.get("uuid", ""),
-                "topic": response.get("topic", ""),
-                "type": response.get("type"),
-                "status": response.get("status", ""),
-                "start_time": response.get("start_time", ""),
-                "duration": response.get("duration", 0),
-                "timezone": response.get("timezone", ""),
-                "agenda": response.get("agenda", ""),
-                "created_at": response.get("created_at", ""),
-                "start_url": response.get("start_url", ""),
-                "join_url": response.get("join_url", ""),
-                "password": response.get("password", ""),
-                "host_id": response.get("host_id", ""),
-                "host_email": response.get("host_email", ""),
-                "settings": response.get("settings", {}),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "id": response.get("id"),
+                    "uuid": response.get("uuid", ""),
+                    "topic": response.get("topic", ""),
+                    "type": response.get("type"),
+                    "status": response.get("status", ""),
+                    "start_time": response.get("start_time", ""),
+                    "duration": response.get("duration", 0),
+                    "timezone": response.get("timezone", ""),
+                    "agenda": response.get("agenda", ""),
+                    "created_at": response.get("created_at", ""),
+                    "start_url": response.get("start_url", ""),
+                    "join_url": response.get("join_url", ""),
+                    "password": response.get("password", ""),
+                    "host_id": response.get("host_id", ""),
+                    "host_email": response.get("host_email", ""),
+                    "settings": response.get("settings", {}),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "id": None,
-                "uuid": "",
-                "topic": "",
-                "type": None,
-                "status": "",
-                "start_time": "",
-                "duration": 0,
-                "timezone": "",
-                "agenda": "",
-                "created_at": "",
-                "start_url": "",
-                "join_url": "",
-                "password": "",
-                "host_id": "",
-                "host_email": "",
-                "settings": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "id": None,
+                    "uuid": "",
+                    "topic": "",
+                    "type": None,
+                    "status": "",
+                    "start_time": "",
+                    "duration": 0,
+                    "timezone": "",
+                    "agenda": "",
+                    "created_at": "",
+                    "start_url": "",
+                    "join_url": "",
+                    "password": "",
+                    "host_id": "",
+                    "host_email": "",
+                    "settings": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("create_meeting")
 class CreateMeetingAction(ActionHandler):
     """Create a new Zoom meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             user_id = inputs.get("user_id", "me")
@@ -290,37 +336,43 @@ class CreateMeetingAction(ActionHandler):
                 data=meeting_data
             )
 
-            return {
-                "id": response.get("id"),
-                "uuid": response.get("uuid", ""),
-                "topic": response.get("topic", ""),
-                "start_time": response.get("start_time", ""),
-                "duration": response.get("duration", 0),
-                "start_url": response.get("start_url", ""),
-                "join_url": response.get("join_url", ""),
-                "password": response.get("password", ""),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "id": response.get("id"),
+                    "uuid": response.get("uuid", ""),
+                    "topic": response.get("topic", ""),
+                    "start_time": response.get("start_time", ""),
+                    "duration": response.get("duration", 0),
+                    "start_url": response.get("start_url", ""),
+                    "join_url": response.get("join_url", ""),
+                    "password": response.get("password", ""),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "id": None,
-                "uuid": "",
-                "topic": "",
-                "start_time": "",
-                "duration": 0,
-                "start_url": "",
-                "join_url": "",
-                "password": "",
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "id": None,
+                    "uuid": "",
+                    "topic": "",
+                    "start_time": "",
+                    "duration": 0,
+                    "start_url": "",
+                    "join_url": "",
+                    "password": "",
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("update_meeting")
 class UpdateMeetingAction(ActionHandler):
     """Update an existing meeting's details."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -361,23 +413,29 @@ class UpdateMeetingAction(ActionHandler):
                 data=update_data
             )
 
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("delete_meeting")
 class DeleteMeetingAction(ActionHandler):
     """Delete a scheduled meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -394,23 +452,29 @@ class DeleteMeetingAction(ActionHandler):
                 params=params if params else None
             )
 
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("list_recordings")
 class ListRecordingsAction(ActionHandler):
     """List all cloud recordings for a user within a date range."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             user_id = inputs.get("user_id", "me")
@@ -457,31 +521,37 @@ class ListRecordingsAction(ActionHandler):
                     "recording_files": recording_files
                 })
 
-            return {
-                "meetings": meetings,
-                "next_page_token": response.get("next_page_token"),
-                "page_count": response.get("page_count", 0),
-                "page_size": response.get("page_size", 0),
-                "total_records": response.get("total_records", len(meetings)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "meetings": meetings,
+                    "next_page_token": response.get("next_page_token"),
+                    "page_count": response.get("page_count", 0),
+                    "page_size": response.get("page_size", 0),
+                    "total_records": response.get("total_records", len(meetings)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "meetings": [],
-                "next_page_token": None,
-                "page_count": 0,
-                "page_size": 0,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "meetings": [],
+                    "next_page_token": None,
+                    "page_count": 0,
+                    "page_size": 0,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("get_meeting_recordings")
 class GetMeetingRecordingsAction(ActionHandler):
     """Get all recording files for a specific meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -503,39 +573,45 @@ class GetMeetingRecordingsAction(ActionHandler):
                     "recording_end": rf.get("recording_end", "")
                 })
 
-            return {
-                "uuid": response.get("uuid", ""),
-                "id": response.get("id"),
-                "topic": response.get("topic", ""),
-                "start_time": response.get("start_time", ""),
-                "duration": response.get("duration", 0),
-                "total_size": response.get("total_size", 0),
-                "recording_files": recording_files,
-                "password": response.get("password", ""),
-                "share_url": response.get("share_url", ""),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "uuid": response.get("uuid", ""),
+                    "id": response.get("id"),
+                    "topic": response.get("topic", ""),
+                    "start_time": response.get("start_time", ""),
+                    "duration": response.get("duration", 0),
+                    "total_size": response.get("total_size", 0),
+                    "recording_files": recording_files,
+                    "password": response.get("password", ""),
+                    "share_url": response.get("share_url", ""),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "uuid": "",
-                "id": None,
-                "topic": "",
-                "start_time": "",
-                "duration": 0,
-                "total_size": 0,
-                "recording_files": [],
-                "password": "",
-                "share_url": "",
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "uuid": "",
+                    "id": None,
+                    "topic": "",
+                    "start_time": "",
+                    "duration": 0,
+                    "total_size": 0,
+                    "recording_files": [],
+                    "password": "",
+                    "share_url": "",
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("get_meeting_transcript")
 class GetMeetingTranscriptAction(ActionHandler):
     """Retrieve the transcript for a recorded meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -575,31 +651,37 @@ class GetMeetingTranscriptAction(ActionHandler):
                     # Return URL so user can download manually
                     pass
 
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "topic": topic,
-                "transcript_url": transcript_url,
-                "transcript_content": transcript_content,
-                "transcript_segments": transcript_segments,
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "topic": topic,
+                    "transcript_url": transcript_url,
+                    "transcript_content": transcript_content,
+                    "transcript_segments": transcript_segments,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "meeting_id": inputs["meeting_id"],
-                "topic": "",
-                "transcript_url": None,
-                "transcript_content": None,
-                "transcript_segments": [],
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "meeting_id": inputs["meeting_id"],
+                    "topic": "",
+                    "transcript_url": None,
+                    "transcript_content": None,
+                    "transcript_segments": [],
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("list_users")
 class ListUsersAction(ActionHandler):
     """List all users in the Zoom account."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
 
@@ -631,78 +713,90 @@ class ListUsersAction(ActionHandler):
                     "last_login_time": user.get("last_login_time", "")
                 })
 
-            return {
-                "users": users,
-                "next_page_token": response.get("next_page_token"),
-                "page_count": response.get("page_count", 0),
-                "page_size": response.get("page_size", 0),
-                "total_records": response.get("total_records", len(users)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "users": users,
+                    "next_page_token": response.get("next_page_token"),
+                    "page_count": response.get("page_count", 0),
+                    "page_size": response.get("page_size", 0),
+                    "total_records": response.get("total_records", len(users)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "users": [],
-                "next_page_token": None,
-                "page_count": 0,
-                "page_size": 0,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "users": [],
+                    "next_page_token": None,
+                    "page_count": 0,
+                    "page_size": 0,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("get_user")
 class GetUserAction(ActionHandler):
     """Get detailed information about a specific user."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             user_id = inputs.get("user_id", "me")
 
             response = await client._make_request(f"users/{user_id}")
 
-            return {
-                "id": response.get("id", ""),
-                "first_name": response.get("first_name", ""),
-                "last_name": response.get("last_name", ""),
-                "email": response.get("email", ""),
-                "type": response.get("type"),
-                "role_name": response.get("role_name", ""),
-                "pmi": response.get("pmi"),
-                "use_pmi": response.get("use_pmi", False),
-                "timezone": response.get("timezone", ""),
-                "dept": response.get("dept", ""),
-                "created_at": response.get("created_at", ""),
-                "last_login_time": response.get("last_login_time", ""),
-                "pic_url": response.get("pic_url", ""),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "id": response.get("id", ""),
+                    "first_name": response.get("first_name", ""),
+                    "last_name": response.get("last_name", ""),
+                    "email": response.get("email", ""),
+                    "type": response.get("type"),
+                    "role_name": response.get("role_name", ""),
+                    "pmi": response.get("pmi"),
+                    "use_pmi": response.get("use_pmi", False),
+                    "timezone": response.get("timezone", ""),
+                    "dept": response.get("dept", ""),
+                    "created_at": response.get("created_at", ""),
+                    "last_login_time": response.get("last_login_time", ""),
+                    "pic_url": response.get("pic_url", ""),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "id": "",
-                "first_name": "",
-                "last_name": "",
-                "email": "",
-                "type": None,
-                "role_name": "",
-                "pmi": None,
-                "use_pmi": False,
-                "timezone": "",
-                "dept": "",
-                "created_at": "",
-                "last_login_time": "",
-                "pic_url": "",
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "id": "",
+                    "first_name": "",
+                    "last_name": "",
+                    "email": "",
+                    "type": None,
+                    "role_name": "",
+                    "pmi": None,
+                    "use_pmi": False,
+                    "timezone": "",
+                    "dept": "",
+                    "created_at": "",
+                    "last_login_time": "",
+                    "pic_url": "",
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("get_meeting_participants")
 class GetMeetingParticipantsAction(ActionHandler):
     """Get the list of participants who attended a past meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -734,31 +828,37 @@ class GetMeetingParticipantsAction(ActionHandler):
                     "attentiveness_score": participant.get("attentiveness_score", "")
                 })
 
-            return {
-                "participants": participants,
-                "next_page_token": response.get("next_page_token"),
-                "page_count": response.get("page_count", 0),
-                "page_size": response.get("page_size", 0),
-                "total_records": response.get("total_records", len(participants)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "participants": participants,
+                    "next_page_token": response.get("next_page_token"),
+                    "page_count": response.get("page_count", 0),
+                    "page_size": response.get("page_size", 0),
+                    "total_records": response.get("total_records", len(participants)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "participants": [],
-                "next_page_token": None,
-                "page_count": 0,
-                "page_size": 0,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "participants": [],
+                    "next_page_token": None,
+                    "page_count": 0,
+                    "page_size": 0,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @zoom.action("add_meeting_registrant")
 class AddMeetingRegistrantAction(ActionHandler):
     """Register a participant for a scheduled meeting."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             client = ZoomAPIClient(context)
             meeting_id = encode_meeting_id(inputs["meeting_id"])
@@ -771,32 +871,33 @@ class AddMeetingRegistrantAction(ActionHandler):
             if inputs.get("last_name"):
                 registrant_data["last_name"] = inputs["last_name"]
 
-            # Auto-approve parameter is handled via query param
-            params = {}
-            if inputs.get("auto_approve", True):
-                params["status"] = "approved"
-
             response = await client._make_request(
                 f"meetings/{meeting_id}/registrants",
                 method="POST",
                 data=registrant_data
             )
 
-            return {
-                "registrant_id": response.get("registrant_id", ""),
-                "id": response.get("id"),
-                "topic": response.get("topic", ""),
-                "start_time": response.get("start_time", ""),
-                "join_url": response.get("join_url", ""),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "registrant_id": response.get("registrant_id", ""),
+                    "id": response.get("id"),
+                    "topic": response.get("topic", ""),
+                    "start_time": response.get("start_time", ""),
+                    "join_url": response.get("join_url", ""),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {
-                "registrant_id": "",
-                "id": None,
-                "topic": "",
-                "start_time": "",
-                "join_url": "",
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "registrant_id": "",
+                    "id": None,
+                    "topic": "",
+                    "start_time": "",
+                    "join_url": "",
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
