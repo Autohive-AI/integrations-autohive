@@ -4222,5 +4222,7 @@
                 }
             }
         }
-    }
+    },
+    "supports_billing": false,
+    "supports_connected_account": true
 }
