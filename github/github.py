@@ -1,11 +1,4 @@
-from autohive_integrations_sdk import (
-    Integration,
-    ExecutionContext,
-    ActionHandler,
-    ActionResult,
-    ConnectedAccountHandler,
-    ConnectedAccountInfo
-)
+from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import base64
@@ -25,15 +18,12 @@ class GitHubAPI:
         credentials = context.auth.get("credentials", {})
         token = credentials.get("access_token", "")
 
-        return ActionResult(
-            data={
+        return {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github.v3+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "Content-Type": "application/json"
-        },
-            cost_usd=0.0
-        )
+        }
 
     @staticmethod
     async def paginated_fetch(context: ExecutionContext, url: str, params: Dict[str, Any] = None,
@@ -500,16 +490,13 @@ class GitHubAPI:
         # Decode base64 content
         content = base64.b64decode(response.get('content', '').replace('\n', '')).decode('utf-8')
 
-        return ActionResult(
-            data={
+        return {
             'content': content,
             'sha': response.get('sha', ''),
             'size': response.get('size', 0),
             'name': response.get('name', ''),
             'path': response.get('path', '')
-        },
-            cost_usd=0.0
-        )
+        }
 
     @staticmethod
     async def create_file(context: ExecutionContext, owner: str, repo: str, path: str,
@@ -664,7 +651,7 @@ class GitHubAPI:
 # ACTION HANDLERS
 # ============================================================================
 
-# Note: All actions return ActionResult with cost_usd=0.0 since GitHub API is free
+# Note: All actions return data directly (dict or list) as GitHub API is free
 # If you implement rate-limit-aware caching or premium features, update costs accordingly
 
 # ---- Repository Actions ----
@@ -685,8 +672,7 @@ class CreateRepository(ActionHandler):
             org=inputs.get('org')
         )
 
-        return ActionResult(
-            data={
+        return {
                 'id': repo['id'],
                 'name': repo['name'],
                 'full_name': repo['full_name'],
@@ -699,9 +685,7 @@ class CreateRepository(ActionHandler):
                 'clone_url': repo['clone_url'],
                 'ssh_url': repo['ssh_url'],
                 'html_url': repo['html_url']
-            },
-            cost_usd=0.0
-        )
+            }
 
 
 @github.action("get_repository")
@@ -715,8 +699,7 @@ class GetRepository(ActionHandler):
             inputs['repo']
         )
 
-        return ActionResult(
-            data={
+        return {
             'name': repo_data['name'],
             'full_name': repo_data['full_name'],
             'description': repo_data.get('description'),
@@ -733,9 +716,7 @@ class GetRepository(ActionHandler):
             'watchers_count': repo_data['watchers_count'],
             'open_issues_count': repo_data['open_issues_count'],
             'url': repo_data['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("list_repositories")
@@ -752,8 +733,7 @@ class ListRepositories(ActionHandler):
             direction=inputs.get('direction', 'desc')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': repo['id'],
             'name': repo['name'],
             'full_name': repo['full_name'],
@@ -767,9 +747,7 @@ class ListRepositories(ActionHandler):
             'default_branch': repo['default_branch'],
             'visibility': repo.get('visibility'),
             'url': repo['html_url']
-        } for repo in repos],
-            cost_usd=0.0
-        )
+        } for repo in repos]
 
 
 @github.action("update_repository")
@@ -792,8 +770,7 @@ class UpdateRepository(ActionHandler):
             **update_data
         )
 
-        return ActionResult(
-            data={
+        return {
             'name': repo['name'],
             'full_name': repo['full_name'],
             'description': repo['description'],
@@ -802,9 +779,7 @@ class UpdateRepository(ActionHandler):
             'has_wiki': repo['has_wiki'],
             'updated_at': repo['updated_at'],
             'url': repo['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("delete_repository")
@@ -818,13 +793,10 @@ class DeleteRepository(ActionHandler):
             inputs['repo']
         )
 
-        return ActionResult(
-            data={
+        return {
             'deleted': True,
             'repository': f"{inputs['owner']}/{inputs['repo']}"
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Commit Actions ----
@@ -844,8 +816,7 @@ class ListCommits(ActionHandler):
             until=inputs.get('until')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'sha': commit['sha'],
             'author': {
                 'name': commit['commit']['author']['name'],
@@ -859,9 +830,7 @@ class ListCommits(ActionHandler):
             },
             'message': commit['commit']['message'],
             'url': commit['html_url']
-        } for commit in commits],
-            cost_usd=0.0
-        )
+        } for commit in commits]
 
 
 @github.action("get_commit")
@@ -876,8 +845,7 @@ class GetCommit(ActionHandler):
             inputs['sha']
         )
 
-        return ActionResult(
-            data={
+        return {
             'sha': commit['sha'],
             'author': {
                 'name': commit['commit']['author']['name'],
@@ -893,9 +861,7 @@ class GetCommit(ActionHandler):
             'stats': commit.get('stats', {}),
             'files': commit.get('files', []),
             'url': commit['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Issue Actions ----
@@ -916,8 +882,7 @@ class ListIssues(ActionHandler):
             labels=inputs.get('labels')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'number': issue['number'],
             'title': issue['title'],
             'description': issue['body'],
@@ -932,9 +897,7 @@ class ListIssues(ActionHandler):
             'assignees': [{'login': assignee['login']} for assignee in issue.get('assignees', [])],
             'labels': [{'name': label['name'], 'color': label['color']} for label in issue.get('labels', [])],
             'url': issue['html_url']
-        } for issue in issues],
-            cost_usd=0.0
-        )
+        } for issue in issues]
 
 
 @github.action("get_issue")
@@ -949,8 +912,7 @@ class GetIssue(ActionHandler):
             inputs['issue_number']
         )
 
-        return ActionResult(
-            data={
+        return {
             'number': issue['number'],
             'title': issue['title'],
             'description': issue['body'],
@@ -966,9 +928,7 @@ class GetIssue(ActionHandler):
             'labels': [{'name': label['name'], 'color': label['color']} for label in issue.get('labels', [])],
             'comments': issue.get('comments', 0),
             'url': issue['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_issue")
@@ -987,8 +947,7 @@ class CreateIssue(ActionHandler):
             milestone=inputs.get('milestone')
         )
 
-        return ActionResult(
-            data={
+        return {
             'number': issue['number'],
             'title': issue['title'],
             'description': issue['body'],
@@ -1002,9 +961,7 @@ class CreateIssue(ActionHandler):
             'assignees': [{'login': assignee['login']} for assignee in issue.get('assignees', [])],
             'labels': [{'name': label['name'], 'color': label['color']} for label in issue.get('labels', [])],
             'url': issue['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("update_issue")
@@ -1025,8 +982,7 @@ class UpdateIssue(ActionHandler):
             milestone=inputs.get('milestone')
         )
 
-        return ActionResult(
-            data={
+        return {
             'number': issue['number'],
             'title': issue['title'],
             'description': issue['body'],
@@ -1041,9 +997,7 @@ class UpdateIssue(ActionHandler):
             'assignees': [{'login': assignee['login']} for assignee in issue.get('assignees', [])],
             'labels': [{'name': label['name'], 'color': label['color']} for label in issue.get('labels', [])],
             'url': issue['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_issue_comment")
@@ -1059,8 +1013,7 @@ class CreateIssueComment(ActionHandler):
             inputs['body']
         )
 
-        return ActionResult(
-            data={
+        return {
             'id': comment['id'],
             'body': comment['body'],
             'created_at': comment['created_at'],
@@ -1070,9 +1023,7 @@ class CreateIssueComment(ActionHandler):
                 'avatar_url': comment['user']['avatar_url']
             },
             'url': comment['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("get_issue_comments")
@@ -1087,8 +1038,7 @@ class GetIssueComments(ActionHandler):
             inputs['issue_number']
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': comment['id'],
             'body': comment['body'],
             'created_at': comment['created_at'],
@@ -1098,9 +1048,7 @@ class GetIssueComments(ActionHandler):
                 'avatar_url': comment['user']['avatar_url']
             },
             'url': comment['html_url']
-        } for comment in comments],
-            cost_usd=0.0
-        )
+        } for comment in comments]
 
 
 # ---- Pull Request Actions ----
@@ -1119,8 +1067,7 @@ class ListPullRequests(ActionHandler):
             direction=inputs.get('direction', 'desc')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'number': pr['number'],
             'title': pr['title'],
             'description': pr.get('body'),
@@ -1135,9 +1082,7 @@ class ListPullRequests(ActionHandler):
                 'avatar_url': pr['user']['avatar_url']
             },
             'url': pr['html_url']
-        } for pr in prs],
-            cost_usd=0.0
-        )
+        } for pr in prs]
 
 
 @github.action("get_pull_request")
@@ -1152,8 +1097,7 @@ class GetPullRequest(ActionHandler):
             inputs['pull_number']
         )
 
-        return ActionResult(
-            data={
+        return {
             'number': pr['number'],
             'title': pr['title'],
             'description': pr.get('body'),
@@ -1190,9 +1134,7 @@ class GetPullRequest(ActionHandler):
                 }
             },
             'url': pr['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_pull_request")
@@ -1212,8 +1154,7 @@ class CreatePullRequest(ActionHandler):
             maintainer_can_modify=inputs.get('maintainer_can_modify', True)
         )
 
-        return ActionResult(
-            data={
+        return {
             'number': pr['number'],
             'title': pr['title'],
             'body': pr['body'],
@@ -1250,9 +1191,7 @@ class CreatePullRequest(ActionHandler):
                 }
             },
             'url': pr['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("merge_pull_request")
@@ -1270,16 +1209,13 @@ class MergePullRequest(ActionHandler):
             merge_method=inputs.get('merge_method', 'merge')
         )
 
-        return ActionResult(
-            data={
+        return {
             'merged': True,
             'message': result.get('message'),
             'sha': result.get('sha'),
             'commit_title': inputs.get('commit_title') or result.get('commit_title'),
             'commit_message': inputs.get('commit_message') or result.get('commit_message')
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("add_pull_request_reviewers")
@@ -1296,15 +1232,12 @@ class AddPullRequestReviewers(ActionHandler):
             team_reviewers=inputs.get('team_reviewers')
         )
 
-        return ActionResult(
-            data={
+        return {
             'requested_reviewers': [{'login': reviewer['login'], 'id': reviewer['id']}
                                    for reviewer in result.get('requested_reviewers', [])],
             'requested_teams': [{'slug': team['slug'], 'id': team['id'], 'name': team['name']}
                                for team in result.get('requested_teams', [])]
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("remove_pull_request_reviewers")
@@ -1321,15 +1254,12 @@ class RemovePullRequestReviewers(ActionHandler):
             team_reviewers=inputs.get('team_reviewers')
         )
 
-        return ActionResult(
-            data={
+        return {
             'requested_reviewers': [{'login': reviewer['login'], 'id': reviewer['id']}
                                    for reviewer in result.get('requested_reviewers', [])],
             'requested_teams': [{'slug': team['slug'], 'id': team['id'], 'name': team['name']}
                                for team in result.get('requested_teams', [])]
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("list_pull_request_reviewers")
@@ -1344,15 +1274,12 @@ class ListPullRequestReviewers(ActionHandler):
             inputs['pull_number']
         )
 
-        return ActionResult(
-            data={
+        return {
             'users': [{'login': user['login'], 'id': user['id'], 'avatar_url': user['avatar_url']}
                      for user in result.get('users', [])],
             'teams': [{'slug': team['slug'], 'id': team['id'], 'name': team['name']}
                      for team in result.get('teams', [])]
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_pull_request_review")
@@ -1370,8 +1297,7 @@ class CreatePullRequestReview(ActionHandler):
             comments=inputs.get('comments')
         )
 
-        return ActionResult(
-            data={
+        return {
             'id': review['id'],
             'body': review.get('body'),
             'state': review.get('state'),
@@ -1381,9 +1307,7 @@ class CreatePullRequestReview(ActionHandler):
                 'avatar_url': review['user']['avatar_url']
             },
             'url': review.get('html_url')
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Branch Actions ----
@@ -1399,17 +1323,14 @@ class ListBranches(ActionHandler):
             inputs['repo']
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'name': branch['name'],
             'protected': branch['protected'],
             'commit': {
                 'sha': branch['commit']['sha'],
                 'url': branch['commit']['url']
             }
-        } for branch in branches],
-            cost_usd=0.0
-        )
+        } for branch in branches]
 
 
 @github.action("get_branch")
@@ -1424,8 +1345,7 @@ class GetBranch(ActionHandler):
             inputs['branch']
         )
 
-        return ActionResult(
-            data={
+        return {
             'name': branch['name'],
             'protected': branch['protected'],
             'commit': {
@@ -1433,9 +1353,7 @@ class GetBranch(ActionHandler):
                 'url': branch['commit']['url']
             },
             'protection': branch.get('protection', {})
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_branch")
@@ -1451,8 +1369,7 @@ class CreateBranch(ActionHandler):
             inputs['sha']
         )
 
-        return ActionResult(
-            data={
+        return {
             'ref': result['ref'],
             'url': result['url'],
             'object': {
@@ -1460,9 +1377,7 @@ class CreateBranch(ActionHandler):
                 'type': result['object']['type'],
                 'url': result['object']['url']
             }
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("delete_branch")
@@ -1477,13 +1392,10 @@ class DeleteBranch(ActionHandler):
             inputs['branch']
         )
 
-        return ActionResult(
-            data={
+        return {
             'deleted': True,
             'branch': inputs['branch']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("get_branch_protection")
@@ -1499,8 +1411,7 @@ class GetBranchProtection(ActionHandler):
                 inputs['branch']
             )
 
-            return ActionResult(
-                data={
+            return {
                     'enabled': True,
                     'required_status_checks': protection.get('required_status_checks', {}).get('contexts', []) if protection.get('required_status_checks') else [],
                     'enforce_admins': protection.get('enforce_admins', {}).get('enabled', False) if protection.get('enforce_admins') else False,
@@ -1513,18 +1424,13 @@ class GetBranchProtection(ActionHandler):
                         'users': [user['login'] for user in protection.get('restrictions', {}).get('users', [])] if protection.get('restrictions') else [],
                         'teams': [team['slug'] for team in protection.get('restrictions', {}).get('teams', [])] if protection.get('restrictions') else []
                     }
-                },
-                cost_usd=0.0
-            )
+                }
         except Exception as e:
             # Branch protection not enabled
-            return ActionResult(
-                data={
+            return {
                     'enabled': False,
                     'error': str(e)
-                },
-                cost_usd=0.0
-            )
+                }
 
 
 @github.action("diff_branch_to_branch")
@@ -1540,8 +1446,7 @@ class DiffBranchToBranch(ActionHandler):
             inputs['head_branch']
         )
 
-        return ActionResult(
-            data={
+        return {
             'status': diff_data.get('status'),
             'ahead_by': diff_data.get('ahead_by'),
             'behind_by': diff_data.get('behind_by'),
@@ -1564,9 +1469,7 @@ class DiffBranchToBranch(ActionHandler):
                 'changes': file['changes'],
                 'patch': file.get('patch') or ""
             } for file in diff_data.get('files', [])]
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Webhook Actions ----
@@ -1587,8 +1490,7 @@ class CreateWebhook(ActionHandler):
             active=inputs.get('active', True)
         )
 
-        return ActionResult(
-            data={
+        return {
             'id': webhook['id'],
             'name': webhook['name'],
             'active': webhook['active'],
@@ -1600,9 +1502,7 @@ class CreateWebhook(ActionHandler):
             'created_at': webhook['created_at'],
             'updated_at': webhook['updated_at'],
             'url': webhook['url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("list_webhooks")
@@ -1616,8 +1516,7 @@ class ListWebhooks(ActionHandler):
             inputs['repo']
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': webhook['id'],
             'name': webhook['name'],
             'active': webhook['active'],
@@ -1629,9 +1528,7 @@ class ListWebhooks(ActionHandler):
             'created_at': webhook['created_at'],
             'updated_at': webhook['updated_at'],
             'url': webhook['url']
-        } for webhook in webhooks],
-            cost_usd=0.0
-        )
+        } for webhook in webhooks]
 
 
 @github.action("delete_webhook")
@@ -1646,13 +1543,10 @@ class DeleteWebhook(ActionHandler):
             inputs['hook_id']
         )
 
-        return ActionResult(
-            data={
+        return {
             'deleted': True,
             'hook_id': inputs['hook_id']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- File Operation Actions ----
@@ -1670,16 +1564,13 @@ class GetFileContent(ActionHandler):
             ref=inputs.get('ref')
         )
 
-        return ActionResult(
-            data={
+        return {
             'content': file_data['content'],
             'sha': file_data['sha'],
             'size': file_data['size'],
             'name': file_data['name'],
             'path': file_data['path']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("create_file")
@@ -1697,8 +1588,7 @@ class CreateFile(ActionHandler):
             branch=inputs.get('branch')
         )
 
-        return ActionResult(
-            data={
+        return {
             'content': {
                 'name': result['content']['name'],
                 'path': result['content']['path'],
@@ -1709,9 +1599,7 @@ class CreateFile(ActionHandler):
                 'sha': result['commit']['sha'],
                 'message': result['commit']['message']
             }
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("update_file")
@@ -1730,8 +1618,7 @@ class UpdateFile(ActionHandler):
             branch=inputs.get('branch')
         )
 
-        return ActionResult(
-            data={
+        return {
             'content': {
                 'name': result['content']['name'],
                 'path': result['content']['path'],
@@ -1742,9 +1629,7 @@ class UpdateFile(ActionHandler):
                 'sha': result['commit']['sha'],
                 'message': result['commit']['message']
             }
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("delete_file")
@@ -1762,17 +1647,14 @@ class DeleteFile(ActionHandler):
             branch=inputs.get('branch')
         )
 
-        return ActionResult(
-            data={
+        return {
             'deleted': True,
             'path': inputs['path'],
             'commit': {
                 'sha': result['commit']['sha'],
                 'message': result['commit']['message']
             }
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Gist Actions ----
@@ -1789,8 +1671,7 @@ class CreateGist(ActionHandler):
             public=inputs.get('public', True)
         )
 
-        return ActionResult(
-            data={
+        return {
             'id': gist['id'],
             'description': gist['description'],
             'public': gist['public'],
@@ -1799,9 +1680,7 @@ class CreateGist(ActionHandler):
             'created_at': gist['created_at'],
             'updated_at': gist['updated_at'],
             'url': gist['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- User Actions ----
@@ -1816,8 +1695,7 @@ class GetUser(ActionHandler):
             username=inputs.get('username')
         )
 
-        return ActionResult(
-            data={
+        return {
             'login': user['login'],
             'id': user['id'],
             'name': user.get('name'),
@@ -1834,9 +1712,7 @@ class GetUser(ActionHandler):
             'updated_at': user['updated_at'],
             'avatar_url': user['avatar_url'],
             'html_url': user['html_url']
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 # ---- Organization Actions ----
@@ -1852,17 +1728,14 @@ class ListOrganizationMembers(ActionHandler):
             role=inputs.get('role', 'all')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'login': member['login'],
             'id': member['id'],
             'type': member['type'],
             'site_admin': member['site_admin'],
             'avatar_url': member['avatar_url'],
             'url': member['html_url']
-        } for member in members],
-            cost_usd=0.0
-        )
+        } for member in members]
 
 
 # ---- GitHub Actions/Workflows ----
@@ -1878,8 +1751,7 @@ class ListWorkflows(ActionHandler):
             inputs['repo']
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': workflow['id'],
             'name': workflow['name'],
             'path': workflow['path'],
@@ -1887,9 +1759,7 @@ class ListWorkflows(ActionHandler):
             'created_at': workflow['created_at'],
             'updated_at': workflow['updated_at'],
             'url': workflow['html_url']
-        } for workflow in workflows],
-            cost_usd=0.0
-        )
+        } for workflow in workflows]
 
 
 @github.action("get_workflow_runs")
@@ -1906,8 +1776,7 @@ class GetWorkflowRuns(ActionHandler):
             branch=inputs.get('branch')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': run['id'],
             'name': run['name'],
             'workflow_id': run['workflow_id'],
@@ -1926,9 +1795,7 @@ class GetWorkflowRuns(ActionHandler):
                 'avatar_url': run['actor']['avatar_url']
             },
             'url': run['html_url']
-        } for run in runs],
-            cost_usd=0.0
-        )
+        } for run in runs]
 
 
 # ---- Rate Limit Action ----
@@ -1940,8 +1807,7 @@ class GetRateLimit(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         rate_limit = await GitHubAPI.get_rate_limit(context)
 
-        return ActionResult(
-            data={
+        return {
             'core': {
                 'limit': rate_limit['resources']['core']['limit'],
                 'remaining': rate_limit['resources']['core']['remaining'],
@@ -1960,9 +1826,7 @@ class GetRateLimit(ActionHandler):
                 'reset': rate_limit['resources']['graphql']['reset'],
                 'used': rate_limit['resources']['graphql']['used']
             }
-        },
-            cost_usd=0.0
-        )
+        }
 
 
 @github.action("list_user_repositories")
@@ -1978,8 +1842,7 @@ class ListUserRepositories(ActionHandler):
             direction=inputs.get('direction', 'desc')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': repo['id'],
             'name': repo['name'],
             'full_name': repo['full_name'],
@@ -1994,9 +1857,7 @@ class ListUserRepositories(ActionHandler):
             'forks_count': repo['forks_count'],
             'open_issues_count': repo['open_issues_count'],
             'default_branch': repo['default_branch']
-        } for repo in repos],
-            cost_usd=0.0
-        )
+        } for repo in repos]
 
 
 @github.action("list_organization_repositories")
@@ -2012,8 +1873,7 @@ class ListOrganizationRepositories(ActionHandler):
             direction=inputs.get('direction', 'desc')
         )
 
-        return ActionResult(
-            data=[{
+        return [{
             'id': repo['id'],
             'name': repo['name'],
             'full_name': repo['full_name'],
@@ -2028,43 +1888,7 @@ class ListOrganizationRepositories(ActionHandler):
             'forks_count': repo['forks_count'],
             'open_issues_count': repo['open_issues_count'],
             'default_branch': repo['default_branch']
-        } for repo in repos],
-            cost_usd=0.0
-        )
+        } for repo in repos]
 
 
 # ============================================================================
-# CONNECTED ACCOUNT HANDLER
-# ============================================================================
-
-@github.connected_account()
-class GitHubConnectedAccountHandler(ConnectedAccountHandler):
-    """
-    Handler for fetching connected GitHub account information.
-    This is called once when a user authorizes the integration and the
-    information is cached for display in the UI.
-    """
-
-    async def get_account_info(self, context: ExecutionContext) -> ConnectedAccountInfo:
-        """
-        Fetch GitHub user information for the connected account.
-
-        Returns:
-            ConnectedAccountInfo with user's email, username, name, avatar, etc.
-        """
-        # Fetch authenticated user info
-        user_data = await GitHubAPI.get_user(context)
-
-        # Parse name into first/last
-        name = user_data.get("name", "")
-        name_parts = name.split(maxsplit=1) if name else []
-
-        return ConnectedAccountInfo(
-            email=user_data.get("email"),
-            username=user_data.get("login"),
-            first_name=name_parts[0] if len(name_parts) > 0 else None,
-            last_name=name_parts[1] if len(name_parts) > 1 else None,
-            avatar_url=user_data.get("avatar_url"),
-            organization=user_data.get("company"),
-            user_id=str(user_data.get("id"))
-        )
