@@ -169,11 +169,11 @@ async def test_get_project():
         try:
             result = await float.execute_action("get_project", inputs, context)
 
-            assert result.get("project_id") == test_project_id, "Should return correct project"
-            print(f"[OK] Retrieved project: {result.get('name', 'Unnamed')}")
-            print(f"  Client ID: {result.get('client_id', 'N/A')}")
-            print(f"  Budget Type: {result.get('budget_type', 'N/A')}")
-            print(f"  Active: {result.get('active', 'N/A')}")
+            assert result.data.get("project_id") == test_project_id, "Should return correct project"
+            print(f"[OK] Retrieved project: {result.data.get('name', 'Unnamed')}")
+            print(f"  Client ID: {result.data.get('client_id', 'N/A')}")
+            print(f"  Budget Type: {result.data.get('budget_type', 'N/A')}")
+            print(f"  Active: {result.data.get('active', 'N/A')}")
 
             return result
 
