@@ -580,10 +580,13 @@ class DeleteProjectHandler(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "success": True,
-                "message": f"Project {project_id} deleted successfully"
-            }
+            return ActionResult(
+                data={
+                    "success": True,
+                    "message": f"Project {project_id} deleted successfully"
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to delete project {project_id}: {str(e)}")
