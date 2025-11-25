@@ -1017,10 +1017,10 @@ class DeleteTimeOffHandler(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "success": True,
-                "message": f"Time off {timeoff_id} deleted successfully"
-            }
+            return ActionResult(
+                data={"success": True, "message": f"Time off {timeoff_id} deleted successfully"},
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to delete time off {timeoff_id}: {str(e)}")
