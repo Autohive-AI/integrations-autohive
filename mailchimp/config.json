@@ -7,7 +7,7 @@
   "supports_connected_account": true,
   "auth": {
     "type": "platform",
-    "provider": "MailChimp",
+    "provider": "Mailchimp",
     "scopes": []
   },
   "actions": {
