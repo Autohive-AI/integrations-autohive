@@ -23,6 +23,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Canva
+
+[canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation, asset management workflows, and brand-compliant design generation.
+
 ### Circle
 
 [circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
