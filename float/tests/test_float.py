@@ -79,13 +79,15 @@ async def test_get_person():
         try:
             result = await float.execute_action("get_person", inputs, context)
 
-            assert result.get("people_id") == test_person_id, "Should return correct person"
-            print(f"[OK] Retrieved person: {result.get('name', 'Unnamed')}")
-            print(f"  Email: {result.get('email', 'N/A')}")
-            print(f"  Job Title: {result.get('job_title', 'N/A')}")
-            print(f"  Active: {result.get('active', 'N/A')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("people_id") == test_person_id, "Should return correct person"
+            print(f"[OK] Retrieved person: {data.get('name', 'Unnamed')}")
+            print(f"  Email: {data.get('email', 'N/A')}")
+            print(f"  Job Title: {data.get('job_title', 'N/A')}")
+            print(f"  Active: {data.get('active', 'N/A')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
