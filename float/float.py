@@ -67,13 +67,79 @@ def handle_pagination_response(response: Dict[str, Any]) -> Dict[str, Any]:
     return response
 
 
+# ---- Connected Account Handler ----
+
+@float.connected_account()
+class FloatConnectedAccountHandler(ConnectedAccountHandler):
+    """Handler for retrieving connected account information from Float"""
+
+    async def get_account_info(self, context: ExecutionContext) -> ConnectedAccountInfo:
+        """
+        Fetch Float account information for the connected user.
+
+        This method is called once when a user authorizes the integration.
+        The returned information is cached in the database.
+
+        Args:
+            context: ExecutionContext containing auth credentials and metadata
+
+        Returns:
+            ConnectedAccountInfo with user/account information
+        """
+        headers = get_auth_headers(context)
+
+        try:
+            # Float API provides account information through the /account endpoint
+            response = await context.fetch(
+                url=f"{FLOAT_API_BASE_URL}/account",
+                method="GET",
+                headers=headers
+            )
+
+            # Extract account information
+            # Float typically returns account details including company name
+            account_data = response if isinstance(response, dict) else {}
+
+            # Try to get the current user's information from the account endpoint
+            # Float API typically returns the account owner's information
+            user_email = account_data.get("owner_email") or account_data.get("email")
+            user_name = account_data.get("owner_name") or account_data.get("name")
+
+            # Get company/organization name from account
+            organization = account_data.get("name") or account_data.get("company_name")
+
+            # Parse name into first/last if available
+            first_name = None
+            last_name = None
+            if user_name:
+                name_parts = user_name.split(maxsplit=1)
+                first_name = name_parts[0] if len(name_parts) > 0 else None
+                last_name = name_parts[1] if len(name_parts) > 1 else None
+
+            return ConnectedAccountInfo(
+                email=user_email,
+                username=user_email.split('@')[0] if user_email else None,
+                first_name=first_name,
+                last_name=last_name,
+                organization=organization,
+                user_id=str(account_data.get("account_id", "")) if account_data.get("account_id") else None
+            )
+
+        except Exception as e:
+            # Log the error but don't fail - return minimal info
+            print(f"Warning: Could not fetch Float account info: {str(e)}")
+            return ConnectedAccountInfo(
+                organization="Float Account"
+            )
+
+
 # ---- People Resource Actions ----
 
 @float.action("list_people")
 class ListPeopleHandler(ActionHandler):
     """Handler for listing all people in the Float account"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all people with optional filtering and pagination.
 
@@ -82,7 +148,7 @@ class ListPeopleHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of people and pagination info
+            ActionResult containing list of people and pagination info
         """
         params = {}
 
@@ -118,7 +184,10 @@ class ListPeopleHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list people: {str(e)}")
@@ -128,7 +197,7 @@ class ListPeopleHandler(ActionHandler):
 class GetPersonHandler(ActionHandler):
     """Handler for retrieving a specific person by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific person.
 
@@ -137,7 +206,7 @@ class GetPersonHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing person details
+            ActionResult containing person details
         """
         people_id = inputs["people_id"]
         params = {}
@@ -155,7 +224,10 @@ class GetPersonHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get person {people_id}: {str(e)}")
@@ -165,7 +237,7 @@ class GetPersonHandler(ActionHandler):
 class CreatePersonHandler(ActionHandler):
     """Handler for creating a new person"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new person in Float.
 
@@ -174,7 +246,7 @@ class CreatePersonHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created person details
+            ActionResult containing created person details
         """
         request_body = {
             "name": inputs["name"]
@@ -201,7 +273,10 @@ class CreatePersonHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create person: {str(e)}")
@@ -211,7 +286,7 @@ class CreatePersonHandler(ActionHandler):
 class UpdatePersonHandler(ActionHandler):
     """Handler for updating an existing person"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing person's information.
 
@@ -220,7 +295,7 @@ class UpdatePersonHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated person details
+            ActionResult containing updated person details
         """
         people_id = inputs["people_id"]
         request_body = {}
@@ -251,7 +326,10 @@ class UpdatePersonHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update person {people_id}: {str(e)}")
@@ -261,7 +339,7 @@ class UpdatePersonHandler(ActionHandler):
 class DeletePersonHandler(ActionHandler):
     """Handler for deleting a person"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a person from Float.
 
@@ -270,7 +348,7 @@ class DeletePersonHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         people_id = inputs["people_id"]
         headers = get_auth_headers(context)
@@ -297,7 +375,7 @@ class DeletePersonHandler(ActionHandler):
 class ListProjectsHandler(ActionHandler):
     """Handler for listing all projects"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all projects with optional filtering and pagination.
 
@@ -306,7 +384,7 @@ class ListProjectsHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of projects
+            ActionResult containing list of projects
         """
         params = {}
 
@@ -335,7 +413,10 @@ class ListProjectsHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list projects: {str(e)}")
@@ -345,7 +426,7 @@ class ListProjectsHandler(ActionHandler):
 class GetProjectHandler(ActionHandler):
     """Handler for retrieving a specific project by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific project.
 
@@ -354,7 +435,7 @@ class GetProjectHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing project details
+            ActionResult containing project details
         """
         project_id = inputs["project_id"]
         headers = get_auth_headers(context)
@@ -366,7 +447,10 @@ class GetProjectHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get project {project_id}: {str(e)}")
@@ -376,7 +460,7 @@ class GetProjectHandler(ActionHandler):
 class CreateProjectHandler(ActionHandler):
     """Handler for creating a new project"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new project in Float.
 
@@ -385,7 +469,7 @@ class CreateProjectHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created project details
+            ActionResult containing created project details
         """
         request_body = {
             "name": inputs["name"]
@@ -413,7 +497,10 @@ class CreateProjectHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create project: {str(e)}")
@@ -423,7 +510,7 @@ class CreateProjectHandler(ActionHandler):
 class UpdateProjectHandler(ActionHandler):
     """Handler for updating an existing project"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing project's information.
 
@@ -432,7 +519,7 @@ class UpdateProjectHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated project details
+            ActionResult containing updated project details
         """
         project_id = inputs["project_id"]
         request_body = {}
@@ -459,7 +546,10 @@ class UpdateProjectHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update project {project_id}: {str(e)}")
@@ -469,7 +559,7 @@ class UpdateProjectHandler(ActionHandler):
 class DeleteProjectHandler(ActionHandler):
     """Handler for deleting a project"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a project from Float.
 
@@ -478,7 +568,7 @@ class DeleteProjectHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         project_id = inputs["project_id"]
         headers = get_auth_headers(context)
@@ -505,7 +595,7 @@ class DeleteProjectHandler(ActionHandler):
 class ListTasksHandler(ActionHandler):
     """Handler for listing all tasks/allocations"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all tasks/allocations with optional filtering and pagination.
 
@@ -514,7 +604,7 @@ class ListTasksHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of tasks
+            ActionResult containing list of tasks
         """
         params = {}
 
@@ -541,7 +631,10 @@ class ListTasksHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list tasks: {str(e)}")
@@ -551,7 +644,7 @@ class ListTasksHandler(ActionHandler):
 class GetTaskHandler(ActionHandler):
     """Handler for retrieving a specific task by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific task/allocation.
 
@@ -560,7 +653,7 @@ class GetTaskHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing task details
+            ActionResult containing task details
         """
         task_id = inputs["task_id"]
         headers = get_auth_headers(context)
@@ -572,7 +665,10 @@ class GetTaskHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get task {task_id}: {str(e)}")
@@ -582,7 +678,7 @@ class GetTaskHandler(ActionHandler):
 class CreateTaskHandler(ActionHandler):
     """Handler for creating a new task/allocation"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new task/allocation in Float.
 
@@ -591,7 +687,7 @@ class CreateTaskHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created task details
+            ActionResult containing created task details
         """
         request_body = {
             "people_id": inputs["people_id"],
@@ -621,7 +717,10 @@ class CreateTaskHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create task: {str(e)}")
@@ -631,7 +730,7 @@ class CreateTaskHandler(ActionHandler):
 class UpdateTaskHandler(ActionHandler):
     """Handler for updating an existing task/allocation"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing task/allocation's information.
 
@@ -640,7 +739,7 @@ class UpdateTaskHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated task details
+            ActionResult containing updated task details
         """
         task_id = inputs["task_id"]
         request_body = {}
@@ -666,7 +765,10 @@ class UpdateTaskHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update task {task_id}: {str(e)}")
@@ -676,7 +778,7 @@ class UpdateTaskHandler(ActionHandler):
 class DeleteTaskHandler(ActionHandler):
     """Handler for deleting a task/allocation"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a task/allocation from Float.
 
@@ -685,7 +787,7 @@ class DeleteTaskHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         task_id = inputs["task_id"]
         headers = get_auth_headers(context)
@@ -712,7 +814,7 @@ class DeleteTaskHandler(ActionHandler):
 class ListTimeOffHandler(ActionHandler):
     """Handler for listing all time off entries"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all time off entries with optional filtering and pagination.
 
@@ -721,7 +823,7 @@ class ListTimeOffHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of time off entries
+            ActionResult containing list of time off entries
         """
         params = {}
 
@@ -748,7 +850,10 @@ class ListTimeOffHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list time off: {str(e)}")
@@ -758,7 +863,7 @@ class ListTimeOffHandler(ActionHandler):
 class GetTimeOffHandler(ActionHandler):
     """Handler for retrieving a specific time off entry by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific time off entry.
 
@@ -767,7 +872,7 @@ class GetTimeOffHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing time off details
+            ActionResult containing time off details
         """
         timeoff_id = inputs["timeoff_id"]
         headers = get_auth_headers(context)
@@ -779,7 +884,10 @@ class GetTimeOffHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get time off {timeoff_id}: {str(e)}")
@@ -789,7 +897,7 @@ class GetTimeOffHandler(ActionHandler):
 class CreateTimeOffHandler(ActionHandler):
     """Handler for creating a new time off entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new time off entry in Float.
 
@@ -798,7 +906,7 @@ class CreateTimeOffHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created time off details
+            ActionResult containing created time off details
         """
         request_body = {
             "people_id": inputs["people_id"],
@@ -825,7 +933,10 @@ class CreateTimeOffHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create time off: {str(e)}")
@@ -835,7 +946,7 @@ class CreateTimeOffHandler(ActionHandler):
 class UpdateTimeOffHandler(ActionHandler):
     """Handler for updating an existing time off entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing time off entry's information.
 
@@ -844,7 +955,7 @@ class UpdateTimeOffHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated time off details
+            ActionResult containing updated time off details
         """
         timeoff_id = inputs["timeoff_id"]
         request_body = {}
@@ -869,7 +980,10 @@ class UpdateTimeOffHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update time off {timeoff_id}: {str(e)}")
@@ -879,7 +993,7 @@ class UpdateTimeOffHandler(ActionHandler):
 class DeleteTimeOffHandler(ActionHandler):
     """Handler for deleting a time off entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a time off entry from Float.
 
@@ -888,7 +1002,7 @@ class DeleteTimeOffHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         timeoff_id = inputs["timeoff_id"]
         headers = get_auth_headers(context)
@@ -915,7 +1029,7 @@ class DeleteTimeOffHandler(ActionHandler):
 class ListLoggedTimeHandler(ActionHandler):
     """Handler for listing all logged time entries"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all logged time entries with optional filtering and pagination.
 
@@ -924,7 +1038,7 @@ class ListLoggedTimeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of logged time entries
+            ActionResult containing list of logged time entries
         """
         params = {}
 
@@ -951,7 +1065,10 @@ class ListLoggedTimeHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list logged time: {str(e)}")
@@ -961,7 +1078,7 @@ class ListLoggedTimeHandler(ActionHandler):
 class GetLoggedTimeHandler(ActionHandler):
     """Handler for retrieving a specific logged time entry by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific logged time entry.
 
@@ -970,7 +1087,7 @@ class GetLoggedTimeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing logged time details
+            ActionResult containing logged time details
         """
         logged_time_id = inputs["logged_time_id"]
         headers = get_auth_headers(context)
@@ -982,7 +1099,10 @@ class GetLoggedTimeHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get logged time {logged_time_id}: {str(e)}")
@@ -992,7 +1112,7 @@ class GetLoggedTimeHandler(ActionHandler):
 class CreateLoggedTimeHandler(ActionHandler):
     """Handler for creating a new logged time entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new logged time entry in Float.
 
@@ -1001,7 +1121,7 @@ class CreateLoggedTimeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created logged time details
+            ActionResult containing created logged time details
         """
         request_body = {
             "people_id": inputs["people_id"],
@@ -1030,7 +1150,10 @@ class CreateLoggedTimeHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create logged time: {str(e)}")
@@ -1040,7 +1163,7 @@ class CreateLoggedTimeHandler(ActionHandler):
 class UpdateLoggedTimeHandler(ActionHandler):
     """Handler for updating an existing logged time entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing logged time entry's information.
 
@@ -1049,7 +1172,7 @@ class UpdateLoggedTimeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated logged time details
+            ActionResult containing updated logged time details
         """
         logged_time_id = inputs["logged_time_id"]
         request_body = {}
@@ -1073,7 +1196,10 @@ class UpdateLoggedTimeHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update logged time {logged_time_id}: {str(e)}")
@@ -1083,7 +1209,7 @@ class UpdateLoggedTimeHandler(ActionHandler):
 class DeleteLoggedTimeHandler(ActionHandler):
     """Handler for deleting a logged time entry"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a logged time entry from Float.
 
@@ -1092,7 +1218,7 @@ class DeleteLoggedTimeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         logged_time_id = inputs["logged_time_id"]
         headers = get_auth_headers(context)
@@ -1119,7 +1245,7 @@ class DeleteLoggedTimeHandler(ActionHandler):
 class ListClientsHandler(ActionHandler):
     """Handler for listing all clients"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all clients with optional filtering and pagination.
 
@@ -1128,7 +1254,7 @@ class ListClientsHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of clients
+            ActionResult containing list of clients
         """
         params = {}
 
@@ -1156,7 +1282,10 @@ class ListClientsHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list clients: {str(e)}")
@@ -1166,7 +1295,7 @@ class ListClientsHandler(ActionHandler):
 class GetClientHandler(ActionHandler):
     """Handler for retrieving a specific client by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific client.
 
@@ -1175,7 +1304,7 @@ class GetClientHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing client details
+            ActionResult containing client details
         """
         client_id = inputs["client_id"]
         headers = get_auth_headers(context)
@@ -1187,7 +1316,10 @@ class GetClientHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get client {client_id}: {str(e)}")
@@ -1197,7 +1329,7 @@ class GetClientHandler(ActionHandler):
 class CreateClientHandler(ActionHandler):
     """Handler for creating a new client"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Create a new client in Float.
 
@@ -1206,7 +1338,7 @@ class CreateClientHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing created client details
+            ActionResult containing created client details
         """
         request_body = {
             "name": inputs["name"]
@@ -1229,7 +1361,10 @@ class CreateClientHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to create client: {str(e)}")
@@ -1239,7 +1374,7 @@ class CreateClientHandler(ActionHandler):
 class UpdateClientHandler(ActionHandler):
     """Handler for updating an existing client"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Update an existing client's information.
 
@@ -1248,7 +1383,7 @@ class UpdateClientHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing updated client details
+            ActionResult containing updated client details
         """
         client_id = inputs["client_id"]
         request_body = {}
@@ -1273,7 +1408,10 @@ class UpdateClientHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to update client {client_id}: {str(e)}")
@@ -1283,7 +1421,7 @@ class UpdateClientHandler(ActionHandler):
 class DeleteClientHandler(ActionHandler):
     """Handler for deleting a client"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Delete a client from Float.
 
@@ -1292,7 +1430,7 @@ class DeleteClientHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing success message
+            ActionResult containing success message
         """
         client_id = inputs["client_id"]
         headers = get_auth_headers(context)
@@ -1319,7 +1457,7 @@ class DeleteClientHandler(ActionHandler):
 class ListDepartmentsHandler(ActionHandler):
     """Handler for listing all departments"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all departments with optional filtering and pagination.
 
@@ -1328,7 +1466,7 @@ class ListDepartmentsHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of departments
+            ActionResult containing list of departments
         """
         params = {}
 
@@ -1352,7 +1490,10 @@ class ListDepartmentsHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list departments: {str(e)}")
@@ -1362,7 +1503,7 @@ class ListDepartmentsHandler(ActionHandler):
 class GetDepartmentHandler(ActionHandler):
     """Handler for retrieving a specific department by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific department.
 
@@ -1371,7 +1512,7 @@ class GetDepartmentHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing department details
+            ActionResult containing department details
         """
         department_id = inputs["department_id"]
         headers = get_auth_headers(context)
@@ -1383,7 +1524,10 @@ class GetDepartmentHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get department {department_id}: {str(e)}")
@@ -1395,7 +1539,7 @@ class GetDepartmentHandler(ActionHandler):
 class ListRolesHandler(ActionHandler):
     """Handler for listing all roles"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all roles with optional filtering and pagination.
 
@@ -1404,7 +1548,7 @@ class ListRolesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of roles
+            ActionResult containing list of roles
         """
         params = {}
 
@@ -1428,7 +1572,10 @@ class ListRolesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list roles: {str(e)}")
@@ -1438,7 +1585,7 @@ class ListRolesHandler(ActionHandler):
 class GetRoleHandler(ActionHandler):
     """Handler for retrieving a specific role by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific role.
 
@@ -1447,7 +1594,7 @@ class GetRoleHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing role details
+            ActionResult containing role details
         """
         role_id = inputs["role_id"]
         headers = get_auth_headers(context)
@@ -1459,7 +1606,10 @@ class GetRoleHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get role {role_id}: {str(e)}")
@@ -1471,7 +1621,7 @@ class GetRoleHandler(ActionHandler):
 class ListTimeOffTypesHandler(ActionHandler):
     """Handler for listing all time off types"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all time off types.
 
@@ -1480,7 +1630,7 @@ class ListTimeOffTypesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of time off types
+            ActionResult containing list of time off types
         """
         params = {}
 
@@ -1504,7 +1654,10 @@ class ListTimeOffTypesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list time off types: {str(e)}")
@@ -1514,7 +1667,7 @@ class ListTimeOffTypesHandler(ActionHandler):
 class GetTimeOffTypeHandler(ActionHandler):
     """Handler for retrieving a specific time off type by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific time off type.
 
@@ -1523,7 +1676,7 @@ class GetTimeOffTypeHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing time off type details
+            ActionResult containing time off type details
         """
         timeoff_type_id = inputs["timeoff_type_id"]
         headers = get_auth_headers(context)
@@ -1535,7 +1688,10 @@ class GetTimeOffTypeHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get time off type {timeoff_type_id}: {str(e)}")
@@ -1547,7 +1703,7 @@ class GetTimeOffTypeHandler(ActionHandler):
 class ListAccountsHandler(ActionHandler):
     """Handler for listing all accounts"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all accounts with optional filtering and pagination.
 
@@ -1556,7 +1712,7 @@ class ListAccountsHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of accounts
+            ActionResult containing list of accounts
         """
         params = {}
 
@@ -1577,7 +1733,10 @@ class ListAccountsHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list accounts: {str(e)}")
@@ -1587,7 +1746,7 @@ class ListAccountsHandler(ActionHandler):
 class GetAccountHandler(ActionHandler):
     """Handler for retrieving a specific account by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific account.
 
@@ -1596,7 +1755,7 @@ class GetAccountHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing account details
+            ActionResult containing account details
         """
         account_id = inputs["account_id"]
         headers = get_auth_headers(context)
@@ -1608,7 +1767,10 @@ class GetAccountHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get account {account_id}: {str(e)}")
@@ -1620,7 +1782,7 @@ class GetAccountHandler(ActionHandler):
 class ListStatusesHandler(ActionHandler):
     """Handler for listing all statuses"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all statuses with optional pagination.
 
@@ -1629,7 +1791,7 @@ class ListStatusesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of statuses
+            ActionResult containing list of statuses
         """
         params = {}
 
@@ -1649,7 +1811,10 @@ class ListStatusesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list statuses: {str(e)}")
@@ -1659,7 +1824,7 @@ class ListStatusesHandler(ActionHandler):
 class GetStatusHandler(ActionHandler):
     """Handler for retrieving a specific status by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific status.
 
@@ -1668,7 +1833,7 @@ class GetStatusHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing status details
+            ActionResult containing status details
         """
         status_id = inputs["status_id"]
         headers = get_auth_headers(context)
@@ -1680,7 +1845,10 @@ class GetStatusHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get status {status_id}: {str(e)}")
@@ -1692,7 +1860,7 @@ class GetStatusHandler(ActionHandler):
 class ListPublicHolidaysHandler(ActionHandler):
     """Handler for listing all public holidays"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all public holidays with optional filtering and pagination.
 
@@ -1701,7 +1869,7 @@ class ListPublicHolidaysHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of public holidays
+            ActionResult containing list of public holidays
         """
         params = {}
 
@@ -1721,7 +1889,10 @@ class ListPublicHolidaysHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list public holidays: {str(e)}")
@@ -1731,7 +1902,7 @@ class ListPublicHolidaysHandler(ActionHandler):
 class GetPublicHolidayHandler(ActionHandler):
     """Handler for retrieving a specific public holiday by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific public holiday.
 
@@ -1740,7 +1911,7 @@ class GetPublicHolidayHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing public holiday details
+            ActionResult containing public holiday details
         """
         public_holiday_id = inputs["public_holiday_id"]
         headers = get_auth_headers(context)
@@ -1752,7 +1923,10 @@ class GetPublicHolidayHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get public holiday {public_holiday_id}: {str(e)}")
@@ -1764,7 +1938,7 @@ class GetPublicHolidayHandler(ActionHandler):
 class ListTeamHolidaysHandler(ActionHandler):
     """Handler for listing all team holidays"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all team holidays with optional filtering and pagination.
 
@@ -1773,7 +1947,7 @@ class ListTeamHolidaysHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of team holidays
+            ActionResult containing list of team holidays
         """
         params = {}
 
@@ -1793,7 +1967,10 @@ class ListTeamHolidaysHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list team holidays: {str(e)}")
@@ -1803,7 +1980,7 @@ class ListTeamHolidaysHandler(ActionHandler):
 class GetTeamHolidayHandler(ActionHandler):
     """Handler for retrieving a specific team holiday by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific team holiday.
 
@@ -1812,7 +1989,7 @@ class GetTeamHolidayHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing team holiday details
+            ActionResult containing team holiday details
         """
         holiday_id = inputs["holiday_id"]
         headers = get_auth_headers(context)
@@ -1824,7 +2001,10 @@ class GetTeamHolidayHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get team holiday {holiday_id}: {str(e)}")
@@ -1836,7 +2016,7 @@ class GetTeamHolidayHandler(ActionHandler):
 class ListProjectStagesHandler(ActionHandler):
     """Handler for listing all project stages"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all project stages with optional pagination.
 
@@ -1845,7 +2025,7 @@ class ListProjectStagesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of project stages
+            ActionResult containing list of project stages
         """
         params = {}
 
@@ -1865,7 +2045,10 @@ class ListProjectStagesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list project stages: {str(e)}")
@@ -1875,7 +2058,7 @@ class ListProjectStagesHandler(ActionHandler):
 class GetProjectStageHandler(ActionHandler):
     """Handler for retrieving a specific project stage by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific project stage.
 
@@ -1884,7 +2067,7 @@ class GetProjectStageHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing project stage details
+            ActionResult containing project stage details
         """
         project_stage_id = inputs["project_stage_id"]
         headers = get_auth_headers(context)
@@ -1896,7 +2079,10 @@ class GetProjectStageHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get project stage {project_stage_id}: {str(e)}")
@@ -1908,7 +2094,7 @@ class GetProjectStageHandler(ActionHandler):
 class ListProjectExpensesHandler(ActionHandler):
     """Handler for listing all project expenses"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all project expenses with optional filtering and pagination.
 
@@ -1917,7 +2103,7 @@ class ListProjectExpensesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of project expenses
+            ActionResult containing list of project expenses
         """
         params = {}
 
@@ -1940,7 +2126,10 @@ class ListProjectExpensesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list project expenses: {str(e)}")
@@ -1950,7 +2139,7 @@ class ListProjectExpensesHandler(ActionHandler):
 class GetProjectExpenseHandler(ActionHandler):
     """Handler for retrieving a specific project expense by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific project expense.
 
@@ -1959,7 +2148,7 @@ class GetProjectExpenseHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing project expense details
+            ActionResult containing project expense details
         """
         project_expense_id = inputs["project_expense_id"]
         headers = get_auth_headers(context)
@@ -1971,7 +2160,10 @@ class GetProjectExpenseHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get project expense {project_expense_id}: {str(e)}")
@@ -1983,7 +2175,7 @@ class GetProjectExpenseHandler(ActionHandler):
 class ListPhasesHandler(ActionHandler):
     """Handler for listing all phases"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all phases with optional filtering and pagination.
 
@@ -1992,7 +2184,7 @@ class ListPhasesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of phases
+            ActionResult containing list of phases
         """
         params = {}
 
@@ -2015,7 +2207,10 @@ class ListPhasesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list phases: {str(e)}")
@@ -2025,7 +2220,7 @@ class ListPhasesHandler(ActionHandler):
 class GetPhaseHandler(ActionHandler):
     """Handler for retrieving a specific phase by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific phase.
 
@@ -2034,7 +2229,7 @@ class GetPhaseHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing phase details
+            ActionResult containing phase details
         """
         phase_id = inputs["phase_id"]
         headers = get_auth_headers(context)
@@ -2046,7 +2241,10 @@ class GetPhaseHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get phase {phase_id}: {str(e)}")
@@ -2058,7 +2256,7 @@ class GetPhaseHandler(ActionHandler):
 class ListProjectTasksHandler(ActionHandler):
     """Handler for listing all project tasks (default task names)"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all project tasks with optional filtering and pagination.
 
@@ -2067,7 +2265,7 @@ class ListProjectTasksHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of project tasks
+            ActionResult containing list of project tasks
         """
         params = {}
 
@@ -2090,7 +2288,10 @@ class ListProjectTasksHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list project tasks: {str(e)}")
@@ -2100,7 +2301,7 @@ class ListProjectTasksHandler(ActionHandler):
 class GetProjectTaskHandler(ActionHandler):
     """Handler for retrieving a specific project task by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific project task.
 
@@ -2109,7 +2310,7 @@ class GetProjectTaskHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing project task details
+            ActionResult containing project task details
         """
         project_task_id = inputs["project_task_id"]
         headers = get_auth_headers(context)
@@ -2121,7 +2322,10 @@ class GetProjectTaskHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get project task {project_task_id}: {str(e)}")
@@ -2131,7 +2335,7 @@ class GetProjectTaskHandler(ActionHandler):
 class MergeProjectTasksHandler(ActionHandler):
     """Handler for merging project tasks"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Merge multiple project tasks into one.
 
@@ -2140,7 +2344,7 @@ class MergeProjectTasksHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing merged task details
+            ActionResult containing merged task details
         """
         request_body = {
             "source_ids": inputs["source_ids"],
@@ -2157,7 +2361,10 @@ class MergeProjectTasksHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to merge project tasks: {str(e)}")
@@ -2169,7 +2376,7 @@ class MergeProjectTasksHandler(ActionHandler):
 class ListMilestonesHandler(ActionHandler):
     """Handler for listing all milestones"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         List all milestones with optional filtering and pagination.
 
@@ -2178,7 +2385,7 @@ class ListMilestonesHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing list of milestones
+            ActionResult containing list of milestones
         """
         params = {}
 
@@ -2201,7 +2408,10 @@ class ListMilestonesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to list milestones: {str(e)}")
@@ -2211,7 +2421,7 @@ class ListMilestonesHandler(ActionHandler):
 class GetMilestoneHandler(ActionHandler):
     """Handler for retrieving a specific milestone by ID"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Get details of a specific milestone.
 
@@ -2220,7 +2430,7 @@ class GetMilestoneHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing milestone details
+            ActionResult containing milestone details
         """
         milestone_id = inputs["milestone_id"]
         headers = get_auth_headers(context)
@@ -2232,7 +2442,10 @@ class GetMilestoneHandler(ActionHandler):
                 headers=headers
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to get milestone {milestone_id}: {str(e)}")
@@ -2244,7 +2457,7 @@ class GetMilestoneHandler(ActionHandler):
 class GetPeopleReportHandler(ActionHandler):
     """Handler for generating people report"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Generate a people report with optional filtering.
 
@@ -2253,7 +2466,7 @@ class GetPeopleReportHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing people report data
+            ActionResult containing people report data
         """
         params = {}
 
@@ -2276,7 +2489,10 @@ class GetPeopleReportHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to generate people report: {str(e)}")
@@ -2286,7 +2502,7 @@ class GetPeopleReportHandler(ActionHandler):
 class GetProjectsReportHandler(ActionHandler):
     """Handler for generating projects report"""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
         Generate a projects report with optional filtering.
 
@@ -2295,7 +2511,7 @@ class GetProjectsReportHandler(ActionHandler):
             context: Execution context with auth and network capabilities
 
         Returns:
-            Dictionary containing projects report data
+            ActionResult containing projects report data
         """
         params = {}
 
@@ -2318,7 +2534,10 @@ class GetProjectsReportHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to generate projects report: {str(e)}")

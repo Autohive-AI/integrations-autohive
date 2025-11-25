@@ -1,7 +1,7 @@
 # Test suite for Float integration
 import asyncio
 from context import float
-from autohive_integrations_sdk import ExecutionContext
+from autohive_integrations_sdk import ExecutionContext, ActionResult
 
 # Test configuration
 # IMPORTANT: Replace with your actual Float API credentials
@@ -41,19 +41,22 @@ async def test_list_people():
         try:
             result = await float.execute_action("list_people", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} person(s)")
+            # Handle ActionResult return type
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} person(s)")
 
-            if result:
+            if data:
                 global test_person_id
-                test_person_id = result[0].get("people_id")
-                print(f"  Using person: {result[0].get('name', 'Unnamed')} (ID: {test_person_id})")
+                test_person_id = data[0].get("people_id")
+                print(f"  Using person: {data[0].get('name', 'Unnamed')} (ID: {test_person_id})")
 
                 # Show first few people
-                for i, person in enumerate(result[:3]):
+                for i, person in enumerate(data[:3]):
                     print(f"  - {person.get('name', 'Unnamed')} ({person.get('email', 'No email')})")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")

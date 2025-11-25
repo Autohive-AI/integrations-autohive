@@ -783,7 +783,52 @@ Ensure you have a valid Float API key configured in your test environment.
 - **Rate Limiting Details**: [https://developer.float.com/overview_authentication.html](https://developer.float.com/overview_authentication.html)
 - **Autohive Support**: Contact your Autohive account representative
 
+## SDK Features
+
+### ActionResult Return Type
+
+All action handlers now return `ActionResult` objects instead of plain dictionaries. This enables:
+
+- **Cost Tracking**: Each action can report API costs (currently set to $0.00 for Float since it doesn't charge per-API-call)
+- **Structured Responses**: Consistent response format across all integrations
+- **Future Extensibility**: Easy to add metadata without breaking existing code
+
+Example response structure:
+```python
+ActionResult(
+    data={
+        "people_id": 123,
+        "name": "John Doe",
+        "email": "john@example.com"
+    },
+    cost_usd=0.0
+)
+```
+
+### Connected Account Information
+
+The integration now supports displaying which Float account was used to authorize the integration. When a user connects their Float account, the platform will:
+
+1. Automatically fetch account information
+2. Cache it in the database
+3. Display "Connected to **account@email.com** for everyone in **Company Name**"
+
+This provides transparency about which credentials are being used and which workspace the integration is connected to.
+
+The connected account handler fetches:
+- Email address of the account owner
+- Account owner's name
+- Organization/company name
+- Unique account identifier
+
 ## Version History
+
+### Version 1.2.0 (Latest)
+- Updated to new SDK ActionResult return type for cost tracking support
+- Added connected account information display
+- All actions now return structured ActionResult objects
+- Enhanced transparency with account information caching
+- Improved SDK compatibility
 
 ### Version 1.1.0
 - Added 23 new actions covering all remaining Float API endpoints
