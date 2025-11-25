@@ -231,13 +231,15 @@ async def test_get_task():
         try:
             result = await float.execute_action("get_task", inputs, context)
 
-            assert result.get("task_id") == test_task_id, "Should return correct task"
-            print(f"[OK] Retrieved task: {result.get('task_id')}")
-            print(f"  Person ID: {result.get('people_id', 'N/A')}")
-            print(f"  Project ID: {result.get('project_id', 'N/A')}")
-            print(f"  Hours: {result.get('hours', 'N/A')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("task_id") == test_task_id, "Should return correct task"
+            print(f"[OK] Retrieved task: {data.get('task_id')}")
+            print(f"  Person ID: {data.get('people_id', 'N/A')}")
+            print(f"  Project ID: {data.get('project_id', 'N/A')}")
+            print(f"  Hours: {data.get('hours', 'N/A')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -258,19 +260,21 @@ async def test_list_clients():
         try:
             result = await float.execute_action("list_clients", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} client(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} client(s)")
 
-            if result:
+            if data:
                 global test_client_id
-                test_client_id = result[0].get("client_id")
-                print(f"  Using client: {result[0].get('name', 'Unnamed')} (ID: {test_client_id})")
+                test_client_id = data[0].get("client_id")
+                print(f"  Using client: {data[0].get('name', 'Unnamed')} (ID: {test_client_id})")
 
                 # Show first few clients
-                for i, client in enumerate(result[:3]):
+                for i, client in enumerate(data[:3]):
                     print(f"  - {client.get('name', 'Unnamed')} (Active: {client.get('active', 'N/A')})")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -293,11 +297,13 @@ async def test_get_client():
         try:
             result = await float.execute_action("get_client", inputs, context)
 
-            assert result.get("client_id") == test_client_id, "Should return correct client"
-            print(f"[OK] Retrieved client: {result.get('name', 'Unnamed')}")
-            print(f"  Active: {result.get('active', 'N/A')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("client_id") == test_client_id, "Should return correct client"
+            print(f"[OK] Retrieved client: {data.get('name', 'Unnamed')}")
+            print(f"  Active: {data.get('active', 'N/A')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -318,19 +324,21 @@ async def test_list_time_off():
         try:
             result = await float.execute_action("list_time_off", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} time off entry(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} time off entry(s)")
 
-            if result:
+            if data:
                 global test_time_off_id
-                test_time_off_id = result[0].get("timeoff_id")
+                test_time_off_id = data[0].get("timeoff_id")
                 print(f"  Using time off ID: {test_time_off_id}")
 
                 # Show first few entries
-                for i, entry in enumerate(result[:3]):
+                for i, entry in enumerate(data[:3]):
                     print(f"  - Time off {entry.get('timeoff_id')} (Person: {entry.get('people_id')})")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -351,19 +359,21 @@ async def test_list_logged_time():
         try:
             result = await float.execute_action("list_logged_time", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} logged time entry(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} logged time entry(s)")
 
-            if result:
+            if data:
                 global test_logged_time_id
-                test_logged_time_id = result[0].get("logged_time_id")
+                test_logged_time_id = data[0].get("logged_time_id")
                 print(f"  Using logged time ID: {test_logged_time_id}")
 
                 # Show first few entries
-                for i, entry in enumerate(result[:3]):
+                for i, entry in enumerate(data[:3]):
                     print(f"  - {entry.get('date', 'N/A')}: {entry.get('hours', 'N/A')} hours")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -382,19 +392,21 @@ async def test_list_departments():
         try:
             result = await float.execute_action("list_departments", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} department(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} department(s)")
 
-            if result:
+            if data:
                 global test_department_id
-                test_department_id = result[0].get("department_id")
-                print(f"  Using department: {result[0].get('name', 'Unnamed')} (ID: {test_department_id})")
+                test_department_id = data[0].get("department_id")
+                print(f"  Using department: {data[0].get('name', 'Unnamed')} (ID: {test_department_id})")
 
                 # Show all departments
-                for dept in result:
+                for dept in data:
                     print(f"  - {dept.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -417,10 +429,12 @@ async def test_get_department():
         try:
             result = await float.execute_action("get_department", inputs, context)
 
-            assert result.get("department_id") == test_department_id, "Should return correct department"
-            print(f"[OK] Retrieved department: {result.get('name', 'Unnamed')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("department_id") == test_department_id, "Should return correct department"
+            print(f"[OK] Retrieved department: {data.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -439,19 +453,21 @@ async def test_list_roles():
         try:
             result = await float.execute_action("list_roles", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} role(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} role(s)")
 
-            if result:
+            if data:
                 global test_role_id
-                test_role_id = result[0].get("role_id")
-                print(f"  Using role: {result[0].get('name', 'Unnamed')} (ID: {test_role_id})")
+                test_role_id = data[0].get("role_id")
+                print(f"  Using role: {data[0].get('name', 'Unnamed')} (ID: {test_role_id})")
 
                 # Show all roles
-                for role in result:
+                for role in data:
                     print(f"  - {role.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -474,10 +490,12 @@ async def test_get_role():
         try:
             result = await float.execute_action("get_role", inputs, context)
 
-            assert result.get("role_id") == test_role_id, "Should return correct role"
-            print(f"[OK] Retrieved role: {result.get('name', 'Unnamed')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("role_id") == test_role_id, "Should return correct role"
+            print(f"[OK] Retrieved role: {data.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -496,19 +514,21 @@ async def test_list_time_off_types():
         try:
             result = await float.execute_action("list_time_off_types", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} time off type(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} time off type(s)")
 
-            if result:
+            if data:
                 global test_time_off_type_id
-                test_time_off_type_id = result[0].get("timeoff_type_id")
-                print(f"  Using time off type: {result[0].get('name', 'Unnamed')} (ID: {test_time_off_type_id})")
+                test_time_off_type_id = data[0].get("timeoff_type_id")
+                print(f"  Using time off type: {data[0].get('name', 'Unnamed')} (ID: {test_time_off_type_id})")
 
                 # Show all time off types
-                for toff_type in result:
+                for toff_type in data:
                     print(f"  - {toff_type.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -531,10 +551,12 @@ async def test_get_time_off_type():
         try:
             result = await float.execute_action("get_time_off_type", inputs, context)
 
-            assert result.get("timeoff_type_id") == test_time_off_type_id, "Should return correct time off type"
-            print(f"[OK] Retrieved time off type: {result.get('name', 'Unnamed')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("timeoff_type_id") == test_time_off_type_id, "Should return correct time off type"
+            print(f"[OK] Retrieved time off type: {data.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -553,19 +575,21 @@ async def test_list_accounts():
         try:
             result = await float.execute_action("list_accounts", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} account(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} account(s)")
 
-            if result:
+            if data:
                 global test_account_id
-                test_account_id = result[0].get("account_id")
+                test_account_id = data[0].get("account_id")
                 print(f"  Using account ID: {test_account_id}")
 
                 # Show account info
-                for account in result[:3]:
+                for account in data[:3]:
                     print(f"  - Account {account.get('account_id')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -588,10 +612,12 @@ async def test_get_account():
         try:
             result = await float.execute_action("get_account", inputs, context)
 
-            assert result.get("account_id") == test_account_id, "Should return correct account"
-            print(f"[OK] Retrieved account: {result.get('account_id')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("account_id") == test_account_id, "Should return correct account"
+            print(f"[OK] Retrieved account: {data.get('account_id')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -610,19 +636,21 @@ async def test_list_statuses():
         try:
             result = await float.execute_action("list_statuses", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} status(es)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} status(es)")
 
-            if result:
+            if data:
                 global test_status_id
-                test_status_id = result[0].get("status_id")
-                print(f"  Using status: {result[0].get('name', 'Unnamed')} (ID: {test_status_id})")
+                test_status_id = data[0].get("status_id")
+                print(f"  Using status: {data[0].get('name', 'Unnamed')} (ID: {test_status_id})")
 
                 # Show all statuses
-                for status in result:
+                for status in data:
                     print(f"  - {status.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -645,10 +673,12 @@ async def test_get_status():
         try:
             result = await float.execute_action("get_status", inputs, context)
 
-            assert result.get("status_id") == test_status_id, "Should return correct status"
-            print(f"[OK] Retrieved status: {result.get('name', 'Unnamed')}")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert data.get("status_id") == test_status_id, "Should return correct status"
+            print(f"[OK] Retrieved status: {data.get('name', 'Unnamed')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -669,14 +699,16 @@ async def test_list_public_holidays():
         try:
             result = await float.execute_action("list_public_holidays", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} public holiday(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} public holiday(s)")
 
             # Show first few holidays
-            for holiday in result[:5]:
+            for holiday in data[:5]:
                 print(f"  - {holiday.get('name', 'Unnamed')} ({holiday.get('date', 'N/A')})")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -697,14 +729,16 @@ async def test_list_team_holidays():
         try:
             result = await float.execute_action("list_team_holidays", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} team holiday(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} team holiday(s)")
 
             # Show first few holidays
-            for holiday in result[:5]:
+            for holiday in data[:5]:
                 print(f"  - Team holiday {holiday.get('team_holiday_id', 'N/A')}")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -725,14 +759,16 @@ async def test_list_milestones():
         try:
             result = await float.execute_action("list_milestones", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} milestone(s)")
+            assert isinstance(result, ActionResult), "Should return ActionResult"
+            data = result.data
+            assert isinstance(data, list), "Data should be an array"
+            print(f"[OK] Found {len(data)} milestone(s)")
 
             # Show first few milestones
-            for milestone in result[:5]:
+            for milestone in data[:5]:
                 print(f"  - {milestone.get('name', 'Unnamed')} ({milestone.get('date', 'N/A')})")
 
-            return result
+            return data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -754,10 +790,11 @@ async def test_get_people_report():
         try:
             result = await float.execute_action("get_people_report", inputs, context)
 
+            assert isinstance(result, ActionResult), "Should return ActionResult"
             print(f"[OK] Retrieved people report")
             print(f"  Date range: {inputs['start_date']} to {inputs['end_date']}")
 
-            return result
+            return result.data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
@@ -777,10 +814,11 @@ async def test_get_projects_report():
         try:
             result = await float.execute_action("get_projects_report", inputs, context)
 
+            assert isinstance(result, ActionResult), "Should return ActionResult"
             print(f"[OK] Retrieved projects report")
             print(f"  Date range: {inputs['start_date']} to {inputs['end_date']}")
 
-            return result
+            return result.data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
