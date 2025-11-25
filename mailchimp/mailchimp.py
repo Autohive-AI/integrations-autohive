@@ -74,8 +74,11 @@ class MailchimpRateLimiter:
                 # For non-rate-limit errors, fail immediately
                 raise e
 
-        # All retries exhausted, raise the last error
-        raise last_error
+        # All retries exhausted, raise the last error if present, else raise generic exception
+        if last_error is not None:
+            raise last_error
+        else:
+            raise Exception("All retries exhausted, but no exception was captured.")
 
 
 # Global rate limiter instance
