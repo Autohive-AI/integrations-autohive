@@ -3,7 +3,6 @@ from autohive_integrations_sdk import (
     ConnectedAccountHandler, ConnectedAccountInfo
 )
 from typing import Dict, Any, List, Optional
-import time
 
 # Create the integration using the config.json
 float = Integration.load()
