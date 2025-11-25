@@ -1,15 +1,17 @@
 # Test suite for Float integration
 import asyncio
+import os
 from context import float
 from autohive_integrations_sdk import ExecutionContext, ActionResult
 
 # Test configuration
-# IMPORTANT: Replace with your actual Float API credentials
+# IMPORTANT: Set the following environment variables before running tests:
+#   FLOAT_API_KEY, FLOAT_CONTACT_EMAIL, FLOAT_APPLICATION_NAME
 TEST_AUTH = {
     "credentials": {
-        "api_key": "your_api_key_here",
-        "contact_email": "your_email@example.com",
-        "application_name": "Your Application Name"
+        "api_key": os.getenv("FLOAT_API_KEY", "your_api_key_here"),
+        "contact_email": os.getenv("FLOAT_CONTACT_EMAIL", "your_email@example.com"),
+        "application_name": os.getenv("FLOAT_APPLICATION_NAME", "Your Application Name")
     }
 }
 
