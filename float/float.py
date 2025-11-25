@@ -802,10 +802,13 @@ class DeleteTaskHandler(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "success": True,
-                "message": f"Task {task_id} deleted successfully"
-            }
+            return ActionResult(
+                data={
+                    "success": True,
+                    "message": f"Task {task_id} deleted successfully"
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to delete task {task_id}: {str(e)}")
