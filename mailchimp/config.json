@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Mailchimp integration for managing email lists, campaigns, and audience members.",
   "entry_point": "mailchimp.py",
-  "supports_billing": true,
+  "supports_billing": false,
   "supports_connected_account": true,
   "auth": {
     "type": "platform",
