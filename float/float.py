@@ -1,5 +1,6 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult,
+    ConnectedAccountHandler, ConnectedAccountInfo
 )
 from typing import Dict, Any, List, Optional
 import time
