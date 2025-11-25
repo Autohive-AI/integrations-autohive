@@ -195,10 +195,13 @@ class GetListAction(ActionHandler):
         # Validate required inputs
         list_id = inputs.get("list_id")
         if not list_id:
-            return {
-                "result": False,
-                "error": "list_id is required"
-            }
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": "list_id is required"
+                },
+                cost_usd=0.0
+            )
 
         try:
             # Get data center from metadata
