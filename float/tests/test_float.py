@@ -134,19 +134,19 @@ async def test_list_projects():
         try:
             result = await float.execute_action("list_projects", inputs, context)
 
-            assert isinstance(result, list), "Should return an array"
-            print(f"[OK] Found {len(result)} project(s)")
+            assert isinstance(result.data, list), "Should return an array"
+            print(f"[OK] Found {len(result.data)} project(s)")
 
-            if result:
+            if result.data:
                 global test_project_id
-                test_project_id = result[0].get("project_id")
-                print(f"  Using project: {result[0].get('name', 'Unnamed')} (ID: {test_project_id})")
+                test_project_id = result.data[0].get("project_id")
+                print(f"  Using project: {result.data[0].get('name', 'Unnamed')} (ID: {test_project_id})")
 
                 # Show first few projects
-                for i, project in enumerate(result[:3]):
+                for i, project in enumerate(result.data[:3]):
                     print(f"  - {project.get('name', 'Unnamed')} (Active: {project.get('active', 'N/A')})")
 
-            return result
+            return result.data
 
         except Exception as e:
             print(f"[ERROR] Error: {e}")
