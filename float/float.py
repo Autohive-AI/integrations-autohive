@@ -2,7 +2,7 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult,
     ConnectedAccountHandler, ConnectedAccountInfo
 )
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 # Create the integration using the config.json
 float = Integration.load()
