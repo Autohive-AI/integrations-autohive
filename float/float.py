@@ -1237,7 +1237,10 @@ class DeleteLoggedTimeHandler(ActionHandler):
             )
 
             return ActionResult(
-                data={"success": True, "message": f"Logged time {logged_time_id} deleted successfully"},
+                data={
+                    "success": True,
+                    "message": f"Logged time {logged_time_id} deleted successfully"
+                },
                 cost_usd=0.0
             )
 
