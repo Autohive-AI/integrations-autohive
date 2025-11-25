@@ -44,7 +44,7 @@ class MailchimpRateLimiter:
                     pass
         return self.default_retry_delay
 
-    async def make_request(self, context: ExecutionContext, url: str, **kwargs) -> Any:
+    async def make_request(self, context: ExecutionContext, url: str, **kwargs) -> Dict[str, Any]:
         """Make request to Mailchimp API with automatic retry on rate limit errors"""
         last_error = None
 
