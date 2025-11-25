@@ -1233,10 +1233,10 @@ class DeleteLoggedTimeHandler(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "success": True,
-                "message": f"Logged time {logged_time_id} deleted successfully"
-            }
+            return ActionResult(
+                data={"success": True, "message": f"Logged time {logged_time_id} deleted successfully"},
+                cost_usd=0.0
+            )
 
         except Exception as e:
             raise Exception(f"Failed to delete logged time {logged_time_id}: {str(e)}")
