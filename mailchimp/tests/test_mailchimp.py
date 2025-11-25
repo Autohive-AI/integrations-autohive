@@ -1,4 +1,4 @@
-# Testbed for Mailchimp integration
+# Manual testing/demo script for Mailchimp integration
 import asyncio
 from context import mailchimp
 from autohive_integrations_sdk import ExecutionContext
