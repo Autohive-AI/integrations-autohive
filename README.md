@@ -25,7 +25,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Canva
 
-[canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation, asset management workflows, and brand-compliant design generation.
+[canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation and asset management workflows.
 
 ### Circle
 
