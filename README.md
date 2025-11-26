@@ -53,7 +53,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Zoho CRM
 
-[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 33 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls, with notes management across all 7 modules. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 54 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
 
 ### Reddit
 
@@ -70,6 +70,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Heartbeat
 
 [heartbeat](heartbeat): Connects to Heartbeat.chat community platform for comprehensive access to channels, threads, comments, users, and events. Supports retrieving channel information, managing thread discussions, creating and viewing comments, accessing user profiles, and viewing community events. Includes full CRUD operations for community engagement and content management.
+
+### HeyGen
+
+[heygen](heygen): AI-powered video avatar integration for creating realistic talking avatar videos. Supports generating AI photo avatars, creating and training avatar groups, generating new looks, creating videos with avatars and voice synthesis, and checking generation/video status. Includes voice and avatar discovery, motion and sound effects, and avatar group management. Features 19 actions with API key authentication.
 
 ### Google Calendar
 
@@ -95,6 +99,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
 
+### Microsoft Planner
+
+[microsoft-planner](microsoft-planner): Comprehensive task and project management integration with Microsoft Planner via Microsoft Graph API v1.0 for organizing team work within Microsoft 365 groups. Supports complete plan lifecycle management (create, update, delete, list plans within groups), bucket organization for task categorization, full CRUD operations for tasks with assignments, due dates, priorities, categories, and progress tracking, and checklist operations within tasks. Features user lookup and search by email, group membership listing, task filtering by plan/bucket/user, task details management including descriptions and references, and board format customization for different views (assigned-to, bucket, progress). Includes automatic ETag management for optimistic concurrency control, proper assignment formatting with user GUIDs, data cleaning for read-only fields, and OAuth2 authentication with Tasks.ReadWrite and Group.ReadWrite.All scopes. Comprises 36 actions covering groups, users, plans, buckets, tasks, checklists, and board formatting. Ideal for team collaboration, project planning, task tracking, and workflow automation across Microsoft 365 workspaces.
+
 ### Spreadsheet Tools
 
 [spreadsheet-tools](spreadsheet-tools): Tools for working with spreadsheet files including conversion to JSON format with automatic header sanitization and type inference. Supports Excel (.xlsx/.xls) and CSV file formats. Features automatic data type detection, header sanitization for valid JSON property names, duplicate header handling, and UTF-8/BOM encoding support. Ideal for data transformation, spreadsheet parsing, and converting tabular data into structured JSON for workflow automation.
@@ -106,6 +114,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Google Chat
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
+### Google Docs
+
+[google-docs](google-docs): Comprehensive integration with Google Docs API v1 for document creation, content formatting, and document analysis. Supports creating new documents, retrieving full document content and structure, inserting plain text paragraphs, inserting markdown-formatted content with automatic styling (headings H1-H6, bold, italic), applying text formatting (bold, italic, font size, colors), parsing document structure to identify headings and paragraphs, and executing complex batch update operations. Features OAuth2 authentication, markdown-to-Google Docs style conversion, and 6 core actions for document automation workflows.
 
 ### Freshdesk
 
