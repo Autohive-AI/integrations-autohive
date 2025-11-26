@@ -3,6 +3,9 @@ from autohive_integrations_sdk import (
 )
 from typing import Dict, Any, List, Optional
 import json
+import base64
+import aiohttp
+import io
 
 # Create the integration using the config.json
 front = Integration.load()
@@ -245,6 +248,14 @@ class ListConversationMessagesAction(ActionHandler):
 @front.action("create_message_reply")
 class CreateMessageReplyAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Reply to an existing conversation in Front.
+
+        ATTACHMENTS: Each attachment must have {filename, content, content_type}
+        - filename: "file.pdf"
+        - content: Base64-encoded file content (use download_message_attachment to get this)
+        - content_type: MIME type like "application/pdf" or "image/jpeg"
+        """
         try:
             conversation_id = inputs["conversation_id"]
 
@@ -277,12 +288,35 @@ class CreateMessageReplyAction(ActionHandler):
             if inputs.get("should_add_default_signature") is not None:
                 message_data["should_add_default_signature"] = inputs["should_add_default_signature"]
 
-            # Create message reply using Front API
-            response = await context.fetch(
-                f"{FRONT_API_BASE}/conversations/{conversation_id}/messages",
-                method="POST",
-                json=message_data
-            )
+            # Check if we have files uploaded in conversation (like Google Slides)
+            files = inputs.get("files", [])
+            file_obj = inputs.get("file")  # Single file
+
+            # Convert uploaded files to attachment format
+            attachments = []
+            if file_obj:
+                files = [file_obj]
+
+            if files:
+                for f in files:
+                    attachments.append({
+                        "filename": f.get("name", "attachment"),
+                        "content": f.get("content", ""),
+                        "content_type": f.get("contentType", "application/octet-stream")
+                    })
+
+            if attachments:
+                # Use multipart/form-data for attachments
+                response = await self._send_reply_with_attachments(
+                    context, conversation_id, message_data, attachments
+                )
+            else:
+                # Use JSON for messages without attachments
+                response = await context.fetch(
+                    f"{FRONT_API_BASE}/conversations/{conversation_id}/messages",
+                    method="POST",
+                    json=message_data
+                )
 
             # Check for API errors
             if "error" in response:
@@ -304,6 +338,135 @@ class CreateMessageReplyAction(ActionHandler):
                 "result": False,
                 "error": f"Error creating message reply: {str(e)}"
             }
+
+    async def _send_reply_with_attachments(
+        self, context: ExecutionContext, conversation_id: str,
+        message_data: Dict[str, Any], attachments: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Send reply with attachments using multipart/form-data"""
+        # Get auth token from context
+        auth_token = None
+        if context.auth and "credentials" in context.auth:
+            auth_token = context.auth["credentials"].get("access_token")
+
+        if not auth_token:
+            raise Exception("No authentication token available")
+
+        # Build multipart form data
+        form = aiohttp.FormData()
+
+        # Add body field - convert plain text newlines to HTML if needed
+        body_content = message_data['body']
+
+        # If body doesn't contain HTML tags, convert newlines to <br> for proper rendering
+        if '<' not in body_content and '>' not in body_content:
+            # Plain text - convert newlines to HTML breaks
+            body_content = body_content.replace('\r\n', '<br>').replace('\n', '<br>').replace('\r', '<br>')
+
+        form.add_field('body', body_content)
+
+        # Add optional fields (for replies)
+        if 'to' in message_data:
+            for recipient in message_data['to']:
+                form.add_field('to[]', recipient)
+        if 'cc' in message_data:
+            for recipient in message_data['cc']:
+                form.add_field('cc[]', recipient)
+        if 'bcc' in message_data:
+            for recipient in message_data['bcc']:
+                form.add_field('bcc[]', recipient)
+        if 'subject' in message_data:
+            form.add_field('subject', message_data['subject'])
+        if 'author_id' in message_data:
+            form.add_field('author_id', message_data['author_id'])
+        if 'sender_name' in message_data:
+            form.add_field('sender_name', message_data['sender_name'])
+        if 'channel_id' in message_data:
+            form.add_field('channel_id', message_data['channel_id'])
+        if 'text' in message_data:
+            form.add_field('text', message_data['text'])
+        if 'quote_body' in message_data:
+            form.add_field('quote_body', message_data['quote_body'])
+        if 'signature_id' in message_data:
+            form.add_field('signature_id', message_data['signature_id'])
+        if 'should_add_default_signature' in message_data:
+            form.add_field('should_add_default_signature', str(message_data['should_add_default_signature']).lower())
+
+        # Add each attachment as binary file
+        for idx, attachment in enumerate(attachments):
+            filename = attachment.get("filename", f"attachment_{idx}")
+            content_b64 = attachment.get("content", "")
+            content_type = attachment.get("content_type", "application/octet-stream")
+
+            # Validate content exists
+            if not content_b64:
+                raise Exception(f"Attachment '{filename}' has no content provided")
+
+            # Clean up base64 string (remove whitespace/newlines that might be present)
+            content_b64_cleaned = content_b64.strip().replace('\n', '').replace('\r', '').replace(' ', '').replace('\t', '')
+
+            # Check length before and after cleaning
+            original_length = len(content_b64)
+            cleaned_length = len(content_b64_cleaned)
+
+            # Base64 must be multiple of 4 (accounting for padding)
+            # If it's not, check if adding padding would make it valid
+            padding_needed = cleaned_length % 4
+            if padding_needed != 0:
+                content_b64_cleaned += '=' * (4 - padding_needed)
+
+            # Validate minimum size - a small file should be at least 100 chars in base64
+            # PDFs and images should be much larger (typically thousands of chars)
+            if cleaned_length < 100:
+                raise Exception(
+                    f"Attachment '{filename}' has suspiciously short base64 content "
+                    f"({cleaned_length} characters after cleaning from {original_length} original). "
+                    f"This suggests the content may be truncated or incomplete. "
+                    f"Expected at least 100 characters for a valid file."
+                )
+
+            # Decode base64 content
+            try:
+                file_bytes = base64.b64decode(content_b64_cleaned, validate=True)
+            except Exception as e:
+                raise Exception(
+                    f"Failed to decode attachment '{filename}': {str(e)}. "
+                    f"Content length: {cleaned_length} chars. "
+                    f"Make sure the content is valid base64-encoded data."
+                )
+
+            # Validate file is not empty after decoding
+            if not file_bytes or len(file_bytes) == 0:
+                raise Exception(f"Attachment '{filename}' decoded to empty content")
+
+            # Log file size for debugging
+            file_size = len(file_bytes)
+
+            # Wrap bytes in BytesIO to create file-like object (like open('file', 'rb'))
+            file_obj = io.BytesIO(file_bytes)
+            file_obj.seek(0)  # Ensure we're at the beginning of the stream
+
+            # Add file to form data - Front expects 'attachments[]' for multiple files
+            form.add_field(
+                'attachments[]',
+                file_obj,
+                filename=filename,
+                content_type=content_type
+            )
+
+        # Send request with aiohttp
+        url = f"{FRONT_API_BASE}/conversations/{conversation_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {auth_token}"
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=form, headers=headers) as resp:
+                if resp.status >= 400:
+                    error_text = await resp.text()
+                    return {"error": f"HTTP {resp.status}: {error_text}"}
+
+                return await resp.json()
 
 @front.action("get_message")
 class GetMessageAction(ActionHandler):
@@ -339,9 +502,87 @@ class GetMessageAction(ActionHandler):
                 "error": f"Error getting message: {str(e)}"
             }
 
+@front.action("download_message_attachment")
+class DownloadMessageAttachmentAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Download a message attachment and return base64-encoded content.
+
+        WORKFLOW: Call get_message first to get attachment URL from message.attachments[].url,
+        then pass that URL to this action. Returns base64 content ready for create_message attachments.
+        """
+        try:
+            attachment_url = inputs["attachment_url"]
+
+            # Get auth token from context
+            auth_token = None
+            if context.auth and "credentials" in context.auth:
+                auth_token = context.auth["credentials"].get("access_token")
+
+            if not auth_token:
+                raise Exception("No authentication token available")
+
+            # Download attachment from Front's download endpoint
+            headers = {"Authorization": f"Bearer {auth_token}"}
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachment_url, headers=headers) as resp:
+                    if resp.status >= 400:
+                        error_text = await resp.text()
+                        return {
+                            "file": {},
+                            "result": False,
+                            "error": f"HTTP {resp.status}: {error_text}"
+                        }
+
+                    # Read complete file content as binary
+                    file_bytes = await resp.read()
+
+                    # Extract content type from response
+                    content_type = resp.headers.get('content-type', 'application/octet-stream')
+
+                    # Extract filename from Content-Disposition header or URL
+                    filename = "attachment"
+                    content_disposition = resp.headers.get('content-disposition', '')
+                    if 'filename=' in content_disposition:
+                        filename = content_disposition.split('filename=')[1].strip('"\'')
+                    else:
+                        from urllib.parse import urlparse
+                        url_path = urlparse(attachment_url).path
+                        if url_path:
+                            filename = url_path.split('/')[-1] or "attachment"
+
+                    # Encode to base64 for JSON transport and attachment forwarding
+                    content_b64 = base64.b64encode(file_bytes).decode('utf-8')
+
+                    return {
+                        "file": {
+                            "content": content_b64,  # Use this in create_message attachments
+                            "name": filename,
+                            "contentType": content_type,
+                            "size": len(file_bytes)
+                        },
+                        "result": True
+                    }
+
+        except Exception as e:
+            return {
+                "file": {},
+                "result": False,
+                "error": f"Error downloading attachment: {str(e)}"
+            }
+
 @front.action("create_message")
 class CreateMessageAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Create a new message in Front (starts a new conversation).
+
+        ATTACHMENTS: Each attachment must have {filename, content, content_type}
+        - filename: "file.pdf"
+        - content: Base64-encoded file content (use download_message_attachment to get this)
+        - content_type: MIME type like "application/pdf" or "image/jpeg"
+        """
         try:
             channel_id = inputs["channel_id"]
 
@@ -369,12 +610,35 @@ class CreateMessageAction(ActionHandler):
             if inputs.get("should_add_default_signature") is not None:
                 message_data["should_add_default_signature"] = inputs["should_add_default_signature"]
 
-            # Create new message using correct Front API endpoint
-            response = await context.fetch(
-                f"{FRONT_API_BASE}/channels/{channel_id}/messages",
-                method="POST",
-                json=message_data
-            )
+            # Check if we have files uploaded in conversation (like Google Slides)
+            files = inputs.get("files", [])
+            file_obj = inputs.get("file")  # Single file
+
+            # Convert uploaded files to attachment format
+            attachments = []
+            if file_obj:
+                files = [file_obj]
+
+            if files:
+                for f in files:
+                    attachments.append({
+                        "filename": f.get("name", "attachment"),
+                        "content": f.get("content", ""),
+                        "content_type": f.get("contentType", "application/octet-stream")
+                    })
+
+            if attachments:
+                # Use multipart/form-data for attachments
+                response = await self._send_with_attachments(
+                    context, channel_id, message_data, attachments
+                )
+            else:
+                # Use JSON for messages without attachments
+                response = await context.fetch(
+                    f"{FRONT_API_BASE}/channels/{channel_id}/messages",
+                    method="POST",
+                    json=message_data
+                )
 
             # Check for API errors
             if "error" in response:
@@ -396,6 +660,133 @@ class CreateMessageAction(ActionHandler):
                 "result": False,
                 "error": f"Error creating message: {str(e)}"
             }
+
+    async def _send_with_attachments(
+        self, context: ExecutionContext, channel_id: str,
+        message_data: Dict[str, Any], attachments: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Send message with attachments using multipart/form-data"""
+        # Get auth token from context
+        auth_token = None
+        if context.auth and "credentials" in context.auth:
+            auth_token = context.auth["credentials"].get("access_token")
+
+        if not auth_token:
+            raise Exception("No authentication token available")
+
+        # Build multipart form data
+        form = aiohttp.FormData()
+
+        # Add body field - convert plain text newlines to HTML if needed
+        body_content = message_data['body']
+
+        # If body doesn't contain HTML tags, convert newlines to <br> for proper rendering
+        if '<' not in body_content and '>' not in body_content:
+            # Plain text - convert newlines to HTML breaks
+            body_content = body_content.replace('\r\n', '<br>').replace('\n', '<br>').replace('\r', '<br>')
+
+        form.add_field('body', body_content)
+
+        # Add 'to' recipients as array
+        if 'to' in message_data:
+            for recipient in message_data['to']:
+                form.add_field('to[]', recipient)
+
+        # Add optional fields
+        if 'cc' in message_data:
+            for recipient in message_data['cc']:
+                form.add_field('cc[]', recipient)
+        if 'bcc' in message_data:
+            for recipient in message_data['bcc']:
+                form.add_field('bcc[]', recipient)
+        if 'subject' in message_data:
+            form.add_field('subject', message_data['subject'])
+        if 'author_id' in message_data:
+            form.add_field('author_id', message_data['author_id'])
+        if 'sender_name' in message_data:
+            form.add_field('sender_name', message_data['sender_name'])
+        if 'text' in message_data:
+            form.add_field('text', message_data['text'])
+        if 'signature_id' in message_data:
+            form.add_field('signature_id', message_data['signature_id'])
+        if 'should_add_default_signature' in message_data:
+            form.add_field('should_add_default_signature', str(message_data['should_add_default_signature']).lower())
+
+        # Add each attachment as binary file
+        for idx, attachment in enumerate(attachments):
+            filename = attachment.get("filename", f"attachment_{idx}")
+            content_b64 = attachment.get("content", "")
+            content_type = attachment.get("content_type", "application/octet-stream")
+
+            # Validate content exists
+            if not content_b64:
+                raise Exception(f"Attachment '{filename}' has no content provided")
+
+            # Clean up base64 string (remove whitespace/newlines that might be present)
+            content_b64_cleaned = content_b64.strip().replace('\n', '').replace('\r', '').replace(' ', '').replace('\t', '')
+
+            # Check length before and after cleaning
+            original_length = len(content_b64)
+            cleaned_length = len(content_b64_cleaned)
+
+            # Base64 must be multiple of 4 (accounting for padding)
+            # If it's not, check if adding padding would make it valid
+            padding_needed = cleaned_length % 4
+            if padding_needed != 0:
+                content_b64_cleaned += '=' * (4 - padding_needed)
+
+            # Validate minimum size - a small file should be at least 100 chars in base64
+            # PDFs and images should be much larger (typically thousands of chars)
+            if cleaned_length < 100:
+                raise Exception(
+                    f"Attachment '{filename}' has suspiciously short base64 content "
+                    f"({cleaned_length} characters after cleaning from {original_length} original). "
+                    f"This suggests the content may be truncated or incomplete. "
+                    f"Expected at least 100 characters for a valid file."
+                )
+
+            # Decode base64 content
+            try:
+                file_bytes = base64.b64decode(content_b64_cleaned, validate=True)
+            except Exception as e:
+                raise Exception(
+                    f"Failed to decode attachment '{filename}': {str(e)}. "
+                    f"Content length: {cleaned_length} chars. "
+                    f"Make sure the content is valid base64-encoded data."
+                )
+
+            # Validate file is not empty after decoding
+            if not file_bytes or len(file_bytes) == 0:
+                raise Exception(f"Attachment '{filename}' decoded to empty content")
+
+            # Log file size for debugging
+            file_size = len(file_bytes)
+
+            # Wrap bytes in BytesIO to create file-like object (like open('file', 'rb'))
+            file_obj = io.BytesIO(file_bytes)
+            file_obj.seek(0)  # Ensure we're at the beginning of the stream
+
+            # Add file to form data - Front expects 'attachments[]' for multiple files
+            form.add_field(
+                'attachments[]',
+                file_obj,
+                filename=filename,
+                content_type=content_type
+            )
+
+        # Send request with aiohttp
+        url = f"{FRONT_API_BASE}/channels/{channel_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {auth_token}"
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=form, headers=headers) as resp:
+                if resp.status >= 400:
+                    error_text = await resp.text()
+                    return {"error": f"HTTP {resp.status}: {error_text}"}
+
+                return await resp.json()
 
 @front.action("list_channels")
 class ListChannelsAction(ActionHandler):
@@ -425,7 +816,7 @@ class ListChannelsAction(ActionHandler):
                 channel = {
                     "id": raw_channel.get("id", ""),
                     "name": raw_channel.get("name", ""),
-                    "type": raw_channel.get("type", ""),
+                    "type": raw_channel.get("types", raw_channel.get("type", "")),  # Front API uses "types" field
                 }
                 # Add optional fields
                 if 'address' in raw_channel:
@@ -478,7 +869,7 @@ class ListInboxChannelsAction(ActionHandler):
                 channel = {
                     "id": raw_channel.get("id", ""),
                     "name": raw_channel.get("name", ""),
-                    "type": raw_channel.get("type", ""),
+                    "type": raw_channel.get("types", raw_channel.get("type", "")),  # Front API uses "types" field
                 }
                 # Add optional fields
                 if 'address' in raw_channel:
@@ -516,16 +907,20 @@ class GetChannelAction(ActionHandler):
             # Check for API errors
             if "error" in response:
                 return {
-                    "channel": {},
+                    "channel": {
+                        "id": "",
+                        "name": "",
+                        "type": ""
+                    },
                     "result": False,
                     "error": f"API request failed: {response.get('error', 'Unknown error')}"
                 }
 
-            # Parse channel
+            # Parse channel - Note: Front API returns "types" but we standardize to "type"
             channel = {
                 "id": response.get("id", ""),
                 "name": response.get("name", ""),
-                "type": response.get("type", ""),
+                "type": response.get("types", response.get("type", "")),  # Front API uses "types" field
             }
 
             # Add optional fields
@@ -545,7 +940,11 @@ class GetChannelAction(ActionHandler):
 
         except Exception as e:
             return {
-                "channel": {},
+                "channel": {
+                    "id": "",
+                    "name": "",
+                    "type": ""
+                },
                 "result": False,
                 "error": f"Error getting channel: {str(e)}"
             }

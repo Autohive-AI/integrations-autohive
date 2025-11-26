@@ -104,7 +104,7 @@
                     },
                     "due": {
                         "type": "string",
-                        "description": "Due date (RFC 3339 timestamp, date only - time is discarded)"
+                        "description": "Due date in RFC 3339 timestamp format (e.g., '2024-12-31T00:00:00Z'). Time is required in the format but only the date is used."
                     },
                     "status": {
                         "type": "string",

@@ -326,9 +326,10 @@ class TestZohoIntegration(unittest.TestCase):
         }
         self.mock_context.fetch.return_value = mock_response
 
-        handler = zoho.CreateNoteAction()
+        handler = zoho.CreateNote()
         inputs = {
-            "contact_id": "123456789",
+            "module": "Contacts",
+            "record_id": "123456789",
             "Note_Content": "Discussion about Q4 requirements",
             "Note_Title": "Q4 Planning Meeting"
         }
@@ -343,8 +344,41 @@ class TestZohoIntegration(unittest.TestCase):
         self.assertIn("/Contacts/123456789/Notes", call_args[0][0])
         self.assertEqual(call_args[1]["method"], "POST")
 
+    async def test_create_note_for_deal_success(self):
+        """Test successful note creation for a deal."""
+        mock_response = {
+            "data": [{
+                "code": "SUCCESS",
+                "details": {
+                    "id": "note987654321",
+                    "Created_Time": "2024-01-15T11:00:00+00:00",
+                    "Modified_Time": "2024-01-15T11:00:00+00:00"
+                },
+                "message": "record added"
+            }]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = zoho.CreateNote()
+        inputs = {
+            "module": "Deals",
+            "record_id": "987654321",
+            "Note_Content": "Client approved the proposal with minor changes",
+            "Note_Title": "Deal Update"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertEqual(result["note"]["id"], "note987654321")
+        self.assertTrue(result["result"])
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/Deals/987654321/Notes", call_args[0][0])
+        self.assertEqual(call_args[1]["method"], "POST")
+
     async def test_get_contact_notes_success(self):
-        """Test successful retrieval of notes for a contact."""
+        """Test successful retrieval of notes for a record."""
         mock_response = {
             "data": [
                 {
@@ -371,9 +405,10 @@ class TestZohoIntegration(unittest.TestCase):
         }
         self.mock_context.fetch.return_value = mock_response
 
-        handler = zoho.GetContactNotesAction()
+        handler = zoho.GetContactNotes()
         inputs = {
-            "contact_id": "123456789",
+            "module": "Contacts",
+            "record_id": "123456789",
             "page": 1,
             "per_page": 200
         }
@@ -400,7 +435,7 @@ class TestZohoIntegration(unittest.TestCase):
         }
         self.mock_context.fetch.return_value = mock_response
 
-        handler = zoho.GetNoteAction()
+        handler = zoho.GetNote()
         inputs = {"note_id": "note123456789"}
 
         result = await handler.execute(inputs, self.mock_context)
@@ -423,7 +458,7 @@ class TestZohoIntegration(unittest.TestCase):
         }
         self.mock_context.fetch.return_value = mock_response
 
-        handler = zoho.UpdateNoteAction()
+        handler = zoho.UpdateNote()
         inputs = {
             "note_id": "note123456789",
             "Note_Title": "Updated Note Title",
@@ -451,7 +486,7 @@ class TestZohoIntegration(unittest.TestCase):
         }
         self.mock_context.fetch.return_value = mock_response
 
-        handler = zoho.DeleteNoteAction()
+        handler = zoho.DeleteNote()
         inputs = {"note_id": "note123456789"}
 
         result = await handler.execute(inputs, self.mock_context)

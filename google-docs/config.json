@@ -8,8 +8,7 @@
     "type": "platform",
     "provider": "Google Docs",
     "scopes": [
-      "https://www.googleapis.com/auth/documents",
-      "https://www.googleapis.com/auth/drive.file"
+      "https://www.googleapis.com/auth/documents"
     ]
   },
   "actions": {
@@ -174,7 +173,7 @@
     },
     "docs_insert_markdown_content": {
       "display_name": "Insert Markdown Content",
-      "description": "Insert markdown-formatted content with automatic heading detection and styling. REQUIRES markdown format with headings (# for H1, ## for H2). For plain paragraphs without headings, use docs_insert_paragraphs instead. Automatically applies Google Docs heading styles in a single operation.",
+      "description": "Insert markdown-formatted content with automatic styling. Detects ALL heading levels (# through ######) and inline formatting (**bold**, *italic*) in a single operation. Automatically applies Google Docs styles (HEADING_1-6, bold, italic) without showing markdown symbols. For plain paragraphs without any formatting, use docs_insert_paragraphs instead.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -184,11 +183,7 @@
           },
           "content": {
             "type": "string",
-            "description": "MARKDOWN text with headings (# for H1, ## for H2, etc.). Example: '# Overview\\nParagraph text\\n\\n## Details\\nMore text'."
-          },
-          "heading_level": {
-            "type": "integer",
-            "description": "Which heading level to parse (default: 1 for #). Use 1 for #, 2 for ##, etc."
+            "description": "MARKDOWN text with headings and inline formatting. Example: '# Overview\\n**Bold text** and *italic text*\\n\\n## Details\\nMore text'. All heading levels (# through ######), **bold**, and *italic* are automatically detected and styled."
           },
           "tab_id": {
             "type": "string",
@@ -205,8 +200,9 @@
         "type": "object",
         "properties": {
           "result": { "type": "boolean" },
-          "sections_inserted": { "type": "integer" },
-          "total_paragraphs": { "type": "integer" },
+          "headings_inserted": { "type": "integer", "description": "Number of headings inserted" },
+          "paragraphs_inserted": { "type": "integer", "description": "Number of paragraphs inserted" },
+          "total_elements": { "type": "integer", "description": "Total elements inserted" },
           "error": { "type": "string" }
         },
         "required": ["result"]

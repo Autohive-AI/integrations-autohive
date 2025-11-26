@@ -891,3 +891,375 @@ class GetCommunityInfoAction(ActionHandler):
                 "result": False,
                 "error": f"Error getting community info: {str(e)}"
             }
+
+
+# ---- Member Tag Actions ----
+
+@circle.action("add_member_tags")
+class AddMemberTagsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            user_email = inputs["user_email"]
+            member_tag_ids = inputs["member_tag_ids"]
+
+            # Add each tag to the member
+            results = []
+            for tag_id in member_tag_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/tagged_members",
+                    headers=headers,
+                    method="POST",
+                    json={
+                        "user_email": user_email,
+                        "member_tag_id": tag_id
+                    }
+                )
+                
+                error_response = handle_api_response(response, {"member": {}})
+                if error_response:
+                    return error_response
+                
+                results.append(response)
+
+            return {
+                "member": results[0] if results else {},
+                "tags_added": len(results),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "member": {},
+                "result": False,
+                "error": f"Error adding member tags: {str(e)}"
+            }
+
+
+@circle.action("remove_member_tags")
+class RemoveMemberTagsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            user_email = inputs["user_email"]
+            member_tag_ids = inputs["member_tag_ids"]
+
+            # Remove each tag from the member
+            removed_count = 0
+            for tag_id in member_tag_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/tagged_members",
+                    headers=headers,
+                    method="DELETE",
+                    params={
+                        "user_email": user_email,
+                        "member_tag_id": tag_id
+                    }
+                )
+                
+                # DELETE may return empty response on success
+                if response or response == {}:
+                    removed_count += 1
+
+            return {
+                "tags_removed": removed_count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "error": f"Error removing member tags: {str(e)}"
+            }
+
+
+# ---- Member Space Group Actions ----
+
+@circle.action("add_member_to_space_groups")
+class AddMemberToSpaceGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            space_group_ids = inputs["space_group_ids"]
+
+            # Add member to each space group
+            results = []
+            for group_id in space_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/space_group_members",
+                    headers=headers,
+                    method="POST",
+                    json={
+                        "email": email,
+                        "space_group_id": group_id
+                    }
+                )
+                
+                error_response = handle_api_response(response, {"member": {}})
+                if error_response:
+                    return error_response
+                
+                results.append(response)
+
+            return {
+                "member": results[0] if results else {},
+                "groups_added": len(results),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "member": {},
+                "result": False,
+                "error": f"Error adding member to space groups: {str(e)}"
+            }
+
+
+@circle.action("remove_member_from_space_groups")
+class RemoveMemberFromSpaceGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            space_group_ids = inputs["space_group_ids"]
+
+            # Remove member from each space group
+            removed_count = 0
+            for group_id in space_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/space_group_members",
+                    headers=headers,
+                    method="DELETE",
+                    params={
+                        "email": email,
+                        "space_group_id": group_id
+                    }
+                )
+                
+                # DELETE may return empty response on success
+                if response or response == {}:
+                    removed_count += 1
+
+            return {
+                "groups_removed": removed_count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "error": f"Error removing member from space groups: {str(e)}"
+            }
+
+
+# ---- Tag and Space Group Listing Actions ----
+
+@circle.action("list_tags")
+class ListTagsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+
+            # Build query parameters
+            params = build_search_params(inputs, ["per_page", "page"])
+            
+            # Default per_page if not provided
+            if "per_page" not in params:
+                params["per_page"] = 100
+
+            # Make API call to member_tags endpoint
+            response = await context.fetch(
+                f"{CIRCLE_API_BASE}/member_tags",
+                headers=headers,
+                params=params
+            )
+
+            # Check for API errors or HTML responses
+            error_response = handle_api_response(response, {"tags": [], "count": 0})
+            if error_response:
+                return error_response
+
+            # Parse response
+            tags = response.get("records", [])
+            count = response.get("count", 0)
+
+            return {
+                "tags": tags,
+                "count": count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "tags": [],
+                "count": 0,
+                "result": False,
+                "error": f"Error listing tags: {str(e)}"
+            }
+
+
+@circle.action("list_space_groups")
+class ListSpaceGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+
+            # Build query parameters
+            params = build_search_params(inputs, ["per_page", "page"])
+            
+            # Default per_page if not provided
+            if "per_page" not in params:
+                params["per_page"] = 100
+
+            # Make API call
+            response = await context.fetch(
+                f"{CIRCLE_API_BASE}/space_groups",
+                headers=headers,
+                params=params
+            )
+
+            # Check for API errors or HTML responses
+            error_response = handle_api_response(response, {"space_groups": [], "count": 0})
+            if error_response:
+                return error_response
+
+            # Parse response
+            space_groups = response.get("records", [])
+            count = response.get("count", 0)
+
+            return {
+                "space_groups": space_groups,
+                "count": count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "space_groups": [],
+                "count": 0,
+                "result": False,
+                "error": f"Error listing space groups: {str(e)}"
+            }
+
+
+@circle.action("list_access_groups")
+class ListAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+
+            # Build query parameters
+            params = build_search_params(inputs, ["per_page", "page"])
+            
+            # Default per_page if not provided
+            if "per_page" not in params:
+                params["per_page"] = 100
+
+            # Make API call
+            response = await context.fetch(
+                f"{CIRCLE_API_BASE}/access_groups",
+                headers=headers,
+                params=params
+            )
+
+            # Check for API errors or HTML responses
+            error_response = handle_api_response(response, {"access_groups": [], "count": 0})
+            if error_response:
+                return error_response
+
+            # Parse response
+            access_groups = response.get("records", [])
+            count = response.get("count", 0)
+
+            return {
+                "access_groups": access_groups,
+                "count": count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "access_groups": [],
+                "count": 0,
+                "result": False,
+                "error": f"Error listing access groups: {str(e)}"
+            }
+
+
+@circle.action("add_member_to_access_groups")
+class AddMemberToAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            access_group_ids = inputs["access_group_ids"]
+
+            # Add member to each access group
+            results = []
+            for group_id in access_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/access_groups/{group_id}/community_members",
+                    headers=headers,
+                    method="POST",
+                    json={"email": email}
+                )
+                
+                error_response = handle_api_response(response, {"member": {}})
+                if error_response:
+                    return error_response
+                
+                results.append(response)
+
+            return {
+                "member": results[0] if results else {},
+                "groups_added": len(results),
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "member": {},
+                "result": False,
+                "error": f"Error adding member to access groups: {str(e)}"
+            }
+
+
+@circle.action("remove_member_from_access_groups")
+class RemoveMemberFromAccessGroupsAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            headers = build_auth_headers(context)
+            
+            email = inputs["email"]
+            access_group_ids = inputs["access_group_ids"]
+
+            # Remove member from each access group
+            removed_count = 0
+            for group_id in access_group_ids:
+                response = await context.fetch(
+                    f"{CIRCLE_API_BASE}/access_groups/{group_id}/community_members",
+                    headers=headers,
+                    method="DELETE",
+                    params={"email": email}
+                )
+                
+                # DELETE may return empty response on success
+                if response or response == {}:
+                    removed_count += 1
+
+            return {
+                "groups_removed": removed_count,
+                "result": True
+            }
+
+        except Exception as e:
+            return {
+                "result": False,
+                "error": f"Error removing member from access groups: {str(e)}"
+            }
