@@ -19,7 +19,7 @@
         "properties": {
           "count": {
             "type": "integer",
-            "description": "Number of lists to return (default 10, max 1000)"
+            "description": "Number of lists to return (default 10, max 50)"
           },
           "offset": {
             "type": "integer",
@@ -67,6 +67,56 @@
         },
         "required": [
           "lists",
+          "result"
+        ]
+      }
+    },
+    "find_list": {
+      "display_name": "Find List",
+      "description": "Search for a mailing list by name",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name or partial name to search for (case-insensitive)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "object",
+            "description": "Matching list details (first match if multiple)",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "List ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "List name"
+              },
+              "stats": {
+                "type": "object",
+                "description": "List statistics"
+              }
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": [
           "result"
         ]
       }
@@ -195,7 +245,7 @@
               },
               "language": {
                 "type": "string",
-                "description": "Default language (e.g., \u0027en\u0027)"
+                "description": "Default language (e.g., 'en')"
               }
             },
             "required": [
@@ -260,7 +310,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Subscription status: \u0027subscribed\u0027, \u0027unsubscribed\u0027, \u0027cleaned\u0027, or \u0027pending\u0027"
+            "description": "Subscription status: 'subscribed', 'unsubscribed', 'cleaned', or 'pending'"
           },
           "merge_fields": {
             "type": "object",
@@ -335,7 +385,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Subscription status: \u0027subscribed\u0027, \u0027unsubscribed\u0027, \u0027cleaned\u0027, or \u0027pending\u0027"
+            "description": "Subscription status: 'subscribed', 'unsubscribed', 'cleaned', or 'pending'"
           },
           "merge_fields": {
             "type": "object",
@@ -462,7 +512,7 @@
           },
           "count": {
             "type": "integer",
-            "description": "Number of members to return (default 10, max 1000)"
+            "description": "Number of members to return (default 10, max 50)"
           },
           "offset": {
             "type": "integer",
@@ -470,7 +520,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Filter by status: \u0027subscribed\u0027, \u0027unsubscribed\u0027, \u0027cleaned\u0027, or \u0027pending\u0027"
+            "description": "Filter by status: 'subscribed', 'unsubscribed', 'cleaned', or 'pending'"
           }
         },
         "required": [
@@ -520,6 +570,60 @@
         ]
       }
     },
+    "find_campaign": {
+      "display_name": "Find Campaign",
+      "description": "Search for a campaign by title or subject line",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Title or subject line to search for (case-insensitive)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "campaign": {
+            "type": "object",
+            "description": "Matching campaign details (first match if multiple)",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Campaign ID"
+              },
+              "type": {
+                "type": "string",
+                "description": "Campaign type"
+              },
+              "status": {
+                "type": "string",
+                "description": "Campaign status"
+              },
+              "settings": {
+                "type": "object",
+                "description": "Campaign settings including title and subject_line"
+              }
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
     "get_campaigns": {
       "display_name": "Get Campaigns",
       "description": "Retrieve all campaigns from Mailchimp account",
@@ -528,7 +632,7 @@
         "properties": {
           "count": {
             "type": "integer",
-            "description": "Number of campaigns to return (default 10, max 1000)"
+            "description": "Number of campaigns to return (default 10, max 50)"
           },
           "offset": {
             "type": "integer",
@@ -536,7 +640,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Filter by status: \u0027save\u0027, \u0027paused\u0027, \u0027schedule\u0027, \u0027sending\u0027, or \u0027sent\u0027"
+            "description": "Filter by status: 'save', 'paused', 'schedule', 'sending', or 'sent'"
           }
         },
         "required": []
@@ -592,7 +696,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Campaign type: \u0027regular\u0027, \u0027plaintext\u0027, \u0027absplit\u0027, \u0027rss\u0027, or \u0027variate\u0027"
+            "description": "Campaign type: 'regular', 'plaintext', 'absplit', 'rss', or 'variate'"
           },
           "list_id": {
             "type": "string",

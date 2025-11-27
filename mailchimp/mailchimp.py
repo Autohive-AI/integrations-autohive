@@ -186,6 +186,86 @@ class GetListsAction(ActionHandler):
             )
 
 
+@mailchimp.action("find_list")
+class FindListAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Search for a mailing list by name
+        """
+        # Validate required inputs
+        name = inputs.get("name")
+        if not name:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": "name is required"
+                },
+                cost_usd=0.0
+            )
+
+        try:
+            # Get data center from metadata
+            dc = await get_data_center(context)
+            base_url = get_mailchimp_base_url(dc)
+
+            # Build URL - fetch lists and filter by name
+            url = f"{base_url}/lists"
+            params = {
+                "count": 100,  # Fetch enough to find the match
+                "offset": 0
+            }
+
+            # Make rate-limited request
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                method="GET",
+                params=params
+            )
+
+            # Search for matching list (case-insensitive)
+            search_name = name.lower()
+            matching_list = None
+            for lst in response.get("lists", []):
+                if search_name in lst.get("name", "").lower():
+                    matching_list = lst
+                    break
+
+            if matching_list:
+                return ActionResult(
+                    data={
+                        "result": True,
+                        "list": matching_list
+                    },
+                    cost_usd=0.0
+                )
+            else:
+                return ActionResult(
+                    data={
+                        "result": False,
+                        "error": f"No list found matching '{name}'"
+                    },
+                    cost_usd=0.0
+                )
+
+        except MailchimpRateLimitException as e:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": f"Rate limit exceeded. Retry after {e.retry_after} seconds."
+                },
+                cost_usd=0.0
+            )
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
 @mailchimp.action("get_list")
 class GetListAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -624,6 +704,89 @@ class GetListMembersAction(ActionHandler):
                     "error": str(e),
                     "members": [],
                     "total_items": 0
+                },
+                cost_usd=0.0
+            )
+
+
+@mailchimp.action("find_campaign")
+class FindCampaignAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Search for a campaign by title or subject line
+        """
+        # Validate required inputs
+        query = inputs.get("query")
+        if not query:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": "query is required"
+                },
+                cost_usd=0.0
+            )
+
+        try:
+            # Get data center from metadata
+            dc = await get_data_center(context)
+            base_url = get_mailchimp_base_url(dc)
+
+            # Build URL - fetch campaigns and filter by title/subject
+            url = f"{base_url}/campaigns"
+            params = {
+                "count": 100,  # Fetch enough to find the match
+                "offset": 0
+            }
+
+            # Make rate-limited request
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                method="GET",
+                params=params
+            )
+
+            # Search for matching campaign (case-insensitive in title or subject_line)
+            search_query = query.lower()
+            matching_campaign = None
+            for campaign in response.get("campaigns", []):
+                settings = campaign.get("settings", {})
+                title = settings.get("title", "").lower()
+                subject_line = settings.get("subject_line", "").lower()
+                if search_query in title or search_query in subject_line:
+                    matching_campaign = campaign
+                    break
+
+            if matching_campaign:
+                return ActionResult(
+                    data={
+                        "result": True,
+                        "campaign": matching_campaign
+                    },
+                    cost_usd=0.0
+                )
+            else:
+                return ActionResult(
+                    data={
+                        "result": False,
+                        "error": f"No campaign found matching '{query}'"
+                    },
+                    cost_usd=0.0
+                )
+
+        except MailchimpRateLimitException as e:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": f"Rate limit exceeded. Retry after {e.retry_after} seconds."
+                },
+                cost_usd=0.0
+            )
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "result": False,
+                    "error": str(e)
                 },
                 cost_usd=0.0
             )
