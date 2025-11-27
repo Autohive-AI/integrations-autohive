@@ -97,12 +97,20 @@ def get_mailchimp_base_url(dc: str) -> str:
 
 async def get_data_center(context: ExecutionContext) -> str:
     """
-    Fetch the data center (dc) from Mailchimp OAuth2 metadata endpoint.
-    This is critical for Mailchimp OAuth2 - the dc is dynamic and must be
-    retrieved after token exchange.
+    Get the data center (dc) for Mailchimp API requests.
+
+    First checks if dc is stored in connection metadata (set during OAuth flow).
+    Falls back to fetching from Mailchimp OAuth2 metadata endpoint if not stored.
 
     Returns the dc string (e.g., 'us19')
     """
+    # First, try to get dc from stored connection metadata (most efficient)
+    if hasattr(context, 'metadata') and context.metadata:
+        stored_dc = context.metadata.get("dc")
+        if stored_dc:
+            return stored_dc
+
+    # Fallback: fetch from Mailchimp metadata endpoint
     try:
         metadata = await context.fetch(
             "https://login.mailchimp.com/oauth2/metadata",
