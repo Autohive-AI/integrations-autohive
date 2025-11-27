@@ -1,5 +1,6 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler, PollingTriggerHandler
+    Integration, ExecutionContext, ActionHandler, PollingTriggerHandler,
+    ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
 )
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
@@ -125,6 +126,22 @@ def build_pagination_params(inputs: Dict[str, Any]) -> Dict[str, Any]:
     return params
 
 
+# ---- Connected Account Handler ----
+
+@retail_express.connected_account()
+class RetailExpressConnectedAccountHandler(ConnectedAccountHandler):
+    """Handler to fetch connected account information from Retail Express."""
+
+    async def get_account_info(self, context: ExecutionContext) -> ConnectedAccountInfo:
+        """Fetch account information from Retail Express API."""
+        credentials = context.auth.get("credentials", {})
+        api_key = credentials.get("api_key", "")
+        
+        return ConnectedAccountInfo(
+            user_id=api_key[:8] + "..." if len(api_key) > 8 else api_key
+        )
+
+
 # ---- Product Action Handlers ----
 
 @retail_express.action("list_products")
@@ -152,23 +169,29 @@ class ListProductsAction(ActionHandler):
 
             products = response.get('data', [])
             
-            return {
-                "products": products,
-                "page_number": response.get('page_number', 1),
-                "page_size": response.get('page_size', 20),
-                "total_records": response.get('total_records', len(products)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "products": products,
+                    "page_number": response.get('page_number', 1),
+                    "page_size": response.get('page_size', 20),
+                    "total_records": response.get('total_records', len(products)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "products": [],
-                "page_number": 1,
-                "page_size": 20,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "products": [],
+                    "page_number": 1,
+                    "page_size": 20,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("get_product")
@@ -187,17 +210,23 @@ class GetProductAction(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "product": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "product": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "product": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "product": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Customer Action Handlers ----
@@ -227,23 +256,29 @@ class ListCustomersAction(ActionHandler):
 
             customers = response.get('data', [])
             
-            return {
-                "customers": customers,
-                "page_number": response.get('page_number', 1),
-                "page_size": response.get('page_size', 20),
-                "total_records": response.get('total_records', len(customers)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "customers": customers,
+                    "page_number": response.get('page_number', 1),
+                    "page_size": response.get('page_size', 20),
+                    "total_records": response.get('total_records', len(customers)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "customers": [],
-                "page_number": 1,
-                "page_size": 20,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "customers": [],
+                    "page_number": 1,
+                    "page_size": 20,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("get_customer")
@@ -262,17 +297,23 @@ class GetCustomerAction(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "customer": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "customer": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "customer": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "customer": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("create_customer")
@@ -309,17 +350,23 @@ class CreateCustomerAction(ActionHandler):
                 json=body
             )
 
-            return {
-                "customer": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "customer": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "customer": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "customer": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("update_customer")
@@ -354,17 +401,23 @@ class UpdateCustomerAction(ActionHandler):
                 json=body
             )
 
-            return {
-                "customer": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "customer": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "customer": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "customer": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Order Action Handlers ----
@@ -396,23 +449,29 @@ class ListOrdersAction(ActionHandler):
 
             orders = response.get('data', [])
             
-            return {
-                "orders": orders,
-                "page_number": response.get('page_number', 1),
-                "page_size": response.get('page_size', 20),
-                "total_records": response.get('total_records', len(orders)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "orders": orders,
+                    "page_number": response.get('page_number', 1),
+                    "page_size": response.get('page_size', 20),
+                    "total_records": response.get('total_records', len(orders)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "orders": [],
-                "page_number": 1,
-                "page_size": 20,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "orders": [],
+                    "page_number": 1,
+                    "page_size": 20,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("get_order")
@@ -431,17 +490,23 @@ class GetOrderAction(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "order": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "order": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "order": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "order": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Outlet Action Handlers ----
@@ -465,23 +530,29 @@ class ListOutletsAction(ActionHandler):
 
             outlets = response.get('data', [])
             
-            return {
-                "outlets": outlets,
-                "page_number": response.get('page_number', 1),
-                "page_size": response.get('page_size', 20),
-                "total_records": response.get('total_records', len(outlets)),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "outlets": outlets,
+                    "page_number": response.get('page_number', 1),
+                    "page_size": response.get('page_size', 20),
+                    "total_records": response.get('total_records', len(outlets)),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "outlets": [],
-                "page_number": 1,
-                "page_size": 20,
-                "total_records": 0,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "outlets": [],
+                    "page_number": 1,
+                    "page_size": 20,
+                    "total_records": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 @retail_express.action("get_outlet")
@@ -500,17 +571,23 @@ class GetOutletAction(ActionHandler):
                 headers=headers
             )
 
-            return {
-                "outlet": response.get('data', response),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "outlet": response.get('data', response),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "outlet": {},
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "outlet": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Polling Trigger Handlers ----
