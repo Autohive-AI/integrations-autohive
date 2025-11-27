@@ -95,35 +95,20 @@ def get_mailchimp_base_url(dc: str) -> str:
     return f"https://{dc}.api.mailchimp.com/3.0"
 
 
-async def get_data_center(context: ExecutionContext) -> str:
+def get_data_center(context: ExecutionContext) -> str:
     """
-    Get the data center (dc) for Mailchimp API requests.
+    Get the data center (dc) for Mailchimp API requests from stored connection metadata.
 
-    First checks if dc is stored in connection metadata (set during OAuth flow).
-    Falls back to fetching from Mailchimp OAuth2 metadata endpoint if not stored.
+    The dc is stored in metadata during the OAuth flow by the backend.
 
     Returns the dc string (e.g., 'us19')
     """
-    # First, try to get dc from stored connection metadata (most efficient)
     if hasattr(context, 'metadata') and context.metadata:
-        stored_dc = context.metadata.get("dc")
-        if stored_dc:
-            return stored_dc
+        dc = context.metadata.get("dc")
+        if dc:
+            return dc
 
-    # Fallback: fetch from Mailchimp metadata endpoint
-    try:
-        metadata = await context.fetch(
-            "https://login.mailchimp.com/oauth2/metadata",
-            method="GET"
-        )
-
-        if not metadata or 'dc' not in metadata:
-            raise ValueError("Failed to retrieve data center from Mailchimp metadata")
-
-        return metadata['dc']
-
-    except Exception as e:
-        raise Exception(f"Failed to get Mailchimp data center: {str(e)}")
+    raise ValueError("Mailchimp data center (dc) not found in connection metadata")
 
 
 def get_subscriber_hash(email: str) -> str:
@@ -145,7 +130,7 @@ class GetListsAction(ActionHandler):
         """
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL with pagination parameters
@@ -213,7 +198,7 @@ class FindListAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL - fetch lists and filter by name
@@ -293,7 +278,7 @@ class GetListAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL
@@ -355,7 +340,7 @@ class CreateListAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build list payload
@@ -427,7 +412,7 @@ class AddMemberAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build member payload
@@ -513,7 +498,7 @@ class UpdateMemberAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build member update payload
@@ -599,7 +584,7 @@ class GetMemberAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL
@@ -664,7 +649,7 @@ class GetListMembersAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL with pagination and filter parameters
@@ -736,7 +721,7 @@ class FindCampaignAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL - fetch campaigns and filter by title/subject
@@ -808,7 +793,7 @@ class GetCampaignsAction(ActionHandler):
         """
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL with pagination and filter parameters
@@ -887,7 +872,7 @@ class CreateCampaignAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build campaign payload
@@ -967,7 +952,7 @@ class GetCampaignAction(ActionHandler):
 
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Build URL
@@ -1017,7 +1002,7 @@ class MailchimpConnectedAccountHandler(ConnectedAccountHandler):
         """
         try:
             # Get data center from metadata
-            dc = await get_data_center(context)
+            dc = get_data_center(context)
             base_url = get_mailchimp_base_url(dc)
 
             # Fetch account information from Mailchimp API
