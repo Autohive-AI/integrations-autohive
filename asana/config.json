@@ -5,19 +5,21 @@
     "description": "Asana integration for managing tasks, projects, workspaces, and team collaboration",
     "entry_point": "asana.py",
     "auth": {
-        "type": "custom",
-        "title": "Asana Personal Access Token",
-        "fields": {
-            "type": "object",
-            "properties": {
-                "personal_access_token": {
-                    "type": "string",
-                    "format": "password",
-                    "label": "Personal Access Token",
-                    "help_text": "Your Asana Personal Access Token. Create one in Settings > Apps > Manage Developer Apps > Create new token."
-                }
-            }
-        }
+        "type": "platform",
+        "provider": "Asana",
+        "scopes": [
+            "tasks:read",
+            "tasks:write",
+            "tasks:delete",
+            "projects:read",
+            "projects:write",
+            "projects:delete",
+            "stories:read",
+            "stories:write",
+            "workspaces:read",
+            "teams:read",
+            "users:read"
+        ]
     },
     "actions": {
         "create_task": {
@@ -542,8 +544,17 @@
                     "not_found": {
                         "type": "boolean",
                         "description": "Whether the project was not found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
                     }
-                }
+                },
+                "required": ["result"]
             }
         },
         "list_sections": {
