@@ -1,8 +1,9 @@
 {
-    "name": "heygen",
+    "name": "HeyGen",
     "version": "1.0.0",
     "description": "HeyGen integration for AI avatar generation, video creation, and photo avatar management",
     "entry_point": "heygen.py",
+    "supports_billing": true,
     "auth": {
         "type": "custom",
         "title": "Enter your API key",
@@ -37,7 +38,7 @@
                             "Senior",
                             "Unspecified"
                         ],
-                        "description": "Age - Age group for the avatar's appearance"
+                        "description": "Age - Age group for the avatar's appearance. Must be exactly one of: 'Young Adult' (18-30), 'Early Middle Age' (30-45), 'Late Middle Age' (45-60), 'Senior' (60+), or 'Unspecified'"
                     },
                     "gender": {
                         "type": "string",
@@ -46,7 +47,7 @@
                             "Man",
                             "Unspecified"
                         ],
-                        "description": "Gender - Gender identity of the avatar"
+                        "description": "Gender - Gender identity of the avatar. Must be exactly one of: 'Woman' (not 'female'), 'Man' (not 'male'), or 'Unspecified'. Use exact capitalization"
                     },
                     "ethnicity": {
                         "type": "string",
@@ -64,7 +65,7 @@
                             "Mixed",
                             "Unspecified"
                         ],
-                        "description": "Ethnicity - Ethnic background for facial and skin tone characteristics"
+                        "description": "Ethnicity - Ethnic background for facial and skin tone characteristics. Must be exactly one of the listed values with exact capitalization (e.g., 'White' not 'white', 'East Asian' not 'asian')"
                     },
                     "orientation": {
                         "type": "string",
@@ -82,7 +83,7 @@
                             "close_up",
                             "full_body"
                         ],
-                        "description": "Pose - Framing or body coverage in the avatar"
+                        "description": "Pose - Framing or body coverage in the avatar. Must be exactly one of: 'half_body' (waist up), 'close_up' (head and shoulders), or 'full_body' (entire body). Note: use 'half_body' not 'upper_body'"
                     },
                     "style": {
                         "type": "string",
@@ -95,7 +96,7 @@
                             "Cyberpunk",
                             "Unspecified"
                         ],
-                        "description": "Style - Visual or artistic style of the generated avatar"
+                        "description": "Style - Visual or artistic style of the generated avatar. Must be exactly one of the listed values with exact capitalization (e.g., 'Cinematic' not 'cinematic', 'Realistic' not 'realistic')"
                     },
                     "appearance": {
                         "type": "string",
@@ -127,7 +128,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -143,7 +144,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "generation_id": {
                                 "type": "string",
@@ -175,103 +179,54 @@
                 "properties": {
                     "error": {
                         "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Error - Displays error message when the request fails; null if the request is successful"
+                    },
+                    "data": {
+                        "type": [
                             "object",
                             "null"
                         ],
                         "properties": {
-                            "code": {
+                            "id": {
                                 "type": "string",
-                                "description": "Error Code"
+                                "description": "Unique identifier of the generated avatar/look"
                             },
-                            "message": {
+                            "status": {
                                 "type": "string",
-                                "description": "Error Message"
-                            }
-                        },
-                        "description": "Error - Error object with code and message when the request fails; null if the request is successful"
-                    },
-                    "data": {
-                        "type": "object",
-                        "properties": {
-                            "photo_avatar_list": {
-                                "type": "array",
+                                "description": "Current status of the generated avatar or look (e.g., 'in_progress', 'completed', 'failed')"
+                            },
+                            "msg": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Legacy field for messages. This field is deprecated"
+                            },
+                            "image_url_list": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
                                 "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "description": "Avatar ID"
-                                        },
-                                        "image_url": {
-                                            "type": "string",
-                                            "description": "Image URL"
-                                        },
-                                        "created_at": {
-                                            "type": "number",
-                                            "description": "Created At"
-                                        },
-                                        "name": {
-                                            "type": "string",
-                                            "description": "Avatar Name"
-                                        },
-                                        "status": {
-                                            "type": "string",
-                                            "description": "Status"
-                                        },
-                                        "group_id": {
-                                            "type": "string",
-                                            "description": "Group ID"
-                                        },
-                                        "is_motion": {
-                                            "type": "boolean",
-                                            "description": "Is Motion"
-                                        },
-                                        "motion_preview_url": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ],
-                                            "description": "Motion Preview URL"
-                                        },
-                                        "business_type": {
-                                            "type": "string",
-                                            "description": "Business Type"
-                                        },
-                                        "upscale_availability": {
-                                            "type": "object",
-                                            "description": "Upscale Availability"
-                                        },
-                                        "upscaled": {
-                                            "type": "boolean",
-                                            "description": "Upscaled"
-                                        },
-                                        "background_sound_effect": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ],
-                                            "description": "Background Sound Effect"
-                                        },
-                                        "default_voice_id": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ],
-                                            "description": "Default Voice ID"
-                                        },
-                                        "moderation_msg": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ],
-                                            "description": "Moderation Message"
-                                        }
-                                    }
+                                    "type": "string"
                                 },
-                                "description": "Photo Avatar List"
+                                "description": "URLs of the generated avatars/looks. Null when generation is still in progress"
+                            },
+                            "image_key_list": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Image keys corresponding to the generated avatars/looks. Null when generation is still in progress"
                             }
                         },
-                        "description": "Response Data"
+                        "description": "Response Data - Contains detailed information about the generated avatar/look; null if request fails"
                     }
                 }
             }
@@ -305,7 +260,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -321,7 +276,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "id": {
                                 "type": "string",
@@ -445,7 +403,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -461,7 +419,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "description": "Response Data"
                     }
                 }
@@ -487,13 +448,16 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "description": "Error"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "code": {
                                 "type": "integer",
@@ -561,7 +525,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -577,18 +541,32 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "status": {
                                 "type": "string",
-                                "description": "Training Status"
+                                "description": "Training Status - Current status of the training job (e.g., 'ready', 'pending', 'processing', 'failed')"
                             },
-                            "progress": {
-                                "type": "number",
-                                "description": "Progress Percentage"
+                            "error_msg": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "Error Message - Error message if training failed; null if successful"
+                            },
+                            "created_at": {
+                                "type": "integer",
+                                "description": "Created At - Unix timestamp when the training job was created"
+                            },
+                            "updated_at": {
+                                "type": "integer",
+                                "description": "Updated At - Unix timestamp when the training job was last updated"
                             }
                         },
-                        "description": "Response Data"
+                        "description": "Response Data - Contains training job status and timestamps"
                     }
                 }
             }
@@ -653,7 +631,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -669,7 +647,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "generation_id": {
                                 "type": "string",
@@ -718,7 +699,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -734,7 +715,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "id": {
                                 "type": "string",
@@ -766,7 +750,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -782,7 +766,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "code": {
                                 "type": "integer",
@@ -844,7 +831,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -860,7 +847,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "avatar_groups": {
                                 "type": "array",
@@ -925,7 +915,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -941,7 +931,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "group_id": {
                                 "type": "string",
@@ -1010,7 +1003,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1026,7 +1019,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "avatar_id": {
                                 "type": "string",
@@ -1084,7 +1080,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1100,7 +1096,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "id": {
                                 "type": "string",
@@ -1253,7 +1252,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1269,7 +1268,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "voices": {
                                 "type": "array",
@@ -1332,7 +1334,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1348,7 +1350,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "locales": {
                                 "type": "array",
@@ -1399,7 +1404,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1415,7 +1420,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "avatars": {
                                 "type": "array",
@@ -1527,7 +1535,10 @@
                                     "description": "Text - Optional: Text overlay displayed on screen"
                                 }
                             },
-                            "required": ["character", "voice"]
+                            "required": [
+                                "character",
+                                "voice"
+                            ]
                         },
                         "description": "Video Inputs (Scenes) - Array of video input settings (scenes). Must contain between 1 to 50 items. Each scene describes the avatar, background, voice, and script. See HeyGen API docs for full nested structure: character object requires 'type' (avatar/talking_photo) and 'avatar_id' or 'talking_photo_id'. Voice object requires 'type' (text/audio/silence), and for text type: 'voice_id' and 'input_text' are required"
                     },
@@ -1546,10 +1557,7 @@
                         "description": "Enable Captions - Whether to enable captions in the video. Only supported for text-based input. Default: false"
                     },
                     "dimension": {
-                        "type": [
-                            "object",
-                            "null"
-                        ],
+                        "type": "object",
                         "properties": {
                             "width": {
                                 "type": "integer",
@@ -1593,7 +1601,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1609,7 +1617,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "video_id": {
                                 "type": "string",
@@ -1622,82 +1633,58 @@
             }
         },
         "create_photo_avatar_video": {
-            "display_name": "Create Photo Avatar Video (Simple)",
-            "description": "Generate an Avatar IV video from a photo avatar with text-to-speech or audio. Much simpler than create_avatar_video - only requires image_key, title, and script/voice.",
+            "display_name": "Create Photo Avatar Video",
+            "description": "Generate an Avatar IV video from a photo avatar with text-to-speech or audio. Requires image_key, video_title, and either (script + voice_id) OR (audio_url/audio_asset_id)",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "image_key": {
                         "type": "string",
-                        "description": "Image Key - Image key of the uploaded photo to use. Can be retrieved from Upload Asset endpoint or from photo avatar generation"
+                        "description": "Image Key - Image key of the uploaded photo to use. Can be retrieved from the Upload Asset endpoint or Check Photo/Look Generation Status endpoint"
                     },
                     "video_title": {
                         "type": "string",
                         "description": "Video Title - Title of the generated video"
                     },
                     "script": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Script - Text that the avatar will speak. Required if voice_id is provided. Either script+voice_id OR audio_url/audio_asset_id must be provided"
+                        "type": "string",
+                        "description": "Script - Text that the avatar will speak in the generated video. Either script along with voice_id, or audio_url/audio_asset_id must be provided"
                     },
                     "voice_id": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Voice ID - Voice ID from List All Voices endpoint. Required if script is provided. Either script+voice_id OR audio_url/audio_asset_id must be provided"
+                        "type": "string",
+                        "description": "Voice ID - Unique identifier of the voice. Can be retrieved from List All Voices (V2) endpoint. Either script along with voice_id, or audio_url/audio_asset_id must be provided"
                     },
                     "video_orientation": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
+                        "type": "string",
                         "enum": [
                             "portrait",
                             "landscape"
                         ],
-                        "description": "Video Orientation - Orientation of output video: portrait or landscape. Default: portrait"
+                        "description": "Video Orientation - Orientation of the output video. Can be 'portrait' or 'landscape'. Defaults to 'portrait'"
                     },
                     "fit": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
+                        "type": "string",
                         "enum": [
                             "cover",
                             "contain"
                         ],
-                        "description": "Fit - How avatar fits to screen: cover or contain. Default: contain"
+                        "description": "Fit - Choose how avatar fits to the screen. Can be 'cover' or 'contain'"
                     },
                     "custom_motion_prompt": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Custom Motion Prompt - Optional: Text prompt describing the avatar's motion style"
+                        "type": "string",
+                        "description": "Custom Motion Prompt - Text prompt describing the avatar's motion style"
                     },
                     "enhance_custom_motion_prompt": {
-                        "type": [
-                            "boolean",
-                            "null"
-                        ],
-                        "description": "Enhance Custom Motion Prompt - Optional: Whether to use AI to enhance the avatar's motion based on custom_motion_prompt"
+                        "type": "boolean",
+                        "description": "Enhance Custom Motion Prompt - Whether to use AI to enhance the avatar's motion based on a text description you provided in custom_motion_prompt"
                     },
                     "audio_url": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Audio URL - Optional: URL of uploaded audio from Upload Asset endpoint. Either audio_url or audio_asset_id can be provided instead of script+voice_id"
+                        "type": "string",
+                        "description": "Audio URL - URL of the uploaded audio. Can be retrieved from Upload Asset endpoint. Either audio_url or audio_asset_id must be provided in case script and voice_id are not provided"
                     },
                     "audio_asset_id": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Audio Asset ID - Optional: Asset ID of uploaded audio from Upload Asset endpoint. Either audio_url or audio_asset_id can be provided instead of script+voice_id"
+                        "type": "string",
+                        "description": "Audio Asset ID - Unique identifier of the uploaded audio. Can be retrieved from Upload Asset endpoint. Either audio_url or audio_asset_id must be provided in case script and voice_id are not provided"
                     }
                 },
                 "required": [
@@ -1710,7 +1697,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1726,7 +1713,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "video_id": {
                                 "type": "string",
@@ -1758,7 +1748,7 @@
                 "properties": {
                     "error": {
                         "type": [
-                            "object",
+                            "string",
                             "null"
                         ],
                         "properties": {
@@ -1774,7 +1764,10 @@
                         "description": "Error - Error object with code and message when the request fails; null if the request is successful"
                     },
                     "data": {
-                        "type": "object",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
                         "properties": {
                             "video_id": {
                                 "type": "string",

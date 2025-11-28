@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 
@@ -79,10 +79,19 @@ class GeneratePhotoAvatarHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to generate photo avatar: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("check_generation_status")
@@ -110,10 +119,19 @@ class CheckGenerationStatusHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to check generation status for {generation_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("create_avatar_group")
@@ -150,10 +168,19 @@ class CreateAvatarGroupHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to create avatar group: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("add_looks_to_group")
@@ -191,10 +218,19 @@ class AddLooksToGroupHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to add looks to group: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("train_avatar_group")
@@ -226,10 +262,19 @@ class TrainAvatarGroupHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to train avatar group: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("check_training_status")
@@ -257,10 +302,19 @@ class CheckTrainingStatusHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to check training status for {group_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("generate_avatar_look")
@@ -296,10 +350,19 @@ class GenerateAvatarLookHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to generate avatar look: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("add_motion_to_avatar")
@@ -338,10 +401,19 @@ class AddMotionToAvatarHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to add motion to avatar: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("add_sound_effect_to_avatar")
@@ -373,10 +445,19 @@ class AddSoundEffectToAvatarHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to add sound effect to avatar: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("list_avatar_groups")
@@ -415,10 +496,19 @@ class ListAvatarGroupsHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to list avatar groups: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("list_avatars_in_group")
@@ -446,10 +536,19 @@ class ListAvatarsInGroupHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to list avatars in group {group_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("get_avatar_details")
@@ -477,10 +576,19 @@ class GetAvatarDetailsHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to get avatar details for {avatar_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("get_photo_avatar_details")
@@ -508,10 +616,19 @@ class GetPhotoAvatarDetailsHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to get photo avatar details for {photo_avatar_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("list_voices")
@@ -538,10 +655,19 @@ class ListVoicesHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to list voices: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("list_voice_locales")
@@ -573,10 +699,19 @@ class ListVoiceLocalesHandler(ActionHandler):
                 params=params
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to list voice locales: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("list_avatars")
@@ -640,10 +775,19 @@ class ListAvatarsHandler(ActionHandler):
                         })
                     data["talking_photos"] = simplified_photos
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to list avatars: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("create_avatar_video")
@@ -694,10 +838,19 @@ class CreateAvatarVideoHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to create avatar video: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("create_photo_avatar_video")
@@ -757,10 +910,19 @@ class CreatePhotoAvatarVideoHandler(ActionHandler):
                 json=request_body
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to create photo avatar video: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
 @heygen.action("get_video_status")
@@ -788,9 +950,18 @@ class GetVideoStatusHandler(ActionHandler):
                 method="GET"
             )
 
-            return response
+            return ActionResult(
+                data=response,
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            raise Exception(f"Failed to get video status for {video_id}: {str(e)}")
+            return ActionResult(
+                data={
+                    "error": str(e),
+                    "data": None
+                },
+                cost_usd=0.0
+            )
 
 
