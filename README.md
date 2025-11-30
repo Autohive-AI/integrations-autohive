@@ -23,6 +23,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Canva
+
+[canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation and asset management workflows.
+
 ### Circle
 
 [circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
@@ -130,6 +134,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Slide Maker
 
 [slider](slider): PowerPoint automation integration with markdown-first content creation and intelligent template filling. Supports creating professional presentations from markdown syntax with two powerful modes: auto-layout for automatic vertical content flow and granular mode for precise positioning control. Features safe template filling with placeholder metadata support (font size, color, formatting), find-and-replace with automatic font sizing and safety checks, chart creation (column, line, pie, bar, area, scatter), image insertion, and intelligent overlap detection. Includes markdown support for headings (H1-H6), bullets, tables, blockquotes, and code blocks. Features stateless file streaming for AWS Lambda deployment, comprehensive positioning validation, and graceful error handling. No authentication required.
+
+### Float
+
+[float](float): Comprehensive resource management and project scheduling integration with Float API for team capacity planning, time tracking, and project coordination. Supports full CRUD operations for team members (people) with roles, departments, rates, and availability management. Includes complete project lifecycle management with client associations, budgets, timelines, and team assignments. Features task/allocation scheduling across team members, time off management with leave types, logged time tracking with billable hours, and client relationship management. Provides access to organizational structure (departments, roles), account settings, project stages, phases, milestones, and expenses. Includes comprehensive reporting capabilities (people utilization, project analytics) with date range filtering. Features 60 actions covering all Float API v3 endpoints, custom API key authentication with required User-Agent header, connected account information display, pagination support (up to 200 items per page), rate limiting awareness (200 GET/min, 100 non-GET/min), field filtering, sorting, modified-since sync capabilities, and ActionResult return type for cost tracking. Ideal for resource planning, capacity management, project scheduling, time tracking workflows, and team utilization analysis.
 
 ## Template
 

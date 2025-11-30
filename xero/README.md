@@ -25,6 +25,12 @@ A comprehensive integration for accessing Xero accounting data including financi
 - **Attach File to Bill** - Attach files to existing purchase bills using tenant ID
 - **Get Attachments** - Retrieve list of all attachments for invoices, bills, or bank transactions using tenant ID
 - **Get Attachment Content** - Download actual file content of specific attachments for analysis using tenant ID
+- **Get Purchase Orders** - Retrieve purchase orders with filtering and pagination, or fetch a specific purchase order by ID using tenant ID
+- **Create Purchase Order** - Create new purchase orders for ordering goods or services from suppliers using tenant ID
+- **Update Purchase Order** - Update existing purchase orders (DRAFT/SUBMITTED only) using tenant ID
+- **Delete Purchase Order** - Delete purchase orders by updating status to DELETED using tenant ID
+- **Get Purchase Order History** - Retrieve history and notes for a specific purchase order using tenant ID
+- **Add Note to Purchase Order** - Add notes to purchase order history for tracking and communication using tenant ID
 
 ## Setup
 
@@ -316,6 +322,108 @@ if result["success"]:
     file_data = result["file"]
     print(f"Downloaded: {file_data['name']} - Content Type: {file_data['contentType']}")
     # file_data['content'] contains base64 encoded file content
+```
+
+### Get Purchase Orders
+```python
+# Get all authorized purchase orders for a specific date range using tenant ID
+result = await integration.execute_action("get_purchase_orders", {
+    "tenant_id": "tenant-guid-123",
+    "where": "Status==\"AUTHORISED\" AND Date>=DateTime(2025,01,01)",
+    "order": "Date DESC",
+    "page": 1
+})
+
+for po in result["PurchaseOrders"]:
+    print(f"PO: {po['PurchaseOrderNumber']} - {po['Total']} - {po['Contact']['Name']}")
+
+# Get a specific purchase order by ID
+result = await integration.execute_action("get_purchase_orders", {
+    "tenant_id": "tenant-guid-123",
+    "purchase_order_id": "po-guid-456"
+})
+
+po = result["PurchaseOrders"][0]
+print(f"PO Details: {po['PurchaseOrderNumber']} - Status: {po['Status']}")
+```
+
+### Create Purchase Order
+```python
+# Create a new purchase order using tenant ID
+result = await integration.execute_action("create_purchase_order", {
+    "tenant_id": "tenant-guid-123",
+    "contact": {"ContactID": "supplier-guid-789"},
+    "line_items": [{
+        "Description": "Office Equipment",
+        "Quantity": 2,
+        "UnitAmount": 500.00,
+        "AccountCode": "630",
+        "TaxType": "INPUT"
+    }],
+    "date": "2025-01-31",
+    "delivery_date": "2025-02-15",
+    "reference": "PO-2025-001",
+    "status": "DRAFT",
+    "delivery_address": "123 Main St, City, State 12345",
+    "attention_to": "John Smith",
+    "telephone": "+1-555-0123",
+    "delivery_instructions": "Please call before delivery"
+})
+
+po = result["PurchaseOrders"][0]
+print(f"Created PO: {po['PurchaseOrderNumber']} - Total: {po['Total']}")
+```
+
+### Update Purchase Order
+```python
+# Update an existing purchase order using tenant ID
+result = await integration.execute_action("update_purchase_order", {
+    "tenant_id": "tenant-guid-123",
+    "purchase_order_id": "po-guid-456",
+    "status": "AUTHORISED",
+    "reference": "PO-2025-001-UPDATED",
+    "delivery_date": "2025-02-20"
+})
+
+po = result["PurchaseOrders"][0]
+print(f"Updated PO: {po['PurchaseOrderNumber']} - Status: {po['Status']}")
+```
+
+### Add Note to Purchase Order
+```python
+# Add a note to a purchase order's history using tenant ID
+result = await integration.execute_action("add_note_to_purchase_order", {
+    "tenant_id": "tenant-guid-123",
+    "purchase_order_id": "po-guid-456",
+    "note": "Supplier confirmed delivery date. Items will arrive on Feb 20th."
+})
+
+history = result["HistoryRecords"][0]
+print(f"Added note: {history['Details']}")
+```
+
+### Get Purchase Order History
+```python
+# Get history and notes for a purchase order using tenant ID
+result = await integration.execute_action("get_purchase_order_history", {
+    "tenant_id": "tenant-guid-123",
+    "purchase_order_id": "po-guid-456"
+})
+
+for record in result["HistoryRecords"]:
+    print(f"{record['DateUTC']}: {record['Details']}")
+```
+
+### Delete Purchase Order
+```python
+# Delete a purchase order by setting status to DELETED using tenant ID
+result = await integration.execute_action("delete_purchase_order", {
+    "tenant_id": "tenant-guid-123",
+    "purchase_order_id": "po-guid-456"
+})
+
+po = result["PurchaseOrders"][0]
+print(f"Deleted PO: {po['PurchaseOrderNumber']} - Status: {po['Status']}")
 ```
 
 ## Testing
@@ -634,6 +742,92 @@ Download the actual content of a specific attachment from Xero API for analysis.
 - `file`: Object containing name, content (base64), and contentType
 - `success`: Boolean indicating if download was successful
 - `error`: Error message if download failed
+
+#### `get_purchase_orders`
+Retrieve purchase orders from Xero API with filtering and pagination. Can fetch all purchase orders or a specific one by ID.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `purchase_order_id` (optional): Specific purchase order ID (GUID) to fetch
+- `where` (optional): Filter clause (Status=="AUTHORISED", Date>=DateTime(2020,01,01), Contact.ContactID==guid("id"))
+- `order` (optional): Sort parameter (Date DESC, PurchaseOrderNumber ASC)
+- `page` (optional): Page number for pagination
+- `statuses` (optional): Comma-separated status list (DRAFT,SUBMITTED,AUTHORISED,BILLED)
+
+**Output:**
+- `PurchaseOrders`: Array of Xero purchase order objects with details including PurchaseOrderNumber, Date, Contact, LineItems, and Status
+
+#### `create_purchase_order`
+Create a new purchase order in Xero for ordering goods or services from suppliers.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `contact` (required): Contact object with ContactID or Name
+- `line_items` (required): Array of line items with Description, UnitAmount, AccountCode, and optional Quantity/TaxType
+- `date` (optional): Purchase order date (YYYY-MM-DD format)
+- `delivery_date` (optional): Expected delivery date (YYYY-MM-DD format)
+- `purchase_order_number` (optional): Custom purchase order number
+- `reference` (optional): Purchase order reference
+- `currency_code` (optional): Currency code (defaults to organization currency)
+- `status` (optional): PO status (DRAFT, SUBMITTED, AUTHORISED, BILLED, DELETED)
+- `delivery_address` (optional): Delivery address string
+- `attention_to` (optional): Name of person to be contacted
+- `telephone` (optional): Phone number for contact
+- `delivery_instructions` (optional): Delivery instructions
+
+**Output:**
+- `PurchaseOrders`: Array containing the created purchase order with full details including PurchaseOrderID, PurchaseOrderNumber, Total, and Status
+
+#### `update_purchase_order`
+Update an existing purchase order in Xero. Only DRAFT and SUBMITTED purchase orders can be updated.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `purchase_order_id` (required): ID of the purchase order to update (GUID)
+- `contact` (optional): Contact object to update
+- `line_items` (optional): Array of line items to update (provide LineItemID to update existing, omit to create new, exclude existing to delete)
+- `date` (optional): Purchase order date
+- `delivery_date` (optional): Expected delivery date
+- `status` (optional): Purchase order status
+- `reference` (optional): Purchase order reference
+- `delivery_address` (optional): Delivery address
+- `attention_to` (optional): Contact person name
+- `telephone` (optional): Contact phone number
+- `delivery_instructions` (optional): Delivery instructions
+
+**Output:**
+- `PurchaseOrders`: Array containing the updated purchase order with full details
+
+#### `delete_purchase_order`
+Delete a purchase order in Xero by updating its status to DELETED.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `purchase_order_id` (required): ID of the purchase order to delete (GUID)
+
+**Output:**
+- `PurchaseOrders`: Array containing the deleted purchase order with updated status (DELETED)
+
+#### `get_purchase_order_history`
+Retrieve the history and notes for a specific purchase order from Xero API.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `purchase_order_id` (required): ID of the purchase order to get history for (GUID)
+
+**Output:**
+- `HistoryRecords`: Array of history records including Details, DateUTC, and User information
+
+#### `add_note_to_purchase_order`
+Add a note to a purchase order's history in Xero for tracking and communication.
+
+**Input:**
+- `tenant_id` (required): Xero tenant ID
+- `purchase_order_id` (required): ID of the purchase order to add note to (GUID)
+- `note` (required): The note text to add to the purchase order history
+
+**Output:**
+- `HistoryRecords`: Array containing the added history record with Details and DateUTC
 
 ## Rate Limiting
 
