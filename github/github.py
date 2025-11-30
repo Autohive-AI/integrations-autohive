@@ -490,16 +490,13 @@ class GitHubAPI:
         # Decode base64 content
         content = base64.b64decode(response.get('content', '').replace('\n', '')).decode('utf-8')
 
-        return ActionResult(
-            data={
+        return {
             'content': content,
             'sha': response.get('sha', ''),
             'size': response.get('size', 0),
             'name': response.get('name', ''),
             'path': response.get('path', '')
-        },
-            cost_usd=0.0
-        )
+        }
 
     @staticmethod
     async def create_file(context: ExecutionContext, owner: str, repo: str, path: str,
