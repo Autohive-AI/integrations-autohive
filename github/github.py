@@ -18,15 +18,12 @@ class GitHubAPI:
         credentials = context.auth.get("credentials", {})
         token = credentials.get("access_token", "")
 
-        return ActionResult(
-            data={
+        return {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github.v3+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "Content-Type": "application/json"
-        },
-            cost_usd=0.0
-        )
+        }
 
     @staticmethod
     async def paginated_fetch(context: ExecutionContext, url: str, params: Dict[str, Any] = None,
