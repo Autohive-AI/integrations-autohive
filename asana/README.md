@@ -6,40 +6,36 @@ Connects Autohive to the Asana API to enable task management, project organizati
 
 This integration provides a comprehensive connection to Asana's project management platform. It allows users to automate task creation, project management, team collaboration, and workflow automation directly from Autohive.
 
-The integration uses Asana API v1.0 with Personal Access Token authentication and implements 18 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
+The integration uses Asana API v1.0 with OAuth 2.0 authentication and implements 18 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
 
 ## Setup & Authentication
 
-This integration uses **Custom Authentication** with Asana Personal Access Token (PAT).
+This integration uses **OAuth 2.0** authentication for secure access to your Asana account.
 
 ### Authentication Method
 
-Asana uses Bearer token authentication with Personal Access Tokens. The integration handles the authentication automatically by adding your PAT to the Authorization header in all API requests.
-
-### Required Authentication Fields
-
-- **`personal_access_token`**: Your Asana Personal Access Token
-  - Created in Asana Settings > Apps > Manage Developer Apps
-  - Long-lived token that doesn't expire automatically
-  - Acts with same permissions as your Asana account
-  - Must be kept secure (treat like a password)
-
-### How to Get Your Personal Access Token
-
-1. **Log in to Asana**: Go to https://app.asana.com
-2. **Open Settings**: Click your profile initials in the top right corner
-3. **Navigate to Apps**: Select "Settings" from the dropdown menu
-4. **Access Developer Apps**: Click on the "Apps" tab
-5. **Manage Tokens**: Select "Manage Developer Apps" at the bottom left
-6. **Create Token**: Click "+ Create new token"
-7. **Save Token**: Name it (e.g., "Autohive Integration"), agree to API terms, click "Create token", and **copy immediately** (shown only once!)
+The integration uses OAuth 2.0 with the following scopes:
+- `tasks:read` - Read task data
+- `tasks:write` - Create and update tasks
+- `tasks:delete` - Delete tasks
+- `projects:read` - Read project data
+- `projects:write` - Create and update projects
+- `projects:delete` - Delete projects
+- `stories:read` - Read comments and activity
+- `stories:write` - Add comments to tasks
+- `workspaces:read` - Access workspace information
+- `teams:read` - Access team information
+- `users:read` - Access user information
 
 ### Setup Steps in Autohive
 
-1. Get your Personal Access Token (follow steps above)
-2. Add Asana integration in Autohive
-3. Paste your token in the `personal_access_token` field
-4. Save configuration
+1. Add Asana integration in Autohive
+2. Click "Connect to Asana" to authorize the integration
+3. Sign in to your Asana account when prompted
+4. Review and authorize the requested permissions
+5. You'll be redirected back to Autohive once authorization is complete
+
+The OAuth integration automatically handles token management and refresh, so you don't need to manually manage access tokens.
 
 ## Actions
 
@@ -334,7 +330,7 @@ Creates a subtask under a parent task.
 
 - **API Version**: v1.0
 - **Base URL**: `https://app.asana.com/api/1.0`
-- **Authentication**: Bearer Token (Personal Access Token)
+- **Authentication**: OAuth 2.0
 - **Documentation**: https://developers.asana.com/docs
 - **Rate Limits**:
   - Free plan: 150 requests per minute
@@ -342,10 +338,9 @@ Creates a subtask under a parent task.
 
 ## Important Notes
 
-- Personal Access Token provides same access as your Asana account
-- Keep your token secure and never share it publicly
-- Token will only be shown once when created - copy it immediately
-- Can create multiple tokens for different integrations
+- OAuth tokens are automatically managed by the platform
+- Tokens are automatically refreshed when needed
+- You can revoke access at any time from your Asana account settings
 - Asana wraps all API requests and responses in a `data` object
 - GID (Global Identifier) is used for all resource references
 - `list_tasks` requires specific filter combinations (see action details)
@@ -356,7 +351,7 @@ To test the integration:
 
 1. Navigate to the integration directory: `cd asana`
 2. Install dependencies: `pip install -r requirements.txt`
-3. Update test credentials in `tests/test_asana.py`
+3. Configure OAuth credentials through the Autohive platform
 4. Run tests: `python tests/test_asana.py`
 
 ## Common Use Cases

@@ -7,8 +7,9 @@ from autohive_integrations_sdk import ExecutionContext
 async def test_list_projects():
     """Test listing projects in workspace."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -30,8 +31,9 @@ async def test_list_projects():
 async def test_get_project():
     """Test getting a specific project."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -50,8 +52,9 @@ async def test_get_project():
 async def test_create_task():
     """Test creating a new task."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -75,8 +78,9 @@ async def test_create_task():
 async def test_get_task():
     """Test getting a specific task."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -98,8 +102,9 @@ async def test_get_task():
 async def test_update_task():
     """Test updating a task."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -122,8 +127,9 @@ async def test_update_task():
 async def test_list_tasks():
     """Test listing tasks with filters."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -147,8 +153,9 @@ async def test_list_tasks():
 async def test_delete_task():
     """Test deleting a task."""
     auth = {
+        "auth_type": "PlatformOauth2",
         "credentials": {
-            "personal_access_token": "your_token_here"
+            "access_token": "your_access_token_here"
         }
     }
 
@@ -166,7 +173,12 @@ async def test_delete_task():
 
 async def test_create_project():
     """Test creating a new project."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {
         "name": "Test Project via API",
         "workspace": "your_workspace_gid_here",
@@ -184,7 +196,12 @@ async def test_create_project():
 
 async def test_update_project():
     """Test updating a project."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"project_gid": "project_gid_here", "name": "Updated Project Name"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -198,7 +215,12 @@ async def test_update_project():
 
 async def test_delete_project():
     """Test deleting a project."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"project_gid": "project_gid_here"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -212,7 +234,12 @@ async def test_delete_project():
 
 async def test_get_project_by_name():
     """Test getting a project by name."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {
         "name": "Your Project Name Here",  # Replace with actual project name
         "workspace": "your_workspace_gid_here"  # Optional but recommended
@@ -233,7 +260,12 @@ async def test_get_project_by_name():
 
 async def test_list_sections():
     """Test listing sections in a project."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"project_gid": "project_gid_here"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -247,7 +279,12 @@ async def test_list_sections():
 
 async def test_create_section():
     """Test creating a section."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"project_gid": "project_gid_here", "name": "To Do"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -261,7 +298,12 @@ async def test_create_section():
 
 async def test_update_section():
     """Test updating a section."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"section_gid": "section_gid_here", "name": "In Progress"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -275,7 +317,12 @@ async def test_update_section():
 
 async def test_add_task_to_section():
     """Test adding task to section."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"section_gid": "section_gid_here", "task_gid": "task_gid_here"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -289,7 +336,12 @@ async def test_add_task_to_section():
 
 async def test_create_story():
     """Test creating a comment."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"task_gid": "task_gid_here", "text": "This is a test comment"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -303,7 +355,12 @@ async def test_create_story():
 
 async def test_list_stories():
     """Test listing stories/comments."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"task_gid": "task_gid_here"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -317,7 +374,12 @@ async def test_list_stories():
 
 async def test_create_subtask():
     """Test creating a subtask."""
-    auth = {"credentials": {"personal_access_token": "your_token_here"}}
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
     inputs = {"parent_task_gid": "task_gid_here", "name": "Subtask 1"}
     async with ExecutionContext(auth=auth) as context:
         try:
@@ -334,7 +396,7 @@ async def main():
     print("=" * 60)
     print()
     print("NOTE: Replace placeholders with actual values:")
-    print("  - your_token_here: Your Personal Access Token")
+    print("  - your_access_token_here: Your OAuth access token")
     print("  - your_workspace_gid_here: Your workspace GID")
     print("  - your_team_gid_here: Your team GID")
     print("  - project_gid_here, task_gid_here, section_gid_here")
