@@ -28,8 +28,12 @@ async def test_list_voices():
         try:
             result = await heygen.execute_action("list_voices", inputs, context)
 
-            assert result.get("data") is not None, "Should return data"
-            voices = result["data"].get("voices", [])
+            # Access the ActionResult's data field
+            response_data = result.result.data
+
+            assert response_data.get("error") is None, "Should not have error"
+            assert response_data.get("data") is not None, "Should return data"
+            voices = response_data["data"].get("voices", [])
             print(f"✓ Found {len(voices)} voice(s)")
 
             if voices:
@@ -58,8 +62,12 @@ async def test_list_voice_locales():
         try:
             result = await heygen.execute_action("list_voice_locales", inputs, context)
 
-            assert result.get("data") is not None, "Should return data"
-            locales = result["data"].get("locales", [])
+            # Access the ActionResult's data field
+            response_data = result.result.data
+
+            assert response_data.get("error") is None, "Should not have error"
+            assert response_data.get("data") is not None, "Should return data"
+            locales = response_data["data"].get("locales", [])
             print(f"✓ Found {len(locales)} locale(s)")
 
             if locales:
@@ -86,8 +94,12 @@ async def test_list_avatars():
         try:
             result = await heygen.execute_action("list_avatars", inputs, context)
 
-            assert result.get("data") is not None, "Should return data"
-            data = result["data"]
+            # Access the ActionResult's data field
+            response_data = result.result.data
+
+            assert response_data.get("error") is None, "Should not have error"
+            assert response_data.get("data") is not None, "Should return data"
+            data = response_data["data"]
             avatars = data.get("avatars", [])
             talking_photos = data.get("talking_photos", [])
 
@@ -125,8 +137,12 @@ async def test_get_avatar_details():
         try:
             result = await heygen.execute_action("get_avatar_details", inputs, context)
 
-            assert result.get("data") is not None, "Should return data"
-            avatar = result["data"].get("avatar")
+            # Access the ActionResult's data field
+            response_data = result.result.data
+
+            assert response_data.get("error") is None, "Should not have error"
+            assert response_data.get("data") is not None, "Should return data"
+            avatar = response_data["data"].get("avatar")
 
             if avatar:
                 print(f"✓ Retrieved avatar: {avatar.get('avatar_name', 'Unnamed')}")
@@ -153,8 +169,12 @@ async def test_list_avatar_groups():
         try:
             result = await heygen.execute_action("list_avatar_groups", inputs, context)
 
-            assert result.get("data") is not None, "Should return data"
-            groups = result["data"].get("avatar_groups", [])
+            # Access the ActionResult's data field
+            response_data = result.result.data
+
+            assert response_data.get("error") is None, "Should not have error"
+            assert response_data.get("data") is not None, "Should return data"
+            groups = response_data["data"].get("avatar_groups", [])
             print(f"✓ Found {len(groups)} avatar group(s)")
 
             if groups:
@@ -190,7 +210,8 @@ async def test_generate_photo_avatar():
     # async with ExecutionContext(auth=TEST_AUTH) as context:
     #     try:
     #         result = await heygen.execute_action("generate_photo_avatar", inputs, context)
-    #         generation_id = result.get("data", {}).get("generation_id")
+    #         response_data = result.result.data
+    #         generation_id = response_data.get("data", {}).get("generation_id")
     #         print(f"✓ Started photo generation: {generation_id}")
     #         return result
     #     except Exception as e:
@@ -229,8 +250,9 @@ async def test_create_avatar_video():
     # async with ExecutionContext(auth=TEST_AUTH) as context:
     #     try:
     #         result = await heygen.execute_action("create_avatar_video", inputs, context)
+    #         response_data = result.result.data
     #         global test_video_id
-    #         test_video_id = result.get("data", {}).get("video_id")
+    #         test_video_id = response_data.get("data", {}).get("video_id")
     #         print(f"✓ Started video creation: {test_video_id}")
     #         return result
     #     except Exception as e:

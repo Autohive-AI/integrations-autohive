@@ -1,6 +1,6 @@
 {
     "name": "HeyGen",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "HeyGen integration for AI avatar generation, video creation, and photo avatar management",
     "entry_point": "heygen.py",
     "supports_billing": true,
