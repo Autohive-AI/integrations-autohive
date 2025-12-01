@@ -3,9 +3,7 @@ from autohive_integrations_sdk import (
     ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
 )
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
 
-# Create the integration using the config.json
 retail_express = Integration.load()
 
 # Base URL for Retail Express API
