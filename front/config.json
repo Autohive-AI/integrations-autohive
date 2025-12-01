@@ -1,8 +1,8 @@
 {
     "name": "Front",
     "display_name": "Front",
-    "version": "1.1.0",
-    "description": "Front integration for customer communication, inbox management, and team collaboration",
+    "version": "1.2.0",
+    "description": "Front integration for customer communication, inbox management, and team collaboration with attachment support",
     "entry_point": "front.py",
     "auth": {
         "type": "platform",
@@ -762,6 +762,14 @@
                     "should_add_default_signature": {
                         "type": "boolean",
                         "description": "Whether to add the default signature"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "File attachments. Upload files directly in the conversation to attach them.",
+                        "items": {
+                            "type": "object",
+                            "format": "file"
+                        }
                     }
                 },
                 "required": ["channel_id", "body", "to"]
@@ -851,6 +859,14 @@
                     "should_add_default_signature": {
                         "type": "boolean",
                         "description": "Whether to add the default signature"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "File attachments. Upload files directly in the conversation to attach them.",
+                        "items": {
+                            "type": "object",
+                            "format": "file"
+                        }
                     }
                 },
                 "required": ["conversation_id", "body"]
@@ -1000,6 +1016,57 @@
                     }
                 },
                 "required": ["message", "result"]
+            }
+        },
+        "download_message_attachment": {
+            "display_name": "Download Message Attachment",
+            "description": "Download the content of a message attachment and return as base64. Use get_message first to get the attachment URL, then pass it to this action to download the file content.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "attachment_url": {
+                        "type": "string",
+                        "description": "The URL of the attachment to download (from message.attachments[].url)"
+                    }
+                },
+                "required": ["attachment_url"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "object",
+                        "description": "Downloaded file information",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "Base64-encoded file content"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Filename"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "MIME type of the file"
+                            },
+                            "size": {
+                                "type": "integer",
+                                "description": "File size in bytes"
+                            }
+                        },
+                        "required": ["content", "name", "contentType", "size"]
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["file", "result"]
             }
         },
         "list_channels": {

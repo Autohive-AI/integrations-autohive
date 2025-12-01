@@ -97,6 +97,51 @@ async def test_get_specific_invoice():
             print(f"Error testing specific invoice: {str(e)}")
             return None
 
+async def test_get_invoice_pdf_with_specific_tenant():
+    """
+    Test downloading invoice as PDF
+    """
+    # First get available connections
+    connections_result = await test_get_available_connections()
+    if not connections_result or not connections_result.get('companies'):
+        print("Cannot test invoice PDF without tenant information")
+        return
+
+    # Use the first available tenant
+    tenant_id = connections_result['companies'][0]['tenant_id']
+    print(f"Using tenant ID: {tenant_id}")
+
+    # First get some invoices to get a valid invoice ID
+    invoices_result = await test_get_invoices_with_specific_tenant()
+    if not invoices_result or not invoices_result.get('Invoices'):
+        print("Cannot test PDF download without invoice information")
+        return
+
+    # Use the first invoice
+    invoice_id = invoices_result['Invoices'][0]['InvoiceID']
+    print(f"Using invoice ID: {invoice_id}")
+
+    auth = {}
+    inputs = {
+        "tenant_id": tenant_id,
+        "invoice_id": invoice_id
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+            if result.get("success"):
+                print(f"Success: Downloaded invoice PDF")
+                print(f"  - File name: {result['file']['name']}")
+                print(f"  - Content type: {result['file']['contentType']}")
+                print(f"  - Content size: {len(result['file']['content'])} characters (base64)")
+            else:
+                print(f"Failed: {result.get('error')}")
+            return result
+        except Exception as e:
+            print(f"Error testing invoice PDF download: {str(e)}")
+            return None
+
 async def test_get_aged_payables_with_specific_tenant():
     """
     Test fetching aged payables with a specific tenant ID
@@ -139,10 +184,13 @@ async def main():
     print("\n3. Testing get specific invoice by ID...")
     await test_get_specific_invoice()
 
-    print("\n4. Testing aged payables with tenant ID...")
+    print("\n4. Testing invoice PDF download...")
+    await test_get_invoice_pdf_with_specific_tenant()
+
+    print("\n5. Testing aged payables with tenant ID...")
     await test_get_aged_payables_with_specific_tenant()
 
-    print("\n5. Running rate limiting tests...")
+    print("\n6. Running rate limiting tests...")
     print("To run rate limiting tests, use: pytest tests/test_xero.py -v")
 
 # ---- Rate Limiting Tests ----
@@ -777,6 +825,602 @@ async def test_attach_file_to_bill_with_base64():
             # Check that the data parameter contains the decoded bytes
             assert call_args[1]["data"] == test_content
             assert call_args[1]["method"] == "POST"
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_pdf_success():
+    """Test that get_invoice_pdf successfully downloads a PDF invoice"""
+    from context import xero
+
+    # Create mock PDF content
+    mock_pdf_content = b"%PDF-1.4\n%Mock PDF content for testing"
+    base64_pdf = base64.b64encode(mock_pdf_content).decode('utf-8')
+
+    auth = {
+        "credentials": {
+            "access_token": "test-access-token-123"
+        }
+    }
+    inputs = {
+        "tenant_id": "test-tenant-456",
+        "invoice_id": "test-invoice-789"
+    }
+
+    # Mock aiohttp response for PDF download
+    mock_response = Mock()
+    mock_response.status = 200
+    mock_response.headers = {"content-type": "application/pdf"}
+    mock_response.read = AsyncMock(return_value=mock_pdf_content)
+
+    mock_session = Mock()
+    mock_session.get = Mock()
+    mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+
+            # Verify the PDF was successfully downloaded
+            assert result["success"] is True
+            assert result["file"]["name"] == "invoice_test-invoice-789.pdf"
+            assert result["file"]["contentType"] == "application/pdf"
+            assert result["file"]["content"] == base64_pdf
+            assert "error" not in result or result.get("error") is None
+
+
+@pytest.mark.asyncio
+async def test_get_invoice_pdf_not_found():
+    """Test that get_invoice_pdf handles 404 errors correctly"""
+    from context import xero
+
+    auth = {
+        "credentials": {
+            "access_token": "test-access-token-123"
+        }
+    }
+    inputs = {
+        "tenant_id": "test-tenant-456",
+        "invoice_id": "non-existent-invoice"
+    }
+
+    # Mock aiohttp response for 404 error
+    mock_response = Mock()
+    mock_response.status = 404
+    mock_response.text = AsyncMock(return_value="Invoice not found")
+
+    mock_session = Mock()
+    mock_session.get = Mock()
+    mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_session.get.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_invoice_pdf", inputs, context)
+
+            # Verify the error is properly handled
+            assert result["success"] is False
+            assert "error" in result
+            assert "404" in result["error"]
+            assert result["file"]["content"] == ""
+
+
+@pytest.mark.asyncio
+async def test_get_purchase_orders_success():
+    """Test that get_purchase_orders successfully retrieves purchase orders"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "where": "Status==\"AUTHORISED\"",
+        "order": "Date DESC",
+        "page": 1
+    }
+
+    # Mock successful response
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "po-123",
+                "PurchaseOrderNumber": "PO-001",
+                "Status": "AUTHORISED",
+                "Date": "2024-01-15",
+                "DeliveryDate": "2024-01-20",
+                "Contact": {
+                    "ContactID": "contact-456",
+                    "Name": "Test Supplier"
+                },
+                "LineItems": [
+                    {
+                        "Description": "Test Item",
+                        "Quantity": 10,
+                        "UnitAmount": 50.00,
+                        "LineAmount": 500.00
+                    }
+                ],
+                "Total": 500.00
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_purchase_orders", inputs, context)
+
+            # Verify the purchase orders were retrieved
+            assert "PurchaseOrders" in result
+            assert len(result["PurchaseOrders"]) == 1
+            assert result["PurchaseOrders"][0]["PurchaseOrderNumber"] == "PO-001"
+            assert result["PurchaseOrders"][0]["Status"] == "AUTHORISED"
+            assert result["PurchaseOrders"][0]["Total"] == 500.00
+
+            # Verify the rate limiter was called correctly
+            mock_limiter.make_request.assert_called_once()
+            call_args = mock_limiter.make_request.call_args
+            assert call_args[0][1] == "https://api.xero.com/api.xro/2.0/PurchaseOrders"
+            assert call_args[0][2] == "test-tenant-123"
+            assert call_args[1]["method"] == "GET"
+            assert call_args[1]["params"]["where"] == "Status==\"AUTHORISED\""
+            assert call_args[1]["params"]["order"] == "Date DESC"
+
+
+@pytest.mark.asyncio
+async def test_get_purchase_orders_by_id():
+    """Test that get_purchase_orders can retrieve a specific purchase order by ID"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-specific-789"
+    }
+
+    # Mock successful response for specific purchase order
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "po-specific-789",
+                "PurchaseOrderNumber": "PO-789",
+                "Status": "DRAFT",
+                "Reference": "REF-001"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_purchase_orders", inputs, context)
+
+            # Verify the specific purchase order was retrieved
+            assert "PurchaseOrders" in result
+            assert result["PurchaseOrders"][0]["PurchaseOrderID"] == "po-specific-789"
+
+            # Verify the URL includes the purchase order ID
+            call_args = mock_limiter.make_request.call_args
+            assert "po-specific-789" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_get_purchase_orders_rate_limit_handling():
+    """Test that get_purchase_orders properly handles rate limit exceptions"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123"
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(
+            side_effect=XeroRateLimitExceededException(
+                requested_delay=150,
+                max_wait_time=60,
+                tenant_id="test-tenant-123"
+            )
+        )
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_purchase_orders", inputs, context)
+
+            # Verify the error is properly handled
+            assert result["success"] is False
+            assert result["error_type"] == "rate_limit_exceeded"
+            assert result["tenant_id"] == "test-tenant-123"
+            assert result["retry_delay_seconds"] == 150
+
+
+@pytest.mark.asyncio
+async def test_create_purchase_order_success():
+    """Test that create_purchase_order successfully creates a purchase order"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "contact": {
+            "ContactID": "contact-456"
+        },
+        "line_items": [
+            {
+                "Description": "Office Supplies",
+                "Quantity": 5,
+                "UnitAmount": 25.00,
+                "AccountCode": "200"
+            }
+        ],
+        "date": "2024-01-15",
+        "delivery_date": "2024-01-25",
+        "reference": "PO-REF-001",
+        "status": "DRAFT"
+    }
+
+    # Mock successful response
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "new-po-123",
+                "PurchaseOrderNumber": "PO-NEW-001",
+                "Status": "DRAFT",
+                "Date": "2024-01-15",
+                "DeliveryDate": "2024-01-25",
+                "Reference": "PO-REF-001",
+                "Contact": {
+                    "ContactID": "contact-456",
+                    "Name": "Test Supplier"
+                },
+                "LineItems": [
+                    {
+                        "Description": "Office Supplies",
+                        "Quantity": 5,
+                        "UnitAmount": 25.00,
+                        "LineAmount": 125.00,
+                        "AccountCode": "200"
+                    }
+                ],
+                "SubTotal": 125.00,
+                "Total": 125.00
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("create_purchase_order", inputs, context)
+
+            # Verify the purchase order was created
+            assert "PurchaseOrders" in result
+            assert len(result["PurchaseOrders"]) == 1
+            po = result["PurchaseOrders"][0]
+            assert po["PurchaseOrderNumber"] == "PO-NEW-001"
+            assert po["Status"] == "DRAFT"
+            assert po["Reference"] == "PO-REF-001"
+            assert po["Total"] == 125.00
+
+            # Verify the rate limiter was called correctly
+            mock_limiter.make_request.assert_called_once()
+            call_args = mock_limiter.make_request.call_args
+            assert call_args[0][1] == "https://api.xero.com/api.xro/2.0/PurchaseOrders"
+            assert call_args[0][2] == "test-tenant-123"
+            assert call_args[1]["method"] == "POST"
+
+            # Verify the payload structure
+            payload = call_args[1]["json"]
+            assert "PurchaseOrders" in payload
+            assert payload["PurchaseOrders"][0]["Contact"]["ContactID"] == "contact-456"
+            assert len(payload["PurchaseOrders"][0]["LineItems"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_create_purchase_order_missing_required_fields():
+    """Test that create_purchase_order raises error when required fields are missing"""
+    from context import xero
+
+    auth = {}
+
+    # Test missing tenant_id
+    inputs_no_tenant = {
+        "contact": {"ContactID": "contact-456"},
+        "line_items": [{"Description": "Test"}]
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        with pytest.raises(ValueError, match="tenant_id is required"):
+            await xero.execute_action("create_purchase_order", inputs_no_tenant, context)
+
+    # Test missing contact
+    inputs_no_contact = {
+        "tenant_id": "test-tenant-123",
+        "line_items": [{"Description": "Test"}]
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        with pytest.raises(ValueError, match="contact is required"):
+            await xero.execute_action("create_purchase_order", inputs_no_contact, context)
+
+    # Test missing line_items
+    inputs_no_items = {
+        "tenant_id": "test-tenant-123",
+        "contact": {"ContactID": "contact-456"}
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        with pytest.raises(ValueError, match="line_items is required"):
+            await xero.execute_action("create_purchase_order", inputs_no_items, context)
+
+
+@pytest.mark.asyncio
+async def test_create_purchase_order_with_optional_fields():
+    """Test that create_purchase_order handles optional fields correctly"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "contact": {"ContactID": "contact-456"},
+        "line_items": [
+            {
+                "Description": "Test Item",
+                "Quantity": 1,
+                "UnitAmount": 100.00
+            }
+        ],
+        "delivery_address": "123 Test St, Test City",
+        "attention_to": "John Doe",
+        "telephone": "+1-555-1234",
+        "delivery_instructions": "Leave at reception"
+    }
+
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "po-456",
+                "PurchaseOrderNumber": "PO-456",
+                "DeliveryAddress": "123 Test St, Test City",
+                "AttentionTo": "John Doe",
+                "Telephone": "+1-555-1234",
+                "DeliveryInstructions": "Leave at reception"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("create_purchase_order", inputs, context)
+
+            # Verify optional fields were included
+            po = result["PurchaseOrders"][0]
+            assert po["DeliveryAddress"] == "123 Test St, Test City"
+            assert po["AttentionTo"] == "John Doe"
+            assert po["Telephone"] == "+1-555-1234"
+            assert po["DeliveryInstructions"] == "Leave at reception"
+
+            # Verify the payload included optional fields
+            call_args = mock_limiter.make_request.call_args
+            payload = call_args[1]["json"]
+            po_data = payload["PurchaseOrders"][0]
+            assert po_data["DeliveryAddress"] == "123 Test St, Test City"
+            assert po_data["AttentionTo"] == "John Doe"
+
+
+@pytest.mark.asyncio
+async def test_create_purchase_order_rate_limit_handling():
+    """Test that create_purchase_order properly handles rate limit exceptions"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "contact": {"ContactID": "contact-456"},
+        "line_items": [{"Description": "Test"}]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(
+            side_effect=XeroRateLimitExceededException(
+                requested_delay=200,
+                max_wait_time=60,
+                tenant_id="test-tenant-123"
+            )
+        )
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("create_purchase_order", inputs, context)
+
+            # Verify the error is properly handled
+            assert result["success"] is False
+            assert result["error_type"] == "rate_limit_exceeded"
+            assert result["tenant_id"] == "test-tenant-123"
+            assert result["retry_delay_seconds"] == 200
+
+
+@pytest.mark.asyncio
+async def test_update_purchase_order_success():
+    """Test that update_purchase_order successfully updates a purchase order"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-789",
+        "status": "AUTHORISED",
+        "reference": "UPDATED-REF"
+    }
+
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "po-789",
+                "Status": "AUTHORISED",
+                "Reference": "UPDATED-REF"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("update_purchase_order", inputs, context)
+
+            # Verify the purchase order was updated
+            po = result["PurchaseOrders"][0]
+            assert po["Status"] == "AUTHORISED"
+            assert po["Reference"] == "UPDATED-REF"
+
+            # Verify the URL includes the purchase order ID
+            call_args = mock_limiter.make_request.call_args
+            assert "po-789" in call_args[0][1]
+            assert call_args[1]["method"] == "POST"
+
+
+@pytest.mark.asyncio
+async def test_add_note_to_purchase_order_success():
+    """Test that add_note_to_purchase_order successfully adds a note"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-999",
+        "note": "This is a test note for the purchase order"
+    }
+
+    mock_response = {
+        "HistoryRecords": [
+            {
+                "Details": "This is a test note for the purchase order",
+                "DateUTC": "2024-01-15T10:30:00"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("add_note_to_purchase_order", inputs, context)
+
+            # Verify the note was added
+            assert "HistoryRecords" in result
+            assert result["HistoryRecords"][0]["Details"] == "This is a test note for the purchase order"
+
+            # Verify the rate limiter was called with PUT method
+            mock_limiter.make_request.assert_called_once()
+            call_args = mock_limiter.make_request.call_args
+            assert "po-999/History" in call_args[0][1]
+            assert call_args[1]["method"] == "PUT"
+
+            # Verify the payload structure
+            payload = call_args[1]["json"]
+            assert "HistoryRecords" in payload
+            assert payload["HistoryRecords"][0]["Details"] == "This is a test note for the purchase order"
+
+
+@pytest.mark.asyncio
+async def test_add_note_to_purchase_order_missing_fields():
+    """Test that add_note_to_purchase_order raises error when required fields are missing"""
+    from context import xero
+
+    auth = {}
+
+    # Test missing note
+    inputs_no_note = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-999"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        with pytest.raises(ValueError, match="note is required"):
+            await xero.execute_action("add_note_to_purchase_order", inputs_no_note, context)
+
+
+@pytest.mark.asyncio
+async def test_get_purchase_order_history_success():
+    """Test that get_purchase_order_history successfully retrieves history"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-111"
+    }
+
+    mock_response = {
+        "HistoryRecords": [
+            {
+                "Details": "Purchase order created",
+                "DateUTC": "2024-01-10T09:00:00",
+                "User": "Test User"
+            },
+            {
+                "Details": "Purchase order approved",
+                "DateUTC": "2024-01-11T14:30:00",
+                "User": "Manager"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("get_purchase_order_history", inputs, context)
+
+            # Verify the history was retrieved
+            assert "HistoryRecords" in result
+            assert len(result["HistoryRecords"]) == 2
+            assert result["HistoryRecords"][0]["Details"] == "Purchase order created"
+            assert result["HistoryRecords"][1]["Details"] == "Purchase order approved"
+
+            # Verify the correct endpoint was called
+            call_args = mock_limiter.make_request.call_args
+            assert "po-111/History" in call_args[0][1]
+            assert call_args[1]["method"] == "GET"
+
+
+@pytest.mark.asyncio
+async def test_delete_purchase_order_success():
+    """Test that delete_purchase_order successfully deletes (marks as DELETED) a purchase order"""
+    from context import xero
+
+    auth = {}
+    inputs = {
+        "tenant_id": "test-tenant-123",
+        "purchase_order_id": "po-to-delete"
+    }
+
+    mock_response = {
+        "PurchaseOrders": [
+            {
+                "PurchaseOrderID": "po-to-delete",
+                "Status": "DELETED"
+            }
+        ]
+    }
+
+    with patch('xero.rate_limiter') as mock_limiter:
+        mock_limiter.make_request = AsyncMock(return_value=mock_response)
+
+        async with ExecutionContext(auth=auth) as context:
+            result = await xero.execute_action("delete_purchase_order", inputs, context)
+
+            # Verify the purchase order was deleted
+            po = result["PurchaseOrders"][0]
+            assert po["Status"] == "DELETED"
+
+            # Verify the payload sets status to DELETED
+            call_args = mock_limiter.make_request.call_args
+            payload = call_args[1]["json"]
+            assert payload["PurchaseOrders"][0]["Status"] == "DELETED"
 
 
 if __name__ == "__main__":
