@@ -37,6 +37,30 @@ The integration uses OAuth 2.0 with the following scopes:
 
 The OAuth integration automatically handles token management and refresh, so you don't need to manually manage access tokens.
 
+## Action Results
+
+All actions return a standardized response structure:
+- `result` (boolean): Indicates whether the action succeeded (true) or failed (false)
+- `error` (string, optional): Contains error message if the action failed
+- Additional action-specific data fields (e.g., `task`, `project`, `sections`)
+
+Example successful response:
+```json
+{
+  "result": true,
+  "task": { "gid": "123", "name": "My Task" }
+}
+```
+
+Example error response:
+```json
+{
+  "result": false,
+  "error": "Task not found",
+  "task": {}
+}
+```
+
 ## Actions
 
 ### Tasks (5 actions)
@@ -56,7 +80,8 @@ Creates a new task in Asana.
 
 **Outputs:**
 - `task`: Created task object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -69,7 +94,8 @@ Retrieves details of a specific task by GID.
 
 **Outputs:**
 - `task`: Task object with details
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -87,7 +113,8 @@ Updates an existing task.
 
 **Outputs:**
 - `task`: Updated task object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -110,7 +137,8 @@ Returns tasks filtered by project, section, assignee, or workspace.
 
 **Outputs:**
 - `tasks`: Array of task objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -121,7 +149,8 @@ Deletes a task permanently.
 - `task_gid` (required): The GID of the task to delete
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -138,7 +167,8 @@ Returns projects in a workspace or team.
 
 **Outputs:**
 - `projects`: Array of project objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -151,7 +181,8 @@ Retrieves details of a specific project by GID.
 
 **Outputs:**
 - `project`: Project object with details
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -173,6 +204,8 @@ Get a project by its exact name. This action paginates through all projects to f
 - `color`: Project color (null if not found)
 - `notes`: Project notes (null if not found)
 - `not_found`: Boolean indicating if project was not found
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 **Note:** This action iterates through all accessible projects to find a name match. For better performance, provide a `workspace` parameter to narrow the search scope.
 
@@ -191,7 +224,8 @@ Creates a new project in Asana.
 
 **Outputs:**
 - `project`: Created project object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -208,7 +242,8 @@ Updates an existing project's details.
 
 **Outputs:**
 - `project`: Updated project object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -219,7 +254,8 @@ Deletes a project permanently.
 - `project_gid` (required): The GID of the project to delete
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -234,7 +270,8 @@ Returns all sections in a project (columns in board view or headers in list view
 
 **Outputs:**
 - `sections`: Array of section objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -247,7 +284,8 @@ Creates a new section in a project.
 
 **Outputs:**
 - `section`: Created section object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -260,7 +298,8 @@ Updates a section's name.
 
 **Outputs:**
 - `section`: Updated section object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -272,7 +311,8 @@ Moves a task to a specific section within a project.
 - `task_gid` (required): The GID of the task to add
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -287,7 +327,8 @@ Adds a comment (story) to a task.
 
 **Outputs:**
 - `story`: Created story/comment object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -300,7 +341,8 @@ Gets all comments and stories for a task.
 
 **Outputs:**
 - `stories`: Array of story/comment objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -318,7 +360,8 @@ Creates a subtask under a parent task.
 
 **Outputs:**
 - `subtask`: Created subtask object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 

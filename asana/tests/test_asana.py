@@ -22,6 +22,8 @@ async def test_list_projects():
         try:
             result = await asana.execute_action("list_projects", inputs, context)
             print(f"List Projects Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'projects' in result, "Response missing 'projects' field"
             return result
         except Exception as e:
             print(f"Error testing list_projects: {e}")
@@ -43,6 +45,8 @@ async def test_get_project():
         try:
             result = await asana.execute_action("get_project", inputs, context)
             print(f"Get Project Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'project' in result, "Response missing 'project' field"
             return result
         except Exception as e:
             print(f"Error testing get_project: {e}")
@@ -69,6 +73,8 @@ async def test_create_task():
         try:
             result = await asana.execute_action("create_task", inputs, context)
             print(f"Create Task Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'task' in result, "Response missing 'task' field"
             return result
         except Exception as e:
             print(f"Error testing create_task: {e}")
@@ -93,6 +99,8 @@ async def test_get_task():
         try:
             result = await asana.execute_action("get_task", inputs, context)
             print(f"Get Task Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'task' in result, "Response missing 'task' field"
             return result
         except Exception as e:
             print(f"Error testing get_task: {e}")
@@ -118,6 +126,8 @@ async def test_update_task():
         try:
             result = await asana.execute_action("update_task", inputs, context)
             print(f"Update Task Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'task' in result, "Response missing 'task' field"
             return result
         except Exception as e:
             print(f"Error testing update_task: {e}")
@@ -144,6 +154,8 @@ async def test_list_tasks():
         try:
             result = await asana.execute_action("list_tasks", inputs, context)
             print(f"List Tasks Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'tasks' in result, "Response missing 'tasks' field"
             return result
         except Exception as e:
             print(f"Error testing list_tasks: {e}")
@@ -165,6 +177,7 @@ async def test_delete_task():
         try:
             result = await asana.execute_action("delete_task", inputs, context)
             print(f"Delete Task Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
             return result
         except Exception as e:
             print(f"Error testing delete_task: {e}")
@@ -188,6 +201,8 @@ async def test_create_project():
         try:
             result = await asana.execute_action("create_project", inputs, context)
             print(f"Create Project Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'project' in result, "Response missing 'project' field"
             return result
         except Exception as e:
             print(f"Error testing create_project: {e}")
@@ -207,6 +222,8 @@ async def test_update_project():
         try:
             result = await asana.execute_action("update_project", inputs, context)
             print(f"Update Project Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'project' in result, "Response missing 'project' field"
             return result
         except Exception as e:
             print(f"Error testing update_project: {e}")
@@ -226,6 +243,7 @@ async def test_delete_project():
         try:
             result = await asana.execute_action("delete_project", inputs, context)
             print(f"Delete Project Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
             return result
         except Exception as e:
             print(f"Error testing delete_project: {e}")
@@ -248,6 +266,7 @@ async def test_get_project_by_name():
         try:
             result = await asana.execute_action("get_project_by_name", inputs, context)
             print(f"Get Project by Name Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
             if result.get('not_found'):
                 print("  -> Project not found")
             else:
@@ -271,6 +290,8 @@ async def test_list_sections():
         try:
             result = await asana.execute_action("list_sections", inputs, context)
             print(f"List Sections Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'sections' in result, "Response missing 'sections' field"
             return result
         except Exception as e:
             print(f"Error testing list_sections: {e}")
@@ -290,6 +311,8 @@ async def test_create_section():
         try:
             result = await asana.execute_action("create_section", inputs, context)
             print(f"Create Section Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'section' in result, "Response missing 'section' field"
             return result
         except Exception as e:
             print(f"Error testing create_section: {e}")
@@ -309,6 +332,8 @@ async def test_update_section():
         try:
             result = await asana.execute_action("update_section", inputs, context)
             print(f"Update Section Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'section' in result, "Response missing 'section' field"
             return result
         except Exception as e:
             print(f"Error testing update_section: {e}")
@@ -328,6 +353,7 @@ async def test_add_task_to_section():
         try:
             result = await asana.execute_action("add_task_to_section", inputs, context)
             print(f"Add Task to Section Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
             return result
         except Exception as e:
             print(f"Error testing add_task_to_section: {e}")
@@ -347,6 +373,8 @@ async def test_create_story():
         try:
             result = await asana.execute_action("create_story", inputs, context)
             print(f"Create Story Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'story' in result, "Response missing 'story' field"
             return result
         except Exception as e:
             print(f"Error testing create_story: {e}")
@@ -366,6 +394,8 @@ async def test_list_stories():
         try:
             result = await asana.execute_action("list_stories", inputs, context)
             print(f"List Stories Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'stories' in result, "Response missing 'stories' field"
             return result
         except Exception as e:
             print(f"Error testing list_stories: {e}")
@@ -385,6 +415,8 @@ async def test_create_subtask():
         try:
             result = await asana.execute_action("create_subtask", inputs, context)
             print(f"Create Subtask Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'subtask' in result, "Response missing 'subtask' field"
             return result
         except Exception as e:
             print(f"Error testing create_subtask: {e}")
