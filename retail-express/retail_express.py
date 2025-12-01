@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 retail_express = Integration.load()
 
 # Base URL for Retail Express API
-RETAIL_EXPRESS_API_BASE_URL = "https://api.retailexpress.com.au"
+RETAIL_EXPRESS_API_BASE_URL = "https://v2wsisandbox.retailexpress.com.au/" # actual "https://api.retailexpress.com.au"
 API_VERSION = "v2.1"
 
 

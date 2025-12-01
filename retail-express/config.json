@@ -19,7 +19,6 @@
                     "help_text": "Your Retail Express API Key. Request this from the Retail Express client you wish to integrate with."
                 }
             },
-            "required": ["api_key"]
         }
     },
     "actions": {
