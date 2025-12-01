@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 
@@ -51,10 +51,16 @@ class CreateTaskAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_task")
@@ -76,10 +82,16 @@ class GetTaskAction(ActionHandler):
                 params=params if params else None
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_task")
@@ -111,10 +123,16 @@ class UpdateTaskAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("list_tasks")
@@ -148,10 +166,16 @@ class ListTasksAction(ActionHandler):
             )
 
             tasks = response.get('data', [])
-            return {"tasks": tasks, "result": True}
+            return ActionResult(
+                data={"tasks": tasks, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"tasks": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"tasks": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("delete_task")
@@ -167,10 +191,16 @@ class DeleteTaskAction(ActionHandler):
                 method="DELETE"
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Project Handlers ----
@@ -199,10 +229,16 @@ class ListProjectsAction(ActionHandler):
             )
 
             projects = response.get('data', [])
-            return {"projects": projects, "result": True}
+            return ActionResult(
+                data={"projects": projects, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"projects": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"projects": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_project")
@@ -223,10 +259,16 @@ class GetProjectAction(ActionHandler):
                 params=params if params else None
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("create_project")
@@ -255,10 +297,16 @@ class CreateProjectAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_project")
@@ -287,10 +335,16 @@ class UpdateProjectAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("delete_project")
@@ -306,10 +360,16 @@ class DeleteProjectAction(ActionHandler):
                 method="DELETE"
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_project_by_name")
@@ -350,17 +410,20 @@ class GetProjectByNameAction(ActionHandler):
                 for project in data:
                     projects_checked += 1
                     if project.get('name') == target_name:
-                        return {
-                            "gid": project.get('gid'),
-                            "name": project.get('name'),
-                            "workspace": project.get('workspace'),
-                            "team": project.get('team'),
-                            "archived": project.get('archived', False),
-                            "color": project.get('color'),
-                            "notes": project.get('notes'),
-                            "not_found": False,
-                            "result": True
-                        }
+                        return ActionResult(
+                            data={
+                                "gid": project.get('gid'),
+                                "name": project.get('name'),
+                                "workspace": project.get('workspace'),
+                                "team": project.get('team'),
+                                "archived": project.get('archived', False),
+                                "color": project.get('color'),
+                                "notes": project.get('notes'),
+                                "not_found": False,
+                                "result": True
+                            },
+                            cost_usd=0.0
+                        )
 
                 # Check for next page
                 next_page = response.get('next_page')
@@ -370,31 +433,37 @@ class GetProjectByNameAction(ActionHandler):
                     break
 
             # Project not found after checking all pages
-            return {
-                "gid": None,
-                "name": None,
-                "workspace": None,
-                "team": None,
-                "archived": None,
-                "color": None,
-                "notes": None,
-                "not_found": True,
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "gid": None,
+                    "name": None,
+                    "workspace": None,
+                    "team": None,
+                    "archived": None,
+                    "color": None,
+                    "notes": None,
+                    "not_found": True,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
-                "gid": None,
-                "name": None,
-                "workspace": None,
-                "team": None,
-                "archived": None,
-                "color": None,
-                "notes": None,
-                "not_found": True,
-                "result": False,
-                "error": str(e)
-            }
+            return ActionResult(
+                data={
+                    "gid": None,
+                    "name": None,
+                    "workspace": None,
+                    "team": None,
+                    "archived": None,
+                    "color": None,
+                    "notes": None,
+                    "not_found": True,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Section Handlers ----
@@ -418,10 +487,16 @@ class ListSectionsAction(ActionHandler):
             )
 
             sections = response.get('data', [])
-            return {"sections": sections, "result": True}
+            return ActionResult(
+                data={"sections": sections, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"sections": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"sections": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("create_section")
@@ -439,10 +514,16 @@ class CreateSectionAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"section": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"section": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"section": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"section": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_section")
@@ -460,10 +541,16 @@ class UpdateSectionAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"section": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"section": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"section": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"section": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("add_task_to_section")
@@ -481,10 +568,16 @@ class AddTaskToSectionAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Story/Comment Handlers ----
@@ -504,10 +597,16 @@ class CreateStoryAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"story": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"story": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"story": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"story": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("list_stories")
@@ -529,10 +628,16 @@ class ListStoriesAction(ActionHandler):
             )
 
             stories = response.get('data', [])
-            return {"stories": stories, "result": True}
+            return ActionResult(
+                data={"stories": stories, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"stories": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"stories": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Subtask Handler ----
@@ -559,9 +664,15 @@ class CreateSubtaskAction(ActionHandler):
                 json={"data": data}
             )
 
-            return {"subtask": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"subtask": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"subtask": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"subtask": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
