@@ -194,131 +194,6 @@ async def test_delete_meeting():
             return None
 
 
-async def test_list_recordings():
-    """Test listing cloud recordings."""
-    auth = {
-        "credentials": {
-            "access_token": "your_access_token_here"
-        }
-    }
-
-    inputs = {
-        "user_id": "me",
-        "page_size": 10
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await zoom.execute_action("list_recordings", inputs, context)
-            data = result.data
-            cost = result.cost_usd
-            print("List Recordings Result:")
-            print(f"  Success: {data.get('result')}")
-            print(f"  Total Records: {data.get('total_records')}")
-            print(f"  Cost (USD): {cost}")
-            if data.get('meetings'):
-                for meeting in data['meetings'][:3]:
-                    print(f"  - {meeting.get('topic')} ({meeting.get('recording_count')} files)")
-            return result
-        except Exception as e:
-            print(f"Error testing list_recordings: {e}")
-            return None
-
-
-async def test_get_meeting_recordings():
-    """Test getting recordings for a specific meeting."""
-    auth = {
-        "credentials": {
-            "access_token": "your_access_token_here"
-        }
-    }
-
-    inputs = {
-        "meeting_id": "your_meeting_id_here"
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await zoom.execute_action("get_meeting_recordings", inputs, context)
-            data = result.data
-            cost = result.cost_usd
-            print("Get Meeting Recordings Result:")
-            print(f"  Success: {data.get('result')}")
-            print(f"  Topic: {data.get('topic')}")
-            print(f"  Total Size: {data.get('total_size')} bytes")
-            print(f"  Cost (USD): {cost}")
-            if data.get('recording_files'):
-                for rf in data['recording_files']:
-                    print(f"  - {rf.get('file_type')}: {rf.get('recording_type')}")
-            return result
-        except Exception as e:
-            print(f"Error testing get_meeting_recordings: {e}")
-            return None
-
-
-async def test_get_meeting_transcript():
-    """Test getting transcript for a meeting."""
-    auth = {
-        "credentials": {
-            "access_token": "your_access_token_here"
-        }
-    }
-
-    inputs = {
-        "meeting_id": "your_meeting_id_here"
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await zoom.execute_action("get_meeting_transcript", inputs, context)
-            data = result.data
-            cost = result.cost_usd
-            print("Get Meeting Transcript Result:")
-            print(f"  Success: {data.get('result')}")
-            print(f"  Topic: {data.get('topic')}")
-            print(f"  Transcript URL: {data.get('transcript_url')}")
-            print(f"  Cost (USD): {cost}")
-            if data.get('transcript_segments'):
-                print(f"  Segments: {len(data['transcript_segments'])}")
-                for segment in data['transcript_segments'][:3]:
-                    print(f"    - {segment.get('speaker')}: {segment.get('text')[:50]}...")
-            return result
-        except Exception as e:
-            print(f"Error testing get_meeting_transcript: {e}")
-            return None
-
-
-async def test_list_users():
-    """Test listing users in the account."""
-    auth = {
-        "credentials": {
-            "access_token": "your_access_token_here"
-        }
-    }
-
-    inputs = {
-        "status": "active",
-        "page_size": 10
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await zoom.execute_action("list_users", inputs, context)
-            data = result.data
-            cost = result.cost_usd
-            print("List Users Result:")
-            print(f"  Success: {data.get('result')}")
-            print(f"  Total Records: {data.get('total_records')}")
-            print(f"  Cost (USD): {cost}")
-            if data.get('users'):
-                for user in data['users'][:3]:
-                    print(f"  - {user.get('first_name')} {user.get('last_name')} ({user.get('email')})")
-            return result
-        except Exception as e:
-            print(f"Error testing list_users: {e}")
-            return None
-
-
 async def test_get_user():
     """Test getting user details."""
     auth = {
@@ -412,6 +287,438 @@ async def test_add_meeting_registrant():
             return None
 
 
+async def test_list_contacts():
+    """Test listing contacts."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "page_size": 50
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("list_contacts", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("List Contacts Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Total Records: {data.get('total_records')}")
+            print(f"  Cost (USD): {cost}")
+            if data.get('contacts'):
+                for contact in data['contacts'][:3]:
+                    print(f"  - {contact.get('first_name')} {contact.get('last_name')} ({contact.get('email')})")
+            return result
+        except Exception as e:
+            print(f"Error testing list_contacts: {e}")
+            return None
+
+
+async def test_create_calendar_event():
+    """Test creating a calendar event."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary",
+        "summary": "Test Event from Autohive",
+        "start": {
+            "dateTime": "2025-01-20T10:00:00Z",
+            "timeZone": "America/New_York"
+        },
+        "end": {
+            "dateTime": "2025-01-20T11:00:00Z",
+            "timeZone": "America/New_York"
+        },
+        "description": "Test event created via Autohive integration",
+        "location": "Virtual"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("create_calendar_event", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Create Calendar Event Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Event ID: {data.get('id')}")
+            print(f"  Summary: {data.get('summary')}")
+            print(f"  HTML Link: {data.get('html_link')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing create_calendar_event: {e}")
+            return None
+
+
+async def test_list_calendar_events():
+    """Test listing calendar events."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary",
+        "max_results": 10
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("list_calendar_events", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("List Calendar Events Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Time Zone: {data.get('time_zone')}")
+            print(f"  Cost (USD): {cost}")
+            if data.get('events'):
+                for event in data['events'][:3]:
+                    print(f"  - {event.get('summary')} (ID: {event.get('id')})")
+            return result
+        except Exception as e:
+            print(f"Error testing list_calendar_events: {e}")
+            return None
+
+
+async def test_get_calendar_event():
+    """Test getting a calendar event."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary",
+        "event_id": "your_event_id_here"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_calendar_event", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get Calendar Event Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Summary: {data.get('summary')}")
+            print(f"  Location: {data.get('location')}")
+            print(f"  Status: {data.get('status')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_calendar_event: {e}")
+            return None
+
+
+async def test_delete_calendar_event():
+    """Test deleting a calendar event."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary",
+        "event_id": "your_event_id_here"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("delete_calendar_event", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Delete Calendar Event Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Event ID: {data.get('event_id')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing delete_calendar_event: {e}")
+            return None
+
+
+async def test_quick_create_calendar_event():
+    """Test quick creating a calendar event."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary",
+        "text": "Team meeting tomorrow at 2pm"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("quick_create_calendar_event", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Quick Create Calendar Event Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Event ID: {data.get('id')}")
+            print(f"  Summary: {data.get('summary')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing quick_create_calendar_event: {e}")
+            return None
+
+
+async def test_get_calendar_metadata():
+    """Test getting calendar metadata."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "calendar_id": "primary"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_calendar_metadata", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get Calendar Metadata Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  ID: {data.get('id')}")
+            print(f"  Summary: {data.get('summary')}")
+            print(f"  Timezone: {data.get('timezone')}")
+            print(f"  Primary: {data.get('primary')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_calendar_metadata: {e}")
+            return None
+
+
+async def test_list_calendar_settings():
+    """Test listing calendar settings."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {}
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("list_calendar_settings", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("List Calendar Settings Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Cost (USD): {cost}")
+            if data.get('settings'):
+                for setting in data['settings'][:5]:
+                    print(f"  - {setting.get('id')}: {setting.get('value')}")
+            return result
+        except Exception as e:
+            print(f"Error testing list_calendar_settings: {e}")
+            return None
+
+
+async def test_create_meeting_template():
+    """Test creating a meeting template from an existing meeting."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "user_id": "me",
+        "meeting_id": "your_meeting_id_here",
+        "name": "Test Meeting Template"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("create_meeting_template", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Create Meeting Template Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Template ID: {data.get('id')}")
+            print(f"  Name: {data.get('name')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing create_meeting_template: {e}")
+            return None
+
+
+async def test_get_meeting_template_detail():
+    """Test getting meeting template detail."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "user_id": "me",
+        "template_id": "your_template_id_here"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_meeting_template_detail", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get Meeting Template Detail Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Template ID: {data.get('id')}")
+            print(f"  Name: {data.get('name')}")
+            print(f"  Topic: {data.get('topic')}")
+            print(f"  Duration: {data.get('duration')} minutes")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_meeting_template_detail: {e}")
+            return None
+
+
+async def test_create_meeting_invite_links():
+    """Test creating meeting invite links."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "meeting_id": "your_meeting_id_here",
+        "attendees": [
+            {"name": "John Doe"},
+            {"name": "Jane Smith"}
+        ],
+        "ttl": 7200
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("create_meeting_invite_links", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Create Meeting Invite Links Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Cost (USD): {cost}")
+            if data.get('attendees'):
+                for attendee in data['attendees']:
+                    print(f"  - {attendee.get('name')}: {attendee.get('join_url')}")
+            return result
+        except Exception as e:
+            print(f"Error testing create_meeting_invite_links: {e}")
+            return None
+
+
+async def test_get_meeting_participant():
+    """Test getting a meeting participant."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "meeting_id": "your_meeting_id_here",
+        "participant_id": "your_participant_id_here"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_meeting_participant", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get Meeting Participant Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Name: {data.get('name')}")
+            print(f"  Email: {data.get('user_email')}")
+            print(f"  Join Time: {data.get('join_time')}")
+            print(f"  Duration: {data.get('duration')} seconds")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_meeting_participant: {e}")
+            return None
+
+
+async def test_get_past_meeting():
+    """Test getting past meeting details."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "meeting_id": "your_meeting_id_here"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_past_meeting", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get Past Meeting Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Topic: {data.get('topic')}")
+            print(f"  Start Time: {data.get('start_time')}")
+            print(f"  End Time: {data.get('end_time')}")
+            print(f"  Total Minutes: {data.get('total_minutes')}")
+            print(f"  Participants Count: {data.get('participants_count')}")
+            print(f"  Cost (USD): {cost}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_past_meeting: {e}")
+            return None
+
+
+async def test_get_user_permissions():
+    """Test getting user permissions."""
+    auth = {
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+
+    inputs = {
+        "user_id": "me"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await zoom.execute_action("get_user_permissions", inputs, context)
+            data = result.data
+            cost = result.cost_usd
+            print("Get User Permissions Result:")
+            print(f"  Success: {data.get('result')}")
+            print(f"  Cost (USD): {cost}")
+            if data.get('permissions'):
+                print(f"  Permissions: {', '.join(data['permissions'][:10])}")
+                if len(data['permissions']) > 10:
+                    print(f"    ... and {len(data['permissions']) - 10} more")
+            return result
+        except Exception as e:
+            print(f"Error testing get_user_permissions: {e}")
+            return None
+
+
 async def main():
     """Run all tests."""
     print("=" * 60)
@@ -423,19 +730,38 @@ async def main():
     print()
 
     # Uncomment the tests you want to run:
+    # --- Original Meeting Tests ---
     # await test_connected_account()
     # await test_list_meetings()
     # await test_get_meeting()
     # await test_create_meeting()
     # await test_update_meeting()
     # await test_delete_meeting()
-    # await test_list_recordings()
-    # await test_get_meeting_recordings()
-    # await test_get_meeting_transcript()
-    # await test_list_users()
     # await test_get_user()
     # await test_get_meeting_participants()
     # await test_add_meeting_registrant()
+
+    # --- Calendar Tests ---
+    # await test_create_calendar_event()
+    # await test_list_calendar_events()
+    # await test_get_calendar_event()
+    # await test_delete_calendar_event()
+    # await test_quick_create_calendar_event()
+    # await test_get_calendar_metadata()
+    # await test_list_calendar_settings()
+
+    # --- Contacts Tests ---
+    # await test_list_contacts()
+
+    # --- Meeting Template & Invite Tests ---
+    # await test_create_meeting_template()
+    # await test_get_meeting_template_detail()
+    # await test_create_meeting_invite_links()
+    # await test_get_meeting_participant()
+    # await test_get_past_meeting()
+
+    # --- User Tests ---
+    # await test_get_user_permissions()
 
     print()
     print("=" * 60)
