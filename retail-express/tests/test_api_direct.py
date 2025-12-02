@@ -2,7 +2,7 @@
 import asyncio
 import aiohttp
 
-API_KEY = "d3ac29018b664180bb00a0cfad717288"
+API_KEY = "Secret"
 BASE_URL = "https://api.retailexpress.com.au"
 API_VERSION = "v2.1"
 
