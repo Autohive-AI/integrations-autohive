@@ -54,14 +54,6 @@ For sandbox/testing access, contact:
 | `list_outlets` | Retrieve a list of all store outlets |
 | `get_outlet` | Get details of a specific outlet by ID |
 
-## Polling Triggers
-
-| Trigger | Description | Interval |
-|---------|-------------|----------|
-| `new_order` | Triggers when a new order is created | 5 minutes |
-| `new_customer` | Triggers when a new customer is created | 5 minutes |
-| `updated_product` | Triggers when a product is updated | 5 minutes |
-
 ## Rate Limits
 
 The Retail Express API has the following rate limits:

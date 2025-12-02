@@ -1,10 +1,10 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler, PollingTriggerHandler,
-    ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
+    Integration, ExecutionContext, ActionHandler,
+    ActionResult
 )
-from typing import Dict, Any, List, Optional
-import datetime
-from datetime import datetime, timezone
+from typing import Dict, Any
+
+# Create the integration using the config.json
 retail_express = Integration.load()
 
 # Base URL for Retail Express API
@@ -14,53 +14,21 @@ API_VERSION = "v2.1"
 
 # ---- Helper Functions ----
 
-class TokenManager:
-    """Manages access token caching and refresh for Retail Express API."""
-    
-    _tokens: Dict[str, Dict[str, Any]] = {}
-    
-    @classmethod
-    def get_token(cls, api_key: str) -> Optional[Dict[str, Any]]:
-        """Get cached token if still valid."""
-        if api_key in cls._tokens:
-            token_data = cls._tokens[api_key]
-            expires_on = token_data.get('expires_on')
-            if expires_on and datetime.now(timezone.utc) < expires_on:
-                return token_data
-        return None
-    
-    @classmethod
-    def set_token(cls, api_key: str, token_data: Dict[str, Any]):
-        """Cache a new token."""
-        cls._tokens[api_key] = token_data
-    
-    @classmethod
-    def clear_token(cls, api_key: str):
-        """Clear cached token."""
-        if api_key in cls._tokens:
-            del cls._tokens[api_key]
-
-
 async def get_access_token(context: ExecutionContext) -> str:
     """
     Get a valid access token for Retail Express API.
-    Uses cached token if still valid, otherwise requests a new one.
-    
+    The API key is exchanged for a Bearer token on each request.
+
     Args:
         context: ExecutionContext containing auth credentials
-        
+
     Returns:
         Valid access token string
     """
     credentials = context.auth.get("credentials", {})
     api_key = credentials.get("api_key", "")
-    
-    # Check for cached token
-    cached = TokenManager.get_token(api_key)
-    if cached:
-        return cached.get('access_token', '')
-    
-    # Request new token
+
+    # Request new token - API key is always exchanged for Bearer token
     response = await context.fetch(
         f"{RETAIL_EXPRESS_API_BASE_URL}/{API_VERSION}/auth/token",
         method="GET",
@@ -69,24 +37,8 @@ async def get_access_token(context: ExecutionContext) -> str:
             "Accept": "application/json"
         }
     )
-    
-    # Parse expiry time
-    expires_on_str = response.get('expires_on', '')
-    try:
-        expires_on = datetime.fromisoformat(expires_on_str.replace('+00:00', '+00:00'))
-    except:
-        # Default to 55 minutes from now if parsing fails
-        expires_on = datetime.now(timezone.utc).replace(minute=55)
-    
-    # Cache token
-    token_data = {
-        'access_token': response.get('access_token', ''),
-        'token_type': response.get('token_type', 'Bearer'),
-        'expires_on': expires_on
-    }
-    TokenManager.set_token(api_key, token_data)
-    
-    return token_data['access_token']
+
+    return response.get('access_token', '')
 
 
 async def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
@@ -102,7 +54,7 @@ async def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
     """
     credentials = context.auth.get("credentials", {})
     api_key = credentials.get("api_key", "")
-    
+
     access_token = await get_access_token(context)
 
     return {
@@ -116,29 +68,13 @@ async def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
 def build_pagination_params(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """Build pagination query parameters."""
     params = {}
-    
+
     if 'page_number' in inputs:
         params['page_number'] = inputs['page_number']
     if 'page_size' in inputs:
         params['page_size'] = min(inputs['page_size'], 250)
-    
+
     return params
-
-
-# ---- Connected Account Handler ----
-
-@retail_express.connected_account()
-class RetailExpressConnectedAccountHandler(ConnectedAccountHandler):
-    """Handler to fetch connected account information from Retail Express."""
-
-    async def get_account_info(self, context: ExecutionContext) -> ConnectedAccountInfo:
-        """Fetch account information from Retail Express API."""
-        credentials = context.auth.get("credentials", {})
-        api_key = credentials.get("api_key", "")
-        
-        return ConnectedAccountInfo(
-            user_id=api_key[:8] + "..." if len(api_key) > 8 else api_key
-        )
 
 
 # ---- Product Action Handlers ----
@@ -150,7 +86,7 @@ class ListProductsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             params = build_pagination_params(inputs)
-            
+
             # Add optional filters
             if 'sku' in inputs and inputs['sku']:
                 params['sku'] = inputs['sku']
@@ -167,7 +103,7 @@ class ListProductsAction(ActionHandler):
             )
 
             products = response.get('data', [])
-            
+
             return ActionResult(
                 data={
                     "products": products,
@@ -237,7 +173,7 @@ class ListCustomersAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             params = build_pagination_params(inputs)
-            
+
             # Add optional filters
             if 'email' in inputs and inputs['email']:
                 params['email'] = inputs['email']
@@ -254,7 +190,7 @@ class ListCustomersAction(ActionHandler):
             )
 
             customers = response.get('data', [])
-            
+
             return ActionResult(
                 data={
                     "customers": customers,
@@ -428,7 +364,7 @@ class ListOrdersAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             params = build_pagination_params(inputs)
-            
+
             # Add optional filters
             if 'status' in inputs and inputs['status']:
                 params['status'] = inputs['status']
@@ -447,7 +383,7 @@ class ListOrdersAction(ActionHandler):
             )
 
             orders = response.get('data', [])
-            
+
             return ActionResult(
                 data={
                     "orders": orders,
@@ -528,7 +464,7 @@ class ListOutletsAction(ActionHandler):
             )
 
             outlets = response.get('data', [])
-            
+
             return ActionResult(
                 data={
                     "outlets": outlets,
@@ -587,116 +523,3 @@ class GetOutletAction(ActionHandler):
                 },
                 cost_usd=0.0
             )
-
-
-# ---- Polling Trigger Handlers ----
-
-@retail_express.polling_trigger("new_order")
-class NewOrderTrigger(PollingTriggerHandler):
-    """Triggers when a new order is created in Retail Express."""
-
-    async def poll(self, inputs: Dict[str, Any], context: ExecutionContext) -> List[Dict[str, Any]]:
-        try:
-            # Get last poll time from state or default to 24 hours ago
-            last_poll = context.state.get('last_poll_time')
-            if not last_poll:
-                last_poll = datetime.now(timezone.utc).isoformat()
-            
-            params = {
-                'page_size': 250,
-                'updated_since': last_poll
-            }
-
-            headers = await get_auth_headers(context)
-
-            response = await context.fetch(
-                f"{RETAIL_EXPRESS_API_BASE_URL}/{API_VERSION}/orders",
-                method="GET",
-                headers=headers,
-                params=params
-            )
-
-            orders = response.get('data', [])
-            
-            # Update state with current time
-            context.state['last_poll_time'] = datetime.now(timezone.utc).isoformat()
-            
-            # Return each order as a trigger event
-            return [{"order": order} for order in orders]
-
-        except Exception as e:
-            return []
-
-
-@retail_express.polling_trigger("new_customer")
-class NewCustomerTrigger(PollingTriggerHandler):
-    """Triggers when a new customer is created in Retail Express."""
-
-    async def poll(self, inputs: Dict[str, Any], context: ExecutionContext) -> List[Dict[str, Any]]:
-        try:
-            # Get last poll time from state
-            last_poll = context.state.get('last_poll_time')
-            if not last_poll:
-                last_poll = datetime.now(timezone.utc).isoformat()
-            
-            params = {
-                'page_size': 250,
-                'updated_since': last_poll
-            }
-
-            headers = await get_auth_headers(context)
-
-            response = await context.fetch(
-                f"{RETAIL_EXPRESS_API_BASE_URL}/{API_VERSION}/customers",
-                method="GET",
-                headers=headers,
-                params=params
-            )
-
-            customers = response.get('data', [])
-            
-            # Update state with current time
-            context.state['last_poll_time'] = datetime.now(timezone.utc).isoformat()
-            
-            # Return each customer as a trigger event
-            return [{"customer": customer} for customer in customers]
-
-        except Exception as e:
-            return []
-
-
-@retail_express.polling_trigger("updated_product")
-class UpdatedProductTrigger(PollingTriggerHandler):
-    """Triggers when a product is updated in Retail Express."""
-
-    async def poll(self, inputs: Dict[str, Any], context: ExecutionContext) -> List[Dict[str, Any]]:
-        try:
-            # Get last poll time from state
-            last_poll = context.state.get('last_poll_time')
-            if not last_poll:
-                last_poll = datetime.now(timezone.utc).isoformat()
-            
-            params = {
-                'page_size': 250,
-                'updated_since': last_poll
-            }
-
-            headers = await get_auth_headers(context)
-
-            response = await context.fetch(
-                f"{RETAIL_EXPRESS_API_BASE_URL}/{API_VERSION}/products",
-                method="GET",
-                headers=headers,
-                params=params
-            )
-
-            products = response.get('data', [])
-            
-            # Update state with current time
-            context.state['last_poll_time'] = datetime.now(timezone.utc).isoformat()
-            
-            # Return each product as a trigger event
-            return [{"product": product} for product in products]
-
-        except Exception as e:
-            return []

@@ -5,7 +5,7 @@
     "description": "Retail Express integration for managing products, customers, orders, and outlets in the Retail Express POS platform",
     "entry_point": "retail_express.py",
     "supports_billing": true,
-    "supports_connected_account": true,
+    "supports_connected_account": false,
     "auth": {
         "type": "custom",
         "title": "Retail Express API Credentials",
@@ -500,65 +500,6 @@
                     "error": {
                         "type": "string",
                         "description": "Error message if the action failed"
-                    }
-                }
-            }
-        }
-    },
-    "polling_triggers": {
-        "new_order": {
-            "display_name": "New Order",
-            "description": "Triggers when a new order is created in Retail Express.",
-            "polling_interval": "5m",
-            "input_schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "order": {
-                        "type": "object",
-                        "description": "The new order details"
-                    }
-                }
-            }
-        },
-        "new_customer": {
-            "display_name": "New Customer",
-            "description": "Triggers when a new customer is created in Retail Express.",
-            "polling_interval": "5m",
-            "input_schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "customer": {
-                        "type": "object",
-                        "description": "The new customer details"
-                    }
-                }
-            }
-        },
-        "updated_product": {
-            "display_name": "Updated Product",
-            "description": "Triggers when a product is updated in Retail Express.",
-            "polling_interval": "5m",
-            "input_schema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "product": {
-                        "type": "object",
-                        "description": "The updated product details"
                     }
                 }
             }
