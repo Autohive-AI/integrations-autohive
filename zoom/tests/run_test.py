@@ -135,7 +135,7 @@ class GetUserPermissionsAction(ActionHandler):
             return ActionResult(data={"permissions": [], "result": False, "error": str(e)}, cost_usd=0.0)
 
 # ---- Test Token ----
-ACCESS_TOKEN = ""
+ACCESS_TOKEN = os.environ.get("ZOOM_ACCESS_TOKEN", "")
 
 def get_data(result):
     """Extract data from IntegrationResult or ActionResult."""
