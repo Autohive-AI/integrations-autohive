@@ -1,0 +1,110 @@
+{
+    "name": "Facebook",
+    "version": "1.0.0",
+    "description": "Facebook Pages integration for creating and scheduling posts to Facebook Pages",
+    "entry_point": "facebook.py",
+    "auth": {
+        "type": "platform",
+        "provider": "facebook",
+        "scopes": [
+            "pages_show_list",
+            "pages_read_engagement",
+            "pages_manage_posts"
+        ]
+    },
+    "actions": {
+        "list_pages": {
+            "display_name": "List Pages",
+            "description": "Get all Facebook Pages the authenticated user can manage",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "pages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "The Page ID"},
+                                "name": {"type": "string", "description": "The Page name"},
+                                "category": {"type": "string", "description": "The Page category"},
+                                "access_token": {"type": "string", "description": "Page access token for making API calls"}
+                            }
+                        }
+                    }
+                },
+                "required": ["pages"]
+            }
+        },
+        "create_post": {
+            "display_name": "Create Post",
+            "description": "Publish a post immediately to a Facebook Page",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "page_id": {
+                        "type": "string",
+                        "description": "The ID of the Facebook Page to post to"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The text content of the post"
+                    },
+                    "link": {
+                        "type": "string",
+                        "description": "Optional URL to include in the post"
+                    }
+                },
+                "required": ["page_id", "message"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "post_id": {"type": "string", "description": "The ID of the created post"},
+                    "success": {"type": "boolean"},
+                    "permalink": {"type": "string", "description": "URL to the post on Facebook"}
+                },
+                "required": ["post_id", "success"]
+            }
+        },
+        "schedule_post": {
+            "display_name": "Schedule Post",
+            "description": "Schedule a post to be published at a future time on a Facebook Page. The scheduled time must be between 10 minutes and 30 days from now.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "page_id": {
+                        "type": "string",
+                        "description": "The ID of the Facebook Page to post to"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The text content of the post"
+                    },
+                    "scheduled_time": {
+                        "type": "string",
+                        "description": "The time to publish the post in ISO 8601 format (e.g., 2024-12-25T10:00:00+00:00) or UNIX timestamp"
+                    },
+                    "link": {
+                        "type": "string",
+                        "description": "Optional URL to include in the post"
+                    }
+                },
+                "required": ["page_id", "message", "scheduled_time"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "post_id": {"type": "string", "description": "The ID of the scheduled post"},
+                    "success": {"type": "boolean"},
+                    "scheduled_publish_time": {"type": "string", "description": "The scheduled publish time"}
+                },
+                "required": ["post_id", "success"]
+            }
+        }
+    }
+}
