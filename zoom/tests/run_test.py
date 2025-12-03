@@ -135,8 +135,7 @@ class GetUserPermissionsAction(ActionHandler):
             return ActionResult(data={"permissions": [], "result": False, "error": str(e)}, cost_usd=0.0)
 
 # ---- Test Token ----
-ACCESS_TOKEN = "eyJzdiI6IjAwMDAwMiIsImFsZyI6IkhTNTEyIiwidiI6IjIuMCIsImtpZCI6IjA5MDA2ZjYxLWU4NmUtNDU5MS05ZDViLWY0OWFhNDk3YzMzNyJ9.eyJhdWQiOiJodHRwczovL29hdXRoLnpvb20udXMiLCJ1aWQiOiIyVzRFQU1wT1JxYVFqMHN5MFU0U2xBIiwidmVyIjoxMCwiYXVpZCI6ImRiMjhiMzg4NDZkNWI1NTA4YjhjOTJlODFkZTFiN2VmNmJhYjg4MmEyNzZkMGNjZTE0ZjU5MjVkMmMwMzBkYzUiLCJuYmYiOjE3NjQ3MTkwNjMsImNvZGUiOiJZUVc4ZkNCam1zdHVCVVl0MUU0UzZDeG9XWnZOb3ZRdEEiLCJpc3MiOiJ6bTpjaWQ6aVE5MlNxUUFTYWUyMGNYd0UzNEgwQSIsImdubyI6MCwiZXhwIjoxNzY0NzIyNjYzLCJ0eXBlIjowLCJpYXQiOjE3NjQ3MTkwNjMsImFpZCI6IlZMUkJRazNMVHdxM2x1MTZnSXhrOVEifQ.f59KDv9O5tafN33EvIbwB6PHO8abmcRd2C7bY8MUW0nz1X5rM7tKLmsIsIHpXYxjOjKPEEwK7VyRbcA8_8B12g"
-
+ACCESS_TOKEN = ""
 
 def get_data(result):
     """Extract data from IntegrationResult or ActionResult."""
