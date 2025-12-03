@@ -7,7 +7,13 @@
   "auth": {
     "type": "platform",
     "provider": "github",
-    "scopes": ["repo", "read:org", "gist", "admin:repo_hook", "workflow"]
+    "scopes": [
+      "repo",
+      "read:org",
+      "gist",
+      "admin:repo_hook",
+      "workflow"
+    ]
   },
   "actions": {
     "create_repository": {
@@ -16,31 +22,80 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "description": "Repository name" },
-          "description": { "type": "string", "description": "Repository description" },
-          "private": { "type": "boolean", "description": "Whether the repository is private", "default": false },
-          "auto_init": { "type": "boolean", "description": "Initialize with README", "default": false },
-          "gitignore_template": { "type": "string", "description": "Gitignore template name" },
-          "license_template": { "type": "string", "description": "License template name" },
-          "org": { "type": "string", "description": "Organization name (if creating in an org)" }
+          "name": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Repository description"
+          },
+          "private": {
+            "type": "boolean",
+            "description": "Whether the repository is private",
+            "default": false
+          },
+          "auto_init": {
+            "type": "boolean",
+            "description": "Initialize with README",
+            "default": false
+          },
+          "gitignore_template": {
+            "type": "string",
+            "description": "Gitignore template name"
+          },
+          "license_template": {
+            "type": "string",
+            "description": "License template name"
+          },
+          "org": {
+            "type": "string",
+            "description": "Organization name (if creating in an org)"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "full_name": { "type": "string" },
-          "description": { "type": "string" },
-          "private": { "type": "boolean" },
-          "default_branch": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "pushed_at": { "type": "string" },
-          "clone_url": { "type": "string" },
-          "ssh_url": { "type": "string" },
-          "html_url": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "default_branch": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "pushed_at": {
+            "type": "string"
+          },
+          "clone_url": {
+            "type": "string"
+          },
+          "ssh_url": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -50,30 +105,80 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner (user or organization)" },
-          "repo": { "type": "string", "description": "Repository name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "full_name": { "type": "string" },
-          "description": { "type": ["string", "null"] },
-          "default_branch": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "pushed_at": { "type": ["string", "null"] },
-          "language": { "type": ["string", "null"] },
-          "visibility": { "type": "string" },
-          "private": { "type": "boolean" },
-          "fork": { "type": "boolean" },
-          "forks_count": { "type": "integer" },
-          "stargazers_count": { "type": "integer" },
-          "watchers_count": { "type": "integer" },
-          "open_issues_count": { "type": "integer" },
-          "url": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "default_branch": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "pushed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "fork": {
+            "type": "boolean"
+          },
+          "forks_count": {
+            "type": "integer"
+          },
+          "stargazers_count": {
+            "type": "integer"
+          },
+          "watchers_count": {
+            "type": "integer"
+          },
+          "open_issues_count": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -83,11 +188,43 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "username": { "type": "string", "description": "Username to list repos for" },
-          "org": { "type": "string", "description": "Organization to list repos for" },
-          "type": { "type": "string", "enum": ["all", "owner", "public", "private", "member"], "default": "all" },
-          "sort": { "type": "string", "enum": ["created", "updated", "pushed", "full_name"], "default": "updated" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          "username": {
+            "type": "string",
+            "description": "Username to list repos for"
+          },
+          "org": {
+            "type": "string",
+            "description": "Organization to list repos for"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "owner",
+              "public",
+              "private",
+              "member"
+            ],
+            "default": "all"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "pushed",
+              "full_name"
+            ],
+            "default": "updated"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          }
         }
       },
       "output_schema": {
@@ -95,19 +232,57 @@
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "full_name": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "private": { "type": "boolean" },
-            "fork": { "type": "boolean" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "pushed_at": { "type": ["string", "null"] },
-            "language": { "type": ["string", "null"] },
-            "default_branch": { "type": "string" },
-            "visibility": { "type": ["string", "null"] },
-            "url": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "private": {
+              "type": "boolean"
+            },
+            "fork": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "pushed_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "language": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default_branch": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -118,27 +293,67 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "name": { "type": "string", "description": "New repository name" },
-          "description": { "type": "string", "description": "New description" },
-          "private": { "type": "boolean", "description": "Make private/public" },
-          "has_issues": { "type": "boolean", "description": "Enable issues" },
-          "has_wiki": { "type": "boolean", "description": "Enable wiki" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "name": {
+            "type": "string",
+            "description": "New repository name"
+          },
+          "description": {
+            "type": "string",
+            "description": "New description"
+          },
+          "private": {
+            "type": "boolean",
+            "description": "Make private/public"
+          },
+          "has_issues": {
+            "type": "boolean",
+            "description": "Enable issues"
+          },
+          "has_wiki": {
+            "type": "boolean",
+            "description": "Enable wiki"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "full_name": { "type": "string" },
-          "description": { "type": "string" },
-          "private": { "type": "boolean" },
-          "has_issues": { "type": "boolean" },
-          "has_wiki": { "type": "boolean" },
-          "updated_at": { "type": "string" },
-          "url": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "has_issues": {
+            "type": "boolean"
+          },
+          "has_wiki": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -148,16 +363,29 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "deleted": { "type": "boolean" },
-          "repository": { "type": "string" }
+          "deleted": {
+            "type": "boolean"
+          },
+          "repository": {
+            "type": "string"
+          }
         }
       }
     },
@@ -167,25 +395,90 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "sha": { "type": "string", "description": "SHA or branch to start listing commits from" },
-          "path": { "type": "string", "description": "Only commits containing this file path" },
-          "since": { "type": "string", "description": "ISO 8601 timestamp to filter commits after" },
-          "until": { "type": "string", "description": "ISO 8601 timestamp to filter commits before" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "sha": {
+            "type": "string",
+            "description": "SHA or branch to start listing commits from"
+          },
+          "path": {
+            "type": "string",
+            "description": "Only commits containing this file path"
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO 8601 timestamp to filter commits after"
+          },
+          "until": {
+            "type": "string",
+            "description": "ISO 8601 timestamp to filter commits before"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "sha": { "type": "string" },
-            "author": { "type": "object", "properties": { "name": { "type": ["string", "null"] }, "email": { "type": ["string", "null"] }, "date": { "type": "string" } } },
-            "committer": { "type": "object", "properties": { "name": { "type": ["string", "null"] }, "email": { "type": ["string", "null"] }, "date": { "type": "string" } } },
-            "message": { "type": "string" },
-            "url": { "type": "string" }
+            "sha": {
+              "type": "string"
+            },
+            "author": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "date": {
+                  "type": "string"
+                }
+              }
+            },
+            "committer": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "date": {
+                  "type": "string"
+                }
+              }
+            },
+            "message": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -196,22 +489,52 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "sha": { "type": "string", "description": "Commit SHA" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Commit SHA"
+          }
         },
-        "required": ["owner", "repo", "sha"]
+        "required": [
+          "owner",
+          "repo",
+          "sha"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "sha": { "type": "string" },
-          "author": { "type": "object" },
-          "committer": { "type": "object" },
-          "message": { "type": "string" },
-          "stats": { "type": "object" },
-          "files": { "type": "array" },
-          "url": { "type": "string" }
+          "sha": {
+            "type": "string"
+          },
+          "author": {
+            "type": "object"
+          },
+          "committer": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "stats": {
+            "type": "object"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -221,32 +544,104 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "state": { "type": "string", "enum": ["open", "closed", "all"], "default": "all" },
-          "sort": { "type": "string", "enum": ["created", "updated", "comments"], "default": "created" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" },
-          "since": { "type": "string", "description": "ISO 8601 timestamp" },
-          "labels": { "type": "string", "description": "Comma-separated list of label names" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed",
+              "all"
+            ],
+            "default": "all"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "comments"
+            ],
+            "default": "created"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO 8601 timestamp"
+          },
+          "labels": {
+            "type": "string",
+            "description": "Comma-separated list of label names"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "number": { "type": "integer" },
-            "title": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "state": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "closed_at": { "type": ["string", "null"] },
-            "author": { "type": "object" },
-            "assignees": { "type": "array" },
-            "labels": { "type": "array" },
-            "url": { "type": "string" }
+            "number": {
+              "type": "integer"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "closed_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "author": {
+              "type": "object"
+            },
+            "assignees": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -257,27 +652,76 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "issue_number": { "type": "integer", "description": "Issue number" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "issue_number": {
+            "type": "integer",
+            "description": "Issue number"
+          }
         },
-        "required": ["owner", "repo", "issue_number"]
+        "required": [
+          "owner",
+          "repo",
+          "issue_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "description": { "type": ["string", "null"] },
-          "state": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "closed_at": { "type": ["string", "null"] },
-          "author": { "type": "object" },
-          "assignees": { "type": "array" },
-          "labels": { "type": "array" },
-          "comments": { "type": "integer" },
-          "url": { "type": "string" }
+          "number": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "type": "object"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "comments": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -287,29 +731,89 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "title": { "type": "string", "description": "Issue title" },
-          "body": { "type": "string", "description": "Issue body" },
-          "assignees": { "type": "array", "items": { "type": "string" }, "description": "Usernames to assign" },
-          "labels": { "type": "array", "items": { "type": "string" }, "description": "Labels to add" },
-          "milestone": { "type": "integer", "description": "Milestone number" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "title": {
+            "type": "string",
+            "description": "Issue title"
+          },
+          "body": {
+            "type": "string",
+            "description": "Issue body"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Usernames to assign"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Labels to add"
+          },
+          "milestone": {
+            "type": "integer",
+            "description": "Milestone number"
+          }
         },
-        "required": ["owner", "repo", "title"]
+        "required": [
+          "owner",
+          "repo",
+          "title"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "description": { "type": ["string", "null"] },
-          "state": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "author": { "type": "object" },
-          "assignees": { "type": "array" },
-          "labels": { "type": "array" },
-          "url": { "type": "string" }
+          "number": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "author": {
+            "type": "object"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -319,32 +823,103 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "issue_number": { "type": "integer", "description": "Issue number" },
-          "title": { "type": "string", "description": "New title" },
-          "body": { "type": "string", "description": "New body" },
-          "state": { "type": "string", "enum": ["open", "closed"] },
-          "assignees": { "type": "array", "items": { "type": "string" } },
-          "labels": { "type": "array", "items": { "type": "string" } },
-          "milestone": { "type": "integer" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "issue_number": {
+            "type": "integer",
+            "description": "Issue number"
+          },
+          "title": {
+            "type": "string",
+            "description": "New title"
+          },
+          "body": {
+            "type": "string",
+            "description": "New body"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "milestone": {
+            "type": "integer"
+          }
         },
-        "required": ["owner", "repo", "issue_number"]
+        "required": [
+          "owner",
+          "repo",
+          "issue_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "description": { "type": ["string", "null"] },
-          "state": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "closed_at": { "type": ["string", "null"] },
-          "author": { "type": "object" },
-          "assignees": { "type": "array" },
-          "labels": { "type": "array" },
-          "url": { "type": "string" }
+          "number": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "type": "object"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -354,22 +929,51 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "issue_number": { "type": "integer", "description": "Issue number" },
-          "body": { "type": "string", "description": "Comment body" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "issue_number": {
+            "type": "integer",
+            "description": "Issue number"
+          },
+          "body": {
+            "type": "string",
+            "description": "Comment body"
+          }
         },
-        "required": ["owner", "repo", "issue_number", "body"]
+        "required": [
+          "owner",
+          "repo",
+          "issue_number",
+          "body"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "body": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "author": { "type": "object" },
-          "url": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "author": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -379,23 +983,48 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "issue_number": { "type": "integer", "description": "Issue number" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "issue_number": {
+            "type": "integer",
+            "description": "Issue number"
+          }
         },
-        "required": ["owner", "repo", "issue_number"]
+        "required": [
+          "owner",
+          "repo",
+          "issue_number"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "body": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "author": { "type": "object" },
-            "url": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "body": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "author": {
+              "type": "object"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -406,30 +1035,91 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "state": { "type": "string", "enum": ["open", "closed", "all"], "default": "all" },
-          "sort": { "type": "string", "enum": ["created", "updated", "popularity", "long-running"], "default": "updated" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed",
+              "all"
+            ],
+            "default": "all"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "popularity",
+              "long-running"
+            ],
+            "default": "updated"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "number": { "type": "integer" },
-            "title": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "state": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "merged_at": { "type": ["string", "null"] },
-            "draft": { "type": "boolean" },
-            "merged": { "type": "boolean" },
-            "author": { "type": "object" },
-            "url": { "type": "string" }
+            "number": {
+              "type": "integer"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "merged_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "draft": {
+              "type": "boolean"
+            },
+            "merged": {
+              "type": "boolean"
+            },
+            "author": {
+              "type": "object"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -440,34 +1130,109 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "description": { "type": ["string", "null"] },
-          "state": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "merged_at": { "type": ["string", "null"] },
-          "closed_at": { "type": ["string", "null"] },
-          "draft": { "type": "boolean" },
-          "mergeable": { "type": ["boolean", "null"] },
-          "mergeable_state": { "type": ["string", "null"] },
-          "merged": { "type": "boolean" },
-          "author": { "type": "object" },
-          "assignees": { "type": "array" },
-          "requested_reviewers": { "type": "array" },
-          "labels": { "type": "array" },
-          "head": { "type": "object" },
-          "base": { "type": "object" },
-          "url": { "type": "string" }
+          "number": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "merged_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "mergeable": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mergeable_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "merged": {
+            "type": "boolean"
+          },
+          "author": {
+            "type": "object"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "requested_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "head": {
+            "type": "object"
+          },
+          "base": {
+            "type": "object"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -477,36 +1242,196 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "title": { "type": "string", "description": "PR title" },
-          "head": { "type": "string", "description": "Branch with changes" },
-          "base": { "type": "string", "description": "Branch to merge into" },
-          "body": { "type": "string", "description": "PR description" },
-          "draft": { "type": "boolean", "description": "Create as draft", "default": false },
-          "maintainer_can_modify": { "type": "boolean", "description": "Allow maintainer edits", "default": true }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "title": {
+            "type": "string",
+            "description": "PR title"
+          },
+          "head": {
+            "type": "string",
+            "description": "Branch with changes"
+          },
+          "base": {
+            "type": "string",
+            "description": "Branch to merge into"
+          },
+          "body": {
+            "type": "string",
+            "description": "PR description"
+          },
+          "draft": {
+            "type": "boolean",
+            "description": "Create as draft",
+            "default": false
+          },
+          "maintainer_can_modify": {
+            "type": "boolean",
+            "description": "Allow maintainer edits",
+            "default": true
+          }
         },
-        "required": ["owner", "repo", "title", "head", "base"]
+        "required": [
+          "owner",
+          "repo",
+          "title",
+          "head",
+          "base"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "body": { "type": "string" },
-          "state": { "type": "string" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "draft": { "type": "boolean" },
-          "mergeable": { "type": ["boolean", "null"] },
-          "mergeable_state": { "type": ["string", "null"] },
-          "user": { "type": "object" },
-          "assignees": { "type": "array" },
-          "requested_reviewers": { "type": "array" },
-          "labels": { "type": "array" },
-          "head": { "type": "object" },
-          "base": { "type": "object" },
-          "url": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "diff_url": {
+            "type": "string"
+          },
+          "patch_url": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "merged_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "merged": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mergeable": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mergeable_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "merge_commit_sha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user": {
+            "type": "object"
+          },
+          "author_association": {
+            "type": "string"
+          },
+          "assignee": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "requested_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "requested_teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "milestone": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "head": {
+            "type": "object"
+          },
+          "base": {
+            "type": "object"
+          },
+          "comments": {
+            "type": "integer"
+          },
+          "review_comments": {
+            "type": "integer"
+          },
+          "commits": {
+            "type": "integer"
+          },
+          "additions": {
+            "type": "integer"
+          },
+          "deletions": {
+            "type": "integer"
+          },
+          "changed_files": {
+            "type": "integer"
+          }
         }
       }
     },
@@ -516,23 +1441,72 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" },
-          "commit_title": { "type": "string", "description": "Custom merge commit title" },
-          "commit_message": { "type": "string", "description": "Custom merge commit message" },
-          "merge_method": { "type": "string", "enum": ["merge", "squash", "rebase"], "default": "merge" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          },
+          "commit_title": {
+            "type": "string",
+            "description": "Custom merge commit title"
+          },
+          "commit_message": {
+            "type": "string",
+            "description": "Custom merge commit message"
+          },
+          "merge_method": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "squash",
+              "rebase"
+            ],
+            "default": "merge"
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "merged": { "type": "boolean" },
-          "message": { "type": "string" },
-          "sha": { "type": "string" },
-          "commit_title": { "type": "string" },
-          "commit_message": { "type": "string" }
+          "merged": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commit_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commit_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     },
@@ -542,19 +1516,54 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" },
-          "reviewers": { "type": "array", "items": { "type": "string" }, "description": "User logins to request" },
-          "team_reviewers": { "type": "array", "items": { "type": "string" }, "description": "Team slugs to request" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          },
+          "reviewers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "User logins to request"
+          },
+          "team_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Team slugs to request"
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "requested_reviewers": { "type": "array" },
-          "requested_teams": { "type": "array" }
+          "requested_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "requested_teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       }
     },
@@ -564,19 +1573,54 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" },
-          "reviewers": { "type": "array", "items": { "type": "string" }, "description": "User logins to remove" },
-          "team_reviewers": { "type": "array", "items": { "type": "string" }, "description": "Team slugs to remove" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          },
+          "reviewers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "User logins to remove"
+          },
+          "team_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Team slugs to remove"
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "requested_reviewers": { "type": "array" },
-          "requested_teams": { "type": "array" }
+          "requested_reviewers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "requested_teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       }
     },
@@ -586,17 +1630,40 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "users": { "type": "array" },
-          "teams": { "type": "array" }
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       }
     },
@@ -606,24 +1673,104 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "pull_number": { "type": "integer", "description": "Pull request number" },
-          "body": { "type": "string", "description": "Review body" },
-          "event": { "type": "string", "enum": ["APPROVE", "REQUEST_CHANGES", "COMMENT"], "description": "Review action" },
-          "comments": { "type": "array", "description": "Line comments" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "pull_number": {
+            "type": "integer",
+            "description": "Pull request number"
+          },
+          "body": {
+            "type": "string",
+            "description": "Review body"
+          },
+          "event": {
+            "type": "string",
+            "enum": [
+              "APPROVE",
+              "REQUEST_CHANGES",
+              "COMMENT"
+            ],
+            "description": "Review action"
+          },
+          "comments": {
+            "type": "array",
+            "description": "Line comments",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "File path"
+                },
+                "position": {
+                  "type": "integer",
+                  "description": "Diff position (deprecated)"
+                },
+                "line": {
+                  "type": "integer",
+                  "description": "Line number"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "LEFT",
+                    "RIGHT"
+                  ],
+                  "description": "Side of diff"
+                },
+                "body": {
+                  "type": "string",
+                  "description": "Comment text"
+                }
+              }
+            }
+          }
         },
-        "required": ["owner", "repo", "pull_number"]
+        "required": [
+          "owner",
+          "repo",
+          "pull_number"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "body": { "type": "string" },
-          "state": { "type": "string" },
-          "submitted_at": { "type": "string" },
-          "author": { "type": "object" },
-          "url": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "type": "object"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     },
@@ -633,19 +1780,34 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "name": { "type": "string" },
-            "protected": { "type": "boolean" },
-            "commit": { "type": "object" }
+            "name": {
+              "type": "string"
+            },
+            "protected": {
+              "type": "boolean"
+            },
+            "commit": {
+              "type": "object"
+            }
           }
         }
       }
@@ -656,19 +1818,40 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "branch": { "type": "string", "description": "Branch name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name"
+          }
         },
-        "required": ["owner", "repo", "branch"]
+        "required": [
+          "owner",
+          "repo",
+          "branch"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "protected": { "type": "boolean" },
-          "commit": { "type": "object" },
-          "protection": { "type": "object" }
+          "name": {
+            "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "commit": {
+            "type": "object"
+          },
+          "protection": {
+            "type": "object"
+          }
         }
       }
     },
@@ -678,19 +1861,42 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "branch_name": { "type": "string", "description": "New branch name" },
-          "sha": { "type": "string", "description": "SHA to create branch from" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "branch_name": {
+            "type": "string",
+            "description": "New branch name"
+          },
+          "sha": {
+            "type": "string",
+            "description": "SHA to create branch from"
+          }
         },
-        "required": ["owner", "repo", "branch_name", "sha"]
+        "required": [
+          "owner",
+          "repo",
+          "branch_name",
+          "sha"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "ref": { "type": "string" },
-          "url": { "type": "string" },
-          "object": { "type": "object" }
+          "ref": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "object": {
+            "type": "object"
+          }
         }
       }
     },
@@ -700,17 +1906,34 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "branch": { "type": "string", "description": "Branch name to delete" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name to delete"
+          }
         },
-        "required": ["owner", "repo", "branch"]
+        "required": [
+          "owner",
+          "repo",
+          "branch"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "deleted": { "type": "boolean" },
-          "branch": { "type": "string" }
+          "deleted": {
+            "type": "boolean"
+          },
+          "branch": {
+            "type": "string"
+          }
         }
       }
     },
@@ -720,20 +1943,46 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "branch": { "type": "string", "description": "Branch name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name"
+          }
         },
-        "required": ["owner", "repo", "branch"]
+        "required": [
+          "owner",
+          "repo",
+          "branch"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "enabled": { "type": "boolean" },
-          "required_status_checks": { "type": "array" },
-          "enforce_admins": { "type": "boolean" },
-          "required_pull_request_reviews": { "type": "object" },
-          "restrictions": { "type": "object" }
+          "enabled": {
+            "type": "boolean"
+          },
+          "required_status_checks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "enforce_admins": {
+            "type": "boolean"
+          },
+          "required_pull_request_reviews": {
+            "type": "object"
+          },
+          "restrictions": {
+            "type": "object"
+          }
         }
       }
     },
@@ -743,50 +1992,120 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "base_branch": { "type": "string", "description": "Base branch" },
-          "head_branch": { "type": "string", "description": "Head branch" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "base_branch": {
+            "type": "string",
+            "description": "Base branch"
+          },
+          "head_branch": {
+            "type": "string",
+            "description": "Head branch"
+          }
         },
-        "required": ["owner", "repo", "base_branch", "head_branch"]
+        "required": [
+          "owner",
+          "repo",
+          "base_branch",
+          "head_branch"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "status": { "type": "string" },
-          "ahead_by": { "type": "integer" },
-          "behind_by": { "type": "integer" },
-          "total_commits": { "type": "integer" },
-          "commits": { 
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ahead_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "behind_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "total_commits": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "commits": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "sha": { "type": "string" },
-                "author": { 
-                  "type": "object", 
-                  "properties": { 
-                    "name": { "type": ["string", "null"] }, 
-                    "email": { "type": ["string", "null"] }, 
-                    "date": { "type": "string" } 
-                  } 
+                "sha": {
+                  "type": "string"
                 },
-                "message": { "type": "string" },
-                "url": { "type": "string" }
+                "author": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "email": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "date": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "message": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
               }
             }
           },
-          "files": { 
+          "files": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "filename": { "type": "string" },
-                "status": { "type": "string" },
-                "additions": { "type": "integer" },
-                "deletions": { "type": "integer" },
-                "changes": { "type": "integer" },
-                "patch": { "type": ["string", "null"] }
+                "filename": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "additions": {
+                  "type": "integer"
+                },
+                "deletions": {
+                  "type": "integer"
+                },
+                "changes": {
+                  "type": "integer"
+                },
+                "patch": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
               }
             }
           }
@@ -799,27 +2118,79 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "url": { "type": "string", "description": "Webhook URL" },
-          "events": { "type": "array", "items": { "type": "string" }, "description": "Events to trigger webhook" },
-          "content_type": { "type": "string", "enum": ["json", "form"], "default": "json" },
-          "secret": { "type": "string", "description": "Webhook secret" },
-          "active": { "type": "boolean", "default": true }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "url": {
+            "type": "string",
+            "description": "Webhook URL"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Events to trigger webhook"
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "json",
+              "form"
+            ],
+            "default": "json"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Webhook secret"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
         },
-        "required": ["owner", "repo", "url", "events"]
+        "required": [
+          "owner",
+          "repo",
+          "url",
+          "events"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "active": { "type": "boolean" },
-          "events": { "type": "array" },
-          "config": { "type": "object" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "url": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "config": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -829,24 +2200,52 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "active": { "type": "boolean" },
-            "events": { "type": "array" },
-            "config": { "type": "object" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "url": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "config": {
+              "type": "object"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -857,17 +2256,34 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "hook_id": { "type": "integer", "description": "Webhook ID" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "hook_id": {
+            "type": "integer",
+            "description": "Webhook ID"
+          }
         },
-        "required": ["owner", "repo", "hook_id"]
+        "required": [
+          "owner",
+          "repo",
+          "hook_id"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "deleted": { "type": "boolean" },
-          "hook_id": { "type": "integer" }
+          "deleted": {
+            "type": "boolean"
+          },
+          "hook_id": {
+            "type": "integer"
+          }
         }
       }
     },
@@ -877,21 +2293,47 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "path": { "type": "string", "description": "File path" },
-          "ref": { "type": "string", "description": "Branch/commit/tag reference" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Branch/commit/tag reference"
+          }
         },
-        "required": ["owner", "repo", "path"]
+        "required": [
+          "owner",
+          "repo",
+          "path"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "content": { "type": "string" },
-          "sha": { "type": "string" },
-          "size": { "type": "integer" },
-          "name": { "type": "string" },
-          "path": { "type": "string" }
+          "content": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
         }
       }
     },
@@ -901,20 +2343,48 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "path": { "type": "string", "description": "File path" },
-          "message": { "type": "string", "description": "Commit message" },
-          "content": { "type": "string", "description": "File content" },
-          "branch": { "type": "string", "description": "Branch name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message"
+          },
+          "content": {
+            "type": "string",
+            "description": "File content"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name"
+          }
         },
-        "required": ["owner", "repo", "path", "message", "content"]
+        "required": [
+          "owner",
+          "repo",
+          "path",
+          "message",
+          "content"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "content": { "type": "object" },
-          "commit": { "type": "object" }
+          "content": {
+            "type": "object"
+          },
+          "commit": {
+            "type": "object"
+          }
         }
       }
     },
@@ -924,21 +2394,53 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "path": { "type": "string", "description": "File path" },
-          "message": { "type": "string", "description": "Commit message" },
-          "content": { "type": "string", "description": "New file content" },
-          "sha": { "type": "string", "description": "Current file SHA" },
-          "branch": { "type": "string", "description": "Branch name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message"
+          },
+          "content": {
+            "type": "string",
+            "description": "New file content"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Current file SHA"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name"
+          }
         },
-        "required": ["owner", "repo", "path", "message", "content", "sha"]
+        "required": [
+          "owner",
+          "repo",
+          "path",
+          "message",
+          "content",
+          "sha"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "content": { "type": "object" },
-          "commit": { "type": "object" }
+          "content": {
+            "type": "object"
+          },
+          "commit": {
+            "type": "object"
+          }
         }
       }
     },
@@ -948,21 +2450,51 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "path": { "type": "string", "description": "File path" },
-          "message": { "type": "string", "description": "Commit message" },
-          "sha": { "type": "string", "description": "Current file SHA" },
-          "branch": { "type": "string", "description": "Branch name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Current file SHA"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name"
+          }
         },
-        "required": ["owner", "repo", "path", "message", "sha"]
+        "required": [
+          "owner",
+          "repo",
+          "path",
+          "message",
+          "sha"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "deleted": { "type": "boolean" },
-          "path": { "type": "string" },
-          "commit": { "type": "object" }
+          "deleted": {
+            "type": "boolean"
+          },
+          "path": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "object"
+          }
         }
       }
     },
@@ -972,22 +2504,48 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "description": { "type": "string", "description": "Gist description" },
-          "files": { "type": "object", "description": "Files in the gist" },
-          "public": { "type": "boolean", "description": "Make gist public", "default": true }
+          "description": {
+            "type": "string",
+            "description": "Gist description"
+          },
+          "files": {
+            "type": "object",
+            "description": "Files in the gist"
+          },
+          "public": {
+            "type": "boolean",
+            "description": "Make gist public",
+            "default": true
+          }
         },
-        "required": ["files"]
+        "required": [
+          "files"
+        ]
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "description": { "type": "string" },
-          "public": { "type": "boolean" },
-          "files": { "type": "object" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "url": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "files": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -997,28 +2555,81 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "username": { "type": "string", "description": "Username (omit for authenticated user)" }
+          "username": {
+            "type": "string",
+            "description": "Username (omit for authenticated user)"
+          }
         }
       },
       "output_schema": {
         "type": "object",
         "properties": {
-          "login": { "type": "string" },
-          "id": { "type": "integer" },
-          "name": { "type": ["string", "null"] },
-          "company": { "type": ["string", "null"] },
-          "blog": { "type": ["string", "null"] },
-          "location": { "type": ["string", "null"] },
-          "email": { "type": ["string", "null"] },
-          "bio": { "type": ["string", "null"] },
-          "public_repos": { "type": "integer" },
-          "public_gists": { "type": "integer" },
-          "followers": { "type": "integer" },
-          "following": { "type": "integer" },
-          "created_at": { "type": "string" },
-          "updated_at": { "type": "string" },
-          "avatar_url": { "type": "string" },
-          "html_url": { "type": "string" }
+          "login": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blog": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_repos": {
+            "type": "integer"
+          },
+          "public_gists": {
+            "type": "integer"
+          },
+          "followers": {
+            "type": "integer"
+          },
+          "following": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": "string"
+          },
+          "html_url": {
+            "type": "string"
+          }
         }
       }
     },
@@ -1028,22 +2639,47 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "org": { "type": "string", "description": "Organization name" },
-          "role": { "type": "string", "enum": ["all", "admin", "member"], "default": "all" }
+          "org": {
+            "type": "string",
+            "description": "Organization name"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "all",
+              "admin",
+              "member"
+            ],
+            "default": "all"
+          }
         },
-        "required": ["org"]
+        "required": [
+          "org"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "login": { "type": "string" },
-            "id": { "type": "integer" },
-            "type": { "type": "string" },
-            "site_admin": { "type": "boolean" },
-            "avatar_url": { "type": "string" },
-            "url": { "type": "string" }
+            "login": {
+              "type": "string"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "type": {
+              "type": "string"
+            },
+            "site_admin": {
+              "type": "boolean"
+            },
+            "avatar_url": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -1054,23 +2690,46 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
         },
-        "required": ["owner", "repo"]
+        "required": [
+          "owner",
+          "repo"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "path": { "type": "string" },
-            "state": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "url": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -1081,34 +2740,100 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "owner": { "type": "string", "description": "Repository owner" },
-          "repo": { "type": "string", "description": "Repository name" },
-          "workflow_id": { "type": "string", "description": "Workflow ID or filename" },
-          "status": { "type": "string", "enum": ["queued", "in_progress", "completed", "success", "failure", "neutral", "cancelled", "skipped", "timed_out", "action_required"] },
-          "branch": { "type": "string", "description": "Filter by branch" }
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "workflow_id": {
+            "type": "string",
+            "description": "Workflow ID or filename"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed",
+              "success",
+              "failure",
+              "neutral",
+              "cancelled",
+              "skipped",
+              "timed_out",
+              "action_required"
+            ]
+          },
+          "branch": {
+            "type": "string",
+            "description": "Filter by branch"
+          }
         },
-        "required": ["owner", "repo", "workflow_id"]
+        "required": [
+          "owner",
+          "repo",
+          "workflow_id"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "workflow_id": { "type": "integer" },
-            "head_branch": { "type": "string" },
-            "head_sha": { "type": "string" },
-            "run_number": { "type": "integer" },
-            "event": { "type": "string" },
-            "status": { "type": "string" },
-            "conclusion": { "type": ["string", "null"] },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "run_started_at": { "type": ["string", "null"] },
-            "run_attempt": { "type": "integer" },
-            "actor": { "type": "object" },
-            "url": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "workflow_id": {
+              "type": "integer"
+            },
+            "head_branch": {
+              "type": "string"
+            },
+            "head_sha": {
+              "type": "string"
+            },
+            "run_number": {
+              "type": "integer"
+            },
+            "event": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "conclusion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "run_started_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "run_attempt": {
+              "type": "integer"
+            },
+            "actor": {
+              "type": "object"
+            },
+            "url": {
+              "type": "string"
+            }
           }
         }
       }
@@ -1123,9 +2848,15 @@
       "output_schema": {
         "type": "object",
         "properties": {
-          "core": { "type": "object" },
-          "search": { "type": "object" },
-          "graphql": { "type": "object" }
+          "core": {
+            "type": "object"
+          },
+          "search": {
+            "type": "object"
+          },
+          "graphql": {
+            "type": "object"
+          }
         }
       }
     },
@@ -1135,10 +2866,37 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "username": { "type": "string", "description": "Username (omit for authenticated user)" },
-          "type": { "type": "string", "enum": ["all", "owner", "member"], "default": "all" },
-          "sort": { "type": "string", "enum": ["created", "updated", "pushed", "full_name"], "default": "updated" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          "username": {
+            "type": "string",
+            "description": "Username (omit for authenticated user)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "owner",
+              "member"
+            ],
+            "default": "all"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "pushed",
+              "full_name"
+            ],
+            "default": "updated"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          }
         }
       },
       "output_schema": {
@@ -1146,20 +2904,54 @@
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "full_name": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "private": { "type": "boolean" },
-            "fork": { "type": "boolean" },
-            "html_url": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "language": { "type": ["string", "null"] },
-            "stargazers_count": { "type": "integer" },
-            "forks_count": { "type": "integer" },
-            "open_issues_count": { "type": "integer" },
-            "default_branch": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "private": {
+              "type": "boolean"
+            },
+            "fork": {
+              "type": "boolean"
+            },
+            "html_url": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "language": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "stargazers_count": {
+              "type": "integer"
+            },
+            "forks_count": {
+              "type": "integer"
+            },
+            "open_issues_count": {
+              "type": "integer"
+            },
+            "default_branch": {
+              "type": "string"
+            }
           }
         }
       }
@@ -1170,32 +2962,98 @@
       "input_schema": {
         "type": "object",
         "properties": {
-          "org": { "type": "string", "description": "Organization name" },
-          "type": { "type": "string", "enum": ["all", "public", "private", "forks", "sources", "member"], "default": "all" },
-          "sort": { "type": "string", "enum": ["created", "updated", "pushed", "full_name"], "default": "updated" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          "org": {
+            "type": "string",
+            "description": "Organization name"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "public",
+              "private",
+              "forks",
+              "sources",
+              "member"
+            ],
+            "default": "all"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "pushed",
+              "full_name"
+            ],
+            "default": "updated"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          }
         },
-        "required": ["org"]
+        "required": [
+          "org"
+        ]
       },
       "output_schema": {
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "name": { "type": "string" },
-            "full_name": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "private": { "type": "boolean" },
-            "fork": { "type": "boolean" },
-            "html_url": { "type": "string" },
-            "created_at": { "type": "string" },
-            "updated_at": { "type": "string" },
-            "language": { "type": ["string", "null"] },
-            "stargazers_count": { "type": "integer" },
-            "forks_count": { "type": "integer" },
-            "open_issues_count": { "type": "integer" },
-            "default_branch": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "private": {
+              "type": "boolean"
+            },
+            "fork": {
+              "type": "boolean"
+            },
+            "html_url": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string"
+            },
+            "language": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "stargazers_count": {
+              "type": "integer"
+            },
+            "forks_count": {
+              "type": "integer"
+            },
+            "open_issues_count": {
+              "type": "integer"
+            },
+            "default_branch": {
+              "type": "string"
+            }
           }
         }
       }
