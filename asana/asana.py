@@ -768,6 +768,10 @@ class GetUserAction(ActionHandler):
         except Exception as e:
             return ActionResult(
                 data={"user": {}, "result": False, "error": str(e)},
+
+        except Exception as e:
+            return ActionResult(
+                data={"subtask": {}, "result": False, "error": str(e)},
                 cost_usd=0.0
             )
 
