@@ -423,8 +423,82 @@ async def test_create_subtask():
             return None
 
 
+async def test_list_workspaces():
+    """Test listing all workspaces."""
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+    inputs = {}  # No inputs required
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await asana.execute_action("list_workspaces", inputs, context)
+            print(f"List Workspaces Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'workspaces' in result, "Response missing 'workspaces' field"
+            if result.get('workspaces'):
+                print(f"  -> Found {len(result['workspaces'])} workspace(s)")
+                for ws in result['workspaces']:
+                    print(f"     - {ws.get('name')} (GID: {ws.get('gid')})")
+            return result
+        except Exception as e:
+            print(f"Error testing list_workspaces: {e}")
+            return None
+
+
+async def test_get_workspace():
+    """Test getting a specific workspace."""
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+    inputs = {"workspace_gid": "your_workspace_gid_here"}
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await asana.execute_action("get_workspace", inputs, context)
+            print(f"Get Workspace Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'workspace' in result, "Response missing 'workspace' field"
+            return result
+        except Exception as e:
+            print(f"Error testing get_workspace: {e}")
+            return None
+
+
+async def test_get_user():
+    """Test getting current user info."""
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "your_access_token_here"
+        }
+    }
+    inputs = {
+        "user_gid": "me",  # Get current user
+        "opt_fields": ["workspaces", "email", "name"]
+    }
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await asana.execute_action("get_user", inputs, context)
+            print(f"Get User Result: {result}")
+            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
+            assert 'user' in result, "Response missing 'user' field"
+            if result.get('user'):
+                print(f"  -> User: {result['user'].get('name')} ({result['user'].get('email')})")
+                if 'workspaces' in result['user']:
+                    print(f"  -> Workspaces: {len(result['user']['workspaces'])}")
+            return result
+        except Exception as e:
+            print(f"Error testing get_user: {e}")
+            return None
+
+
 async def main():
-    print("Testing Asana Integration - 18 Actions")
+    print("Testing Asana Integration - 21 Actions")
     print("=" * 60)
     print()
     print("NOTE: Replace placeholders with actual values:")
@@ -433,92 +507,132 @@ async def main():
     print("  - your_team_gid_here: Your team GID")
     print("  - project_gid_here, task_gid_here, section_gid_here")
     print()
-    print("To get GIDs:")
-    print("  Workspaces: https://app.asana.com/api/1.0/workspaces")
-    print("  Teams: https://app.asana.com/api/1.0/organizations/{workspace_gid}/teams")
+    print("TIP: Run list_workspaces and get_user tests first to get workspace IDs!")
     print()
     print("=" * 60)
     print()
 
+    # Test workspace and user actions (3) - RUN THESE FIRST!
+    print("WORKSPACE & USER DISCOVERY ACTIONS")
+    print("-" * 60)
+    print("1. Testing list_workspaces (NEW - helps you discover workspace IDs)...")
+    await test_list_workspaces()
+    print()
+
+    print("2. Testing get_workspace (NEW)...")
+    await test_get_workspace()
+    print()
+
+    print("3. Testing get_user (NEW - use 'me' to get your info & workspaces)...")
+    await test_get_user()
+    print()
+
+    print("=" * 60)
+    print()
+    print("PROJECT ACTIONS")
+    print("-" * 60)
+
     # Test project actions (6)
-    print("1. Testing list_projects...")
+    print("4. Testing list_projects...")
     await test_list_projects()
     print()
 
-    print("2. Testing get_project...")
+    print("5. Testing get_project...")
     await test_get_project()
     print()
 
-    print("3. Testing get_project_by_name...")
+    print("6. Testing get_project_by_name...")
     await test_get_project_by_name()
     print()
 
-    print("4. Testing create_project...")
+    print("7. Testing create_project...")
     await test_create_project()
     print()
 
-    print("5. Testing update_project...")
+    print("8. Testing update_project...")
     await test_update_project()
     print()
 
-    print("6. Testing delete_project...")
+    print("9. Testing delete_project...")
     await test_delete_project()
     print()
 
+    print("=" * 60)
+    print()
+    print("TASK ACTIONS")
+    print("-" * 60)
+
     # Test task actions (5)
-    print("7. Testing create_task...")
+    print("10. Testing create_task...")
     await test_create_task()
     print()
 
-    print("8. Testing get_task...")
+    print("11. Testing get_task...")
     await test_get_task()
     print()
 
-    print("9. Testing update_task...")
+    print("12. Testing update_task...")
     await test_update_task()
     print()
 
-    print("10. Testing list_tasks...")
+    print("13. Testing list_tasks...")
     await test_list_tasks()
     print()
 
-    print("11. Testing delete_task...")
+    print("14. Testing delete_task...")
     await test_delete_task()
     print()
 
+    print("=" * 60)
+    print()
+    print("SECTION ACTIONS")
+    print("-" * 60)
+
     # Test section actions (4)
-    print("12. Testing list_sections...")
+    print("15. Testing list_sections...")
     await test_list_sections()
     print()
 
-    print("13. Testing create_section...")
+    print("16. Testing create_section...")
     await test_create_section()
     print()
 
-    print("14. Testing update_section...")
+    print("17. Testing update_section...")
     await test_update_section()
     print()
 
-    print("15. Testing add_task_to_section...")
+    print("18. Testing add_task_to_section...")
     await test_add_task_to_section()
     print()
 
+    print("=" * 60)
+    print()
+    print("COMMENT ACTIONS")
+    print("-" * 60)
+
     # Test comment actions (2)
-    print("16. Testing create_story...")
+    print("19. Testing create_story...")
     await test_create_story()
     print()
 
-    print("17. Testing list_stories...")
+    print("20. Testing list_stories...")
     await test_list_stories()
     print()
 
+    print("=" * 60)
+    print()
+    print("SUBTASK ACTIONS")
+    print("-" * 60)
+
     # Test subtask action (1)
-    print("18. Testing create_subtask...")
+    print("21. Testing create_subtask...")
     await test_create_subtask()
     print()
 
     print("=" * 60)
-    print("Testing completed - 18 actions total!")
+    print("Testing completed - 21 actions total!")
+    print("  - 3 NEW workspace/user discovery actions")
+    print("  - 18 existing actions")
     print("=" * 60)
 
 
