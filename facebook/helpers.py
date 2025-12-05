@@ -30,10 +30,11 @@ def extract_page_id(compound_id: str) -> str:
 
 async def get_page_access_token(context: ExecutionContext, page_id: str) -> str:
     """
-    Retrieve the Page Access Token for a specific page.
+    Retrieve the Page Access Token for a specific Facebook Page ID.
     
-    Facebook requires Page Access Tokens (not User Access Tokens) for 
-    page-specific operations. This helper fetches the token for the given page.
+    This requires the user access token in `context` to include the necessary
+    page permissions (e.g. pages_show_list, pages_read_engagement, 
+    pages_manage_metadata, etc.).
     
     Args:
         context: The execution context with authentication
@@ -43,19 +44,19 @@ async def get_page_access_token(context: ExecutionContext, page_id: str) -> str:
         The page access token string
         
     Raises:
-        Exception: If the page is not found or user lacks permission
+        Exception: If the page is not accessible or user lacks permission
     """
     response = await context.fetch(
-        f"{GRAPH_API_BASE}/me/accounts",
+        f"{GRAPH_API_BASE}/{page_id}",
         method="GET",
-        params={"fields": "id,access_token", "limit": 1000}
+        params={"fields": "access_token"}
     )
-    
-    pages = response.get("data", [])
-    for page in pages:
-        if page["id"] == page_id:
-            return page["access_token"]
-    
-    raise Exception(
-        f"Page '{page_id}' not found. Ensure you have admin access to this page."
-    )
+
+    token = response.get("access_token")
+    if not token:
+        raise Exception(
+            f"Failed to retrieve page access token for Page '{page_id}'. "
+            "Ensure the user has granted required permissions."
+        )
+
+    return token

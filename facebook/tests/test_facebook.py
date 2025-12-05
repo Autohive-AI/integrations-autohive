@@ -44,6 +44,10 @@ class MockExecutionContext:
         if "/me/accounts" in url and method == "GET":
             return self._responses.get("GET /me/accounts", {"data": []})
         
+        # Handle GET /{page_id}?fields=access_token for page token retrieval
+        if method == "GET" and params and params.get("fields") == "access_token":
+            return self._responses.get("GET /page_token", {"access_token": "page_token_123"})
+        
 
         
         if "/feed" in url and method == "POST":
@@ -393,11 +397,9 @@ async def test_create_post_scheduled_invalid_format():
 
 
 async def test_create_post_page_not_found():
-    """Test error when page doesn't exist."""
+    """Test error when page doesn't exist or user lacks permission."""
     responses = {
-        "GET /me/accounts": {
-            "data": [{"id": "123456789", "access_token": "page_token_123"}]
-        }
+        "GET /page_token": {}  # No access_token returned = no permission
     }
     context = MockExecutionContext(responses)
     
@@ -408,7 +410,7 @@ async def test_create_post_page_not_found():
         }, context)
         assert False, "Should have raised exception"
     except Exception as e:
-        assert "not found" in str(e).lower()
+        assert "failed to retrieve" in str(e).lower() or "permission" in str(e).lower()
 
 
 async def test_create_post_photo_missing_url():
