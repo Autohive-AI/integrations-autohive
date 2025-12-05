@@ -1,170 +1,177 @@
 # Facebook Pages Integration
 
-Publish and schedule content to your Facebook Pages with this official Autohive integration. Manage your social media presence through automated posting workflows.
+Complete Facebook Pages management for Autohive. Manage posts, comments, insights, groups, and events from a unified interface.
 
-## What You Can Do
+## Features
 
-- **List Pages**: View all Facebook Pages you manage
-- **Create Posts**: Publish content immediately to your Pages
-- **Schedule Posts**: Plan content for future publication (10 minutes to 30 days ahead)
+| Category | Capabilities |
+|----------|-------------|
+| **Pages** | Discover and list all manageable pages |
+| **Posts** | Create, retrieve, schedule, and delete posts (text, photo, video, link) |
+| **Comments** | Read comments, reply, hide/unhide, delete |
+| **Insights** | Page-level and post-level analytics |
+| **Groups** | List groups and create group posts |
+| **Events** | List, create, and update page events |
 
-## Quick Setup
+## Actions
 
-1. **Install the Integration**: Add the Facebook integration to your Autohive workspace
-2. **Connect Your Account**: Authenticate with Facebook and grant Page management permissions
-3. **Select Your Pages**: Choose which Pages you want to manage
-4. **Start Automating**: Use the actions in your workflows immediately
+### Page Discovery
 
-## Available Actions
+#### `list_pages`
+Discover all Facebook Pages you can manage.
 
-### List Pages
+**Outputs:** Page ID, name, category, follower count
 
-Get all Facebook Pages the authenticated user can manage.
+---
 
-**Parameters:** None
+### Posts
 
-**Returns:**
-- `pages`: Array of Page objects with `id`, `name`, `category`, and `access_token`
+#### `get_posts`
+Retrieve posts from a page. Fetch a single post or list recent posts.
 
-**Example Use Cases:**
-- Display a selection of Pages for users to choose from
-- Verify Page access before running post workflows
-- Get Page IDs for use in other actions
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
+| `post_id` | No | Specific post ID (omit to list all) |
+| `limit` | No | Max posts to return (default: 25) |
 
-### Create Post
+#### `create_post`
+Publish content to a page. Supports multiple media types and scheduling.
 
-Publish a post immediately to a Facebook Page.
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
+| `message` | Yes | Post text content |
+| `media_type` | No | `text`, `photo`, `video`, or `link` (default: text) |
+| `media_url` | No* | URL of media (*required for photo/video/link) |
+| `scheduled_time` | No | ISO 8601 timestamp to schedule post |
 
-**Parameters:**
-- `page_id` (required): The ID of the Facebook Page to post to
-- `message` (required): The text content of the post
-- `link` (optional): URL to include in the post
+#### `delete_post`
+Permanently delete a post. **Cannot be undone.**
 
-**Returns:**
-- `post_id`: The ID of the created post
-- `success`: Boolean indicating success
-- `permalink`: Direct URL to the post on Facebook
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
+| `post_id` | Yes | The post ID to delete |
 
-**Example Use Cases:**
-- Share blog posts automatically when published
-- Post product updates to your business Page
-- Broadcast announcements to followers
+---
 
-### Schedule Post
+### Comments
 
-Schedule a post to be published at a future time.
+#### `get_comments`
+Retrieve comments on a post.
 
-**Parameters:**
-- `page_id` (required): The ID of the Facebook Page to post to
-- `message` (required): The text content of the post
-- `scheduled_time` (required): When to publish (ISO 8601 format or UNIX timestamp)
-- `link` (optional): URL to include in the post
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `post_id` | Yes | The post ID |
+| `limit` | No | Max comments to return (default: 25) |
+| `include_hidden` | No | Include hidden comments (default: false) |
 
-**Returns:**
-- `post_id`: The ID of the scheduled post
-- `success`: Boolean indicating success
-- `scheduled_publish_time`: The scheduled publication time
+#### `manage_comment`
+Interact with comments: reply, hide, or unhide.
 
-**Scheduling Constraints:**
-- Must be at least **10 minutes** in the future
-- Must be within **30 days** from now
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `comment_id` | Yes | The comment ID |
+| `action` | Yes | `reply`, `hide`, or `unhide` |
+| `message` | No* | Reply text (*required for reply action) |
 
-**Example Use Cases:**
-- Plan weekly content calendars
-- Schedule posts for optimal engagement times
-- Coordinate product launch announcements
+#### `delete_comment`
+Permanently delete a comment. **Cannot be undone.**
 
-## Example Workflows
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `comment_id` | Yes | The comment ID to delete |
 
-### Content Publishing Pipeline
-```
-1. New blog post is published on your website
-2. Extract title and URL from blog post
-3. Create Facebook post with blog summary and link
-4. Log post ID for tracking
-```
+---
 
-### Scheduled Content Calendar
-```
-1. Read content schedule from Google Sheets
-2. For each scheduled item:
-   - Get Page ID from list_pages
-   - Schedule post for specified time
-3. Send confirmation to content team
-```
+### Insights
 
-### Multi-Page Broadcasting
-```
-1. Trigger: New product announcement
-2. Get all managed Pages via list_pages
-3. For each Page:
-   - Create post with announcement
-4. Compile results and send report
-```
+#### `get_insights`
+Retrieve analytics for a page or post.
 
-## Authentication Setup
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `target_type` | Yes | `page` or `post` |
+| `target_id` | Yes | The page or post ID |
+| `metrics` | No | Specific metrics to retrieve |
+| `period` | No | `day`, `week`, or `days_28` (page only) |
 
-This integration uses Facebook OAuth:
+**Default Page Metrics:**
+- `page_impressions`, `page_engaged_users`, `page_post_engagements`
+- `page_fans`, `page_fan_adds`, `page_views_total`
 
-1. The integration will redirect you to Facebook for authorization
-2. Grant the following permissions:
-   - `pages_show_list` - View your Pages
-   - `pages_read_engagement` - Read Page content
-   - `pages_manage_posts` - Create and manage posts
-3. You'll be redirected back to Autohive with access granted
+**Default Post Metrics:**
+- `post_impressions`, `post_impressions_unique`, `post_engaged_users`
+- `post_clicks`, `post_reactions_by_type_total`
 
-**Requirements:**
-- You must be an admin or editor of the Pages you want to manage
-- Pages must be published (not unpublished/draft)
+---
 
-## Best Practices
+### Groups
 
-### Content Guidelines
-- Follow Facebook's Community Standards
-- Avoid excessive posting (respect your audience)
-- Include engaging visuals when possible
-- Use appropriate hashtags sparingly
+#### `get_groups`
+List Facebook Groups you can post to.
 
-### Scheduling Tips
-- Schedule posts during peak engagement hours
-- Spread content throughout the day
-- Leave buffer time between scheduled posts
-- Monitor scheduled posts regularly
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `limit` | No | Max groups to return (default: 25) |
 
-### Performance Tips
-- Cache Page IDs to avoid repeated list_pages calls
-- Use meaningful post messages (avoid generic content)
-- Include relevant links to drive traffic
+#### `create_group_post`
+Publish a post to a group.
 
-## Troubleshooting
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `group_id` | Yes | The group ID |
+| `message` | Yes | Post text content |
+| `media_url` | No | Photo URL or link to include |
 
-**Can't see your Pages?**
-- Ensure you have admin or editor access to the Page
-- Check that the Page is published (not in draft mode)
-- Try disconnecting and reconnecting your Facebook account
+---
 
-**Posts not publishing?**
-- Verify the Page ID is correct
-- Check that your access token hasn't expired
-- Ensure the Page isn't restricted or unpublished
+### Events
 
-**Scheduled posts failing?**
-- Confirm the scheduled time is 10+ minutes in the future
-- Ensure the scheduled time is within 30 days
-- Use correct timestamp format (ISO 8601 or UNIX)
+#### `get_events`
+List events for a page.
 
-**Permission errors?**
-- Reconnect your Facebook account
-- Ensure you granted all required permissions
-- Check if Page permissions have changed
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
+| `time_filter` | No | `upcoming`, `past`, or `all` (default: upcoming) |
+| `limit` | No | Max events to return (default: 25) |
 
-## API Reference
+#### `manage_event`
+Create a new event or update an existing one.
 
-This integration uses the Facebook Graph API v21.0:
-- [Pages API Documentation](https://developers.facebook.com/docs/pages-api)
-- [Publishing Posts](https://developers.facebook.com/docs/pages-api/posts)
-- [Permissions Reference](https://developers.facebook.com/docs/permissions/reference)
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
+| `event_id` | No | Event ID to update (omit to create new) |
+| `name` | No* | Event name (*required for new events) |
+| `start_time` | No* | ISO 8601 timestamp (*required for new events) |
+| `end_time` | No | Event end time |
+| `description` | No | Event description |
+| `place` | No | Location name or address |
+| `is_online` | No | Whether this is an online event |
 
-## Support
+---
 
-Need help? Check out the [Autohive Documentation](https://docs.autohive.com) or contact support through your Autohive dashboard.
+## Required Permissions
+
+This integration requires the following Facebook permissions:
+
+| Scope | Purpose |
+|-------|---------|
+| `pages_show_list` | List manageable pages |
+| `pages_read_engagement` | Read page engagement data |
+| `pages_read_user_content` | Read comments |
+| `pages_manage_posts` | Create and delete posts |
+| `pages_manage_engagement` | Reply to and manage comments |
+| `pages_manage_metadata` | Manage events |
+| `read_insights` | Access page and post analytics |
+| `groups_access_member_info` | List groups |
+| `publish_to_groups` | Post to groups |
+
+---
+
+## API Version
+
+This integration uses Facebook Graph API **v21.0**.

@@ -1,147 +1,53 @@
-from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler, ActionResult
-)
-from typing import Dict, Any
+"""
+Facebook Pages Integration for Autohive
+
+This module provides comprehensive Facebook Pages management including:
+- Page discovery and listing
+- Post creation (text, photo, video, links) with scheduling
+- Post retrieval and deletion
+- Comment management (read, reply, hide, delete)
+- Page and post insights/analytics
+
+All actions use the Facebook Graph API v21.0.
+
+Action implementations are organized in the `actions/` subpackage:
+- actions/pages.py: Page discovery
+- actions/posts.py: Post CRUD operations
+- actions/comments.py: Comment management
+- actions/insights.py: Analytics
+"""
+
+from autohive_integrations_sdk import Integration
 import os
 
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 facebook = Integration.load(config_path)
 
-GRAPH_API_VERSION = "v21.0"
-GRAPH_API_BASE = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
-
-
-async def get_page_access_token(context: ExecutionContext, page_id: str) -> str:
-    """
-    Retrieve the Page Access Token for a specific page.
-    
-    When posting to a Facebook Page, we need to use the Page Access Token
-    (not the User Access Token). This function fetches the user's pages
-    and returns the access token for the specified page.
-    """
-    response = await context.fetch(
-        f"{GRAPH_API_BASE}/me/accounts",
-        method="GET",
-        params={"fields": "id,name,access_token"}
+# Re-export helpers for backward compatibility and convenience
+try:
+    from .helpers import (
+        GRAPH_API_VERSION,
+        GRAPH_API_BASE,
+        get_page_access_token,
+        build_post_response,
+        build_comment_response,
     )
-    
-    pages = response.get("data", [])
-    for page in pages:
-        if page["id"] == page_id:
-            return page["access_token"]
-    
-    raise Exception(f"Page with ID '{page_id}' not found or you don't have permission to manage it")
+except ImportError:
+    from helpers import (
+        GRAPH_API_VERSION,
+        GRAPH_API_BASE,
+        get_page_access_token,
+        build_post_response,
+        build_comment_response,
+    )
 
+# Import actions to register them with the integration
+import sys
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
 
-@facebook.action("list_pages")
-class ListPagesAction(ActionHandler):
-    """Get all Facebook Pages the authenticated user can manage."""
-    
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            response = await context.fetch(
-                f"{GRAPH_API_BASE}/me/accounts",
-                method="GET",
-                params={"fields": "id,name,category,access_token"}
-            )
-            
-            pages = []
-            for page in response.get("data", []):
-                pages.append({
-                    "id": page.get("id", ""),
-                    "name": page.get("name", ""),
-                    "category": page.get("category", ""),
-                    "access_token": page.get("access_token", "")
-                })
-            
-            return ActionResult(data={"pages": pages})
-            
-        except Exception as e:
-            raise Exception(f"Failed to list Facebook Pages: {str(e)}")
-
-
-@facebook.action("create_post")
-class CreatePostAction(ActionHandler):
-    """Publish a post immediately to a Facebook Page."""
-    
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        page_id = inputs["page_id"]
-        message = inputs["message"]
-        link = inputs.get("link")
-        
-        try:
-            page_access_token = await get_page_access_token(context, page_id)
-            
-            data = {
-                "message": message,
-                "access_token": page_access_token
-            }
-            
-            if link:
-                data["link"] = link
-            
-            response = await context.fetch(
-                f"{GRAPH_API_BASE}/{page_id}/feed",
-                method="POST",
-                data=data
-            )
-            
-            post_id = response.get("id", "")
-            
-            return ActionResult(data={
-                "post_id": post_id,
-                "success": True,
-                "permalink": f"https://www.facebook.com/{post_id}"
-            })
-            
-        except Exception as e:
-            return ActionResult(data={
-                "post_id": "",
-                "success": False,
-                "error": str(e)
-            })
-
-
-@facebook.action("schedule_post")
-class SchedulePostAction(ActionHandler):
-    """Schedule a post to be published at a future time on a Facebook Page."""
-    
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        page_id = inputs["page_id"]
-        message = inputs["message"]
-        scheduled_time = inputs["scheduled_time"]
-        link = inputs.get("link")
-        
-        try:
-            page_access_token = await get_page_access_token(context, page_id)
-            
-            data = {
-                "message": message,
-                "published": "false",
-                "scheduled_publish_time": scheduled_time,
-                "access_token": page_access_token
-            }
-            
-            if link:
-                data["link"] = link
-            
-            response = await context.fetch(
-                f"{GRAPH_API_BASE}/{page_id}/feed",
-                method="POST",
-                data=data
-            )
-            
-            post_id = response.get("id", "")
-            
-            return ActionResult(data={
-                "post_id": post_id,
-                "success": True,
-                "scheduled_publish_time": scheduled_time
-            })
-            
-        except Exception as e:
-            return ActionResult(data={
-                "post_id": "",
-                "success": False,
-                "error": str(e)
-            })
+try:
+    from . import actions
+except ImportError:
+    import actions
