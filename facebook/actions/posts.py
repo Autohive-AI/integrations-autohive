@@ -5,12 +5,8 @@ Facebook Posts actions - Create, retrieve, and delete posts.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-try:
-    from ..facebook import facebook
-    from ..helpers import GRAPH_API_BASE, get_page_access_token, build_post_response
-except ImportError:
-    from facebook import facebook
-    from helpers import GRAPH_API_BASE, get_page_access_token, build_post_response
+from ..facebook import facebook
+from ..helpers import GRAPH_API_BASE, get_page_access_token, build_post_response, parse_scheduled_time
 
 
 @facebook.action("get_posts")
@@ -69,7 +65,7 @@ class CreatePostAction(ActionHandler):
     - link: Link share with message
     
     Posts can be published immediately or scheduled for future publication.
-    Scheduled posts must be between 10 minutes and 30 days from now.
+    Scheduled posts must be between 10 minutes and 75 days from now.
     """
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -77,9 +73,13 @@ class CreatePostAction(ActionHandler):
         message = inputs["message"]
         media_type = inputs.get("media_type", "text")
         media_url = inputs.get("media_url")
-        scheduled_time = inputs.get("scheduled_time")
+        scheduled_time_input = inputs.get("scheduled_time")
         
         page_token = await get_page_access_token(context, page_id)
+        
+        scheduled_time = None
+        if scheduled_time_input is not None:
+            scheduled_time = parse_scheduled_time(scheduled_time_input)
         
         if media_type in ("photo", "video") and not media_url:
             raise Exception(f"media_url is required for {media_type} posts")

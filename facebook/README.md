@@ -1,6 +1,6 @@
 # Facebook Pages Integration
 
-Complete Facebook Pages management for Autohive. Manage posts, comments, insights, groups, and events from a unified interface.
+Facebook Pages integration for Autohive. Manage posts, comments, and insights from a unified interface.
 
 ## Features
 
@@ -8,10 +8,8 @@ Complete Facebook Pages management for Autohive. Manage posts, comments, insight
 |----------|-------------|
 | **Pages** | Discover and list all manageable pages |
 | **Posts** | Create, retrieve, schedule, and delete posts (text, photo, video, link) |
-| **Comments** | Read comments, reply, hide/unhide, delete |
+| **Comments** | Read comments, reply, hide/unhide, like/unlike, delete |
 | **Insights** | Page-level and post-level analytics |
-| **Groups** | List groups and create group posts |
-| **Events** | List, create, and update page events |
 
 ## Actions
 
@@ -33,7 +31,7 @@ Retrieve posts from a page. Fetch a single post or list recent posts.
 |-----------|----------|-------------|
 | `page_id` | Yes | The Facebook Page ID |
 | `post_id` | No | Specific post ID (omit to list all) |
-| `limit` | No | Max posts to return (default: 25) |
+| `limit` | No | Max posts to return (default: 25, max: 100) |
 
 #### `create_post`
 Publish content to a page. Supports multiple media types and scheduling.
@@ -44,7 +42,7 @@ Publish content to a page. Supports multiple media types and scheduling.
 | `message` | Yes | Post text content |
 | `media_type` | No | `text`, `photo`, `video`, or `link` (default: text) |
 | `media_url` | No* | URL of media (*required for photo/video/link) |
-| `scheduled_time` | No | ISO 8601 timestamp to schedule post |
+| `scheduled_time` | No | Unix timestamp (seconds) or ISO 8601 format. Must be 10 min to 75 days from now. |
 
 #### `delete_post`
 Permanently delete a post. **Cannot be undone.**
@@ -63,17 +61,18 @@ Retrieve comments on a post.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `post_id` | Yes | The post ID |
-| `limit` | No | Max comments to return (default: 25) |
+| `post_id` | Yes | The post ID (format: `PAGEID_POSTID`) |
+| `limit` | No | Max comments to return (default: 25, max: 100) |
 | `include_hidden` | No | Include hidden comments (default: false) |
 
 #### `manage_comment`
-Interact with comments: reply, hide, or unhide.
+Interact with comments: reply, hide/unhide, or like/unlike.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
 | `comment_id` | Yes | The comment ID |
-| `action` | Yes | `reply`, `hide`, or `unhide` |
+| `action` | Yes | `reply`, `hide`, `unhide`, `like`, or `unlike` |
 | `message` | No* | Reply text (*required for reply action) |
 
 #### `delete_comment`
@@ -81,6 +80,7 @@ Permanently delete a comment. **Cannot be undone.**
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
+| `page_id` | Yes | The Facebook Page ID |
 | `comment_id` | Yes | The comment ID to delete |
 
 ---
@@ -94,63 +94,21 @@ Retrieve analytics for a page or post.
 |-----------|----------|-------------|
 | `target_type` | Yes | `page` or `post` |
 | `target_id` | Yes | The page or post ID |
-| `metrics` | No | Specific metrics to retrieve |
-| `period` | No | `day`, `week`, or `days_28` (page only) |
+| `metrics` | No | Specific metrics to retrieve (see defaults below) |
+| `period` | No | `day`, `week`, or `days_28` (page only, default: days_28) |
 
 **Default Page Metrics:**
-- `page_impressions`, `page_engaged_users`, `page_post_engagements`
-- `page_fans`, `page_fan_adds`, `page_views_total`
+- `page_follows` - Total page follows
+- `page_daily_follows_unique` - Daily new follows
+- `page_daily_unfollows_unique` - Daily unfollows
+- `page_post_engagements` - Post engagements
+- `page_video_views` - Video views
+- `page_media_view` - Media views
 
 **Default Post Metrics:**
-- `post_impressions`, `post_impressions_unique`, `post_engaged_users`
-- `post_clicks`, `post_reactions_by_type_total`
-
----
-
-### Groups
-
-#### `get_groups`
-List Facebook Groups you can post to.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `limit` | No | Max groups to return (default: 25) |
-
-#### `create_group_post`
-Publish a post to a group.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `group_id` | Yes | The group ID |
-| `message` | Yes | Post text content |
-| `media_url` | No | Photo URL or link to include |
-
----
-
-### Events
-
-#### `get_events`
-List events for a page.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `page_id` | Yes | The Facebook Page ID |
-| `time_filter` | No | `upcoming`, `past`, or `all` (default: upcoming) |
-| `limit` | No | Max events to return (default: 25) |
-
-#### `manage_event`
-Create a new event or update an existing one.
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `page_id` | Yes | The Facebook Page ID |
-| `event_id` | No | Event ID to update (omit to create new) |
-| `name` | No* | Event name (*required for new events) |
-| `start_time` | No* | ISO 8601 timestamp (*required for new events) |
-| `end_time` | No | Event end time |
-| `description` | No | Event description |
-| `place` | No | Location name or address |
-| `is_online` | No | Whether this is an online event |
+- `post_engaged_users` - Users who engaged with the post
+- `post_clicks` - Clicks on the post
+- `post_reactions_by_type_total` - Reactions breakdown
 
 ---
 
@@ -165,10 +123,8 @@ This integration requires the following Facebook permissions:
 | `pages_read_user_content` | Read comments |
 | `pages_manage_posts` | Create and delete posts |
 | `pages_manage_engagement` | Reply to and manage comments |
-| `pages_manage_metadata` | Manage events |
+| `pages_manage_metadata` | Manage page metadata |
 | `read_insights` | Access page and post analytics |
-| `groups_access_member_info` | List groups |
-| `publish_to_groups` | Post to groups |
 
 ---
 

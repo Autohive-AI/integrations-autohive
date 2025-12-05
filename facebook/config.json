@@ -1,7 +1,7 @@
 {
     "name": "Facebook",
     "version": "0.0.1",
-    "description": "Complete Facebook Pages integration for managing posts, comments, insights, groups, and events",
+    "description": "Facebook Pages integration for managing posts, comments, and insights",
     "entry_point": "facebook.py",
     "auth": {
         "type": "platform",
@@ -129,7 +129,7 @@
                     "post_id": {"type": "string", "description": "ID of the created post"},
                     "permalink_url": {"type": "string", "description": "Direct link to the post"},
                     "is_scheduled": {"type": "boolean", "description": "Whether the post is scheduled"},
-                    "scheduled_time": {"type": "string", "description": "Scheduled publish time if applicable"}
+                    "scheduled_time": {"type": "integer", "description": "Scheduled publish time as Unix timestamp if applicable"}
                 },
                 "required": ["post_id"]
             }

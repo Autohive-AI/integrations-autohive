@@ -5,12 +5,8 @@ Facebook Insights actions - Analytics for pages and posts.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-try:
-    from ..facebook import facebook
-    from ..helpers import GRAPH_API_BASE, get_page_access_token
-except ImportError:
-    from facebook import facebook
-    from helpers import GRAPH_API_BASE, get_page_access_token
+from ..facebook import facebook
+from ..helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
 
 
 @facebook.action("get_insights")
@@ -55,7 +51,7 @@ class GetInsightsAction(ActionHandler):
             page_id = target_id
             metrics = custom_metrics or self.DEFAULT_PAGE_METRICS
         else:
-            page_id = target_id.split("_")[0]
+            page_id = extract_page_id(target_id)
             metrics = custom_metrics or self.DEFAULT_POST_METRICS
         
         page_token = await get_page_access_token(context, page_id)

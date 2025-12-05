@@ -5,12 +5,8 @@ Facebook Comments actions - Read, reply, hide, and delete comments.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-try:
-    from ..facebook import facebook
-    from ..helpers import GRAPH_API_BASE, get_page_access_token, build_comment_response
-except ImportError:
-    from facebook import facebook
-    from helpers import GRAPH_API_BASE, get_page_access_token, build_comment_response
+from ..facebook import facebook
+from ..helpers import GRAPH_API_BASE, get_page_access_token, build_comment_response, extract_page_id
 
 
 @facebook.action("get_comments")
@@ -27,7 +23,7 @@ class GetCommentsAction(ActionHandler):
         limit = min(inputs.get("limit", 25), 100)
         include_hidden = inputs.get("include_hidden", False)
         
-        page_id = post_id.split("_")[0]
+        page_id = extract_page_id(post_id)
         page_token = await get_page_access_token(context, page_id)
         
         fields = "id,message,from,created_time,is_hidden,comment_count"

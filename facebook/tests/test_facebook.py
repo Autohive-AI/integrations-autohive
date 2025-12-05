@@ -6,6 +6,7 @@ without making actual Facebook API calls.
 """
 
 import asyncio
+import time
 from typing import Any, Dict, Optional
 
 from context import facebook
@@ -283,8 +284,9 @@ async def test_create_post_video():
     assert data["post_id"] == "123456789_video123"
 
 
-async def test_create_post_scheduled():
-    """Test scheduling a post for future publication."""
+async def test_create_post_scheduled_unix_timestamp():
+    """Test scheduling a post with Unix timestamp as string."""
+    future_time = int(time.time()) + 3600  # 1 hour from now
     responses = {
         "GET /me/accounts": {
             "data": [{"id": "123456789", "access_token": "page_token_123"}]
@@ -295,13 +297,99 @@ async def test_create_post_scheduled():
     result = await facebook.execute_action("create_post", {
         "page_id": "123456789",
         "message": "This post will be published later!",
-        "scheduled_time": "2024-12-25T10:00:00+00:00"
+        "scheduled_time": str(future_time)
     }, context)
     data = result.result.data
 
     assert data["post_id"] == "123456789_777888999"
     assert data["is_scheduled"] == True
-    assert data["scheduled_time"] == "2024-12-25T10:00:00+00:00"
+    assert data["scheduled_time"] == future_time
+
+
+async def test_create_post_scheduled_iso_format():
+    """Test scheduling a post with ISO 8601 format."""
+    from datetime import datetime, timezone, timedelta
+    future_dt = datetime.now(timezone.utc) + timedelta(hours=2)
+    future_iso = future_dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    
+    responses = {
+        "GET /me/accounts": {
+            "data": [{"id": "123456789", "access_token": "page_token_123"}]
+        },
+        "POST /feed": {"id": "123456789_888999000"}
+    }
+    context = MockExecutionContext(responses)
+    result = await facebook.execute_action("create_post", {
+        "page_id": "123456789",
+        "message": "Scheduled with ISO format!",
+        "scheduled_time": future_iso
+    }, context)
+    data = result.result.data
+
+    assert data["post_id"] == "123456789_888999000"
+    assert data["is_scheduled"] == True
+
+
+async def test_create_post_scheduled_too_soon():
+    """Test error when scheduling less than 10 minutes in future."""
+    too_soon = int(time.time()) + 60  # 1 minute from now
+    responses = {
+        "GET /me/accounts": {
+            "data": [{"id": "123456789", "access_token": "page_token_123"}]
+        }
+    }
+    context = MockExecutionContext(responses)
+    
+    try:
+        await facebook.execute_action("create_post", {
+            "page_id": "123456789",
+            "message": "Too soon!",
+            "scheduled_time": str(too_soon)
+        }, context)
+        assert False, "Should have raised exception"
+    except ValueError as e:
+        assert "at least 10 minutes" in str(e)
+
+
+async def test_create_post_scheduled_too_far():
+    """Test error when scheduling more than 75 days in future."""
+    too_far = int(time.time()) + (76 * 24 * 60 * 60)  # 76 days from now
+    responses = {
+        "GET /me/accounts": {
+            "data": [{"id": "123456789", "access_token": "page_token_123"}]
+        }
+    }
+    context = MockExecutionContext(responses)
+    
+    try:
+        await facebook.execute_action("create_post", {
+            "page_id": "123456789",
+            "message": "Too far in future!",
+            "scheduled_time": str(too_far)
+        }, context)
+        assert False, "Should have raised exception"
+    except ValueError as e:
+        assert "within 75 days" in str(e)
+
+
+async def test_create_post_scheduled_invalid_format():
+    """Test error when scheduled_time has invalid format."""
+    responses = {
+        "GET /me/accounts": {
+            "data": [{"id": "123456789", "access_token": "page_token_123"}]
+        }
+    }
+    context = MockExecutionContext(responses)
+    
+    try:
+        await facebook.execute_action("create_post", {
+            "page_id": "123456789",
+            "message": "Invalid format!",
+            "scheduled_time": "not-a-valid-time"
+        }, context)
+        assert False, "Should have raised exception"
+    except ValueError as e:
+        assert "Invalid scheduled_time format" in str(e)
 
 
 async def test_create_post_page_not_found():
@@ -762,7 +850,11 @@ async def main():
         ("test_create_post_with_link", test_create_post_with_link),
         ("test_create_post_photo", test_create_post_photo),
         ("test_create_post_video", test_create_post_video),
-        ("test_create_post_scheduled", test_create_post_scheduled),
+        ("test_create_post_scheduled_unix_timestamp", test_create_post_scheduled_unix_timestamp),
+        ("test_create_post_scheduled_iso_format", test_create_post_scheduled_iso_format),
+        ("test_create_post_scheduled_too_soon", test_create_post_scheduled_too_soon),
+        ("test_create_post_scheduled_too_far", test_create_post_scheduled_too_far),
+        ("test_create_post_scheduled_invalid_format", test_create_post_scheduled_invalid_format),
         ("test_create_post_page_not_found", test_create_post_page_not_found),
         ("test_create_post_photo_missing_url", test_create_post_photo_missing_url),
         ("test_create_post_video_missing_url", test_create_post_video_missing_url),

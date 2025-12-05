@@ -23,31 +23,4 @@ import os
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 facebook = Integration.load(config_path)
 
-# Re-export helpers for backward compatibility and convenience
-try:
-    from .helpers import (
-        GRAPH_API_VERSION,
-        GRAPH_API_BASE,
-        get_page_access_token,
-        build_post_response,
-        build_comment_response,
-    )
-except ImportError:
-    from helpers import (
-        GRAPH_API_VERSION,
-        GRAPH_API_BASE,
-        get_page_access_token,
-        build_post_response,
-        build_comment_response,
-    )
-
-# Import actions to register them with the integration
-import sys
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
-
-try:
-    from . import actions
-except ImportError:
-    import actions
+from . import actions
