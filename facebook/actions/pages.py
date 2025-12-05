@@ -5,8 +5,12 @@ Facebook Pages actions - Page discovery and listing.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-from ..facebook import facebook
-from ..helpers import GRAPH_API_BASE
+try:
+    from ..facebook import facebook
+    from ..helpers import GRAPH_API_BASE
+except ImportError:
+    from facebook import facebook
+    from helpers import GRAPH_API_BASE
 
 
 @facebook.action("list_pages")

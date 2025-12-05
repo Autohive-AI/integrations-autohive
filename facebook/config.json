@@ -1,6 +1,6 @@
 {
     "name": "Facebook",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "Facebook Pages integration for managing posts, comments, and insights",
     "entry_point": "facebook.py",
     "auth": {

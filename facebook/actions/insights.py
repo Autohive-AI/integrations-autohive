@@ -5,8 +5,12 @@ Facebook Insights actions - Analytics for pages and posts.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-from ..facebook import facebook
-from ..helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
+try:
+    from ..facebook import facebook
+    from ..helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
+except ImportError:
+    from facebook import facebook
+    from helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
 
 
 @facebook.action("get_insights")

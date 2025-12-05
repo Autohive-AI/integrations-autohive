@@ -4,9 +4,106 @@ Facebook Posts actions - Create, retrieve, and delete posts.
 
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
+from datetime import datetime
+import time
 
-from ..facebook import facebook
-from ..helpers import GRAPH_API_BASE, get_page_access_token, build_post_response, parse_scheduled_time
+try:
+    from ..facebook import facebook
+    from ..helpers import GRAPH_API_BASE, get_page_access_token
+except ImportError:
+    from facebook import facebook
+    from helpers import GRAPH_API_BASE, get_page_access_token
+
+
+MIN_SCHEDULE_MINUTES = 10
+MAX_SCHEDULE_DAYS = 75
+
+
+def _parse_scheduled_time(scheduled_time: str | int) -> int:
+    """
+    Parse and validate a scheduled time value.
+    
+    Accepts either:
+    - Unix timestamp (int or string of digits)
+    - ISO 8601 datetime string (e.g., "2024-12-25T10:00:00Z")
+    
+    Validates that the time is between 10 minutes and 75 days from now.
+    """
+    now = int(time.time())
+    min_time = now + (MIN_SCHEDULE_MINUTES * 60)
+    max_time = now + (MAX_SCHEDULE_DAYS * 24 * 60 * 60)
+    
+    timestamp: int
+    
+    if isinstance(scheduled_time, int):
+        timestamp = scheduled_time
+    elif isinstance(scheduled_time, str):
+        if scheduled_time.isdigit():
+            timestamp = int(scheduled_time)
+        else:
+            try:
+                dt = datetime.fromisoformat(scheduled_time.replace('Z', '+00:00'))
+                timestamp = int(dt.timestamp())
+            except ValueError:
+                raise ValueError(
+                    f"Invalid scheduled_time format: '{scheduled_time}'. "
+                    "Use Unix timestamp or ISO 8601 format (e.g., 2024-12-25T10:00:00Z)"
+                )
+    else:
+        raise ValueError(
+            f"scheduled_time must be a string or integer, got {type(scheduled_time).__name__}"
+        )
+    
+    if timestamp < min_time:
+        raise ValueError(
+            f"scheduled_time must be at least {MIN_SCHEDULE_MINUTES} minutes in the future"
+        )
+    
+    if timestamp > max_time:
+        raise ValueError(
+            f"scheduled_time must be within {MAX_SCHEDULE_DAYS} days from now"
+        )
+    
+    return timestamp
+
+
+def _build_post_response(post: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a post object from the Graph API into a consistent response format."""
+    shares = post.get("shares", {})
+    likes = post.get("likes", {}).get("summary", {})
+    comments = post.get("comments", {}).get("summary", {})
+    
+    attachments = post.get("attachments", {}).get("data", [])
+    media_type = "text"
+    media_url = None
+    
+    if attachments:
+        attachment = attachments[0]
+        attach_type = attachment.get("type", "")
+        if "photo" in attach_type:
+            media_type = "photo"
+            media_url = attachment.get("media", {}).get("image", {}).get("src")
+        elif "video" in attach_type:
+            media_type = "video"
+            media_url = (
+                attachment.get("media", {}).get("source")
+                or attachment.get("url")
+            )
+        elif "share" in attach_type or attachment.get("url"):
+            media_type = "link"
+            media_url = attachment.get("url")
+    
+    return {
+        "id": post.get("id", ""),
+        "message": post.get("message", ""),
+        "created_time": post.get("created_time", ""),
+        "permalink_url": post.get("permalink_url", ""),
+        "shares_count": shares.get("count", 0),
+        "likes_count": likes.get("total_count", 0),
+        "comments_count": comments.get("total_count", 0),
+        "media_type": media_type,
+        "media_url": media_url
+    }
 
 
 @facebook.action("get_posts")
@@ -37,7 +134,7 @@ class GetPostsAction(ActionHandler):
                 method="GET",
                 params={"fields": fields, "access_token": page_token}
             )
-            posts = [build_post_response(response)]
+            posts = [_build_post_response(response)]
         else:
             response = await context.fetch(
                 f"{GRAPH_API_BASE}/{page_id}/posts",
@@ -48,7 +145,7 @@ class GetPostsAction(ActionHandler):
                     "access_token": page_token
                 }
             )
-            posts = [build_post_response(p) for p in response.get("data", [])]
+            posts = [_build_post_response(p) for p in response.get("data", [])]
         
         return ActionResult(data={"posts": posts})
 
@@ -79,7 +176,7 @@ class CreatePostAction(ActionHandler):
         
         scheduled_time = None
         if scheduled_time_input is not None:
-            scheduled_time = parse_scheduled_time(scheduled_time_input)
+            scheduled_time = _parse_scheduled_time(scheduled_time_input)
         
         if media_type in ("photo", "video") and not media_url:
             raise Exception(f"media_url is required for {media_type} posts")
