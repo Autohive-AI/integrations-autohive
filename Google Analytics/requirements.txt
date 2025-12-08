@@ -1,4 +1,0 @@
-autohive-integrations-sdk
-google-analytics-data
-google-auth
-google-auth-oauthlib
