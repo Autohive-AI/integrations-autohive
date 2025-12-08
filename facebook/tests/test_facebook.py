@@ -9,7 +9,11 @@ import asyncio
 import time
 from typing import Any, Dict, Optional
 
-from context import facebook
+import pytest
+
+from ..facebook import facebook
+
+pytestmark = pytest.mark.asyncio
 
 
 class MockExecutionContext:
@@ -831,82 +835,3 @@ async def test_get_insights_custom_metrics():
 
     assert data["metrics"]["page_views_total"] == 25000
     assert data["metrics"]["page_fan_adds"] == 150
-
-
-# =============================================================================
-# TEST RUNNER
-# =============================================================================
-
-async def main():
-    tests = [
-        # List Pages
-        ("test_list_pages_success", test_list_pages_success),
-        ("test_list_pages_empty", test_list_pages_empty),
-        
-        # Get Posts
-        ("test_get_posts_list", test_get_posts_list),
-        ("test_get_posts_single", test_get_posts_single),
-        
-        # Create Post
-        ("test_create_post_text", test_create_post_text),
-        ("test_create_post_with_link", test_create_post_with_link),
-        ("test_create_post_photo", test_create_post_photo),
-        ("test_create_post_video", test_create_post_video),
-        ("test_create_post_scheduled_unix_timestamp", test_create_post_scheduled_unix_timestamp),
-        ("test_create_post_scheduled_iso_format", test_create_post_scheduled_iso_format),
-        ("test_create_post_scheduled_too_soon", test_create_post_scheduled_too_soon),
-        ("test_create_post_scheduled_too_far", test_create_post_scheduled_too_far),
-        ("test_create_post_scheduled_invalid_format", test_create_post_scheduled_invalid_format),
-        ("test_create_post_page_not_found", test_create_post_page_not_found),
-        ("test_create_post_photo_missing_url", test_create_post_photo_missing_url),
-        ("test_create_post_video_missing_url", test_create_post_video_missing_url),
-        ("test_create_post_link_missing_url", test_create_post_link_missing_url),
-        
-        # Delete Post
-        ("test_delete_post_success", test_delete_post_success),
-        
-        # Get Comments
-        ("test_get_comments_success", test_get_comments_success),
-        ("test_get_comments_include_hidden", test_get_comments_include_hidden),
-        
-        # Manage Comment
-        ("test_manage_comment_reply", test_manage_comment_reply),
-        ("test_manage_comment_hide", test_manage_comment_hide),
-        ("test_manage_comment_unhide", test_manage_comment_unhide),
-        ("test_manage_comment_like", test_manage_comment_like),
-        ("test_manage_comment_unlike", test_manage_comment_unlike),
-        ("test_manage_comment_reply_missing_message", test_manage_comment_reply_missing_message),
-        ("test_manage_comment_invalid_action", test_manage_comment_invalid_action),
-        
-        # Delete Comment
-        ("test_delete_comment_success", test_delete_comment_success),
-        
-        # Get Insights
-        ("test_get_insights_page", test_get_insights_page),
-        ("test_get_insights_post", test_get_insights_post),
-        ("test_get_insights_custom_metrics", test_get_insights_custom_metrics),
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for name, test_fn in tests:
-        try:
-            await test_fn()
-            print(f"PASS: {name}")
-            passed += 1
-        except Exception as e:
-            print(f"FAIL: {name}: {e}")
-            failed += 1
-    
-    print(f"\n{'='*50}")
-    print(f"Results: {passed} passed, {failed} failed")
-    
-    if failed == 0:
-        print("All tests passed!")
-    else:
-        exit(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
