@@ -63,9 +63,8 @@ class GetInsightsAction(ActionHandler):
         
         if target_type == "page":
             params["period"] = period
-            endpoint = f"{GRAPH_API_BASE}/{target_id}/insights"
-        else:
-            endpoint = f"{GRAPH_API_BASE}/{target_id}/insights"
+        
+        endpoint = f"{GRAPH_API_BASE}/{target_id}/insights"
         
         response = await context.fetch(endpoint, method="GET", params=params)
         

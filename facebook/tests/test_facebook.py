@@ -5,9 +5,8 @@ Tests all 12 actions with mocked API responses to verify correct behavior
 without making actual Facebook API calls.
 """
 
-import asyncio
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytest
 
@@ -24,7 +23,7 @@ class MockExecutionContext:
     pre-configured responses for testing.
     """
     
-    def __init__(self, responses: Dict[str, Any]):
+    def __init__(self, responses: dict[str, Any]):
         self.auth = {}
         self._responses = responses
         self._requests = []
@@ -33,9 +32,9 @@ class MockExecutionContext:
         self,
         url: str,
         method: str = "GET",
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         **kwargs
     ):
         self._requests.append({
