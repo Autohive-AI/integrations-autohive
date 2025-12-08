@@ -1,0 +1,877 @@
+{
+    "name": "Stripe",
+    "display_name": "Stripe",
+    "version": "1.0.0",
+    "description": "Stripe integration for managing customers, invoices, and invoice items via the Stripe API",
+    "entry_point": "stripe.py",
+    "supports_billing": true,
+    "supports_connected_account": false,
+    "auth": {
+        "type": "custom",
+        "title": "Stripe API Credentials",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "Secret API Key",
+                    "help_text": "Your Stripe Secret API Key (starts with sk_live_ or sk_test_)"
+                }
+            }
+        }
+    },
+    "actions": {
+        "list_customers": {
+            "display_name": "List Customers",
+            "description": "Retrieve a paginated list of customers from Stripe.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of customers to return (max: 100)",
+                        "default": 10,
+                        "maximum": 100
+                    },
+                    "starting_after": {
+                        "type": "string",
+                        "description": "Cursor for pagination - customer ID to start after"
+                    },
+                    "ending_before": {
+                        "type": "string",
+                        "description": "Cursor for pagination - customer ID to end before"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Filter by customer email address"
+                    },
+                    "created_gte": {
+                        "type": "integer",
+                        "description": "Filter customers created at or after this Unix timestamp"
+                    },
+                    "created_lte": {
+                        "type": "integer",
+                        "description": "Filter customers created at or before this Unix timestamp"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "customers": {
+                        "type": "array",
+                        "description": "List of customer objects"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether there are more customers to fetch"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "get_customer": {
+            "display_name": "Get Customer",
+            "description": "Retrieve details of a specific customer by their ID.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Stripe customer ID (starts with cus_)"
+                    }
+                },
+                "required": ["customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "type": "object",
+                        "description": "Customer details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "create_customer": {
+            "display_name": "Create Customer",
+            "description": "Create a new customer in Stripe.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "Customer's email address (max 512 characters)"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Customer's full name (max 256 characters)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Arbitrary description for the customer"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Customer's phone number (max 20 characters)"
+                    },
+                    "address": {
+                        "type": "object",
+                        "description": "Customer's address",
+                        "properties": {
+                            "line1": {"type": "string"},
+                            "line2": {"type": "string"},
+                            "city": {"type": "string"},
+                            "state": {"type": "string"},
+                            "postal_code": {"type": "string"},
+                            "country": {"type": "string", "description": "Two-letter ISO country code"}
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "type": "object",
+                        "description": "Created customer details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "update_customer": {
+            "display_name": "Update Customer",
+            "description": "Update an existing customer's information.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Stripe customer ID"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Customer's email address"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Customer's full name"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Arbitrary description for the customer"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Customer's phone number"
+                    },
+                    "address": {
+                        "type": "object",
+                        "description": "Customer's address",
+                        "properties": {
+                            "line1": {"type": "string"},
+                            "line2": {"type": "string"},
+                            "city": {"type": "string"},
+                            "state": {"type": "string"},
+                            "postal_code": {"type": "string"},
+                            "country": {"type": "string"}
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": ["customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "type": "object",
+                        "description": "Updated customer details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "delete_customer": {
+            "display_name": "Delete Customer",
+            "description": "Permanently delete a customer from Stripe.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Stripe customer ID to delete"
+                    }
+                },
+                "required": ["customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The deleted customer ID"
+                    },
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "Whether the customer was deleted"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "list_invoices": {
+            "display_name": "List Invoices",
+            "description": "Retrieve a paginated list of invoices from Stripe.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of invoices to return (max: 100)",
+                        "default": 10,
+                        "maximum": 100
+                    },
+                    "starting_after": {
+                        "type": "string",
+                        "description": "Cursor for pagination - invoice ID to start after"
+                    },
+                    "ending_before": {
+                        "type": "string",
+                        "description": "Cursor for pagination - invoice ID to end before"
+                    },
+                    "customer": {
+                        "type": "string",
+                        "description": "Filter by customer ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter by status: draft, open, paid, uncollectible, or void",
+                        "enum": ["draft", "open", "paid", "uncollectible", "void"]
+                    },
+                    "created_gte": {
+                        "type": "integer",
+                        "description": "Filter invoices created at or after this Unix timestamp"
+                    },
+                    "created_lte": {
+                        "type": "integer",
+                        "description": "Filter invoices created at or before this Unix timestamp"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoices": {
+                        "type": "array",
+                        "description": "List of invoice objects"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether there are more invoices to fetch"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "get_invoice": {
+            "display_name": "Get Invoice",
+            "description": "Retrieve details of a specific invoice by its ID.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID (starts with in_)"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "create_invoice": {
+            "display_name": "Create Invoice",
+            "description": "Create a new draft invoice in Stripe.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "type": "string",
+                        "description": "The Stripe customer ID to invoice"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "Three-letter ISO currency code (e.g., 'nzd', 'usd')",
+                        "default": "nzd"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Invoice memo/description shown to customer"
+                    },
+                    "auto_advance": {
+                        "type": "boolean",
+                        "description": "Whether to auto-finalize the invoice (false keeps as draft)",
+                        "default": false
+                    },
+                    "collection_method": {
+                        "type": "string",
+                        "description": "How to collect payment: charge_automatically or send_invoice",
+                        "enum": ["charge_automatically", "send_invoice"],
+                        "default": "send_invoice"
+                    },
+                    "days_until_due": {
+                        "type": "integer",
+                        "description": "Number of days until invoice is due (for send_invoice method)"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": ["customer"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Created invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "update_invoice": {
+            "display_name": "Update Invoice",
+            "description": "Update a draft invoice's details.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Invoice memo/description"
+                    },
+                    "auto_advance": {
+                        "type": "boolean",
+                        "description": "Whether to auto-finalize the invoice"
+                    },
+                    "collection_method": {
+                        "type": "string",
+                        "description": "How to collect payment",
+                        "enum": ["charge_automatically", "send_invoice"]
+                    },
+                    "days_until_due": {
+                        "type": "integer",
+                        "description": "Number of days until invoice is due"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Updated invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "delete_invoice": {
+            "display_name": "Delete Invoice",
+            "description": "Permanently delete a draft invoice.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID to delete (must be draft)"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The deleted invoice ID"
+                    },
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "Whether the invoice was deleted"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "finalize_invoice": {
+            "display_name": "Finalize Invoice",
+            "description": "Finalize a draft invoice, making it ready for payment.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID to finalize"
+                    },
+                    "auto_advance": {
+                        "type": "boolean",
+                        "description": "Whether to auto-advance after finalizing"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Finalized invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "send_invoice": {
+            "display_name": "Send Invoice",
+            "description": "Send a finalized invoice to the customer via email.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID to send"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Sent invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "pay_invoice": {
+            "display_name": "Pay Invoice",
+            "description": "Pay an open invoice using the customer's default payment method.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID to pay"
+                    },
+                    "payment_method": {
+                        "type": "string",
+                        "description": "Specific payment method ID to use (optional)"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Paid invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "void_invoice": {
+            "display_name": "Void Invoice",
+            "description": "Void an open invoice, marking it as uncollectible.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice ID to void"
+                    }
+                },
+                "required": ["invoice_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice": {
+                        "type": "object",
+                        "description": "Voided invoice details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "list_invoice_items": {
+            "display_name": "List Invoice Items",
+            "description": "Retrieve a paginated list of invoice items.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of items to return (max: 100)",
+                        "default": 10,
+                        "maximum": 100
+                    },
+                    "starting_after": {
+                        "type": "string",
+                        "description": "Cursor for pagination - item ID to start after"
+                    },
+                    "ending_before": {
+                        "type": "string",
+                        "description": "Cursor for pagination - item ID to end before"
+                    },
+                    "customer": {
+                        "type": "string",
+                        "description": "Filter by customer ID"
+                    },
+                    "invoice": {
+                        "type": "string",
+                        "description": "Filter by invoice ID"
+                    },
+                    "pending": {
+                        "type": "boolean",
+                        "description": "Filter for pending items not yet attached to an invoice"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_items": {
+                        "type": "array",
+                        "description": "List of invoice item objects"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether there are more items to fetch"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "get_invoice_item": {
+            "display_name": "Get Invoice Item",
+            "description": "Retrieve details of a specific invoice item by its ID.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice item ID (starts with ii_)"
+                    }
+                },
+                "required": ["invoice_item_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item": {
+                        "type": "object",
+                        "description": "Invoice item details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "create_invoice_item": {
+            "display_name": "Create Invoice Item",
+            "description": "Create a new invoice item and optionally attach to a draft invoice.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "type": "string",
+                        "description": "The Stripe customer ID"
+                    },
+                    "invoice": {
+                        "type": "string",
+                        "description": "Invoice ID to attach item to (must be draft)"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "description": "Amount in cents (e.g., 1000 = $10.00)"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "Three-letter ISO currency code",
+                        "default": "nzd"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the invoice item"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "description": "Quantity of units",
+                        "default": 1
+                    },
+                    "unit_amount": {
+                        "type": "integer",
+                        "description": "Unit price in cents (alternative to amount)"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": ["customer"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item": {
+                        "type": "object",
+                        "description": "Created invoice item details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "update_invoice_item": {
+            "display_name": "Update Invoice Item",
+            "description": "Update an existing invoice item.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice item ID"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "description": "Amount in cents"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the invoice item"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "description": "Quantity of units"
+                    },
+                    "unit_amount": {
+                        "type": "integer",
+                        "description": "Unit price in cents"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Key-value pairs for storing additional information"
+                    }
+                },
+                "required": ["invoice_item_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item": {
+                        "type": "object",
+                        "description": "Updated invoice item details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        },
+        "delete_invoice_item": {
+            "display_name": "Delete Invoice Item",
+            "description": "Delete an invoice item that hasn't been attached to an invoice.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "invoice_item_id": {
+                        "type": "string",
+                        "description": "The Stripe invoice item ID to delete"
+                    }
+                },
+                "required": ["invoice_item_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The deleted invoice item ID"
+                    },
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "Whether the item was deleted"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                }
+            }
+        }
+    }
+}
