@@ -128,6 +128,35 @@ This integration requires the following Facebook permissions:
 
 ---
 
+## Project Structure
+
+This integration uses a multi-file structure for maintainability:
+
+```
+facebook/
+├── facebook.py          # Entry point, loads Integration
+├── config.json          # Integration configuration
+├── helpers.py           # Shared utilities (API base URL, token helpers)
+├── conftest.py          # Pytest configuration for imports
+├── actions/
+│   ├── __init__.py      # Imports all action submodules
+│   ├── pages.py         # Page discovery actions
+│   ├── posts.py         # Post CRUD actions
+│   ├── comments.py      # Comment management actions
+│   └── insights.py      # Analytics actions
+└── tests/
+    └── test_facebook.py # Comprehensive test suite
+```
+
+## Running Tests
+
+```bash
+cd facebook
+pytest tests/ -v
+```
+
+---
+
 ## API Version
 
 This integration uses Facebook Graph API **v21.0**.
