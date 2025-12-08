@@ -5,8 +5,8 @@ from autohive_integrations_sdk import (
 from typing import Dict, Any
 import base64
 
-
-stripe_integration = Integration.load()
+# Load integration from config.json
+stripe = Integration.load()
 
 # Base URL for Stripe API
 STRIPE_API_BASE_URL = "https://api.stripe.com"
