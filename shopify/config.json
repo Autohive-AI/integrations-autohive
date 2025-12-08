@@ -1,0 +1,1041 @@
+{
+    "name": "Shopify",
+    "display_name": "Shopify",
+    "version": "1.0.0",
+    "description": "Shopify e-commerce integration for managing customers, orders, products, and inventory",
+    "entry_point": "shopify.py",
+    "auth": {
+        "type": "platform",
+        "provider": "Shopify",
+        "scopes": [
+            "read_customers",
+            "write_customers",
+            "read_orders",
+            "write_orders",
+            "read_products",
+            "write_products",
+            "read_inventory",
+            "write_inventory"
+        ]
+    },
+    "actions": {
+        "list_customers": {
+            "display_name": "List Customers",
+            "description": "Retrieve a list of customers from the Shopify store with optional filtering and pagination",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of customers to return (max 250)",
+                        "label": "Limit",
+                        "default": 50
+                    },
+                    "since_id": {
+                        "type": "string",
+                        "description": "Restrict results to after the specified ID",
+                        "label": "Since ID"
+                    },
+                    "created_at_min": {
+                        "type": "string",
+                        "description": "Show customers created after this date (ISO 8601 format)",
+                        "label": "Created After"
+                    },
+                    "created_at_max": {
+                        "type": "string",
+                        "description": "Show customers created before this date (ISO 8601 format)",
+                        "label": "Created Before"
+                    },
+                    "updated_at_min": {
+                        "type": "string",
+                        "description": "Show customers updated after this date (ISO 8601 format)",
+                        "label": "Updated After"
+                    },
+                    "updated_at_max": {
+                        "type": "string",
+                        "description": "Show customers updated before this date (ISO 8601 format)",
+                        "label": "Updated Before"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "customers": {
+                        "type": "array",
+                        "description": "List of customers"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of customers returned"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "get_customer": {
+            "display_name": "Get Customer",
+            "description": "Retrieve a single customer by their ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the customer",
+                        "label": "Customer ID"
+                    }
+                },
+                "required": ["customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "customer": {
+                        "type": "object",
+                        "description": "Customer details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "search_customers": {
+            "display_name": "Search Customers",
+            "description": "Search for customers by query string (searches across email, first name, last name, etc.)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query (e.g., email, name, phone)",
+                        "label": "Search Query"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (max 250)",
+                        "label": "Limit",
+                        "default": 50
+                    }
+                },
+                "required": ["query"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "customers": {
+                        "type": "array",
+                        "description": "List of matching customers"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of customers found"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "create_customer": {
+            "display_name": "Create Customer",
+            "description": "Create a new customer in the Shopify store",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer's email address",
+                        "label": "Email"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "description": "Customer's first name",
+                        "label": "First Name"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Customer's last name",
+                        "label": "Last Name"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Customer's phone number",
+                        "label": "Phone"
+                    },
+                    "verified_email": {
+                        "type": "boolean",
+                        "description": "Whether the email is verified",
+                        "label": "Email Verified",
+                        "default": true
+                    },
+                    "send_email_welcome": {
+                        "type": "boolean",
+                        "description": "Send welcome email to customer",
+                        "label": "Send Welcome Email",
+                        "default": false
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Comma-separated list of tags for the customer",
+                        "label": "Tags"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "A note about the customer",
+                        "label": "Note"
+                    },
+                    "tax_exempt": {
+                        "type": "boolean",
+                        "description": "Whether the customer is tax exempt",
+                        "label": "Tax Exempt",
+                        "default": false
+                    },
+                    "address": {
+                        "type": "object",
+                        "description": "Customer's default address",
+                        "label": "Address",
+                        "properties": {
+                            "address1": {
+                                "type": "string",
+                                "description": "Street address"
+                            },
+                            "address2": {
+                                "type": "string",
+                                "description": "Additional address info"
+                            },
+                            "city": {
+                                "type": "string",
+                                "description": "City"
+                            },
+                            "province": {
+                                "type": "string",
+                                "description": "Province/State"
+                            },
+                            "country": {
+                                "type": "string",
+                                "description": "Country"
+                            },
+                            "zip": {
+                                "type": "string",
+                                "description": "Postal/ZIP code"
+                            },
+                            "phone": {
+                                "type": "string",
+                                "description": "Phone number for this address"
+                            }
+                        }
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "customer": {
+                        "type": "object",
+                        "description": "Created customer details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "update_customer": {
+            "display_name": "Update Customer",
+            "description": "Update an existing customer's information",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the customer to update",
+                        "label": "Customer ID"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer's email address",
+                        "label": "Email"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "description": "Customer's first name",
+                        "label": "First Name"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Customer's last name",
+                        "label": "Last Name"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Customer's phone number",
+                        "label": "Phone"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Comma-separated list of tags for the customer",
+                        "label": "Tags"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "A note about the customer",
+                        "label": "Note"
+                    },
+                    "tax_exempt": {
+                        "type": "boolean",
+                        "description": "Whether the customer is tax exempt",
+                        "label": "Tax Exempt"
+                    }
+                },
+                "required": ["customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "customer": {
+                        "type": "object",
+                        "description": "Updated customer details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "list_orders": {
+            "display_name": "List Orders",
+            "description": "Retrieve a list of orders from the Shopify store with optional filtering",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of orders to return (max 250)",
+                        "label": "Limit",
+                        "default": 50
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter orders by status",
+                        "label": "Status",
+                        "enum": ["open", "closed", "cancelled", "any"],
+                        "default": "any"
+                    },
+                    "financial_status": {
+                        "type": "string",
+                        "description": "Filter by financial status",
+                        "label": "Financial Status",
+                        "enum": ["authorized", "pending", "paid", "partially_paid", "refunded", "voided", "partially_refunded", "any"]
+                    },
+                    "fulfillment_status": {
+                        "type": "string",
+                        "description": "Filter by fulfillment status",
+                        "label": "Fulfillment Status",
+                        "enum": ["shipped", "partial", "unshipped", "unfulfilled", "any"]
+                    },
+                    "since_id": {
+                        "type": "string",
+                        "description": "Restrict results to after the specified ID",
+                        "label": "Since ID"
+                    },
+                    "created_at_min": {
+                        "type": "string",
+                        "description": "Show orders created after this date (ISO 8601 format)",
+                        "label": "Created After"
+                    },
+                    "created_at_max": {
+                        "type": "string",
+                        "description": "Show orders created before this date (ISO 8601 format)",
+                        "label": "Created Before"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "orders": {
+                        "type": "array",
+                        "description": "List of orders"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of orders returned"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "get_order": {
+            "display_name": "Get Order",
+            "description": "Retrieve a single order by its ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the order",
+                        "label": "Order ID"
+                    }
+                },
+                "required": ["order_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "order": {
+                        "type": "object",
+                        "description": "Order details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "create_order": {
+            "display_name": "Create Order",
+            "description": "Create a new order in the Shopify store (no payment processed)",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "line_items": {
+                        "type": "array",
+                        "description": "List of line items for the order",
+                        "label": "Line Items",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "variant_id": {
+                                    "type": "string",
+                                    "description": "Product variant ID"
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "description": "Quantity to order"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Title (for custom line items)"
+                                },
+                                "price": {
+                                    "type": "string",
+                                    "description": "Price (for custom line items)"
+                                }
+                            }
+                        }
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "Customer ID to associate with this order",
+                        "label": "Customer ID"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer email (if not using customer_id)",
+                        "label": "Email"
+                    },
+                    "financial_status": {
+                        "type": "string",
+                        "description": "Financial status of the order",
+                        "label": "Financial Status",
+                        "enum": ["pending", "authorized", "partially_paid", "paid", "partially_refunded", "refunded", "voided"],
+                        "default": "pending"
+                    },
+                    "fulfillment_status": {
+                        "type": "string",
+                        "description": "Fulfillment status of the order",
+                        "label": "Fulfillment Status",
+                        "enum": ["fulfilled", "partial", "null"]
+                    },
+                    "send_receipt": {
+                        "type": "boolean",
+                        "description": "Send order confirmation email",
+                        "label": "Send Receipt",
+                        "default": false
+                    },
+                    "send_fulfillment_receipt": {
+                        "type": "boolean",
+                        "description": "Send fulfillment email",
+                        "label": "Send Fulfillment Receipt",
+                        "default": false
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "A note about the order",
+                        "label": "Note"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Comma-separated list of tags",
+                        "label": "Tags"
+                    },
+                    "shipping_address": {
+                        "type": "object",
+                        "description": "Shipping address for the order",
+                        "label": "Shipping Address",
+                        "properties": {
+                            "first_name": {"type": "string"},
+                            "last_name": {"type": "string"},
+                            "address1": {"type": "string"},
+                            "address2": {"type": "string"},
+                            "city": {"type": "string"},
+                            "province": {"type": "string"},
+                            "country": {"type": "string"},
+                            "zip": {"type": "string"},
+                            "phone": {"type": "string"}
+                        }
+                    },
+                    "billing_address": {
+                        "type": "object",
+                        "description": "Billing address for the order",
+                        "label": "Billing Address",
+                        "properties": {
+                            "first_name": {"type": "string"},
+                            "last_name": {"type": "string"},
+                            "address1": {"type": "string"},
+                            "address2": {"type": "string"},
+                            "city": {"type": "string"},
+                            "province": {"type": "string"},
+                            "country": {"type": "string"},
+                            "zip": {"type": "string"},
+                            "phone": {"type": "string"}
+                        }
+                    }
+                },
+                "required": ["line_items"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "order": {
+                        "type": "object",
+                        "description": "Created order details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "cancel_order": {
+            "display_name": "Cancel Order",
+            "description": "Cancel an existing order",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the order to cancel",
+                        "label": "Order ID"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Reason for cancellation",
+                        "label": "Reason",
+                        "enum": ["customer", "fraud", "inventory", "declined", "other"]
+                    },
+                    "email": {
+                        "type": "boolean",
+                        "description": "Send cancellation email to customer",
+                        "label": "Send Email",
+                        "default": true
+                    },
+                    "restock": {
+                        "type": "boolean",
+                        "description": "Restock inventory items",
+                        "label": "Restock Items",
+                        "default": true
+                    }
+                },
+                "required": ["order_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "order": {
+                        "type": "object",
+                        "description": "Cancelled order details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "list_products": {
+            "display_name": "List Products",
+            "description": "Retrieve a list of products from the Shopify store",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of products to return (max 250)",
+                        "label": "Limit",
+                        "default": 50
+                    },
+                    "since_id": {
+                        "type": "string",
+                        "description": "Restrict results to after the specified ID",
+                        "label": "Since ID"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Filter by product title",
+                        "label": "Title"
+                    },
+                    "vendor": {
+                        "type": "string",
+                        "description": "Filter by vendor name",
+                        "label": "Vendor"
+                    },
+                    "product_type": {
+                        "type": "string",
+                        "description": "Filter by product type",
+                        "label": "Product Type"
+                    },
+                    "collection_id": {
+                        "type": "string",
+                        "description": "Filter by collection ID",
+                        "label": "Collection ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter by product status",
+                        "label": "Status",
+                        "enum": ["active", "archived", "draft"]
+                    },
+                    "created_at_min": {
+                        "type": "string",
+                        "description": "Show products created after this date (ISO 8601 format)",
+                        "label": "Created After"
+                    },
+                    "created_at_max": {
+                        "type": "string",
+                        "description": "Show products created before this date (ISO 8601 format)",
+                        "label": "Created Before"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "products": {
+                        "type": "array",
+                        "description": "List of products"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of products returned"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "get_product": {
+            "display_name": "Get Product",
+            "description": "Retrieve a single product by its ID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "product_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the product",
+                        "label": "Product ID"
+                    }
+                },
+                "required": ["product_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "product": {
+                        "type": "object",
+                        "description": "Product details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "create_product": {
+            "display_name": "Create Product",
+            "description": "Create a new product in the Shopify store",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Product title",
+                        "label": "Title"
+                    },
+                    "body_html": {
+                        "type": "string",
+                        "description": "Product description in HTML format",
+                        "label": "Description (HTML)"
+                    },
+                    "vendor": {
+                        "type": "string",
+                        "description": "Vendor name",
+                        "label": "Vendor"
+                    },
+                    "product_type": {
+                        "type": "string",
+                        "description": "Product type/category",
+                        "label": "Product Type"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Comma-separated list of tags",
+                        "label": "Tags"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Product status",
+                        "label": "Status",
+                        "enum": ["active", "archived", "draft"],
+                        "default": "draft"
+                    },
+                    "variants": {
+                        "type": "array",
+                        "description": "Product variants with pricing and inventory",
+                        "label": "Variants",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "Variant title"
+                                },
+                                "price": {
+                                    "type": "string",
+                                    "description": "Variant price"
+                                },
+                                "sku": {
+                                    "type": "string",
+                                    "description": "Stock keeping unit"
+                                },
+                                "inventory_quantity": {
+                                    "type": "integer",
+                                    "description": "Initial inventory quantity"
+                                },
+                                "weight": {
+                                    "type": "number",
+                                    "description": "Weight of the variant"
+                                },
+                                "weight_unit": {
+                                    "type": "string",
+                                    "description": "Unit of weight (g, kg, oz, lb)"
+                                },
+                                "option1": {
+                                    "type": "string",
+                                    "description": "First option value (e.g., size)"
+                                },
+                                "option2": {
+                                    "type": "string",
+                                    "description": "Second option value (e.g., color)"
+                                },
+                                "option3": {
+                                    "type": "string",
+                                    "description": "Third option value"
+                                }
+                            }
+                        }
+                    },
+                    "options": {
+                        "type": "array",
+                        "description": "Product options (e.g., Size, Color)",
+                        "label": "Options",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Option name"
+                                },
+                                "values": {
+                                    "type": "array",
+                                    "description": "Option values",
+                                    "items": {"type": "string"}
+                                }
+                            }
+                        }
+                    },
+                    "images": {
+                        "type": "array",
+                        "description": "Product images",
+                        "label": "Images",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "src": {
+                                    "type": "string",
+                                    "description": "Image URL"
+                                },
+                                "alt": {
+                                    "type": "string",
+                                    "description": "Alt text for the image"
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": ["title"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "product": {
+                        "type": "object",
+                        "description": "Created product details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "update_product": {
+            "display_name": "Update Product",
+            "description": "Update an existing product's information",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "product_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the product to update",
+                        "label": "Product ID"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Product title",
+                        "label": "Title"
+                    },
+                    "body_html": {
+                        "type": "string",
+                        "description": "Product description in HTML format",
+                        "label": "Description (HTML)"
+                    },
+                    "vendor": {
+                        "type": "string",
+                        "description": "Vendor name",
+                        "label": "Vendor"
+                    },
+                    "product_type": {
+                        "type": "string",
+                        "description": "Product type/category",
+                        "label": "Product Type"
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "Comma-separated list of tags",
+                        "label": "Tags"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Product status",
+                        "label": "Status",
+                        "enum": ["active", "archived", "draft"]
+                    }
+                },
+                "required": ["product_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "product": {
+                        "type": "object",
+                        "description": "Updated product details"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "get_inventory_levels": {
+            "display_name": "Get Inventory Levels",
+            "description": "Retrieve inventory levels for items at locations",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inventory_item_ids": {
+                        "type": "string",
+                        "description": "Comma-separated list of inventory item IDs",
+                        "label": "Inventory Item IDs"
+                    },
+                    "location_ids": {
+                        "type": "string",
+                        "description": "Comma-separated list of location IDs",
+                        "label": "Location IDs"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (max 250)",
+                        "label": "Limit",
+                        "default": 50
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "inventory_levels": {
+                        "type": "array",
+                        "description": "List of inventory levels"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of inventory levels returned"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        },
+        "set_inventory_level": {
+            "display_name": "Set Inventory Level",
+            "description": "Set the inventory level for an item at a location",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "inventory_item_id": {
+                        "type": "string",
+                        "description": "The ID of the inventory item",
+                        "label": "Inventory Item ID"
+                    },
+                    "location_id": {
+                        "type": "string",
+                        "description": "The ID of the location",
+                        "label": "Location ID"
+                    },
+                    "available": {
+                        "type": "integer",
+                        "description": "The quantity to set as available",
+                        "label": "Available Quantity"
+                    }
+                },
+                "required": ["inventory_item_id", "location_id", "available"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the request was successful"
+                    },
+                    "inventory_level": {
+                        "type": "object",
+                        "description": "Updated inventory level"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message if success is false"
+                    }
+                },
+                "required": ["success"]
+            }
+        }
+    }
+}
