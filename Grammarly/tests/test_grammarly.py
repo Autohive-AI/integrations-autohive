@@ -16,7 +16,7 @@ engagement, correctness, delivery, and clarity metrics.
 """
 
 async def test_writing_score_workflow():
-    """Test complete writing score workflow: create request, upload, get results."""
+    """Test complete writing score workflow: submit document and get results."""
     print("=== TESTING WRITING SCORE API WORKFLOW ===")
 
     auth = {
@@ -28,42 +28,25 @@ async def test_writing_score_workflow():
     }
 
     try:
-        # Step 1: Create writing score request
-        print("1. Creating writing score request...")
-        create_inputs = {
-            "filename": "test_document.txt"
-        }
-
-        async with ExecutionContext(auth=auth) as context:
-            create_result = await grammarly.execute_action("create_writing_score_request", create_inputs, context)
-
-            if create_result.get('result'):
-                score_request_id = create_result.get('score_request_id')
-                upload_url = create_result.get('file_upload_url')
-                print(f"   ✓ Request created (ID: {score_request_id})")
-                print(f"   Upload URL obtained (valid for 120 seconds)")
-            else:
-                print(f"   ✗ Failed to create request: {create_result.get('error')}")
-                return
-
-        # Step 2: Upload document
-        print("2. Uploading document...")
-        upload_inputs = {
-            "upload_url": upload_url,
+        # Step 1: Submit document for analysis
+        print("1. Submitting document for writing score analysis...")
+        analyze_inputs = {
+            "filename": "test_document.txt",
             "file_content": SAMPLE_TEXT
         }
 
         async with ExecutionContext(auth=auth) as context:
-            upload_result = await grammarly.execute_action("upload_document_for_writing_score", upload_inputs, context)
+            analyze_result = await grammarly.execute_action("analyze_writing_score", analyze_inputs, context)
 
-            if upload_result.get('result'):
-                print(f"   ✓ Document uploaded successfully")
+            if analyze_result.get('result'):
+                score_request_id = analyze_result.get('score_request_id')
+                print(f"   ✓ Document submitted successfully (ID: {score_request_id})")
             else:
-                print(f"   ✗ Failed to upload: {upload_result.get('error')}")
+                print(f"   ✗ Failed to submit document: {analyze_result.get('error')}")
                 return
 
-        # Step 3: Get results (may need to wait for processing)
-        print("3. Retrieving writing score results...")
+        # Step 2: Get results (may need to wait for processing)
+        print("2. Retrieving writing score results...")
         print("   (Note: Processing may take a few moments)")
 
         for attempt in range(5):
@@ -102,7 +85,7 @@ async def test_writing_score_workflow():
 
 
 async def test_ai_detection_workflow():
-    """Test complete AI detection workflow: create request, upload, get results."""
+    """Test complete AI detection workflow: submit document and get results."""
     print("=== TESTING AI DETECTION API WORKFLOW ===")
 
     auth = {
@@ -114,41 +97,25 @@ async def test_ai_detection_workflow():
     }
 
     try:
-        # Step 1: Create AI detection request
-        print("1. Creating AI detection request...")
-        create_inputs = {
-            "filename": "ai_test_document.txt"
-        }
-
-        async with ExecutionContext(auth=auth) as context:
-            create_result = await grammarly.execute_action("create_ai_detection_request", create_inputs, context)
-
-            if create_result.get('result'):
-                score_request_id = create_result.get('score_request_id')
-                upload_url = create_result.get('file_upload_url')
-                print(f"   ✓ Request created (ID: {score_request_id})")
-            else:
-                print(f"   ✗ Failed to create request: {create_result.get('error')}")
-                return
-
-        # Step 2: Upload document
-        print("2. Uploading document for AI detection...")
-        upload_inputs = {
-            "upload_url": upload_url,
+        # Step 1: Submit document for AI detection
+        print("1. Submitting document for AI detection analysis...")
+        analyze_inputs = {
+            "filename": "ai_test_document.txt",
             "file_content": SAMPLE_TEXT
         }
 
         async with ExecutionContext(auth=auth) as context:
-            upload_result = await grammarly.execute_action("upload_document_for_ai_detection", upload_inputs, context)
+            analyze_result = await grammarly.execute_action("analyze_ai_detection", analyze_inputs, context)
 
-            if upload_result.get('result'):
-                print(f"   ✓ Document uploaded successfully")
+            if analyze_result.get('result'):
+                score_request_id = analyze_result.get('score_request_id')
+                print(f"   ✓ Document submitted successfully (ID: {score_request_id})")
             else:
-                print(f"   ✗ Failed to upload: {upload_result.get('error')}")
+                print(f"   ✗ Failed to submit document: {analyze_result.get('error')}")
                 return
 
-        # Step 3: Get results
-        print("3. Retrieving AI detection results...")
+        # Step 2: Get results
+        print("2. Retrieving AI detection results...")
         print("   (Note: Processing may take a few moments)")
 
         for attempt in range(5):
@@ -184,7 +151,7 @@ async def test_ai_detection_workflow():
 
 
 async def test_plagiarism_detection_workflow():
-    """Test complete plagiarism detection workflow: create request, upload, get results."""
+    """Test complete plagiarism detection workflow: submit document and get results."""
     print("=== TESTING PLAGIARISM DETECTION API WORKFLOW ===")
 
     auth = {
@@ -196,41 +163,25 @@ async def test_plagiarism_detection_workflow():
     }
 
     try:
-        # Step 1: Create plagiarism detection request
-        print("1. Creating plagiarism detection request...")
-        create_inputs = {
-            "filename": "plagiarism_test_document.txt"
-        }
-
-        async with ExecutionContext(auth=auth) as context:
-            create_result = await grammarly.execute_action("create_plagiarism_detection_request", create_inputs, context)
-
-            if create_result.get('result'):
-                score_request_id = create_result.get('score_request_id')
-                upload_url = create_result.get('file_upload_url')
-                print(f"   ✓ Request created (ID: {score_request_id})")
-            else:
-                print(f"   ✗ Failed to create request: {create_result.get('error')}")
-                return
-
-        # Step 2: Upload document
-        print("2. Uploading document for plagiarism detection...")
-        upload_inputs = {
-            "upload_url": upload_url,
+        # Step 1: Submit document for plagiarism detection
+        print("1. Submitting document for plagiarism detection analysis...")
+        analyze_inputs = {
+            "filename": "plagiarism_test_document.txt",
             "file_content": SAMPLE_TEXT
         }
 
         async with ExecutionContext(auth=auth) as context:
-            upload_result = await grammarly.execute_action("upload_document_for_plagiarism_detection", upload_inputs, context)
+            analyze_result = await grammarly.execute_action("analyze_plagiarism_detection", analyze_inputs, context)
 
-            if upload_result.get('result'):
-                print(f"   ✓ Document uploaded successfully")
+            if analyze_result.get('result'):
+                score_request_id = analyze_result.get('score_request_id')
+                print(f"   ✓ Document submitted successfully (ID: {score_request_id})")
             else:
-                print(f"   ✗ Failed to upload: {upload_result.get('error')}")
+                print(f"   ✗ Failed to submit document: {analyze_result.get('error')}")
                 return
 
-        # Step 3: Get results
-        print("3. Retrieving plagiarism detection results...")
+        # Step 2: Get results
+        print("2. Retrieving plagiarism detection results...")
         print("   (Note: Processing may take a few moments)")
 
         for attempt in range(5):

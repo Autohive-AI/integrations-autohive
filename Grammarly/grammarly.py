@@ -3,7 +3,6 @@ from autohive_integrations_sdk import (
 )
 from typing import Dict, Any, Optional
 import aiohttp
-import time
 import os
 
 # Create the integration using the config.json from the same directory as this file
@@ -23,7 +22,10 @@ GRAMMARLY_PLAGIARISM_URL = "https://api.grammarly.com/ecosystem/api/v1/plagiaris
 
 async def get_access_token(context: ExecutionContext) -> str:
     """
-    Get or refresh OAuth2 access token using client credentials flow.
+    Get OAuth2 access token using client credentials flow.
+
+    Note: In serverless environments (Lambda), tokens are not cached between invocations.
+    Each invocation requests a fresh token.
 
     Args:
         context: ExecutionContext containing auth credentials
@@ -37,14 +39,6 @@ async def get_access_token(context: ExecutionContext) -> str:
 
     # Hardcoded scopes for all API access
     scopes = "scores-api:read scores-api:write analytics-api:read ai-detection-api:read ai-detection-api:write plagiarism-api:read plagiarism-api:write"
-
-    # Check if we have a cached token
-    cached_token = credentials.get("access_token")
-    token_expiry = credentials.get("token_expiry", 0)
-
-    # If token exists and hasn't expired (with 5 min buffer), use it
-    if cached_token and time.time() < (token_expiry - 300):
-        return cached_token
 
     # Request new token using form-encoded data
     body = {
@@ -62,14 +56,7 @@ async def get_access_token(context: ExecutionContext) -> str:
         async with session.post(GRAMMARLY_TOKEN_URL, data=body, headers=headers) as resp:
             if resp.status == 200:
                 token_data = await resp.json()
-                access_token = token_data.get("access_token")
-                expires_in = token_data.get("expires_in", 3600)  # Default 1 hour
-
-                # Cache token and expiry time
-                credentials["access_token"] = access_token
-                credentials["token_expiry"] = time.time() + expires_in
-
-                return access_token
+                return token_data.get("access_token")
             else:
                 error_text = await resp.text()
                 raise Exception(f"Failed to obtain access token: HTTP {resp.status}: {error_text}")
@@ -142,43 +129,32 @@ async def upload_file(upload_url: str, file_content: str) -> bool:
 
 # ---- Writing Score API Actions ----
 
-@grammarly.action("create_writing_score_request")
-class CreateWritingScoreRequestAction(ActionHandler):
-    """Create a writing score request and get upload URL."""
+@grammarly.action("analyze_writing_score")
+class AnalyzeWritingScoreAction(ActionHandler):
+    """Submit a document for writing quality analysis. Combines request creation and file upload."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            payload = {
-                "filename": inputs["filename"]
-            }
+            filename = inputs["filename"]
+            file_content = inputs["file_content"]
 
+            # Step 1: Create the score request to get upload URL
+            payload = {"filename": filename}
             response = await api_request(context, "POST", GRAMMARLY_WRITING_SCORE_URL, json_data=payload)
+
+            score_request_id = response.get("score_request_id")
+            upload_url = response.get("file_upload_url")
+
+            # Step 2: Upload the file to the pre-signed URL
+            await upload_file(upload_url, file_content)
 
             return ActionResult(
                 data={
-                    "score_request_id": response.get("score_request_id"),
-                    "file_upload_url": response.get("file_upload_url"),
+                    "score_request_id": score_request_id,
                     "result": True
                 },
                 cost_usd=0.0
             )
-
-        except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
-
-
-@grammarly.action("upload_document_for_writing_score")
-class UploadDocumentForWritingScoreAction(ActionHandler):
-    """Upload a document to the pre-signed URL for writing score analysis."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            upload_url = inputs["upload_url"]
-            file_content = inputs["file_content"]
-
-            await upload_file(upload_url, file_content)
-
-            return ActionResult(data={"result": True}, cost_usd=0.0)
 
         except Exception as e:
             return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
@@ -251,43 +227,32 @@ class GetUserAnalyticsAction(ActionHandler):
 
 # ---- AI Detection API Actions ----
 
-@grammarly.action("create_ai_detection_request")
-class CreateAIDetectionRequestAction(ActionHandler):
-    """Create an AI detection request and get upload URL."""
+@grammarly.action("analyze_ai_detection")
+class AnalyzeAIDetectionAction(ActionHandler):
+    """Submit a document for AI content detection analysis. Combines request creation and file upload."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            payload = {
-                "filename": inputs["filename"]
-            }
+            filename = inputs["filename"]
+            file_content = inputs["file_content"]
 
+            # Step 1: Create the detection request to get upload URL
+            payload = {"filename": filename}
             response = await api_request(context, "POST", GRAMMARLY_AI_DETECTION_URL, json_data=payload)
+
+            score_request_id = response.get("score_request_id")
+            upload_url = response.get("file_upload_url")
+
+            # Step 2: Upload the file to the pre-signed URL
+            await upload_file(upload_url, file_content)
 
             return ActionResult(
                 data={
-                    "score_request_id": response.get("score_request_id"),
-                    "file_upload_url": response.get("file_upload_url"),
+                    "score_request_id": score_request_id,
                     "result": True
                 },
                 cost_usd=0.0
             )
-
-        except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
-
-
-@grammarly.action("upload_document_for_ai_detection")
-class UploadDocumentForAIDetectionAction(ActionHandler):
-    """Upload a document to the pre-signed URL for AI detection analysis."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            upload_url = inputs["upload_url"]
-            file_content = inputs["file_content"]
-
-            await upload_file(upload_url, file_content)
-
-            return ActionResult(data={"result": True}, cost_usd=0.0)
 
         except Exception as e:
             return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
@@ -324,43 +289,32 @@ class GetAIDetectionResultsAction(ActionHandler):
 
 # ---- Plagiarism Detection API Actions ----
 
-@grammarly.action("create_plagiarism_detection_request")
-class CreatePlagiarismDetectionRequestAction(ActionHandler):
-    """Create a plagiarism detection request and get upload URL."""
+@grammarly.action("analyze_plagiarism_detection")
+class AnalyzePlagiarismDetectionAction(ActionHandler):
+    """Submit a document for plagiarism detection analysis. Combines request creation and file upload."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            payload = {
-                "filename": inputs["filename"]
-            }
+            filename = inputs["filename"]
+            file_content = inputs["file_content"]
 
+            # Step 1: Create the detection request to get upload URL
+            payload = {"filename": filename}
             response = await api_request(context, "POST", GRAMMARLY_PLAGIARISM_URL, json_data=payload)
+
+            score_request_id = response.get("score_request_id")
+            upload_url = response.get("file_upload_url")
+
+            # Step 2: Upload the file to the pre-signed URL
+            await upload_file(upload_url, file_content)
 
             return ActionResult(
                 data={
-                    "score_request_id": response.get("score_request_id"),
-                    "file_upload_url": response.get("file_upload_url"),
+                    "score_request_id": score_request_id,
                     "result": True
                 },
                 cost_usd=0.0
             )
-
-        except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
-
-
-@grammarly.action("upload_document_for_plagiarism_detection")
-class UploadDocumentForPlagiarismDetectionAction(ActionHandler):
-    """Upload a document to the pre-signed URL for plagiarism detection analysis."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            upload_url = inputs["upload_url"]
-            file_content = inputs["file_content"]
-
-            await upload_file(upload_url, file_content)
-
-            return ActionResult(data={"result": True}, cost_usd=0.0)
 
         except Exception as e:
             return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
