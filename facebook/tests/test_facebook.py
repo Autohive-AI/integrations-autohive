@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from ..facebook import facebook
+from .. import facebook
 
 pytestmark = pytest.mark.asyncio
 

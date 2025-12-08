@@ -1,5 +1,2 @@
-"""
-Facebook Pages Integration for Autohive.
-"""
-
+"""Facebook Pages Integration for Autohive."""
 from .facebook import facebook
