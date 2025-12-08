@@ -303,7 +303,7 @@ Delete an invoice item.
 
 ## Requirements
 
-- `autohive_integrations_sdk`
+- `autohive-integrations-sdk` (Autohive Integration SDK)
 
 ## Usage Examples
 
