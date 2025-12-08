@@ -87,7 +87,7 @@ def build_list_params(inputs: Dict[str, Any]) -> Dict[str, Any]:
 
 # ---- Customer Action Handlers ----
 
-@stripe_integration.action("list_customers")
+@stripe.action("list_customers")
 class ListCustomersAction(ActionHandler):
     """Retrieve a paginated list of customers from Stripe."""
 
@@ -135,7 +135,7 @@ class ListCustomersAction(ActionHandler):
             )
 
 
-@stripe_integration.action("get_customer")
+@stripe.action("get_customer")
 class GetCustomerAction(ActionHandler):
     """Retrieve details of a specific customer by their ID."""
 
@@ -169,7 +169,7 @@ class GetCustomerAction(ActionHandler):
             )
 
 
-@stripe_integration.action("create_customer")
+@stripe.action("create_customer")
 class CreateCustomerAction(ActionHandler):
     """Create a new customer in Stripe."""
 
@@ -220,7 +220,7 @@ class CreateCustomerAction(ActionHandler):
             )
 
 
-@stripe_integration.action("update_customer")
+@stripe.action("update_customer")
 class UpdateCustomerAction(ActionHandler):
     """Update an existing customer's information."""
 
@@ -272,7 +272,7 @@ class UpdateCustomerAction(ActionHandler):
             )
 
 
-@stripe_integration.action("delete_customer")
+@stripe.action("delete_customer")
 class DeleteCustomerAction(ActionHandler):
     """Permanently delete a customer from Stripe."""
 
@@ -310,7 +310,7 @@ class DeleteCustomerAction(ActionHandler):
 
 # ---- Invoice Action Handlers ----
 
-@stripe_integration.action("list_invoices")
+@stripe.action("list_invoices")
 class ListInvoicesAction(ActionHandler):
     """Retrieve a paginated list of invoices from Stripe."""
 
@@ -360,7 +360,7 @@ class ListInvoicesAction(ActionHandler):
             )
 
 
-@stripe_integration.action("get_invoice")
+@stripe.action("get_invoice")
 class GetInvoiceAction(ActionHandler):
     """Retrieve details of a specific invoice by its ID."""
 
@@ -394,7 +394,7 @@ class GetInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("create_invoice")
+@stripe.action("create_invoice")
 class CreateInvoiceAction(ActionHandler):
     """Create a new draft invoice in Stripe."""
 
@@ -447,7 +447,7 @@ class CreateInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("update_invoice")
+@stripe.action("update_invoice")
 class UpdateInvoiceAction(ActionHandler):
     """Update a draft invoice's details."""
 
@@ -497,7 +497,7 @@ class UpdateInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("delete_invoice")
+@stripe.action("delete_invoice")
 class DeleteInvoiceAction(ActionHandler):
     """Permanently delete a draft invoice."""
 
@@ -533,7 +533,7 @@ class DeleteInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("finalize_invoice")
+@stripe.action("finalize_invoice")
 class FinalizeInvoiceAction(ActionHandler):
     """Finalize a draft invoice, making it ready for payment."""
 
@@ -574,7 +574,7 @@ class FinalizeInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("send_invoice")
+@stripe.action("send_invoice")
 class SendInvoiceAction(ActionHandler):
     """Send a finalized invoice to the customer via email."""
 
@@ -608,7 +608,7 @@ class SendInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("pay_invoice")
+@stripe.action("pay_invoice")
 class PayInvoiceAction(ActionHandler):
     """Pay an open invoice using the customer's default payment method."""
 
@@ -649,7 +649,7 @@ class PayInvoiceAction(ActionHandler):
             )
 
 
-@stripe_integration.action("void_invoice")
+@stripe.action("void_invoice")
 class VoidInvoiceAction(ActionHandler):
     """Void an open invoice, marking it as uncollectible."""
 
@@ -685,7 +685,7 @@ class VoidInvoiceAction(ActionHandler):
 
 # ---- Invoice Item Action Handlers ----
 
-@stripe_integration.action("list_invoice_items")
+@stripe.action("list_invoice_items")
 class ListInvoiceItemsAction(ActionHandler):
     """Retrieve a paginated list of invoice items."""
 
@@ -733,7 +733,7 @@ class ListInvoiceItemsAction(ActionHandler):
             )
 
 
-@stripe_integration.action("get_invoice_item")
+@stripe.action("get_invoice_item")
 class GetInvoiceItemAction(ActionHandler):
     """Retrieve details of a specific invoice item by its ID."""
 
@@ -767,7 +767,7 @@ class GetInvoiceItemAction(ActionHandler):
             )
 
 
-@stripe_integration.action("create_invoice_item")
+@stripe.action("create_invoice_item")
 class CreateInvoiceItemAction(ActionHandler):
     """Create a new invoice item and optionally attach to a draft invoice."""
 
@@ -822,7 +822,7 @@ class CreateInvoiceItemAction(ActionHandler):
             )
 
 
-@stripe_integration.action("update_invoice_item")
+@stripe.action("update_invoice_item")
 class UpdateInvoiceItemAction(ActionHandler):
     """Update an existing invoice item."""
 
@@ -872,7 +872,7 @@ class UpdateInvoiceItemAction(ActionHandler):
             )
 
 
-@stripe_integration.action("delete_invoice_item")
+@stripe.action("delete_invoice_item")
 class DeleteInvoiceItemAction(ActionHandler):
     """Delete an invoice item that hasn't been attached to an invoice."""
 
