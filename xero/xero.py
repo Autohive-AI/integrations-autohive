@@ -1573,3 +1573,444 @@ class GetAttachmentContentAction(ActionHandler):
                 "success": False,
                 "error": str(e)
             }
+
+
+@xero.action("get_purchase_orders")
+class GetPurchaseOrdersAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Fetches purchase orders from Xero API. Can retrieve all purchase orders with filtering
+        or fetch a specific purchase order by ID
+
+        Supports optimized where filtering with range operators:
+        - Range operators: >, >=, <, <=, ==, !=
+        - Date filtering: Date>=DateTime(2020,01,01) AND Date<=DateTime(2020,12,31)
+        - Status filtering: Status=="DRAFT" OR Status=="AUTHORISED"
+        - Contact filtering: Contact.ContactID==guid("contact-id")
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+
+        try:
+            # Build URL - check if specific purchase order ID is provided
+            purchase_order_id = inputs.get("purchase_order_id")
+            if purchase_order_id:
+                # Fetch specific purchase order by ID
+                url = f"https://api.xero.com/api.xro/2.0/PurchaseOrders/{purchase_order_id}"
+                params = {}
+            else:
+                # Fetch all purchase orders with optional filtering
+                url = "https://api.xero.com/api.xro/2.0/PurchaseOrders"
+                params = {}
+
+                # Add optional where parameter for filtering
+                if inputs.get("where"):
+                    params["where"] = inputs["where"]
+
+                # Add optional order parameter
+                if inputs.get("order"):
+                    params["order"] = inputs["order"]
+
+                # Add optional page parameter for pagination
+                if inputs.get("page"):
+                    params["page"] = str(inputs["page"])
+
+                # Add optional statuses for filtering multiple statuses
+                if inputs.get("statuses"):
+                    params["statuses"] = inputs["statuses"]
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                tenant_id,
+                method="GET",
+                params=params,
+                headers={"Accept": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to fetch purchase orders: {str(e)}")
+
+
+@xero.action("create_purchase_order")
+class CreatePurchaseOrderAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Creates a new purchase order in Xero
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - contact: Contact object with ContactID or Name
+        - line_items: List of line item objects
+
+        Optional fields:
+        - date: Purchase order date (defaults to today)
+        - delivery_date: Expected delivery date
+        - purchase_order_number: Custom purchase order number
+        - reference: Purchase order reference
+        - currency_code: Currency (defaults to organization currency)
+        - status: "DRAFT", "SUBMITTED", "AUTHORISED", "BILLED", or "DELETED"
+        - delivery_address: Delivery address (string)
+        - attention_to: Name of person to be contacted
+        - telephone: Phone number for contact
+        - delivery_instructions: Delivery instructions
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        contact = inputs.get("contact")
+        line_items = inputs.get("line_items")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not contact:
+            raise ValueError("contact is required")
+        if not line_items or not isinstance(line_items, list):
+            raise ValueError("line_items is required and must be a list")
+
+        try:
+            # Build purchase order payload
+            po_data = {
+                "Contact": contact,
+                "LineItems": line_items
+            }
+
+            # Add optional fields
+            if inputs.get("date"):
+                po_data["Date"] = inputs["date"]
+            if inputs.get("delivery_date"):
+                po_data["DeliveryDate"] = inputs["delivery_date"]
+            if inputs.get("purchase_order_number"):
+                po_data["PurchaseOrderNumber"] = inputs["purchase_order_number"]
+            if inputs.get("reference"):
+                po_data["Reference"] = inputs["reference"]
+            if inputs.get("currency_code"):
+                po_data["CurrencyCode"] = inputs["currency_code"]
+            if inputs.get("status"):
+                po_data["Status"] = inputs["status"]
+            if inputs.get("line_amount_types"):
+                po_data["LineAmountTypes"] = inputs["line_amount_types"]
+            if inputs.get("delivery_address"):
+                po_data["DeliveryAddress"] = inputs["delivery_address"]
+            if inputs.get("attention_to"):
+                po_data["AttentionTo"] = inputs["attention_to"]
+            if inputs.get("telephone"):
+                po_data["Telephone"] = inputs["telephone"]
+            if inputs.get("delivery_instructions"):
+                po_data["DeliveryInstructions"] = inputs["delivery_instructions"]
+
+            # Build request payload
+            payload = {"PurchaseOrders": [po_data]}
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                "https://api.xero.com/api.xro/2.0/PurchaseOrders",
+                tenant_id,
+                method="POST",
+                json=payload,
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to create purchase order: {str(e)}")
+
+
+@xero.action("update_purchase_order")
+class UpdatePurchaseOrderAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Updates an existing purchase order in Xero
+        Only DRAFT and SUBMITTED purchase orders can be updated
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - purchase_order_id: ID of the purchase order to update
+
+        Optional fields (provide only fields you want to update):
+        - contact: Contact object with ContactID or Name
+        - line_items: List of line item objects (replaces all existing line items)
+        - date: Purchase order date
+        - delivery_date: Expected delivery date
+        - purchase_order_number: Custom purchase order number
+        - reference: Purchase order reference
+        - currency_code: Currency code
+        - status: "DRAFT", "SUBMITTED", "AUTHORISED", "BILLED", or "DELETED"
+        - delivery_address: Delivery address (string)
+        - attention_to: Name of person to be contacted
+        - telephone: Phone number for contact
+        - delivery_instructions: Delivery instructions
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        purchase_order_id = inputs.get("purchase_order_id")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not purchase_order_id:
+            raise ValueError("purchase_order_id is required")
+
+        try:
+            # Build purchase order update payload
+            po_data = {
+                "PurchaseOrderID": purchase_order_id
+            }
+
+            # Add optional fields only if provided
+            if inputs.get("contact"):
+                po_data["Contact"] = inputs["contact"]
+            if inputs.get("line_items"):
+                po_data["LineItems"] = inputs["line_items"]
+            if inputs.get("date"):
+                po_data["Date"] = inputs["date"]
+            if inputs.get("delivery_date"):
+                po_data["DeliveryDate"] = inputs["delivery_date"]
+            if inputs.get("purchase_order_number"):
+                po_data["PurchaseOrderNumber"] = inputs["purchase_order_number"]
+            if inputs.get("reference"):
+                po_data["Reference"] = inputs["reference"]
+            if inputs.get("currency_code"):
+                po_data["CurrencyCode"] = inputs["currency_code"]
+            if inputs.get("status"):
+                po_data["Status"] = inputs["status"]
+            if inputs.get("line_amount_types"):
+                po_data["LineAmountTypes"] = inputs["line_amount_types"]
+            if inputs.get("delivery_address"):
+                po_data["DeliveryAddress"] = inputs["delivery_address"]
+            if inputs.get("attention_to"):
+                po_data["AttentionTo"] = inputs["attention_to"]
+            if inputs.get("telephone"):
+                po_data["Telephone"] = inputs["telephone"]
+            if inputs.get("delivery_instructions"):
+                po_data["DeliveryInstructions"] = inputs["delivery_instructions"]
+
+            # Build request payload
+            payload = {"PurchaseOrders": [po_data]}
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                f"https://api.xero.com/api.xro/2.0/PurchaseOrders/{purchase_order_id}",
+                tenant_id,
+                method="POST",
+                json=payload,
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to update purchase order: {str(e)}")
+
+
+@xero.action("delete_purchase_order")
+class DeletePurchaseOrderAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Deletes a purchase order in Xero by updating its status to DELETED
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - purchase_order_id: ID of the purchase order to delete
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        purchase_order_id = inputs.get("purchase_order_id")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not purchase_order_id:
+            raise ValueError("purchase_order_id is required")
+
+        try:
+            # Build purchase order delete payload (sets status to DELETED)
+            po_data = {
+                "PurchaseOrderID": purchase_order_id,
+                "Status": "DELETED"
+            }
+
+            # Build request payload
+            payload = {"PurchaseOrders": [po_data]}
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                f"https://api.xero.com/api.xro/2.0/PurchaseOrders/{purchase_order_id}",
+                tenant_id,
+                method="POST",
+                json=payload,
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to delete purchase order: {str(e)}")
+
+
+@xero.action("get_purchase_order_history")
+class GetPurchaseOrderHistoryAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Retrieves the history and notes for a specific purchase order from Xero API
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - purchase_order_id: ID of the purchase order to get history for
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        purchase_order_id = inputs.get("purchase_order_id")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not purchase_order_id:
+            raise ValueError("purchase_order_id is required")
+
+        try:
+            # Build URL for getting purchase order history
+            url = f"https://api.xero.com/api.xro/2.0/PurchaseOrders/{purchase_order_id}/History"
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                tenant_id,
+                method="GET",
+                headers={"Accept": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to get purchase order history: {str(e)}")
+
+
+@xero.action("add_note_to_purchase_order")
+class AddNoteToPurchaseOrderAction(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Adds a note to a purchase order's history in Xero
+
+        Required fields:
+        - tenant_id: Xero tenant ID
+        - purchase_order_id: ID of the purchase order to add note to
+        - note: The note text to add
+        """
+        # Validate required inputs
+        tenant_id = inputs.get("tenant_id")
+        purchase_order_id = inputs.get("purchase_order_id")
+        note = inputs.get("note")
+
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        if not purchase_order_id:
+            raise ValueError("purchase_order_id is required")
+        if not note:
+            raise ValueError("note is required")
+
+        try:
+            # Build URL for adding note to purchase order history
+            url = f"https://api.xero.com/api.xro/2.0/PurchaseOrders/{purchase_order_id}/History"
+
+            # Build payload with note
+            payload = {
+                "HistoryRecords": [
+                    {
+                        "Details": note
+                    }
+                ]
+            }
+
+            # Make rate-limited authenticated request to Xero API
+            response = await rate_limiter.make_request(
+                context,
+                url,
+                tenant_id,
+                method="PUT",
+                json=payload,
+                headers={"Accept": "application/json", "Content-Type": "application/json"}
+            )
+
+            # Return raw API response
+            if not response:
+                raise ValueError("Empty response from Xero API")
+
+            return response
+
+        except XeroRateLimitExceededException as e:
+            return {
+                "success": False,
+                "error_type": "rate_limit_exceeded",
+                "message": f"Xero API rate limit exceeded for tenant {e.tenant_id}. Required wait time: {e.requested_delay}s exceeds maximum: {e.max_wait_time}s. Please try again later.",
+                "tenant_id": e.tenant_id,
+                "retry_delay_seconds": e.requested_delay
+            }
+        except Exception as e:
+            raise Exception(f"Failed to add note to purchase order: {str(e)}")

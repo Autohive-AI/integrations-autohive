@@ -496,7 +496,7 @@
                                     "description": "Phone number"
                                 },
                                 "Account_Name": {
-                                    "type": "object",
+                                    "type": ["object", "null"],
                                     "description": "Associated account"
                                 },
                                 "Created_Time": {
