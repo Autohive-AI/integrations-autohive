@@ -7,12 +7,8 @@ from typing import Dict, Any
 from datetime import datetime
 import time
 
-if __package__ and __package__.startswith('facebook.'):
-    from ..facebook import facebook
-    from ..helpers import GRAPH_API_BASE, get_page_access_token
-else:
-    from facebook import facebook
-    from helpers import GRAPH_API_BASE, get_page_access_token
+from facebook import facebook
+from helpers import GRAPH_API_BASE, get_page_access_token
 
 
 MIN_SCHEDULE_MINUTES = 10

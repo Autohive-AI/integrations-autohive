@@ -12,15 +12,10 @@ All actions use the Facebook Graph API v21.0.
 """
 
 from autohive_integrations_sdk import Integration
-import importlib
 import os
 
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 facebook = Integration.load(config_path)
 
 # Import actions to register handlers
-# When running as package, __package__ is set; when deployed flat, it's not
-if __package__:
-    from . import actions
-else:
-    import actions
+import actions

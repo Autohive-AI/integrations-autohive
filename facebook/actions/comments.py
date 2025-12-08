@@ -5,12 +5,8 @@ Facebook Comments actions - Read, reply, hide, and delete comments.
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
 from typing import Dict, Any
 
-if __package__ and __package__.startswith('facebook.'):
-    from ..facebook import facebook
-    from ..helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
-else:
-    from facebook import facebook
-    from helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
+from facebook import facebook
+from helpers import GRAPH_API_BASE, get_page_access_token, extract_page_id
 
 
 def _build_comment_response(comment: Dict[str, Any]) -> Dict[str, Any]:
