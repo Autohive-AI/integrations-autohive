@@ -123,6 +123,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
 
+### Hacker News
+
+[hackernews](hackernews): Read-only integration with the official Hacker News API for fetching tech news, discussions, and community content. Supports retrieving top, best, and new stories, Ask HN discussions, Show HN project showcases, and YC job postings. Features story detail fetching with threaded comment trees (configurable depth), user profile lookup with karma scores, and LLM-optimized output with ISO timestamps and pre-computed HN URLs. Includes 8 actions with concurrent batch fetching for performance. No authentication required (public API, no rate limits). Ideal for daily tech news digests, community monitoring, and curated report generation.
+
 ### Google Docs
 
 [google-docs](google-docs): Comprehensive integration with Google Docs API v1 for document creation, content formatting, and document analysis. Supports creating new documents, retrieving full document content and structure, inserting plain text paragraphs, inserting markdown-formatted content with automatic styling (headings H1-H6, bold, italic), applying text formatting (bold, italic, font size, colors), parsing document structure to identify headings and paragraphs, and executing complex batch update operations. Features OAuth2 authentication, markdown-to-Google Docs style conversion, and 6 core actions for document automation workflows.
