@@ -479,7 +479,7 @@ class AdwordsCampaignAction(ActionHandler):
             # Fetch campaign data using the API client
             results = fetch_campaign_data(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
-            return ActionResult(data=results, cost_usd=0.01)
+            return ActionResult(data=results, cost_usd=0.00)
         except ValueError as ve:
             logger.error(f"ValueError in AdwordsCampaignAction: {str(ve)}")
             raise Exception(str(ve))
@@ -545,7 +545,7 @@ class AdwordsKeywordAction(ActionHandler):
             # Fetch keyword data using the API client with optional filters
             results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
             logger.info("Successfully retrieved keyword data.")
-            return ActionResult(data=results, cost_usd=0.01)
+            return ActionResult(data=results, cost_usd=0.00)
         except ValueError as ve:
             logger.error(f"ValueError in AdwordsKeywordAction: {str(ve)}")
             raise Exception(str(ve))
