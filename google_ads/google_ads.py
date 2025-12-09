@@ -22,11 +22,11 @@ from typing import Dict, Any
 from enum import Enum
 
 import proto
-from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration
+from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration, ActionResult
 from google.ads.googleads.client import GoogleAdsClient
 
 # Load integration configuration
-adwords = Integration.load()
+google_ads = Integration.load()
 
 class AdType(Enum):
     RESPONSIVE_SEARCH_AD = 'RESPONSIVE_SEARCH_AD'
@@ -423,7 +423,7 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
 
 
 # ---- Action Handlers ----
-@adwords.action("retrieve_campaign_metrics")
+@google_ads.action("retrieve_campaign_metrics")
 class AdwordsCampaignAction(ActionHandler):
     """Action handler for retrieving campaign performance metrics from Google Ads."""
     
@@ -479,7 +479,7 @@ class AdwordsCampaignAction(ActionHandler):
             # Fetch campaign data using the API client
             results = fetch_campaign_data(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
-            return results
+            return ActionResult(data=results, cost_usd=0.01)
         except ValueError as ve:
             logger.error(f"ValueError in AdwordsCampaignAction: {str(ve)}")
             raise Exception(str(ve))
@@ -487,7 +487,7 @@ class AdwordsCampaignAction(ActionHandler):
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
             raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
 
-@adwords.action("retrieve_keyword_metrics")
+@google_ads.action("retrieve_keyword_metrics")
 class AdwordsKeywordAction(ActionHandler):
     """Action handler for retrieving keyword performance metrics from Google Ads."""
     
@@ -545,7 +545,7 @@ class AdwordsKeywordAction(ActionHandler):
             # Fetch keyword data using the API client with optional filters
             results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
             logger.info("Successfully retrieved keyword data.")
-            return results
+            return ActionResult(data=results, cost_usd=0.01)
         except ValueError as ve:
             logger.error(f"ValueError in AdwordsKeywordAction: {str(ve)}")
             raise Exception(str(ve))
