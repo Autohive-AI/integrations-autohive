@@ -1,5 +1,5 @@
 ﻿from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 import base64
@@ -183,10 +183,10 @@ class GoogleImagesSearch(ActionHandler):
             for result in results[:limit]
         ]
         
-        return {
+        return ActionResult(data={
             "images": images,
             "total_results": len(images)
-        }
+        })
 
 @google_images.action("download_image")
 class DownloadImage(ActionHandler):
@@ -272,7 +272,7 @@ class DownloadImage(ActionHandler):
                     # Encode to base64
                     content_b64 = base64.b64encode(image_bytes).decode('utf-8')
                     
-                    return {
+                    return ActionResult(data={
                         "file": {
                             "content": content_b64,
                             "name": filename,
@@ -280,7 +280,7 @@ class DownloadImage(ActionHandler):
                             "size": len(image_bytes)
                         },
                         "result": True
-                    }
+                    })
         
         except aiohttp.ClientError as e:
             raise Exception(f"Network error downloading image: {str(e)}")
