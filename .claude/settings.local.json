@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:developer.1password.com)",
+      "Bash(cat:*)",
+      "Bash(git -C \"C:\\Users\\tamil\\Projects\\integrations-autohive\" log --oneline)",
+      "WebSearch",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:shopify.dev)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add Shopify integration for e-commerce management\n\nAdd Shopify Admin API integration with OAuth authentication and 15 actions:\n\nCustomers:\n- list_customers: List customers with filtering and pagination\n- get_customer: Get single customer by ID\n- search_customers: Search customers by query\n- create_customer: Create new customer\n- update_customer: Update existing customer\n\nOrders:\n- list_orders: List orders with status filters\n- get_order: Get single order by ID\n- create_order: Create new order (no payment)\n- cancel_order: Cancel an order\n\nProducts:\n- list_products: List products with filters\n- get_product: Get single product by ID\n- create_product: Create new product\n- update_product: Update existing product\n\nInventory:\n- get_inventory_levels: Get inventory levels by location/item\n- set_inventory_level: Set inventory quantity\n\nIncludes comprehensive test suite with safe/write/update test categories.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
