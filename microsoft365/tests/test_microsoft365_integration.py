@@ -30,7 +30,7 @@ class TestMicrosoft365Integration(unittest.TestCase):
         result = await handler.execute(inputs, self.mock_context)
         
         # Verify result
-        self.assertTrue(result["result"])
+        self.assertTrue(result.data["result"])
         
         # Verify API call
         self.mock_context.fetch.assert_called_once()
@@ -53,7 +53,7 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
+        self.assertTrue(result.data["result"])
         
         # Check that the API was called with CC and BCC recipients
         call_args = self.mock_context.fetch.call_args
@@ -81,9 +81,9 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
-        self.assertEqual(result["id"], "event123")
-        self.assertIn("webLink", result)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["id"], "event123")
+        self.assertIn("webLink", result.data)
     
     async def test_upload_file_success(self):
         """Test successful file upload."""
@@ -106,9 +106,9 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
-        self.assertEqual(result["id"], "file123")
-        self.assertEqual(result["size"], 1024)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["id"], "file123")
+        self.assertEqual(result.data["size"], 1024)
     
     async def test_list_files_success(self):
         """Test successful file listing."""
@@ -138,10 +138,10 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
-        self.assertEqual(len(result["files"]), 2)
-        self.assertIsNone(result["files"][0]["folder"])     # document.pdf (no folder facet)
-        self.assertIsNotNone(result["files"][1]["folder"]) # My Folder (has folder facet)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["files"]), 2)
+        self.assertIsNone(result.data["files"][0]["folder"])     # document.pdf (no folder facet)
+        self.assertIsNotNone(result.data["files"][1]["folder"]) # My Folder (has folder facet)
     
     async def test_error_handling(self):
         """Test error handling in actions."""
@@ -157,9 +157,9 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertFalse(result["result"])
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "API Error")
+        self.assertFalse(result.data["result"])
+        self.assertIn("error", result.data)
+        self.assertEqual(result.data["error"], "API Error")
     
     async def test_search_onedrive_files_success(self):
         """Test successful OneDrive file search."""
@@ -192,18 +192,18 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
-        self.assertEqual(len(result["files"]), 2)
-        self.assertEqual(result["query"], "quarterly report")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["files"]), 2)
+        self.assertEqual(result.data["query"], "quarterly report")
         
         # Check file item structure
-        file_item = result["files"][0]
+        file_item = result.data["files"][0]
         self.assertEqual(file_item["id"], "file123")
         self.assertEqual(file_item["name"], "quarterly-report.docx")
         self.assertIn("file", file_item)
         
         # Check folder item structure
-        folder_item = result["files"][1] 
+        folder_item = result.data["files"][1] 
         self.assertEqual(folder_item["id"], "folder456")
         self.assertIn("folder", folder_item)
         
@@ -236,12 +236,12 @@ class TestMicrosoft365Integration(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["metadata"]["id"], "file123")
-        self.assertEqual(result["file"]["name"], "document.docx")
-        self.assertEqual(result["metadata"]["size"], 2048)
-        self.assertEqual(result["file"]["contentType"], "application/pdf")
-        self.assertIsNotNone(result["file"]["content"])  # Should have base64 encoded PDF
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["metadata"]["id"], "file123")
+        self.assertEqual(result.data["file"]["name"], "document.docx")
+        self.assertEqual(result.data["metadata"]["size"], 2048)
+        self.assertEqual(result.data["file"]["contentType"], "application/pdf")
+        self.assertIsNotNone(result.data["file"]["content"])  # Should have base64 encoded PDF
 
         # Verify API calls
         self.mock_context.fetch.assert_called_once()  # Metadata call
@@ -278,10 +278,10 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertTrue(result["result"])
-        self.assertEqual(result["file"]["name"], "notes.txt")
-        self.assertEqual(result["file"]["contentType"], "text/plain")
-        self.assertIsNotNone(result["file"]["content"])  # Should have base64 encoded content
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["file"]["name"], "notes.txt")
+        self.assertEqual(result.data["file"]["contentType"], "text/plain")
+        self.assertIsNotNone(result.data["file"]["content"])  # Should have base64 encoded content
         
         # Check content call (no PDF conversion for text file)
         content_call = self.mock_context.fetch.call_args_list[1]
@@ -312,10 +312,10 @@ class TestMicrosoft365Integration(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["file"]["name"], "AICPA_SOC2_Compliance_Guide_on_AWS.pdf")
-        self.assertEqual(result["file"]["contentType"], "application/pdf")
-        self.assertIsNotNone(result["file"]["content"])  # Should have base64 encoded content
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["file"]["name"], "AICPA_SOC2_Compliance_Guide_on_AWS.pdf")
+        self.assertEqual(result.data["file"]["contentType"], "application/pdf")
+        self.assertIsNotNone(result.data["file"]["content"])  # Should have base64 encoded content
 
         # Verify binary fetch was called with correct URL
         mock_fetch_binary.assert_called_once()
@@ -342,10 +342,10 @@ class TestMicrosoft365Integration(unittest.TestCase):
         
         result = await handler.execute(inputs, self.mock_context)
         
-        self.assertFalse(result["result"])  # Operation fails when content retrieval fails
-        self.assertEqual(result["file"]["name"], "restricted.pdf")
-        self.assertEqual(result["file"]["content"], "")  # Empty content on failure
-        self.assertIn("Access denied", result["error"])
+        self.assertFalse(result.data["result"])  # Operation fails when content retrieval fails
+        self.assertEqual(result.data["file"]["name"], "restricted.pdf")
+        self.assertEqual(result.data["file"]["content"], "")  # Empty content on failure
+        self.assertIn("Access denied", result.data["error"])
 
 
 class TestListCalendarEventsAction(unittest.TestCase):
@@ -408,10 +408,10 @@ class TestListCalendarEventsAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(len(result["events"]), 1)
-        self.assertEqual(result["events"][0]["subject"], "Team Meeting")
-        self.assertEqual(result["events"][0]["location"], "Conference Room A")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["events"]), 1)
+        self.assertEqual(result.data["events"][0]["subject"], "Team Meeting")
+        self.assertEqual(result.data["events"][0]["location"], "Conference Room A")
 
         # Verify calendarView endpoint is called with date parameters
         call_args = self.mock_context.fetch.call_args[0][0]
@@ -447,10 +447,10 @@ class TestCreateDraftEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["draft_id"], "draft123")
-        self.assertEqual(result["subject"], "Test Draft")
-        self.assertTrue(result["is_draft"])
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["draft_id"], "draft123")
+        self.assertEqual(result.data["subject"], "Test Draft")
+        self.assertTrue(result.data["is_draft"])
 
         # Verify API call
         self.mock_context.fetch.assert_called_once()
@@ -480,8 +480,8 @@ class TestCreateDraftEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["draft_id"], "draft456")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["draft_id"], "draft456")
 
         # Check the message structure in the API call
         call_args = self.mock_context.fetch.call_args
@@ -507,9 +507,9 @@ class TestSendDraftEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["draft_id"], "draft123")
-        self.assertEqual(result["status"], "sent")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["draft_id"], "draft123")
+        self.assertEqual(result.data["status"], "sent")
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -537,10 +537,10 @@ class TestReplyToEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["message_id"], "msg123")
-        self.assertEqual(result["operation"], "reply")
-        self.assertEqual(result["status"], "sent")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["message_id"], "msg123")
+        self.assertEqual(result.data["operation"], "reply")
+        self.assertEqual(result.data["status"], "sent")
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -557,8 +557,8 @@ class TestReplyToEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["message_id"], "msg456")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["message_id"], "msg456")
 
         # Verify API call with empty JSON body
         call_args = self.mock_context.fetch.call_args
@@ -585,10 +585,10 @@ class TestForwardEmailAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["message_id"], "msg789")
-        self.assertEqual(result["operation"], "forward")
-        self.assertEqual(result["status"], "sent")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["message_id"], "msg789")
+        self.assertEqual(result.data["operation"], "forward")
+        self.assertEqual(result.data["status"], "sent")
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -634,17 +634,17 @@ class TestDownloadEmailAttachmentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
+        self.assertTrue(result.data["result"])
         # Verify file structure (matches OneDrive/SharePoint format)
-        self.assertEqual(result["file"]["name"], "document.pdf")
-        self.assertEqual(result["file"]["contentType"], "application/pdf")
-        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded
+        self.assertEqual(result.data["file"]["name"], "document.pdf")
+        self.assertEqual(result.data["file"]["contentType"], "application/pdf")
+        self.assertIsNotNone(result.data["file"]["content"])  # Base64 encoded
         # Verify metadata structure
-        self.assertEqual(result["metadata"]["id"], "att123")
-        self.assertEqual(result["metadata"]["name"], "document.pdf")
-        self.assertEqual(result["metadata"]["size"], 1024)
-        self.assertEqual(result["metadata"]["message_id"], "msg123")
-        self.assertFalse(result["metadata"]["is_inline"])
+        self.assertEqual(result.data["metadata"]["id"], "att123")
+        self.assertEqual(result.data["metadata"]["name"], "document.pdf")
+        self.assertEqual(result.data["metadata"]["size"], 1024)
+        self.assertEqual(result.data["metadata"]["message_id"], "msg123")
+        self.assertFalse(result.data["metadata"]["is_inline"])
 
         # Verify API calls
         self.mock_context.fetch.assert_called_once()
@@ -671,10 +671,10 @@ class TestDownloadEmailAttachmentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertFalse(result["result"])  # False because content not retrieved
-        self.assertEqual(result["file"]["content"], "")  # No content
-        self.assertEqual(result["file"]["name"], "image.jpg")
-        self.assertTrue(result["metadata"]["is_inline"])
+        self.assertFalse(result.data["result"])  # False because content not retrieved
+        self.assertEqual(result.data["file"]["content"], "")  # No content
+        self.assertEqual(result.data["file"]["name"], "image.jpg")
+        self.assertTrue(result.data["metadata"]["is_inline"])
 
 
 class TestSearchEmailsAction(unittest.TestCase):
@@ -737,13 +737,13 @@ class TestSearchEmailsAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["query"], "project meeting")
-        self.assertEqual(result["total_results"], 2)
-        self.assertEqual(len(result["messages"]), 2)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["query"], "project meeting")
+        self.assertEqual(result.data["total_results"], 2)
+        self.assertEqual(len(result.data["messages"]), 2)
 
         # Check first message structure
-        first_msg = result["messages"][0]
+        first_msg = result.data["messages"][0]
         self.assertEqual(first_msg["message_id"], "msg1")
         self.assertEqual(first_msg["subject"], "Project Update")
         self.assertTrue(first_msg["has_attachments"])
@@ -777,9 +777,9 @@ class TestSearchEmailsAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["total_results"], 0)
-        self.assertEqual(len(result["messages"]), 0)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["total_results"], 0)
+        self.assertEqual(len(result.data["messages"]), 0)
 
     async def test_search_emails_with_null_fields(self):
         """Test email search handles null subject and bodyPreview fields."""
@@ -816,11 +816,11 @@ class TestSearchEmailsAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["total_results"], 1)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["total_results"], 1)
 
         # Verify null values are converted to empty strings
-        first_msg = result["messages"][0]
+        first_msg = result.data["messages"][0]
         self.assertEqual(first_msg["subject"], "")
         self.assertEqual(first_msg["body_preview"], "")
         self.assertIsInstance(first_msg["subject"], str)
@@ -856,11 +856,11 @@ class TestSearchSharePointSitesAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["query"], "Team A")
-        self.assertEqual(len(result["sites"]), 1)
-        self.assertEqual(result["total_sites"], 1)
-        self.assertEqual(result["sites"][0]["name"], "Team A Site")
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["query"], "Team A")
+        self.assertEqual(len(result.data["sites"]), 1)
+        self.assertEqual(result.data["total_sites"], 1)
+        self.assertEqual(result.data["sites"][0]["name"], "Team A Site")
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -894,10 +894,10 @@ class TestGetSharePointSiteDetailsAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["site"]["name"], "Team A Site")
-        self.assertEqual(result["site"]["display_name"], "Team A Collaboration Site")
-        self.assertFalse(result["site"]["is_personal_site"])
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["site"]["name"], "Team A Site")
+        self.assertEqual(result.data["site"]["display_name"], "Team A Collaboration Site")
+        self.assertFalse(result.data["site"]["is_personal_site"])
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -946,12 +946,12 @@ class TestListSharePointLibrariesAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["site_id"], "test-site-id")
-        self.assertEqual(len(result["libraries"]), 1)
-        self.assertEqual(result["total_libraries"], 1)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["site_id"], "test-site-id")
+        self.assertEqual(len(result.data["libraries"]), 1)
+        self.assertEqual(result.data["total_libraries"], 1)
 
-        library = result["libraries"][0]
+        library = result.data["libraries"][0]
         self.assertEqual(library["name"], "Documents")
         self.assertEqual(library["drive_type"], "documentLibrary")
         self.assertIn("quota", library)
@@ -1034,16 +1034,16 @@ class TestSearchSharePointDocumentsAction(unittest.TestCase):
         result = await handler.execute(inputs, self.mock_context)
 
         # Verify the result
-        self.assertTrue(result["result"])
-        self.assertEqual(result["site_id"], "test-site-id")
-        self.assertEqual(result["query"], "project plan")
-        self.assertEqual(len(result["files"]), 2)
-        self.assertEqual(result["total_files"], 2)
-        self.assertEqual(result["drives_searched"], 2)
-        self.assertEqual(result["total_drives"], 2)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["site_id"], "test-site-id")
+        self.assertEqual(result.data["query"], "project plan")
+        self.assertEqual(len(result.data["files"]), 2)
+        self.assertEqual(result.data["total_files"], 2)
+        self.assertEqual(result.data["drives_searched"], 2)
+        self.assertEqual(result.data["total_drives"], 2)
 
         # Verify file details include drive information
-        files = result["files"]
+        files = result.data["files"]
         self.assertEqual(files[0]["name"], "Project Plan.docx")
         self.assertEqual(files[0]["drive_id"], "drive1")
         self.assertEqual(files[0]["drive_name"], "Documents")
@@ -1102,12 +1102,12 @@ class TestListSharePointPagesAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["site_id"], "test-site-id")
-        self.assertEqual(len(result["pages"]), 1)
-        self.assertEqual(result["total_pages"], 1)
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["site_id"], "test-site-id")
+        self.assertEqual(len(result.data["pages"]), 1)
+        self.assertEqual(result.data["total_pages"], 1)
 
-        page = result["pages"][0]
+        page = result.data["pages"][0]
         self.assertEqual(page["name"], "Home.aspx")
         self.assertEqual(page["title"], "Welcome to Team A")
         self.assertEqual(page["page_layout"], "home")
@@ -1147,11 +1147,11 @@ class TestReadSharePointDocumentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["file"]["name"], "SharePoint_Report.docx")
-        self.assertEqual(result["file"]["contentType"], "application/pdf")
-        self.assertEqual(result["metadata"]["site_id"], "test-site-id")
-        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded PDF
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["file"]["name"], "SharePoint_Report.docx")
+        self.assertEqual(result.data["file"]["contentType"], "application/pdf")
+        self.assertEqual(result.data["metadata"]["site_id"], "test-site-id")
+        self.assertIsNotNone(result.data["file"]["content"])  # Base64 encoded PDF
 
         # Verify API calls
         self.mock_context.fetch.assert_called_once()  # Metadata call
@@ -1187,12 +1187,12 @@ class TestReadSharePointDocumentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["file"]["name"], "HR_Policy.pdf")
-        self.assertEqual(result["file"]["contentType"], "application/pdf")
-        self.assertEqual(result["metadata"]["site_id"], "test-site-id")
-        self.assertEqual(result["metadata"]["drive_id"], "drive123")
-        self.assertIsNotNone(result["file"]["content"])  # Base64 encoded PDF
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["file"]["name"], "HR_Policy.pdf")
+        self.assertEqual(result.data["file"]["contentType"], "application/pdf")
+        self.assertEqual(result.data["metadata"]["site_id"], "test-site-id")
+        self.assertEqual(result.data["metadata"]["drive_id"], "drive123")
+        self.assertIsNotNone(result.data["file"]["content"])  # Base64 encoded PDF
 
         # Verify API calls use drive-specific endpoints
         metadata_call_args = self.mock_context.fetch.call_args[0]
@@ -1256,13 +1256,13 @@ class TestReadSharePointPageContentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["site_id"], "test-site-id")
-        self.assertEqual(result["page"]["name"], "Home.aspx")
-        self.assertEqual(result["page"]["title"], "Welcome to SharePoint")
-        self.assertEqual(result["page"]["page_layout"], "home")
-        self.assertIn("content", result["page"])  # canvasLayout content
-        self.assertIn("created_by", result["page"])
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["site_id"], "test-site-id")
+        self.assertEqual(result.data["page"]["name"], "Home.aspx")
+        self.assertEqual(result.data["page"]["title"], "Welcome to SharePoint")
+        self.assertEqual(result.data["page"]["page_layout"], "home")
+        self.assertIn("content", result.data["page"])  # canvasLayout content
+        self.assertIn("created_by", result.data["page"])
 
         # Verify API call
         call_args = self.mock_context.fetch.call_args
@@ -1291,9 +1291,9 @@ class TestReadSharePointPageContentAction(unittest.TestCase):
 
         result = await handler.execute(inputs, self.mock_context)
 
-        self.assertTrue(result["result"])
-        self.assertEqual(result["page"]["title"], "About Us")
-        self.assertNotIn("content", result["page"])  # No content when include_content=False
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["page"]["title"], "About Us")
+        self.assertNotIn("content", result.data["page"])  # No content when include_content=False
 
         # Verify API call doesn't include $expand
         call_args = self.mock_context.fetch.call_args
