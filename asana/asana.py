@@ -384,7 +384,8 @@ class GetProjectByNameAction(ActionHandler):
 
             while True:
                 params = {
-                    "limit": 100  # Maximum allowed by Asana API
+                    "limit": 100,  # Maximum allowed by Asana API
+                    "opt_fields": "name,gid,workspace,workspace.name,team,team.name,archived,color,notes"
                 }
 
                 # Add optional filter parameters for better performance
@@ -668,6 +669,105 @@ class CreateSubtaskAction(ActionHandler):
                 data={"subtask": response.get('data', {}), "result": True},
                 cost_usd=0.0
             )
+
+        except Exception as e:
+            return ActionResult(
+                data={"subtask": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+# ---- Workspace Handlers ----
+
+@asana.action("list_workspaces")
+class ListWorkspacesAction(ActionHandler):
+    """List all workspaces the authenticated user has access to."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = {}
+            if 'limit' in inputs:
+                params['limit'] = inputs['limit']
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/workspaces",
+                method="GET",
+                params=params if params else None
+            )
+
+            workspaces = response.get('data', [])
+            return ActionResult(
+                data={"workspaces": workspaces, "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"workspaces": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+@asana.action("get_workspace")
+class GetWorkspaceAction(ActionHandler):
+    """Get details of a specific workspace."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            workspace_gid = inputs['workspace_gid']
+
+            params = {}
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/workspaces/{workspace_gid}",
+                method="GET",
+                params=params if params else None
+            )
+
+            return ActionResult(
+                data={"workspace": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"workspace": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+# ---- User Handlers ----
+
+@asana.action("get_user")
+class GetUserAction(ActionHandler):
+    """Get details of a user. Use 'me' to get current authenticated user."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            user_gid = inputs.get('user_gid', 'me')
+
+            params = {}
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/users/{user_gid}",
+                method="GET",
+                params=params if params else None
+            )
+
+            return ActionResult(
+                data={"user": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"user": {}, "result": False, "error": str(e)},
 
         except Exception as e:
             return ActionResult(
