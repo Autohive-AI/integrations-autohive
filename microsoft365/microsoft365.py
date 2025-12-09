@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
@@ -30,7 +30,7 @@ async def fetch_binary_content(url: str, context: ExecutionContext) -> bytes:
 
 @microsoft365.action("send_email")
 class SendEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             # Build email message
             message = {
@@ -68,19 +68,25 @@ class SendEmailAction(ActionHandler):
                 json=email_data
             )
             
-            return {
+            return ActionResult(
+                data={
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("create_calendar_event")
 class CreateCalendarEventAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             # Build event data
             event_data = {
@@ -122,21 +128,27 @@ class CreateCalendarEventAction(ActionHandler):
                 json=event_data
             )
             
-            return {
+            return ActionResult(
+                data={
                 "id": response["id"],
                 "webLink": response["webLink"],
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("upload_file")
 class UploadFileAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             filename = inputs["filename"]
             content = inputs["content"]
@@ -160,22 +172,28 @@ class UploadFileAction(ActionHandler):
                 headers={"Content-Type": content_type}
             )
             
-            return {
+            return ActionResult(
+                data={
                 "id": response["id"],
                 "webUrl": response["webUrl"],
                 "size": response["size"],
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_files")
 class ListFilesAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             folder_path = inputs.get("folder_path", "/").strip("/")
             limit = inputs.get("limit", 100)
@@ -209,21 +227,27 @@ class ListFilesAction(ActionHandler):
                     file_item["folder"] = item["folder"]
                 files.append(file_item)
             
-            return {
+            return ActionResult(
+                data={
                 "files": files,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "files": [],
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("update_calendar_event")
 class UpdateCalendarEventAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             event_id = inputs["event_id"]
             
@@ -271,21 +295,27 @@ class UpdateCalendarEventAction(ActionHandler):
                 json=event_data
             )
             
-            return {
+            return ActionResult(
+                data={
                 "id": response["id"],
                 "webLink": response["webLink"],
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_calendar_events")
 class ListCalendarEventsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             # Accept either datetime or date parameters, with intelligent defaults
             if "start_datetime" in inputs:
@@ -351,21 +381,27 @@ class ListCalendarEventsAction(ActionHandler):
                     "isAllDay": event.get("isAllDay", False)
                 })
             
-            return {
+            return ActionResult(
+                data={
                 "events": events,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "events": [],
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_emails")
 class ListEmailsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             # Accept either datetime or date parameters, with intelligent defaults
             if "start_datetime" in inputs:
@@ -414,21 +450,27 @@ class ListEmailsAction(ActionHandler):
                     "importance": email.get("importance", "normal")
                 })
             
-            return {
+            return ActionResult(
+                data={
                 "emails": emails,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "emails": [],
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_emails_from_contact")
 class ListEmailsFromContactAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             contact_email = inputs["contact_email"]
             limit = inputs.get("limit", 5)
@@ -461,23 +503,29 @@ class ListEmailsFromContactAction(ActionHandler):
                     "importance": email.get("importance", "normal")
                 })
             
-            return {
+            return ActionResult(
+                data={
                 "emails": emails,
                 "contact_email": contact_email,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "emails": [],
                 "contact_email": contact_email,
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("mark_email_read")
 class MarkEmailReadAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             email_id = inputs["email_id"]
             is_read = inputs["is_read"]
@@ -493,22 +541,28 @@ class MarkEmailReadAction(ActionHandler):
                 json=update_data
             )
             
-            return {
+            return ActionResult(
+                data={
                 "id": response["id"],
                 "isRead": response["isRead"],
                 "lastModifiedDateTime": response["lastModifiedDateTime"],
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("move_email")
 class MoveEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             email_id = inputs["email_id"]
             destination_folder = inputs["destination_folder"]
@@ -524,22 +578,28 @@ class MoveEmailAction(ActionHandler):
                 json=move_data
             )
             
-            return {
+            return ActionResult(
+                data={
                 "id": response["id"],
                 "parentFolderId": response["parentFolderId"],
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("read_email")
 class ReadEmailAction(ActionHandler):
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             email_id = inputs["email_id"]
             include_attachments = inputs.get("include_attachments", True)
@@ -587,23 +647,29 @@ class ReadEmailAction(ActionHandler):
                     
                     attachments.append(attachment_data)
             
-            return {
+            return ActionResult(
+                data={
                 "email": email_details,
                 "attachments": attachments,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "email": {},
                 "attachments": [],
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("read_contacts")
 class ReadContactsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 100)
             search = inputs.get("search")
@@ -691,31 +757,40 @@ class ReadContactsAction(ActionHandler):
                 else:
                     message = f"No contacts found matching '{search}'"
 
-                return {
+                return ActionResult(
+                    data={
                     "contacts": contacts,
                     "result": True,
                     "message": message,
                     "search_term": search,
                     "total_searched": len(all_contacts)
-                }
+                },
+                    cost_usd=0.0
+                )
             else:
-                return {
+                return ActionResult(
+                    data={
                     "contacts": contacts,
                     "result": True,
                     "message": f"Retrieved {len(contacts)} contacts",
                     "total_contacts": len(contacts)
-                }
+                },
+                    cost_usd=0.0
+                )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "contacts": [],
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("search_onedrive_files")
 class SearchOneDriveFilesAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             search_query = inputs["query"]
             limit = inputs.get("limit", 10)
@@ -751,21 +826,27 @@ class SearchOneDriveFilesAction(ActionHandler):
                     file_item["file"] = item["file"]
                 files.append(file_item)
             
-            return {
+            return ActionResult(
+                data={
                 "files": files,
                 "query": search_query,
                 "result": True
-            }
+            },
+                cost_usd=0.0
+            )
             
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("read_onedrive_file_content")
 class ReadOneDriveFileContentAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             file_id = inputs["file_id"]
             
@@ -847,7 +928,8 @@ class ReadOneDriveFileContentAction(ActionHandler):
 
             # Return in Google Drive format for consistency
             if content_available and content:
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": content,
                         "name": file_name,
@@ -861,14 +943,17 @@ class ReadOneDriveFileContentAction(ActionHandler):
                         "webUrl": web_url
                     },
                     "result": True
-                }
+                },
+                    cost_usd=0.0
+                )
             else:
                 # Set fallback content type for failed cases
                 fallback_content_type = mime_type
                 if file_name.lower().endswith('.pdf'):
                     fallback_content_type = "application/pdf"
 
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": "",
                         "name": file_name,
@@ -883,10 +968,13 @@ class ReadOneDriveFileContentAction(ActionHandler):
                     },
                     "result": False,
                     "error": content_info
-                }
+                },
+                    cost_usd=0.0
+                )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "file": {
                     "content": "",
                     "name": "",
@@ -895,11 +983,13 @@ class ReadOneDriveFileContentAction(ActionHandler):
                 "metadata": {},
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("create_draft_email")
 class CreateDraftEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             # Build email message according to Microsoft Graph API spec
             message = {
@@ -968,23 +1058,29 @@ class CreateDraftEmailAction(ActionHandler):
                 json=message
             )
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "draft_id": response["id"],
                 "subject": response.get("subject") or "",
                 "created_datetime": response.get("createdDateTime") or "",
                 "is_draft": response.get("isDraft", True)
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("send_draft_email")
 class SendDraftEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             draft_id = inputs["draft_id"]
 
@@ -996,22 +1092,28 @@ class SendDraftEmailAction(ActionHandler):
                 headers={"Content-Length": "0"}
             )
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "draft_id": draft_id,
                 "status": "sent"
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "draft_id": inputs.get("draft_id", ""),
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("reply_to_email")
 class ReplyToEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             message_id = inputs["message_id"]
 
@@ -1028,24 +1130,30 @@ class ReplyToEmailAction(ActionHandler):
                 json=reply_data
             )
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "message_id": message_id,
                 "operation": "reply",
                 "status": "sent"
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "message_id": inputs.get("message_id", ""),
                 "operation": "reply",
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("forward_email")
 class ForwardEmailAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             message_id = inputs["message_id"]
 
@@ -1080,24 +1188,30 @@ class ForwardEmailAction(ActionHandler):
                 json=forward_data
             )
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "message_id": message_id,
                 "operation": "forward",
                 "status": "sent"
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "message_id": inputs.get("message_id", ""),
                 "operation": "forward",
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("download_email_attachment")
 class DownloadEmailAttachmentAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             message_id = inputs["message_id"]
             attachment_id = inputs["attachment_id"]
@@ -1144,7 +1258,8 @@ class DownloadEmailAttachmentAction(ActionHandler):
 
             # Return in same format as OneDrive/SharePoint for consistency
             if content_available and content:
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": content,
                         "name": attachment_name,
@@ -1159,9 +1274,12 @@ class DownloadEmailAttachmentAction(ActionHandler):
                         "is_inline": is_inline
                     },
                     "result": True
-                }
+                },
+                    cost_usd=0.0
+                )
             else:
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": "",
                         "name": attachment_name,
@@ -1177,10 +1295,13 @@ class DownloadEmailAttachmentAction(ActionHandler):
                     },
                     "result": False,
                     "error": content_error_msg or "Content not available"
-                }
+                },
+                    cost_usd=0.0
+                )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "file": {
                     "content": "",
                     "name": "",
@@ -1196,11 +1317,13 @@ class DownloadEmailAttachmentAction(ActionHandler):
                 },
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("search_emails")
 class SearchEmailsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             query = inputs["query"]
             limit = inputs.get("limit", 25)
@@ -1258,25 +1381,31 @@ class SearchEmailsAction(ActionHandler):
                             "has_attachments": message_data.get("hasAttachments", False)
                         })
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "query": query,
                 "total_results": total_results,
                 "messages": messages
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "query": inputs.get("query", ""),
                 "total_results": 0,
                 "messages": [],
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("search_sharepoint_sites")
 class SearchSharePointSitesAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             search_query = inputs["query"]
 
@@ -1308,25 +1437,31 @@ class SearchSharePointSitesAction(ActionHandler):
                     "last_modified_datetime": site.get("lastModifiedDateTime") or ""
                 })
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "query": search_query,
                 "sites": sites,
                 "total_sites": len(sites)
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "query": inputs.get("query", ""),
                 "sites": [],
                 "total_sites": 0,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("get_sharepoint_site_details")
 class GetSharePointSiteDetailsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
 
@@ -1352,21 +1487,27 @@ class GetSharePointSiteDetailsAction(ActionHandler):
             if "siteCollection" in response:
                 site_details["site_collection"] = response["siteCollection"]
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "site": site_details
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "site": {},
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_sharepoint_libraries")
 class ListSharePointLibrariesAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
 
@@ -1426,25 +1567,31 @@ class ListSharePointLibrariesAction(ActionHandler):
 
                 libraries.append(library_data)
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "site_id": site_id,
                 "libraries": libraries,
                 "total_libraries": len(libraries)
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "site_id": inputs.get("site_id", ""),
                 "libraries": [],
                 "total_libraries": 0,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("search_sharepoint_documents")
 class SearchSharePointDocumentsAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
             search_query = inputs["query"]
@@ -1458,7 +1605,8 @@ class SearchSharePointDocumentsAction(ActionHandler):
 
             drives = drives_response.get("value", [])
             if not drives:
-                return {
+                return ActionResult(
+                    data={
                     "result": True,
                     "site_id": site_id,
                     "query": search_query,
@@ -1466,7 +1614,9 @@ class SearchSharePointDocumentsAction(ActionHandler):
                     "total_files": 0,
                     "drives_searched": 0,
                     "message": "No document libraries found in this site"
-                }
+                },
+                    cost_usd=0.0
+                )
 
             # Step 2: Search each drive individually
             # GET /drives/{drive-id}/root/search(q='{query}')
@@ -1540,18 +1690,21 @@ class SearchSharePointDocumentsAction(ActionHandler):
             return result
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "site_id": inputs.get("site_id", ""),
                 "query": inputs.get("query", ""),
                 "files": [],
                 "total_files": 0,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("read_sharepoint_document")
 class ReadSharePointDocumentAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
             file_id = inputs["file_id"]
@@ -1650,7 +1803,8 @@ class ReadSharePointDocumentAction(ActionHandler):
 
             # Return in same format as OneDrive for consistency
             if content_available and content:
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": content,
                         "name": file_name,
@@ -1666,14 +1820,17 @@ class ReadSharePointDocumentAction(ActionHandler):
                         "drive_id": drive_id
                     },
                     "result": True
-                }
+                },
+                    cost_usd=0.0
+                )
             else:
                 # Set fallback content type for failed cases
                 fallback_content_type = mime_type
                 if file_name.lower().endswith('.pdf'):
                     fallback_content_type = "application/pdf"
 
-                return {
+                return ActionResult(
+                    data={
                     "file": {
                         "content": "",
                         "name": file_name,
@@ -1690,10 +1847,13 @@ class ReadSharePointDocumentAction(ActionHandler):
                     },
                     "result": False,
                     "error": content_info
-                }
+                },
+                    cost_usd=0.0
+                )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "file": {
                     "content": "",
                     "name": "",
@@ -1706,11 +1866,13 @@ class ReadSharePointDocumentAction(ActionHandler):
                 },
                 "result": False,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("list_sharepoint_pages")
 class ListSharePointPagesAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
 
@@ -1763,25 +1925,31 @@ class ListSharePointPagesAction(ActionHandler):
 
                 pages.append(page_data)
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "site_id": site_id,
                 "pages": pages,
                 "total_pages": len(pages)
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "site_id": inputs.get("site_id", ""),
                 "pages": [],
                 "total_pages": 0,
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
 
 @microsoft365.action("read_sharepoint_page_content")
 class ReadSharePointPageContentAction(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             site_id = inputs["site_id"]
             page_id = inputs["page_id"]
@@ -1824,16 +1992,22 @@ class ReadSharePointPageContentAction(ActionHandler):
             if include_content and "canvasLayout" in response:
                 page_data["content"] = response["canvasLayout"]
 
-            return {
+            return ActionResult(
+                data={
                 "result": True,
                 "site_id": site_id,
                 "page": page_data
-            }
+            },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {
+            return ActionResult(
+                data={
                 "result": False,
                 "site_id": inputs.get("site_id", ""),
                 "page": {},
                 "error": str(e)
-            }
+            },
+                cost_usd=0.0
+            )
