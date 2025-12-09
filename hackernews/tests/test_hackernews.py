@@ -174,6 +174,7 @@ async def test_user_not_found():
         try:
             await hackernews.execute_action("get_user_profile", inputs, context)
             print("   [FAIL] Should have raised an error")
+            assert False, "Expected ValueError but none was raised"
         except ValueError as e:
             print(f"   [OK] Correctly raised error: {e}")
         except Exception as e:
