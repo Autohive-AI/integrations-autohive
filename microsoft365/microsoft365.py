@@ -1687,7 +1687,10 @@ class SearchSharePointDocumentsAction(ActionHandler):
             if search_errors:
                 result["search_errors"] = search_errors
 
-            return result
+            return ActionResult(
+                data=result,
+                cost_usd=0.0
+            )
 
         except Exception as e:
             return ActionResult(
