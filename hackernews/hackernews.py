@@ -4,7 +4,6 @@ from autohive_integrations_sdk import (
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import asyncio
-import aiohttp
 
 hackernews = Integration.load()
 
@@ -13,25 +12,22 @@ HN_ITEM_URL = "https://news.ycombinator.com/item?id="
 HN_USER_URL = "https://news.ycombinator.com/user?id="
 
 
-async def fetch_json(session: aiohttp.ClientSession, url: str) -> Optional[Dict[str, Any]]:
+async def fetch_json(context: ExecutionContext, url: str) -> Optional[Any]:
     """Fetch JSON from a URL, returning None on error."""
     try:
-        async with session.get(url) as response:
-            if response.status == 200:
-                return await response.json()
+        return await context.fetch(url, method="GET")
     except Exception:
-        pass
-    return None
+        return None
 
 
-async def fetch_item(session: aiohttp.ClientSession, item_id: int) -> Optional[Dict[str, Any]]:
+async def fetch_item(context: ExecutionContext, item_id: int) -> Optional[Dict[str, Any]]:
     """Fetch a single item by ID."""
-    return await fetch_json(session, f"{BASE_URL}/item/{item_id}.json")
+    return await fetch_json(context, f"{BASE_URL}/item/{item_id}.json")
 
 
-async def fetch_items_batch(session: aiohttp.ClientSession, item_ids: List[int]) -> List[Dict[str, Any]]:
+async def fetch_items_batch(context: ExecutionContext, item_ids: List[int]) -> List[Dict[str, Any]]:
     """Fetch multiple items concurrently."""
-    tasks = [fetch_item(session, item_id) for item_id in item_ids]
+    tasks = [fetch_item(context, item_id) for item_id in item_ids]
     results = await asyncio.gather(*tasks)
     return [item for item in results if item is not None]
 
@@ -85,7 +81,7 @@ def format_comment(item: Dict[str, Any], replies: List[Dict[str, Any]] = None) -
 
 
 async def fetch_comments_recursive(
-    session: aiohttp.ClientSession,
+    context: ExecutionContext,
     comment_ids: List[int],
     limit: int,
     current_depth: int,
@@ -96,7 +92,7 @@ async def fetch_comments_recursive(
         return []
     
     limited_ids = comment_ids[:limit] if current_depth == 1 else comment_ids[:10]
-    comments = await fetch_items_batch(session, limited_ids)
+    comments = await fetch_items_batch(context, limited_ids)
     
     result = []
     for comment in comments:
@@ -106,7 +102,7 @@ async def fetch_comments_recursive(
         replies = []
         if current_depth < max_depth and comment.get("kids"):
             replies = await fetch_comments_recursive(
-                session,
+                context,
                 comment["kids"],
                 limit,
                 current_depth + 1,
@@ -121,34 +117,34 @@ async def fetch_comments_recursive(
 
 
 async def fetch_stories_list(
+    context: ExecutionContext,
     endpoint: str,
     limit: int,
     output_key: str = "stories"
 ) -> Dict[str, Any]:
     """Generic function to fetch a list of stories from an endpoint."""
-    async with aiohttp.ClientSession() as session:
-        story_ids = await fetch_json(session, f"{BASE_URL}/{endpoint}.json")
-        
-        if not story_ids:
-            return {
-                output_key: [],
-                "fetched_at": datetime.now(timezone.utc).isoformat(),
-                "count": 0
-            }
-        
-        limited_ids = story_ids[:min(limit, 100)]
-        items = await fetch_items_batch(session, limited_ids)
-        
-        formatted_items = []
-        for item in items:
-            if item:
-                formatted_items.append(format_item(item))
-        
+    story_ids = await fetch_json(context, f"{BASE_URL}/{endpoint}.json")
+    
+    if not story_ids:
         return {
-            output_key: formatted_items,
+            output_key: [],
             "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "count": len(formatted_items)
+            "count": 0
         }
+    
+    limited_ids = story_ids[:min(limit, 100)]
+    items = await fetch_items_batch(context, limited_ids)
+    
+    formatted_items = []
+    for item in items:
+        if item:
+            formatted_items.append(format_item(item))
+    
+    return {
+        output_key: formatted_items,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "count": len(formatted_items)
+    }
 
 
 @hackernews.action("get_top_stories")
@@ -158,7 +154,7 @@ class GetTopStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("topstories", limit)
+            result = await fetch_stories_list(context, "topstories", limit)
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -174,7 +170,7 @@ class GetBestStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("beststories", limit)
+            result = await fetch_stories_list(context, "beststories", limit)
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -190,7 +186,7 @@ class GetNewStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("newstories", limit)
+            result = await fetch_stories_list(context, "newstories", limit)
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -206,7 +202,7 @@ class GetAskHNStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("askstories", limit)
+            result = await fetch_stories_list(context, "askstories", limit)
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -222,7 +218,7 @@ class GetShowHNStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("showstories", limit)
+            result = await fetch_stories_list(context, "showstories", limit)
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -238,7 +234,7 @@ class GetJobStoriesAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             limit = inputs.get("limit", 30)
-            result = await fetch_stories_list("jobstories", limit, output_key="jobs")
+            result = await fetch_stories_list(context, "jobstories", limit, output_key="jobs")
             return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
@@ -257,33 +253,32 @@ class GetStoryWithCommentsAction(ActionHandler):
             comment_limit = inputs.get("comment_limit", 20)
             comment_depth = inputs.get("comment_depth", 2)
             
-            async with aiohttp.ClientSession() as session:
-                story = await fetch_item(session, story_id)
-                
-                if not story:
-                    return ActionResult(
-                        data={"error": f"Story with ID {story_id} not found"},
-                        cost_usd=0.0
-                    )
-                
-                comments = []
-                if story.get("kids"):
-                    comments = await fetch_comments_recursive(
-                        session,
-                        story["kids"],
-                        comment_limit,
-                        current_depth=1,
-                        max_depth=comment_depth
-                    )
-                
+            story = await fetch_item(context, story_id)
+            
+            if not story:
                 return ActionResult(
-                    data={
-                        "story": format_item(story),
-                        "comments": comments,
-                        "fetched_at": datetime.now(timezone.utc).isoformat()
-                    },
+                    data={"error": f"Story with ID {story_id} not found"},
                     cost_usd=0.0
                 )
+            
+            comments = []
+            if story.get("kids"):
+                comments = await fetch_comments_recursive(
+                    context,
+                    story["kids"],
+                    comment_limit,
+                    current_depth=1,
+                    max_depth=comment_depth
+                )
+            
+            return ActionResult(
+                data={
+                    "story": format_item(story),
+                    "comments": comments,
+                    "fetched_at": datetime.now(timezone.utc).isoformat()
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             return ActionResult(
                 data={"error": str(e)},
@@ -299,30 +294,29 @@ class GetUserProfileAction(ActionHandler):
         try:
             username = inputs["username"]
             
-            async with aiohttp.ClientSession() as session:
-                user = await fetch_json(session, f"{BASE_URL}/user/{username}.json")
-                
-                if not user:
-                    return ActionResult(
-                        data={"error": f"User '{username}' not found"},
-                        cost_usd=0.0
-                    )
-                
-                result = {
-                    "id": user.get("id"),
-                    "karma": user.get("karma", 0),
-                    "profile_url": f"{HN_USER_URL}{username}"
-                }
-                
-                if user.get("created"):
-                    result["created"] = datetime.fromtimestamp(
-                        user["created"], tz=timezone.utc
-                    ).isoformat()
-                
-                if user.get("about"):
-                    result["about"] = user["about"]
-                
-                return ActionResult(data=result, cost_usd=0.0)
+            user = await fetch_json(context, f"{BASE_URL}/user/{username}.json")
+            
+            if not user:
+                return ActionResult(
+                    data={"error": f"User '{username}' not found"},
+                    cost_usd=0.0
+                )
+            
+            result = {
+                "id": user.get("id"),
+                "karma": user.get("karma", 0),
+                "profile_url": f"{HN_USER_URL}{username}"
+            }
+            
+            if user.get("created"):
+                result["created"] = datetime.fromtimestamp(
+                    user["created"], tz=timezone.utc
+                ).isoformat()
+            
+            if user.get("about"):
+                result["about"] = user["about"]
+            
+            return ActionResult(data=result, cost_usd=0.0)
         except Exception as e:
             return ActionResult(
                 data={"error": str(e)},
