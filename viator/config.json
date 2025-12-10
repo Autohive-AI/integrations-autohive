@@ -16,8 +16,7 @@
           "label": "API Key",
           "help_text": "Your Viator Partner API Key. You can obtain this from the Viator Partner API portal at https://www.viator.com/partner"
         }
-      },
-      "required": ["api_key"]
+      }
     }
   },
   "actions": {
