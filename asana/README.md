@@ -6,40 +6,60 @@ Connects Autohive to the Asana API to enable task management, project organizati
 
 This integration provides a comprehensive connection to Asana's project management platform. It allows users to automate task creation, project management, team collaboration, and workflow automation directly from Autohive.
 
-The integration uses Asana API v1.0 with Personal Access Token authentication and implements 18 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
+The integration uses Asana API v1.0 with OAuth 2.0 authentication and implements 18 comprehensive actions covering tasks, projects, sections, comments, and subtasks.
 
 ## Setup & Authentication
 
-This integration uses **Custom Authentication** with Asana Personal Access Token (PAT).
+This integration uses **OAuth 2.0** authentication for secure access to your Asana account.
 
 ### Authentication Method
 
-Asana uses Bearer token authentication with Personal Access Tokens. The integration handles the authentication automatically by adding your PAT to the Authorization header in all API requests.
-
-### Required Authentication Fields
-
-- **`personal_access_token`**: Your Asana Personal Access Token
-  - Created in Asana Settings > Apps > Manage Developer Apps
-  - Long-lived token that doesn't expire automatically
-  - Acts with same permissions as your Asana account
-  - Must be kept secure (treat like a password)
-
-### How to Get Your Personal Access Token
-
-1. **Log in to Asana**: Go to https://app.asana.com
-2. **Open Settings**: Click your profile initials in the top right corner
-3. **Navigate to Apps**: Select "Settings" from the dropdown menu
-4. **Access Developer Apps**: Click on the "Apps" tab
-5. **Manage Tokens**: Select "Manage Developer Apps" at the bottom left
-6. **Create Token**: Click "+ Create new token"
-7. **Save Token**: Name it (e.g., "Autohive Integration"), agree to API terms, click "Create token", and **copy immediately** (shown only once!)
+The integration uses OAuth 2.0 with the following scopes:
+- `tasks:read` - Read task data
+- `tasks:write` - Create and update tasks
+- `tasks:delete` - Delete tasks
+- `projects:read` - Read project data
+- `projects:write` - Create and update projects
+- `projects:delete` - Delete projects
+- `stories:read` - Read comments and activity
+- `stories:write` - Add comments to tasks
+- `workspaces:read` - Access workspace information
+- `teams:read` - Access team information
+- `users:read` - Access user information
 
 ### Setup Steps in Autohive
 
-1. Get your Personal Access Token (follow steps above)
-2. Add Asana integration in Autohive
-3. Paste your token in the `personal_access_token` field
-4. Save configuration
+1. Add Asana integration in Autohive
+2. Click "Connect to Asana" to authorize the integration
+3. Sign in to your Asana account when prompted
+4. Review and authorize the requested permissions
+5. You'll be redirected back to Autohive once authorization is complete
+
+The OAuth integration automatically handles token management and refresh, so you don't need to manually manage access tokens.
+
+## Action Results
+
+All actions return a standardized response structure:
+- `result` (boolean): Indicates whether the action succeeded (true) or failed (false)
+- `error` (string, optional): Contains error message if the action failed
+- Additional action-specific data fields (e.g., `task`, `project`, `sections`)
+
+Example successful response:
+```json
+{
+  "result": true,
+  "task": { "gid": "123", "name": "My Task" }
+}
+```
+
+Example error response:
+```json
+{
+  "result": false,
+  "error": "Task not found",
+  "task": {}
+}
+```
 
 ## Actions
 
@@ -60,7 +80,8 @@ Creates a new task in Asana.
 
 **Outputs:**
 - `task`: Created task object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -73,7 +94,8 @@ Retrieves details of a specific task by GID.
 
 **Outputs:**
 - `task`: Task object with details
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -91,7 +113,8 @@ Updates an existing task.
 
 **Outputs:**
 - `task`: Updated task object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -114,7 +137,8 @@ Returns tasks filtered by project, section, assignee, or workspace.
 
 **Outputs:**
 - `tasks`: Array of task objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -125,7 +149,8 @@ Deletes a task permanently.
 - `task_gid` (required): The GID of the task to delete
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -142,7 +167,8 @@ Returns projects in a workspace or team.
 
 **Outputs:**
 - `projects`: Array of project objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -155,7 +181,8 @@ Retrieves details of a specific project by GID.
 
 **Outputs:**
 - `project`: Project object with details
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -177,6 +204,8 @@ Get a project by its exact name. This action paginates through all projects to f
 - `color`: Project color (null if not found)
 - `notes`: Project notes (null if not found)
 - `not_found`: Boolean indicating if project was not found
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 **Note:** This action iterates through all accessible projects to find a name match. For better performance, provide a `workspace` parameter to narrow the search scope.
 
@@ -195,7 +224,8 @@ Creates a new project in Asana.
 
 **Outputs:**
 - `project`: Created project object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -212,7 +242,8 @@ Updates an existing project's details.
 
 **Outputs:**
 - `project`: Updated project object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -223,7 +254,8 @@ Deletes a project permanently.
 - `project_gid` (required): The GID of the project to delete
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -238,7 +270,8 @@ Returns all sections in a project (columns in board view or headers in list view
 
 **Outputs:**
 - `sections`: Array of section objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -251,7 +284,8 @@ Creates a new section in a project.
 
 **Outputs:**
 - `section`: Created section object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -264,7 +298,8 @@ Updates a section's name.
 
 **Outputs:**
 - `section`: Updated section object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -276,7 +311,8 @@ Moves a task to a specific section within a project.
 - `task_gid` (required): The GID of the task to add
 
 **Outputs:**
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -291,7 +327,8 @@ Adds a comment (story) to a task.
 
 **Outputs:**
 - `story`: Created story/comment object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -304,7 +341,8 @@ Gets all comments and stories for a task.
 
 **Outputs:**
 - `stories`: Array of story/comment objects
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -322,7 +360,8 @@ Creates a subtask under a parent task.
 
 **Outputs:**
 - `subtask`: Created subtask object
-- `result`: Success status
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
 
 ---
 
@@ -334,7 +373,7 @@ Creates a subtask under a parent task.
 
 - **API Version**: v1.0
 - **Base URL**: `https://app.asana.com/api/1.0`
-- **Authentication**: Bearer Token (Personal Access Token)
+- **Authentication**: OAuth 2.0
 - **Documentation**: https://developers.asana.com/docs
 - **Rate Limits**:
   - Free plan: 150 requests per minute
@@ -342,10 +381,9 @@ Creates a subtask under a parent task.
 
 ## Important Notes
 
-- Personal Access Token provides same access as your Asana account
-- Keep your token secure and never share it publicly
-- Token will only be shown once when created - copy it immediately
-- Can create multiple tokens for different integrations
+- OAuth tokens are automatically managed by the platform
+- Tokens are automatically refreshed when needed
+- You can revoke access at any time from your Asana account settings
 - Asana wraps all API requests and responses in a `data` object
 - GID (Global Identifier) is used for all resource references
 - `list_tasks` requires specific filter combinations (see action details)
@@ -356,7 +394,7 @@ To test the integration:
 
 1. Navigate to the integration directory: `cd asana`
 2. Install dependencies: `pip install -r requirements.txt`
-3. Update test credentials in `tests/test_asana.py`
+3. Configure OAuth credentials through the Autohive platform
 4. Run tests: `python tests/test_asana.py`
 
 ## Common Use Cases

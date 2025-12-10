@@ -5,19 +5,21 @@
     "description": "Asana integration for managing tasks, projects, workspaces, and team collaboration",
     "entry_point": "asana.py",
     "auth": {
-        "type": "custom",
-        "title": "Asana Personal Access Token",
-        "fields": {
-            "type": "object",
-            "properties": {
-                "personal_access_token": {
-                    "type": "string",
-                    "format": "password",
-                    "label": "Personal Access Token",
-                    "help_text": "Your Asana Personal Access Token. Create one in Settings > Apps > Manage Developer Apps > Create new token."
-                }
-            }
-        }
+        "type": "platform",
+        "provider": "Asana",
+        "scopes": [
+            "tasks:read",
+            "tasks:write",
+            "tasks:delete",
+            "projects:read",
+            "projects:write",
+            "projects:delete",
+            "stories:read",
+            "stories:write",
+            "workspaces:read",
+            "teams:read",
+            "users:read"
+        ]
     },
     "actions": {
         "create_task": {
@@ -268,17 +270,17 @@
         },
         "list_projects": {
             "display_name": "List Projects",
-            "description": "Returns projects in a workspace or team.",
+            "description": "Returns projects in a workspace or team. NOTE: As of 2025, workspace or team parameter is REQUIRED. Use 'list_workspaces' action first to get available workspace IDs.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "workspace": {
                         "type": "string",
-                        "description": "Workspace GID to list projects from"
+                        "description": "Workspace GID to list projects from (REQUIRED - use list_workspaces to get this)"
                     },
                     "team": {
                         "type": "string",
-                        "description": "Team GID to list projects from"
+                        "description": "Team GID to list projects from (alternative to workspace)"
                     },
                     "archived": {
                         "type": "boolean",
@@ -290,7 +292,7 @@
                         "maximum": 100
                     }
                 },
-                "required": []
+                "required": ["workspace"]
             },
             "output_schema": {
                 "type": "object",
@@ -484,7 +486,7 @@
         },
         "get_project_by_name": {
             "display_name": "Get Project by Name",
-            "description": "Get a project by its exact name.",
+            "description": "Get a project by its exact name. IMPORTANT: As of 2025, providing workspace parameter is strongly recommended and may be required. Use 'list_workspaces' action first to get workspace IDs.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -494,7 +496,7 @@
                     },
                     "workspace": {
                         "type": "string",
-                        "description": "Workspace GID to search in (optional but recommended for better performance)"
+                        "description": "Workspace GID to search in (STRONGLY RECOMMENDED - use list_workspaces to get this)"
                     },
                     "team": {
                         "type": "string",
@@ -542,8 +544,17 @@
                     "not_found": {
                         "type": "boolean",
                         "description": "Whether the project was not found"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
                     }
-                }
+                },
+                "required": ["result"]
             }
         },
         "list_sections": {
@@ -806,6 +817,125 @@
                     }
                 },
                 "required": ["subtask", "result"]
+            }
+        },
+        "list_workspaces": {
+            "display_name": "List Workspaces",
+            "description": "Returns all workspaces the authenticated user has access to. Use this to get workspace IDs for other actions.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of workspaces to return",
+                        "maximum": 100
+                    },
+                    "opt_fields": {
+                        "type": "array",
+                        "description": "Optional fields to include in response",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "workspaces": {
+                        "type": "array",
+                        "description": "List of workspaces"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["workspaces", "result"]
+            }
+        },
+        "get_workspace": {
+            "display_name": "Get Workspace",
+            "description": "Retrieves details of a specific workspace by its GID.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "workspace_gid": {
+                        "type": "string",
+                        "description": "The GID of the workspace to retrieve"
+                    },
+                    "opt_fields": {
+                        "type": "array",
+                        "description": "Optional fields to include in response",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": ["workspace_gid"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "workspace": {
+                        "type": "object",
+                        "description": "Workspace details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["workspace", "result"]
+            }
+        },
+        "get_user": {
+            "display_name": "Get User",
+            "description": "Retrieves details of a user. Use 'me' as user_gid to get the current authenticated user's information including their workspaces.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "user_gid": {
+                        "type": "string",
+                        "description": "The GID of the user to retrieve, or 'me' for current user",
+                        "default": "me"
+                    },
+                    "opt_fields": {
+                        "type": "array",
+                        "description": "Optional fields to include in response (e.g., ['workspaces', 'email', 'photo'])",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "type": "object",
+                        "description": "User details"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["user", "result"]
             }
         }
     }

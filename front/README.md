@@ -106,18 +106,28 @@ No additional configuration fields are required as authentication is handled thr
   - `error`: Error message (if operation failed)
 
 #### Action: `get_message`
-- **Description:** Get details of a specific message
+- **Description:** Get details of a specific message including attachments metadata
 - **Inputs:**
   - `message_id`: The message ID to retrieve (required)
 - **Outputs:**
   - `message`: Message object with:
     - Required fields: `id`, `type`, `is_inbound`, `author`
-    - Optional fields: `recipients`, `subject`, `body`, `created_at`
+    - Optional fields: `recipients`, `subject`, `body`, `created_at`, `attachments` (array with url, filename, content_type for each attachment)
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
+#### Action: `download_message_attachment`
+- **Description:** Download the content of a message attachment and return as base64-encoded data
+- **Inputs:**
+  - `attachment_url`: The URL of the attachment to download from message.attachments[].url (required)
+- **Outputs:**
+  - `file`: File object with base64-encoded content, name, contentType, and size
+  - `result`: Success status boolean
+  - `error`: Error message (if operation failed)
+- **Workflow:** Call `get_message` first to get attachment URLs, then use this action to download the file content
+
 #### Action: `create_message`
-- **Description:** Create a new message (starts new conversation) via a channel
+- **Description:** Create a new message (starts new conversation) via a channel with optional file attachments
 - **Inputs:**
   - `channel_id`: Channel ID to send from (required)
   - `body`: Message body content (required)
@@ -130,13 +140,14 @@ No additional configuration fields are required as authentication is handled thr
   - `text`: Text version of the body for email messages (optional)
   - `signature_id`: ID of the signature to attach to this message (optional)
   - `should_add_default_signature`: Whether to add the default signature (optional)
+  - `files`: Array of file attachments (optional) - upload files directly in the conversation
 - **Outputs:**
   - `message_uid`: Temporary message UID for async processing
   - `result`: Success status boolean
   - `error`: Error message (if operation failed)
 
 #### Action: `create_message_reply`
-- **Description:** Reply to an existing conversation
+- **Description:** Reply to an existing conversation with optional file attachments
 - **Inputs:**
   - `conversation_id`: The conversation ID to reply to (required)
   - `body`: Message body content (required)
@@ -151,6 +162,7 @@ No additional configuration fields are required as authentication is handled thr
   - `quote_body`: Body for the quote that the message is referencing (email channels only) (optional)
   - `signature_id`: ID of the signature to attach to this message (optional)
   - `should_add_default_signature`: Whether to add the default signature (optional)
+  - `files`: Array of file attachments (optional) - upload files directly in the conversation
 - **Outputs:**
   - `message_uid`: Temporary message UID for async processing
   - `result`: Success status boolean
@@ -400,6 +412,44 @@ This will return all inboxes whose name contains "support" (case-insensitive).
 ```
 
 This will search through conversations in the specified inbox and return those whose subject or recipient contains "billing issue" (case-insensitive).
+
+**Example 9: Download and forward message attachments**
+
+Step 1 - Get message with attachments:
+```json
+{
+  "message_id": "msg_789"
+}
+```
+
+Step 2 - Download attachment from the message:
+```json
+{
+  "attachment_url": "https://api2.frontapp.com/download/fil_abc123"
+}
+```
+
+This returns a file object with base64-encoded content that can be used directly in `create_message` or `create_message_reply`.
+
+Step 3 - Forward attachment in a reply:
+Use the downloaded file's base64 content from Step 2 when creating a message or reply with the `files` parameter.
+
+**Example 10: Send message with file attachments**
+
+Step 1 - Upload files in the conversation interface (files will be available as `files` parameter)
+
+Step 2 - Create message with attachments:
+```json
+{
+  "channel_id": "cha_email123",
+  "body": "Please find the requested documents attached.",
+  "to": ["customer@example.com"],
+  "subject": "Requested Documents",
+  "author_id": "tea_789"
+}
+```
+
+Note: Files uploaded in the conversation will automatically be attached to the message. The integration handles multipart/form-data encoding for attachments.
 
 ## Testing
 

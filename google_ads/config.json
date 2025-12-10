@@ -2,7 +2,7 @@
     "name": "Google Ads",
     "version": "1.0.0",
     "description": "Fetches various performance data from the Google Ads API, including campaigns, ad groups, ads, and audience segments.",
-    "entry_point": "adwords.py",
+    "entry_point": "google_ads.py",
     "auth": {
         "type": "platform",
         "provider": "Google Ads",

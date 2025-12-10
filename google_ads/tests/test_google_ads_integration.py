@@ -1,6 +1,6 @@
 import asyncio
 from pprint import pprint
-from context import adwords
+from context import google_ads
 from autohive_integrations_sdk import ExecutionContext
 
 async def test_retrieve_campaign_metrics():
@@ -23,7 +23,7 @@ async def test_retrieve_campaign_metrics():
     }
 
     try:
-        result = await adwords.execute_action("retrieve_campaign_metrics", inputs, context)
+        result = await google_ads.execute_action("retrieve_campaign_metrics", inputs, context)
         
         print("\nGoogle Ads API Test Results:")
         print("============================")
@@ -56,7 +56,7 @@ async def test_retrieve_keyword_metrics():
     }
 
     try:
-        result = await adwords.execute_action("retrieve_keyword_metrics", inputs, context)
+        result = await google_ads.execute_action("retrieve_keyword_metrics", inputs, context)
         
         print("\nGoogle Ads Keyword Metrics Test Results:")
         print("=======================================")
