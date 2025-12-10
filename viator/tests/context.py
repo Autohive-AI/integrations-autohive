@@ -4,5 +4,5 @@ import sys
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import the integration module
-import viator
+# Import the integration instance from the module
+from viator import viator

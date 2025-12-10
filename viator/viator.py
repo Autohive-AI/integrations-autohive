@@ -1,7 +1,11 @@
-from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
+from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
 from typing import Dict, Any, List
+import os
+from pathlib import Path
 
-viator = Integration.load()
+# Load config from the integration directory
+config_path = Path(__file__).parent / "config.json"
+viator = Integration.load(config_path)
 
 
 def get_viator_api(context: ExecutionContext) -> 'ViatorAPI':
@@ -9,8 +13,9 @@ def get_viator_api(context: ExecutionContext) -> 'ViatorAPI':
     if not hasattr(context, 'auth') or not context.auth:
         raise ValueError("No authentication credentials provided in context")
 
+    # Try to get api_key from credentials first (for backwards compatibility), then directly
     credentials = context.auth.get("credentials", {})
-    api_key = credentials.get("api_key")
+    api_key = credentials.get("api_key") or context.auth.get("api_key")
 
     if not api_key:
         raise ValueError("Missing required api_key in credentials")
@@ -20,9 +25,9 @@ def get_viator_api(context: ExecutionContext) -> 'ViatorAPI':
 
 class ViatorAPI:
     """Helper class for Viator Partner API operations"""
-    # Production base URL
-    BASE_URL = "https://api.viator.com/partner"
-    # Sandbox base URL for testing: "https://api.sandbox.viator.com/partner"
+    # Production base URL: "https://api.viator.com/partner"
+    # Sandbox base URL for testing
+    BASE_URL = "https://api.sandbox.viator.com/partner"
 
     def __init__(self, api_key: str):
         """Initialize with API key from context"""
@@ -32,7 +37,8 @@ class ViatorAPI:
         """Get headers for Viator API requests"""
         return {
             "exp-api-key": self.api_key,
-            "Accept": "application/json",
+            "Accept": "application/json;version=2.0",
+            "Accept-Language": "en-US",
             "Content-Type": "application/json"
         }
 
@@ -43,13 +49,12 @@ class ViatorAPI:
         """Search for products by destination and filters"""
         url = f"{self.BASE_URL}/products/search"
 
-        params = {
-            "currency": currency,
-            "page": page,
-            "pageSize": page_size
-        }
-
         data = {
+            "currency": currency,
+            "pagination": {
+                "offset": (page - 1) * page_size,
+                "limit": page_size
+            },
             "filtering": {
                 "destination": destination_id
             }
@@ -60,7 +65,7 @@ class ViatorAPI:
         if end_date:
             data["filtering"]["endDate"] = end_date
 
-        return await context.fetch(url, method="POST", json=data, params=params, headers=self._get_headers())
+        return await context.fetch(url, method="POST", json=data, headers=self._get_headers())
 
     async def get_product_details(self, context: ExecutionContext, product_code: str,
                                   currency: str = "USD") -> Dict[str, Any]:
@@ -223,25 +228,49 @@ class SearchProducts(ActionHandler):
         # Transform the response
         products = []
         for product in result.get('products', []):
+            # Convert duration object to string
+            duration = product.get('duration', {})
+            if isinstance(duration, dict):
+                if 'fixedDurationInMinutes' in duration:
+                    duration_str = f"{duration['fixedDurationInMinutes']} minutes"
+                elif 'variableDurationFromMinutes' in duration:
+                    duration_str = f"{duration['variableDurationFromMinutes']}-{duration['variableDurationToMinutes']} minutes"
+                else:
+                    duration_str = "Duration not specified"
+            else:
+                duration_str = str(duration) if duration else "Duration not specified"
+
+            # Get image URL with fallback
+            images = product.get('images', [])
+            if images and len(images) > 0:
+                image_url = images[0].get('imageUrl') or ""
+            else:
+                image_url = ""
+
+            # Get rating with fallback
+            rating = product.get('reviews', {}).get('averageRating')
+            if rating is None:
+                rating = 0.0
+
             products.append({
                 'product_code': product.get('productCode'),
                 'title': product.get('title'),
                 'description': product.get('description'),
-                'duration': product.get('duration'),
+                'duration': duration_str,
                 'price': {
                     'amount': product.get('pricing', {}).get('summary', {}).get('fromPrice'),
                     'currency': product.get('pricing', {}).get('currency')
                 },
-                'rating': product.get('reviews', {}).get('averageRating'),
+                'rating': rating,
                 'reviews_count': product.get('reviews', {}).get('totalReviews'),
-                'image_url': product.get('images', [{}])[0].get('imageUrl') if product.get('images') else None
+                'image_url': image_url
             })
 
-        return {
+        return ActionResult(data={
             'products': products,
             'total_count': result.get('totalCount', len(products)),
             'page': page
-        }
+        })
 
 
 @viator.action("get_product_details")
@@ -258,7 +287,7 @@ class GetProductDetails(ActionHandler):
         result = await api.get_product_details(context, product_code, currency)
 
         # Transform the response
-        return {
+        return ActionResult(data={
             'product_code': result.get('productCode'),
             'title': result.get('title'),
             'description': result.get('description'),
@@ -274,7 +303,7 @@ class GetProductDetails(ActionHandler):
             'exclusions': result.get('exclusions', []),
             'meeting_point': result.get('itinerary', {}).get('meetingPoint', {}).get('description'),
             'cancellation_policy': result.get('cancellationPolicy', {}).get('description')
-        }
+        })
 
 
 @viator.action("check_availability")
@@ -308,10 +337,10 @@ class CheckAvailability(ActionHandler):
                 'available_start_times': [time.get('startTime') for time in option.get('startTimes', [])]
             })
 
-        return {
+        return ActionResult(data={
             'available': result.get('available', False),
             'product_options': product_options
-        }
+        })
 
 
 @viator.action("calculate_price")
@@ -336,7 +365,7 @@ class CalculatePrice(ActionHandler):
         )
 
         # Transform the response
-        return {
+        return ActionResult(data={
             'subtotal': result.get('price', {}).get('subtotal'),
             'total': result.get('price', {}).get('total'),
             'currency': result.get('price', {}).get('currency'),
@@ -345,7 +374,7 @@ class CalculatePrice(ActionHandler):
                 'child_price': result.get('price', {}).get('childPrice'),
                 'infant_price': result.get('price', {}).get('infantPrice')
             }
-        }
+        })
 
 
 @viator.action("create_booking")
@@ -370,14 +399,14 @@ class CreateBooking(ActionHandler):
         )
 
         # Transform the response
-        return {
+        return ActionResult(data={
             'booking_reference': result.get('bookingRef'),
             'booking_status': result.get('bookingStatus'),
             'voucher_url': result.get('voucherURL'),
             'total_price': result.get('totalPrice'),
             'currency': result.get('currency'),
             'confirmation_email_sent': result.get('emailSent', False)
-        }
+        })
 
 
 @viator.action("get_booking")
@@ -393,7 +422,7 @@ class GetBooking(ActionHandler):
         result = await api.get_booking(context, booking_reference)
 
         # Transform the response
-        return {
+        return ActionResult(data={
             'booking_reference': result.get('bookingRef'),
             'booking_status': result.get('bookingStatus'),
             'product_code': result.get('productCode'),
@@ -409,7 +438,7 @@ class GetBooking(ActionHandler):
                 }
                 for t in result.get('travelers', [])
             ]
-        }
+        })
 
 
 @viator.action("cancel_booking")
@@ -428,14 +457,14 @@ class CancelBooking(ActionHandler):
         )
 
         # Transform the response
-        return {
+        return ActionResult(data={
             'booking_reference': result.get('bookingRef'),
             'cancellation_status': result.get('status'),
             'refund_amount': result.get('refundAmount'),
             'currency': result.get('currency'),
             'cancellation_fee': result.get('cancellationFee'),
             'refund_eligible': result.get('refundEligible', False)
-        }
+        })
 
 
 @viator.action("get_destinations")
@@ -461,9 +490,9 @@ class GetDestinations(ActionHandler):
                 'time_zone': dest.get('timeZone')
             })
 
-        return {
+        return ActionResult(data={
             'destinations': destinations
-        }
+        })
 
 
 @viator.action("get_product_reviews")
@@ -493,9 +522,9 @@ class GetProductReviews(ActionHandler):
                 'travel_date': review.get('travelDate')
             })
 
-        return {
+        return ActionResult(data={
             'product_code': product_code,
             'average_rating': result.get('averageRating'),
             'total_reviews': result.get('totalReviews'),
             'reviews': reviews
-        }
+        })

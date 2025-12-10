@@ -5,7 +5,7 @@ from autohive_integrations_sdk import ExecutionContext
 # Test configuration
 # Replace these with your actual test credentials
 TEST_CONFIG = {
-    "api_key": "YOUR_VIATOR_API_KEY_HERE",  # Replace with actual API key
+    "api_key": "YOUR_VIATOR_API_KEY_HERE",  # Replace with your Viator Partner API key
     "destination_id": 684,  # New York City
     "product_code": "5010SYDNEY",  # Example product code
     "currency": "USD"
@@ -15,10 +15,7 @@ TEST_CONFIG = {
 def get_auth():
     """Get authentication configuration"""
     return {
-        "auth_type": "custom",
-        "credentials": {
-            "api_key": TEST_CONFIG["api_key"]
-        }
+        "api_key": TEST_CONFIG["api_key"]
     }
 
 
