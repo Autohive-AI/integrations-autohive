@@ -47,6 +47,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
 
+### Grammarly
+
+[grammarly](grammarly): Comprehensive writing analysis integration with Grammarly API for quality assessment, AI detection, plagiarism checking, and analytics automation. Supports analyzing documents for writing quality with detailed scores (engagement, correctness, delivery, clarity), detecting AI-generated content with confidence scores and percentage metrics, checking for plagiarism against billions of sources with originality scores, and retrieving user analytics for team usage tracking (active days, sessions, improvements, AI prompt usage). Features OAuth 2.0 client credentials authentication with automatic token management, asynchronous job processing with status polling, 30-day result retention, and pagination support for analytics. Includes 7 actions covering Writing Score API (2 actions), Analytics API (1 action), AI Detection API (2 actions, Beta), and Plagiarism Detection API (2 actions, Beta). Supports multiple file formats (.doc, .docx, .odt, .txt, .rtf) with 4MB maximum file size. Ideal for content quality automation, academic integrity compliance, AI content verification, and team productivity tracking workflows.
+
 ### Google Looker
 
 [google-looker](google-looker): Business intelligence integration with Looker API for accessing dashboards, executing queries, and managing data models. Supports listing and retrieving dashboards with full metadata, executing LookML queries against explores with dimensions and measures, running raw SQL queries against database connections, and browsing available models and connections. Features custom authentication and comprehensive error handling for enterprise analytics workflows.
