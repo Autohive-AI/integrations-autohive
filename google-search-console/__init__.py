@@ -1,1 +1,0 @@
-# Google Search Console Integration
