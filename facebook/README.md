@@ -137,7 +137,6 @@ facebook/
 ├── facebook.py          # Entry point, loads Integration
 ├── config.json          # Integration configuration
 ├── helpers.py           # Shared utilities (API base URL, token helpers)
-├── conftest.py          # Pytest configuration for imports
 ├── actions/
 │   ├── __init__.py      # Imports all action submodules
 │   ├── pages.py         # Page discovery actions
@@ -145,6 +144,7 @@ facebook/
 │   ├── comments.py      # Comment management actions
 │   └── insights.py      # Analytics actions
 └── tests/
+    ├── context.py       # Test import configuration
     └── test_facebook.py # Comprehensive test suite
 ```
 

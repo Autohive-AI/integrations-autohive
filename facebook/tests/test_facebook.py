@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from facebook import facebook
+from context import facebook
 
 pytestmark = pytest.mark.asyncio
 
