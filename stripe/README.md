@@ -9,7 +9,7 @@ This integration provides comprehensive access to Stripe's billing functionality
 - **Customer Management**: Create, update, list, and delete customers
 - **Invoice Management**: Create draft invoices, finalize, send, pay, and void invoices
 - **Invoice Items**: Add, update, and remove line items from invoices
-- **RUC Billing Support**: Designed to support NZ Road User Charges invoice generation
+
 
 ## Setup & Authentication
 
