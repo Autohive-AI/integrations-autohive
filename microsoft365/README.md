@@ -1,10 +1,10 @@
-# Microsoft 365 Integration for Autohive
+# Microsoft Copilot 365 Integration for Autohive
 
-Connects Autohive to Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through the Microsoft Graph API.
+Connects Autohive to Microsoft Copilot 365 services including Outlook, OneDrive, Calendar, and SharePoint through the Microsoft Graph API.
 
 ## Description
 
-This integration provides comprehensive access to Microsoft 365 services, enabling users to manage emails, calendar events, contacts, files, and SharePoint sites through a unified interface. It interacts with the Microsoft Graph API to deliver seamless integration with Outlook email, OneDrive file storage, Calendar management, and SharePoint collaboration.
+This integration provides comprehensive access to Microsoft Copilot 365 services, enabling users to manage emails, calendar events, contacts, files, and SharePoint sites through a unified interface. It interacts with the Microsoft Graph API to deliver seamless integration with Outlook email, OneDrive file storage, Calendar management, and SharePoint collaboration.
 
 Key capabilities include sending and managing emails, creating and updating calendar events, uploading and accessing files, reading contact information, and accessing SharePoint sites and document libraries. The integration supports advanced features like HTML email content, file attachments, timezone-aware operations, folder management, PDF conversion for Office documents, and multi-drive SharePoint document access.
 
@@ -24,7 +24,7 @@ Required Microsoft Graph API permissions:
 
 **Authentication Fields:**
 
-The integration uses platform-level OAuth2 authentication, so no manual configuration of authentication fields is required. Users simply need to authorize their Microsoft 365 account through the Autohive platform.
+The integration uses platform-level OAuth2 authentication, so no manual configuration of authentication fields is required. Users simply need to authorize their Microsoft Copilot 365 account through the Autohive platform.
 
 ## Actions
 
@@ -419,7 +419,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 {
   "to": "recipient@example.com",
   "subject": "Hello from Autohive",
-  "body": "This is a test email sent via Microsoft 365 integration",
+  "body": "This is a test email sent via Microsoft Copilot 365 integration",
   "body_type": "Text"
 }
 ```
@@ -567,4 +567,4 @@ To run the tests:
 2.  Install dependencies: `pip install -r requirements.txt -t dependencies`
 3.  Run the tests: `python tests/test_microsoft365_integration.py`
 
-Note: Testing requires proper Microsoft 365 authentication credentials and may require mock data for certain test scenarios.
+Note: Testing requires proper Microsoft Copilot 365 authentication credentials and may require mock data for certain test scenarios.

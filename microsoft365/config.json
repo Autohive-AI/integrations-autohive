@@ -1,7 +1,7 @@
 {
-    "name": "Microsoft 365",
+    "name": "Microsoft Copilot 365",
     "version": "1.0.0",
-    "description": "Microsoft 365 integration for Outlook, OneDrive, and Calendar",
+    "description": "Microsoft Copilot 365 integration for Outlook, OneDrive, and Calendar",
     "entry_point": "microsoft365.py",
     "auth": {
         "type": "platform",

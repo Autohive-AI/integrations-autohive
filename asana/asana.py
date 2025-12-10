@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 
@@ -10,26 +10,8 @@ asana = Integration.load()
 ASANA_API_BASE_URL = "https://app.asana.com/api/1.0"
 
 
-# ---- Helper Functions ----
-
-def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
-    """
-    Build authentication headers for Asana API requests.
-    Asana uses Bearer token authentication with Personal Access Token.
-
-    Args:
-        context: ExecutionContext containing auth credentials
-
-    Returns:
-        Dictionary with Authorization header
-    """
-    credentials = context.auth.get("credentials", {})
-    token = credentials.get("personal_access_token", "")
-
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+# Note: Authentication is handled automatically by the platform OAuth integration.
+# The context.fetch method automatically includes the OAuth token in requests.
 
 
 # ---- Action Handlers ----
@@ -63,19 +45,22 @@ class CreateTaskAction(ActionHandler):
             if 'completed' in inputs and inputs['completed'] is not None:
                 data['completed'] = inputs['completed']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_task")
@@ -91,19 +76,22 @@ class GetTaskAction(ActionHandler):
             if 'opt_fields' in inputs and inputs['opt_fields']:
                 params['opt_fields'] = ','.join(inputs['opt_fields'])
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{task_gid}",
                 method="GET",
-                headers=headers,
                 params=params if params else None
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_task")
@@ -129,19 +117,22 @@ class UpdateTaskAction(ActionHandler):
             if 'completed' in inputs and inputs['completed'] is not None:
                 data['completed'] = inputs['completed']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{task_gid}",
                 method="PUT",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"task": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"task": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"task": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"task": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("list_tasks")
@@ -168,20 +159,23 @@ class ListTasksAction(ActionHandler):
             if 'opt_fields' in inputs and inputs['opt_fields']:
                 params['opt_fields'] = ','.join(inputs['opt_fields'])
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks",
                 method="GET",
-                headers=headers,
                 params=params
             )
 
             tasks = response.get('data', [])
-            return {"tasks": tasks, "result": True}
+            return ActionResult(
+                data={"tasks": tasks, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"tasks": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"tasks": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("delete_task")
@@ -192,18 +186,21 @@ class DeleteTaskAction(ActionHandler):
         try:
             task_gid = inputs['task_gid']
 
-            headers = get_auth_headers(context)
-
             await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{task_gid}",
-                method="DELETE",
-                headers=headers
+                method="DELETE"
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Project Handlers ----
@@ -225,20 +222,23 @@ class ListProjectsAction(ActionHandler):
             if 'limit' in inputs:
                 params['limit'] = inputs['limit']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects",
                 method="GET",
-                headers=headers,
                 params=params
             )
 
             projects = response.get('data', [])
-            return {"projects": projects, "result": True}
+            return ActionResult(
+                data={"projects": projects, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"projects": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"projects": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_project")
@@ -253,19 +253,22 @@ class GetProjectAction(ActionHandler):
             if 'opt_fields' in inputs and inputs['opt_fields']:
                 params['opt_fields'] = ','.join(inputs['opt_fields'])
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects/{project_gid}",
                 method="GET",
-                headers=headers,
                 params=params if params else None
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("create_project")
@@ -288,19 +291,22 @@ class CreateProjectAction(ActionHandler):
             if 'public' in inputs and inputs['public'] is not None:
                 data['public'] = inputs['public']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_project")
@@ -323,19 +329,22 @@ class UpdateProjectAction(ActionHandler):
             if 'archived' in inputs and inputs['archived'] is not None:
                 data['archived'] = inputs['archived']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects/{project_gid}",
                 method="PUT",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"project": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"project": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"project": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"project": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("delete_project")
@@ -346,18 +355,21 @@ class DeleteProjectAction(ActionHandler):
         try:
             project_gid = inputs['project_gid']
 
-            headers = get_auth_headers(context)
-
             await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects/{project_gid}",
-                method="DELETE",
-                headers=headers
+                method="DELETE"
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("get_project_by_name")
@@ -365,70 +377,94 @@ class GetProjectByNameAction(ActionHandler):
     """Get a project by its exact name."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        target_name = inputs['name']
-        projects_checked = 0
-        offset = None
+        try:
+            target_name = inputs['name']
+            projects_checked = 0
+            offset = None
 
-        while True:
-            params = {
-                "limit": 100  # Maximum allowed by Asana API
-            }
+            while True:
+                params = {
+                    "limit": 100,  # Maximum allowed by Asana API
+                    "opt_fields": "name,gid,workspace,workspace.name,team,team.name,archived,color,notes"
+                }
 
-            # Add optional filter parameters for better performance
-            if 'workspace' in inputs and inputs['workspace']:
-                params['workspace'] = inputs['workspace']
-            if 'team' in inputs and inputs['team']:
-                params['team'] = inputs['team']
-            if 'archived' in inputs and inputs['archived'] is not None:
-                params['archived'] = str(inputs['archived']).lower()
+                # Add optional filter parameters for better performance
+                if 'workspace' in inputs and inputs['workspace']:
+                    params['workspace'] = inputs['workspace']
+                if 'team' in inputs and inputs['team']:
+                    params['team'] = inputs['team']
+                if 'archived' in inputs and inputs['archived'] is not None:
+                    params['archived'] = str(inputs['archived']).lower()
 
-            if offset:
-                params['offset'] = offset
+                if offset:
+                    params['offset'] = offset
 
-            headers = get_auth_headers(context)
+                response = await context.fetch(
+                    f"{ASANA_API_BASE_URL}/projects",
+                    method="GET",
+                    params=params
+                )
 
-            response = await context.fetch(
-                f"{ASANA_API_BASE_URL}/projects",
-                method="GET",
-                headers=headers,
-                params=params
+                # Check if response is successful
+                data = response.get('data', [])
+
+                for project in data:
+                    projects_checked += 1
+                    if project.get('name') == target_name:
+                        return ActionResult(
+                            data={
+                                "gid": project.get('gid'),
+                                "name": project.get('name'),
+                                "workspace": project.get('workspace'),
+                                "team": project.get('team'),
+                                "archived": project.get('archived', False),
+                                "color": project.get('color'),
+                                "notes": project.get('notes'),
+                                "not_found": False,
+                                "result": True
+                            },
+                            cost_usd=0.0
+                        )
+
+                # Check for next page
+                next_page = response.get('next_page')
+                if next_page and next_page.get('offset'):
+                    offset = next_page['offset']
+                else:
+                    break
+
+            # Project not found after checking all pages
+            return ActionResult(
+                data={
+                    "gid": None,
+                    "name": None,
+                    "workspace": None,
+                    "team": None,
+                    "archived": None,
+                    "color": None,
+                    "notes": None,
+                    "not_found": True,
+                    "result": True
+                },
+                cost_usd=0.0
             )
 
-            # Check if response is successful
-            data = response.get('data', [])
-
-            for project in data:
-                projects_checked += 1
-                if project.get('name') == target_name:
-                    return {
-                        "gid": project.get('gid'),
-                        "name": project.get('name'),
-                        "workspace": project.get('workspace'),
-                        "team": project.get('team'),
-                        "archived": project.get('archived', False),
-                        "color": project.get('color'),
-                        "notes": project.get('notes'),
-                        "not_found": False,
-                    }
-
-            # Check for next page
-            next_page = response.get('next_page')
-            if next_page and next_page.get('offset'):
-                offset = next_page['offset']
-            else:
-                break
-
-        # Project not found after checking all pages
-        return {
-            "gid": None,
-            "name": None,
-            "workspace": None,
-            "team": None,
-            "archived": None,
-            "color": None,
-            "notes": None,
-            "not_found": True,
-        }
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "gid": None,
+                    "name": None,
+                    "workspace": None,
+                    "team": None,
+                    "archived": None,
+                    "color": None,
+                    "notes": None,
+                    "not_found": True,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
 
 
 # ---- Section Handlers ----
@@ -445,20 +481,23 @@ class ListSectionsAction(ActionHandler):
             if 'limit' in inputs:
                 params['limit'] = inputs['limit']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects/{project_gid}/sections",
                 method="GET",
-                headers=headers,
                 params=params if params else None
             )
 
             sections = response.get('data', [])
-            return {"sections": sections, "result": True}
+            return ActionResult(
+                data={"sections": sections, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"sections": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"sections": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("create_section")
@@ -470,19 +509,22 @@ class CreateSectionAction(ActionHandler):
             project_gid = inputs['project_gid']
             data = {"name": inputs['name']}
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/projects/{project_gid}/sections",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"section": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"section": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"section": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"section": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("update_section")
@@ -494,19 +536,22 @@ class UpdateSectionAction(ActionHandler):
             section_gid = inputs['section_gid']
             data = {"name": inputs['name']}
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/sections/{section_gid}",
                 method="PUT",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"section": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"section": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"section": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"section": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("add_task_to_section")
@@ -518,19 +563,22 @@ class AddTaskToSectionAction(ActionHandler):
             section_gid = inputs['section_gid']
             data = {"task": inputs['task_gid']}
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/sections/{section_gid}/addTask",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"result": True}
+            return ActionResult(
+                data={"result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Story/Comment Handlers ----
@@ -544,19 +592,22 @@ class CreateStoryAction(ActionHandler):
             task_gid = inputs['task_gid']
             data = {"text": inputs['text']}
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{task_gid}/stories",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"story": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"story": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"story": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"story": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @asana.action("list_stories")
@@ -571,20 +622,23 @@ class ListStoriesAction(ActionHandler):
             if 'limit' in inputs:
                 params['limit'] = inputs['limit']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{task_gid}/stories",
                 method="GET",
-                headers=headers,
                 params=params if params else None
             )
 
             stories = response.get('data', [])
-            return {"stories": stories, "result": True}
+            return ActionResult(
+                data={"stories": stories, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"stories": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"stories": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 # ---- Subtask Handler ----
@@ -605,18 +659,120 @@ class CreateSubtaskAction(ActionHandler):
             if 'due_on' in inputs and inputs['due_on']:
                 data['due_on'] = inputs['due_on']
 
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{ASANA_API_BASE_URL}/tasks/{parent_task_gid}/subtasks",
                 method="POST",
-                headers=headers,
                 json={"data": data}
             )
 
-            return {"subtask": response.get('data', {}), "result": True}
+            return ActionResult(
+                data={"subtask": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"subtask": {}, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"subtask": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+# ---- Workspace Handlers ----
+
+@asana.action("list_workspaces")
+class ListWorkspacesAction(ActionHandler):
+    """List all workspaces the authenticated user has access to."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = {}
+            if 'limit' in inputs:
+                params['limit'] = inputs['limit']
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/workspaces",
+                method="GET",
+                params=params if params else None
+            )
+
+            workspaces = response.get('data', [])
+            return ActionResult(
+                data={"workspaces": workspaces, "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"workspaces": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+@asana.action("get_workspace")
+class GetWorkspaceAction(ActionHandler):
+    """Get details of a specific workspace."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            workspace_gid = inputs['workspace_gid']
+
+            params = {}
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/workspaces/{workspace_gid}",
+                method="GET",
+                params=params if params else None
+            )
+
+            return ActionResult(
+                data={"workspace": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"workspace": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+# ---- User Handlers ----
+
+@asana.action("get_user")
+class GetUserAction(ActionHandler):
+    """Get details of a user. Use 'me' to get current authenticated user."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            user_gid = inputs.get('user_gid', 'me')
+
+            params = {}
+            if 'opt_fields' in inputs and inputs['opt_fields']:
+                params['opt_fields'] = ','.join(inputs['opt_fields'])
+
+            response = await context.fetch(
+                f"{ASANA_API_BASE_URL}/users/{user_gid}",
+                method="GET",
+                params=params if params else None
+            )
+
+            return ActionResult(
+                data={"user": response.get('data', {}), "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"user": {}, "result": False, "error": str(e)},
+
+        except Exception as e:
+            return ActionResult(
+                data={"subtask": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 

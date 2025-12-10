@@ -144,6 +144,29 @@ async def test_get_message():
         except Exception as e:
             print(f"✗ Error testing get_message: {str(e)}")
 
+async def test_download_message_attachment():
+    print("Testing download_message_attachment...")
+
+    auth = {
+        "auth_type": "PlatformOauth2",
+        "credentials": {
+            "access_token": "mock_access_token"
+        }
+    }
+
+    inputs = {
+        "attachment_url": "https://api2.frontapp.com/download/test_attachment"
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await front.execute_action("download_message_attachment", inputs, context)
+            print(f"Result: {result}")
+            assert result.get("result") is not None
+            print("✓ download_message_attachment test passed")
+        except Exception as e:
+            print(f"✗ Error testing download_message_attachment: {str(e)}")
+
 async def test_create_message_reply():
     print("Testing create_message_reply...")
 
@@ -475,6 +498,7 @@ async def main():
     # Message Management
     await test_list_conversation_messages()
     await test_get_message()
+    await test_download_message_attachment()
     await test_create_message_reply()
     await test_create_message()
 
@@ -497,7 +521,7 @@ async def main():
     await test_find_conversation()
 
     print(f"\nTest suite completed!")
-    print("All 19 actions tested successfully with mock data")
+    print("All 20 actions tested successfully with mock data")
 
 if __name__ == "__main__":
     asyncio.run(main())

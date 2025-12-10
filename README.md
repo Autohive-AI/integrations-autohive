@@ -23,6 +23,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Canva
+
+[canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation and asset management workflows.
+
 ### Circle
 
 [circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
@@ -53,7 +57,7 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Zoho CRM
 
-[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 33 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+[Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls, with notes management across all 7 modules. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 54 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
 
 ### Reddit
 
@@ -70,6 +74,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Heartbeat
 
 [heartbeat](heartbeat): Connects to Heartbeat.chat community platform for comprehensive access to channels, threads, comments, users, and events. Supports retrieving channel information, managing thread discussions, creating and viewing comments, accessing user profiles, and viewing community events. Includes full CRUD operations for community engagement and content management.
+
+### HeyGen
+
+[heygen](heygen): AI-powered video avatar integration for creating realistic talking avatar videos. Supports generating AI photo avatars, creating and training avatar groups, generating new looks, creating videos with avatars and voice synthesis, and checking generation/video status. Includes voice and avatar discovery, motion and sound effects, and avatar group management. Features 19 actions with API key authentication.
 
 ### Google Calendar
 
@@ -91,9 +99,13 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-business-profile](google-business-profile): Connects to Google My Business API for comprehensive business profile and review management. Supports listing business accounts and locations, reading customer reviews with ratings and comments, replying to customer reviews professionally, and managing review interactions. Features secure OAuth2 authentication with Google Maps Reviews provider and comprehensive error handling for reputation management workflows.
 
-### Microsoft 365
+### Microsoft Copilot 365
 
-[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
+[Microsoft Copilot 365](microsoft365): Comprehensive integration with Microsoft Copilot 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
+
+### Microsoft Planner
+
+[microsoft-planner](microsoft-planner): Comprehensive task and project management integration with Microsoft Planner via Microsoft Graph API v1.0 for organizing team work within Microsoft 365 groups. Supports complete plan lifecycle management (create, update, delete, list plans within groups), bucket organization for task categorization, full CRUD operations for tasks with assignments, due dates, priorities, categories, and progress tracking, and checklist operations within tasks. Features user lookup and search by email, group membership listing, task filtering by plan/bucket/user, task details management including descriptions and references, and board format customization for different views (assigned-to, bucket, progress). Includes automatic ETag management for optimistic concurrency control, proper assignment formatting with user GUIDs, data cleaning for read-only fields, and OAuth2 authentication with Tasks.ReadWrite and Group.ReadWrite.All scopes. Comprises 36 actions covering groups, users, plans, buckets, tasks, checklists, and board formatting. Ideal for team collaboration, project planning, task tracking, and workflow automation across Microsoft 365 workspaces.
 
 ### Spreadsheet Tools
 
@@ -103,9 +115,21 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [asana](asana): Comprehensive project management integration with Asana API v1.0 for task and team collaboration automation. Supports complete task lifecycle management (create, get, update, list, delete tasks with assignees, due dates, and completion tracking), full project CRUD operations (list, get, create, update, delete projects with team associations and archiving), section organization (list, create, update sections, move tasks between sections for board/column workflows), team communication (create and list comments/stories on tasks), and subtask creation for breaking down complex work. Features Personal Access Token authentication with Bearer token headers, Asana data object wrapper handling, GID-based resource identification, and flexible task filtering. Includes 17 comprehensive actions covering tasks, projects, sections, comments, and subtasks. Ideal for workflow automation, task capture from external sources, project template creation, team collaboration, and productivity tracking across workspaces.
 
+### Mailchimp
+
+[mailchimp](mailchimp): Email marketing integration with Mailchimp Marketing API v3.0 for managing mailing lists, audience members, and email campaigns. Supports complete list management (create, get, list audiences), member operations (add, update, get members with merge fields and tags), and campaign management (create, get, list campaigns with status filtering). Features OAuth2 authentication with dynamic data center resolution, automatic rate limiting with retry logic (max 10 simultaneous connections), MD5 subscriber hash generation, and pagination support for large datasets. Includes 10 actions covering audience management, subscriber lifecycle, and email campaign workflows.
+
 ### Google Chat
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
+### Hacker News
+
+[hackernews](hackernews): Read-only integration with the official Hacker News API for fetching tech news, discussions, and community content. Supports retrieving top, best, and new stories, Ask HN discussions, Show HN project showcases, and YC job postings. Features story detail fetching with threaded comment trees (configurable depth), user profile lookup with karma scores, and LLM-optimized output with ISO timestamps and pre-computed HN URLs. Includes 8 actions with concurrent batch fetching for performance. No authentication required (public API, no rate limits). Ideal for daily tech news digests, community monitoring, and curated report generation.
+
+### Google Docs
+
+[google-docs](google-docs): Comprehensive integration with Google Docs API v1 for document creation, content formatting, and document analysis. Supports creating new documents, retrieving full document content and structure, inserting plain text paragraphs, inserting markdown-formatted content with automatic styling (headings H1-H6, bold, italic), applying text formatting (bold, italic, font size, colors), parsing document structure to identify headings and paragraphs, and executing complex batch update operations. Features OAuth2 authentication, markdown-to-Google Docs style conversion, and 6 core actions for document automation workflows.
 
 ### Freshdesk
 
@@ -122,6 +146,13 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Viator
 
 [viator](viator): Comprehensive tours and experiences booking integration with Viator Partner API for accessing over 300,000+ travel activities worldwide. Supports searching products by destination with date filtering and pagination, retrieving detailed product information including images, inclusions, exclusions, and cancellation policies, checking real-time availability and pricing for specific travel dates, calculating exact booking prices with traveler breakdowns, creating and managing bookings with complete traveler details, retrieving booking information and vouchers, canceling bookings with refund calculations, browsing destination catalogs with hierarchical structure, and accessing product reviews with ratings and customer feedback. Features API key authentication, multi-currency support, complete booking lifecycle management, and comprehensive error handling. Includes 9 actions covering product discovery, availability checking, booking operations, and review management. Ideal for travel booking platforms, travel agencies, destination marketing, and activity recommendation workflows.
+### Float
+
+[float](float): Comprehensive resource management and project scheduling integration with Float API for team capacity planning, time tracking, and project coordination. Supports full CRUD operations for team members (people) with roles, departments, rates, and availability management. Includes complete project lifecycle management with client associations, budgets, timelines, and team assignments. Features task/allocation scheduling across team members, time off management with leave types, logged time tracking with billable hours, and client relationship management. Provides access to organizational structure (departments, roles), account settings, project stages, phases, milestones, and expenses. Includes comprehensive reporting capabilities (people utilization, project analytics) with date range filtering. Features 60 actions covering all Float API v3 endpoints, custom API key authentication with required User-Agent header, connected account information display, pagination support (up to 200 items per page), rate limiting awareness (200 GET/min, 100 non-GET/min), field filtering, sorting, modified-since sync capabilities, and ActionResult return type for cost tracking. Ideal for resource planning, capacity management, project scheduling, time tracking workflows, and team utilization analysis.
+
+### Stripe
+
+[stripe](stripe): Comprehensive payment and billing integration with Stripe API for managing customers, invoices, and invoice items. Supports full customer lifecycle management (create, list, get, update, delete) with address and metadata support. Features complete invoice workflow including draft creation, finalization, sending via email, payment processing, and voiding. Includes invoice item management for adding line items with quantities, unit amounts, and descriptions. Supports pagination with cursor-based navigation, filtering by customer/status/date, and multi-currency invoicing. Features API key authentication (test and production keys), automatic invoice advance settings, and flexible collection methods (charge automatically or send invoice). Includes 20 actions covering customers, invoices, and invoice items. Ideal for billing automation, subscription management, and payment processing workflows.
 
 ## Template
 
