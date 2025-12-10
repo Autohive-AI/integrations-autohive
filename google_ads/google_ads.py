@@ -1,15 +1,17 @@
 import os
-
 import logging
-# Configure logging for debugging and monitoring
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Setup environment variables and throw if they don't exist
+# Setup environment variables
 from dotenv import load_dotenv
 load_dotenv()
+
 try:
-    # Google Ads API credentials from environment variables
     DEVELOPER_TOKEN = os.environ["ADWORDS_DEVELOPER_TOKEN"]
     CLIENT_ID = os.environ["ADWORDS_CLIENT_ID"]
     CLIENT_SECRET = os.environ["ADWORDS_CLIENT_SECRET"]
@@ -17,24 +19,58 @@ except KeyError as e:
     logger.error(f"Error loading environment variables: {str(e)}")
     raise
 
-from datetime import datetime, timedelta
-from typing import Dict, Any
 from enum import Enum
-
 import proto
 from autohive_integrations_sdk import ActionHandler, ExecutionContext, Integration, ActionResult
 from google.ads.googleads.client import GoogleAdsClient
+from google.api_core import protobuf_helpers
 
 # Load integration configuration
 google_ads = Integration.load()
+
+
+# ---- Utility Functions ----
 
 class AdType(Enum):
     RESPONSIVE_SEARCH_AD = 'RESPONSIVE_SEARCH_AD'
     EXPANDED_TEXT_AD = 'EXPANDED_TEXT_AD'
 
+
 def micros_to_currency(micros):
     """Convert Google Ads API micros (millionths) to standard currency format."""
     return float(micros) / 1000000 if micros is not None else 'N/A'
+
+
+def _get_google_ads_client(refresh_token: str, login_customer_id: str) -> GoogleAdsClient:
+    """Initialize and return a Google Ads API client."""
+    credentials = {
+        "developer_token": DEVELOPER_TOKEN,
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "refresh_token": refresh_token,
+        "login_customer_id": login_customer_id,
+        "use_proto_plus": True
+    }
+    return GoogleAdsClient.load_from_dict(credentials)
+
+
+def _validate_auth_and_inputs(inputs: Dict[str, Any], context: ExecutionContext) -> tuple:
+    """Validate authentication and extract common inputs."""
+    refresh_token = context.auth.get("credentials", {}).get("refresh_token")
+    if not refresh_token:
+        raise Exception("Refresh token is required for authentication with Google Ads API")
+    
+    login_customer_id = inputs.get('login_customer_id')
+    customer_id = inputs.get('customer_id')
+    
+    if not login_customer_id:
+        raise Exception("Manager Account ID (login_customer_id) is required")
+    if not customer_id:
+        raise Exception("Customer ID is required")
+    
+    return refresh_token, login_customer_id, customer_id
+
 
 def _get_ad_text_assets(ad_data_from_row: Dict[str, Any]) -> Dict[str, list]:
     """Extracts headlines and descriptions from the ad_data part of a Google Ads API row."""
@@ -42,26 +78,24 @@ def _get_ad_text_assets(ad_data_from_row: Dict[str, Any]) -> Dict[str, list]:
     descriptions = []
     ad_type = ad_data_from_row.get('type', 'N/A')
 
-    # Extract text assets based on ad type
     if ad_type == AdType.RESPONSIVE_SEARCH_AD.value:
         rsa_info = ad_data_from_row.get('responsive_search_ad', {})
         headlines.extend([h.get('text', '') for h in rsa_info.get('headlines', []) if h.get('text')])
         descriptions.extend([d.get('text', '') for d in rsa_info.get('descriptions', []) if d.get('text')])
     elif ad_type == AdType.EXPANDED_TEXT_AD.value:
         eta_info = ad_data_from_row.get('expanded_text_ad', {})
-        # Extract headline parts (up to 3 for expanded text ads)
         for part in ['headline_part1', 'headline_part2', 'headline_part3']:
             if eta_info.get(part):
                 headlines.append(eta_info.get(part))
-        # Extract description parts (up to 2 for expanded text ads)
         for part in ['description', 'description2']:
             if eta_info.get(part):
                 descriptions.append(eta_info.get(part))
 
     return {"headlines": headlines, "descriptions": descriptions}
 
+
 def _calculate_safe_rate(numerator_raw, denominator_raw, default_numerator=0.0, default_denominator=0.0):
-    """Safely calculates a rate (e.g., conversion rate), handling potential non-numeric inputs."""
+    """Safely calculates a rate, handling potential non-numeric inputs."""
     try:
         numerator = float(numerator_raw)
     except (ValueError, TypeError):
@@ -71,143 +105,58 @@ def _calculate_safe_rate(numerator_raw, denominator_raw, default_numerator=0.0, 
     except (ValueError, TypeError):
         denominator = default_denominator
     
-    # Avoid division by zero
     if denominator > 0:
         return numerator / denominator
     return 0.0
 
-def _initialize_ad_group_data(row: Dict[str, Any]) -> Dict[str, Any]:
-    """Initializes the data structure for a new ad group."""
-    return {
-        "ad_group_id": row.get('ad_group', {}).get('id', 'N/A'),
-        "ad_group_name": row.get('ad_group', {}).get('name', 'N/A'),
-        "ad_group_status": row.get('ad_group', {}).get('status', 'N/A'),
-        "ad_group_type": row.get('ad_group', {}).get('type', 'N/A'),
-        "campaign_id": row.get('campaign', {}).get('id', 'N/A'),
-        "campaign_name": row.get('campaign', {}).get('name', 'N/A'),
-        "campaign_bidding_strategy_type": row.get('campaign', {}).get('bidding_strategy_type', 'N/A'),
-        "ads": {}  # Ads will be keyed by ad_id here
-    }
-
-def _initialize_ad_data(row: Dict[str, Any], ad_id: str) -> Dict[str, Any]:
-    """Initializes the data structure for a new ad, including text assets and base metrics."""
-    ad_column_data = row.get('ad_group_ad', {}).get('ad', {})
-    ad_metrics = row.get('metrics', {})
-    text_assets = _get_ad_text_assets(ad_column_data)
-    ad_type = ad_column_data.get('type', 'N/A')
-
-    # Calculate overall conversion rate for the ad
-    ad_conversion_rate = _calculate_safe_rate(
-        ad_metrics.get('all_conversions'), 
-        ad_metrics.get('clicks')
-    )
-
-    return {
-        "ad_id": ad_id,
-        "ad_type": ad_type,
-        "ad_status": row.get('ad_group_ad', {}).get('status', 'N/A'),
-        "headlines": text_assets["headlines"],
-        "descriptions": text_assets["descriptions"],
-        "impressions": ad_metrics.get('impressions', 'N/A'),
-        "clicks": ad_metrics.get('clicks', 'N/A'),
-        "cost_currency": micros_to_currency(ad_metrics.get('cost_micros')),
-        "all_conversions": ad_metrics.get('all_conversions', 'N/A'),  # Total for the ad
-        "interaction_rate": ad_metrics.get('interaction_rate', 'N/A'),
-        "conversion_rate": ad_conversion_rate  # Overall for the ad
-    }
 
 def parse_date_range(range_name_str: str) -> Dict[str, str]:
-    """
-    Parses a date range string into start and end dates.
-    
-    Supports explicit date ranges, relative date phrases, and single dates.
-    
-    Args:
-        range_name_str: Either an explicit date range "YYYY-MM-DD_YYYY-MM-DD",
-                       a relative phrase like "last 7 days", 
-                       or a single date like "16/03/2024" (DD/MM/YYYY)
-
-    Returns:
-        A dictionary with "start_date" and "end_date" in YYYY-MM-DD format.
-
-    Raises:
-        ValueError: If the string is not in a supported format.
-    """
-    # Handle relative date ranges
-    if range_name_str.lower() == "last 7 days" or range_name_str.lower() == "last_7_days":
-        # Calculate the last 7 complete days (excluding today)
+    """Parses a date range string into start and end dates."""
+    if range_name_str.lower() in ["last 7 days", "last_7_days"]:
         today = datetime.now().date()
-        end_date = today - timedelta(days=1)  # Yesterday
-        start_date = end_date - timedelta(days=6)  # 7 days total including end_date
-        
+        end_date = today - timedelta(days=1)
+        start_date = end_date - timedelta(days=6)
         return {
             "start_date": start_date.strftime('%Y-%m-%d'),
             "end_date": end_date.strftime('%Y-%m-%d')
         }
     
-    # Handle single date in DD/MM/YYYY format
     if '/' in range_name_str and '_' not in range_name_str:
         try:
-            # Parse DD/MM/YYYY format
             parsed_date = datetime.strptime(range_name_str, '%d/%m/%Y').date()
             formatted_date = parsed_date.strftime('%Y-%m-%d')
-            
-            # Return as single-day range
-            return {
-                "start_date": formatted_date,
-                "end_date": formatted_date
-            }
+            return {"start_date": formatted_date, "end_date": formatted_date}
         except ValueError:
-            # Fall through to handle other formats or raise error
             pass
     
-    # Handle explicit date range format
     if '_' in range_name_str:
         try:
-            # Split the date range string on underscore
             start_str, end_str = range_name_str.split('_')
-            # Validate format by attempting to parse as dates
             datetime.strptime(start_str, '%Y-%m-%d')
             datetime.strptime(end_str, '%Y-%m-%d')
-            # Consider adding validation that start_date is not after end_date if necessary
             return {"start_date": start_str, "end_date": end_str}
         except ValueError:
-            # Fall through to error handling
             pass
     
-    # If we get here, the format wasn't recognized
-    logger.error(f"Invalid date range string format: '{range_name_str}'. Expected 'YYYY-MM-DD_YYYY-MM-DD', 'DD/MM/YYYY', or 'last 7 days'.")
-    raise ValueError(f"Invalid date range string format: '{range_name_str}'. Must be 'YYYY-MM-DD_YYYY-MM-DD', 'DD/MM/YYYY', or 'last 7 days'.")
+    raise ValueError(f"Invalid date range format: '{range_name_str}'")
+
+
+# ---- Data Fetching Functions ----
 
 def fetch_campaign_data(client, customer_id, date_ranges_input):
     """Fetches campaign performance data from Google Ads API."""
     ga_service = client.get_service("GoogleAdsService")
 
-    # GAQL query template for campaign metrics
     query_template = """
     SELECT
-        campaign.id,
-        campaign.status,
-        campaign.name,
-        campaign_budget.amount_micros,
-        customer.currency_code,
-        campaign.bidding_strategy_system_status,
-        campaign.optimization_score,
-        customer.descriptive_name,
-        campaign.advertising_channel_type,
-        metrics.average_cpv,
-        metrics.interactions,
-        metrics.interaction_rate,
-        metrics.average_cost,
-        metrics.cost_micros,
-        metrics.impressions,
-        campaign.bidding_strategy_type,
-        metrics.clicks,
-        metrics.conversions_value,
-        metrics.cost_per_all_conversions,
-        metrics.all_conversions,
-        metrics.average_cpc,
-        metrics.cost_per_conversion
+        campaign.id, campaign.status, campaign.name, campaign_budget.amount_micros,
+        customer.currency_code, campaign.bidding_strategy_system_status,
+        campaign.optimization_score, customer.descriptive_name,
+        campaign.advertising_channel_type, metrics.average_cpv, metrics.interactions,
+        metrics.interaction_rate, metrics.average_cost, metrics.cost_micros,
+        metrics.impressions, campaign.bidding_strategy_type, metrics.clicks,
+        metrics.conversions_value, metrics.cost_per_all_conversions,
+        metrics.all_conversions, metrics.average_cpc, metrics.cost_per_conversion
     FROM campaign
     WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
         AND campaign.status = 'ENABLED'
@@ -215,156 +164,114 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
     """
 
     all_results = []
-    
-    # Parse date ranges from input strings to structured dictionaries
     parsed_date_ranges = []
-    if isinstance(date_ranges_input, str): # Handle single string date range
+    
+    if isinstance(date_ranges_input, str):
         date_ranges_input = [date_ranges_input]
     
     for dr_input in date_ranges_input:
         parsed_date_ranges.append(parse_date_range(dr_input))
 
-    # Process each date range separately
     for date_range in parsed_date_ranges:
         query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
         
-        # Wrap API calls in try-except for error handling
         try:
             response = ga_service.search(customer_id=customer_id, query=query)
         except Exception as e:
-            logger.error(f"Error during Google Ads API call for date range {date_range}: {str(e)}")
-            # Add error placeholder and continue to next date range
+            logger.error(f"Error during API call for date range {date_range}: {str(e)}")
             all_results.append({
                 'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
                 'error': f"Failed to retrieve data: {str(e)}",
                 'data': []
             })
-            continue # Move to the next date range
+            continue
 
-        # Initialize result structure for this date range
         date_range_result = {
             'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
             'data': []
         }
 
-        # Process each row returned by the API
         for row in response:
-            # Convert protobuf response to dictionary
             row_dict = proto.Message.to_dict(row, use_integers_for_enums=False)
-
-            # Extract data sections from the row
             campaign = row_dict.get('campaign', {})
             metrics = row_dict.get('metrics', {})
             customer = row_dict.get('customer', {})
             budget = row_dict.get('campaign_budget', {})
 
-            # Calculate ROAS (Return on Ad Spend)
-            conversions_value = metrics.get('conversions_value', 0.0) # Ensure float for division
-            cost_micros = metrics.get('cost_micros', 1) 
+            conversions_value = metrics.get('conversions_value', 0.0)
+            cost_micros = metrics.get('cost_micros', 1)
             cost = micros_to_currency(cost_micros)
             
-            # Ensure cost is a number and not 'N/A' before division
             roas = 0
             if isinstance(cost, (int, float)) and cost != 0:
-                 roas = conversions_value / cost
-            elif cost == 'N/A' or cost == 0: # if cost is N/A or 0, ROAS is 0 or undefined. Let's use 0.
-                 roas = 0
+                roas = conversions_value / cost
 
-            # Calculate All Conversions Rate safely
-            raw_all_conversions = metrics.get('all_conversions')
-            raw_interactions = metrics.get('interactions')
+            all_conversions_rate = _calculate_safe_rate(
+                metrics.get('all_conversions'),
+                metrics.get('interactions')
+            )
 
-            # Convert to numeric values with error handling
-            try:
-                numeric_all_conversions = float(raw_all_conversions)
-            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
-                numeric_all_conversions = 0.0
-
-            try:
-                numeric_interactions = float(raw_interactions)
-            except (ValueError, TypeError): # Handles None and non-numeric strings like 'N/A'
-                numeric_interactions = 0.0
-
-            # Calculate conversion rate with division by zero protection
-            all_conversions_rate = 0.0 # Default to 0.0
-            if numeric_interactions > 0: # Check for > 0 to avoid division by zero and ensure meaningful rate
-                all_conversions_rate = numeric_all_conversions / numeric_interactions
-
-            # Structure the campaign data for output
             data = {
-                "Campaign ID" : campaign.get('id', 'N/A'),
+                "Campaign ID": campaign.get('id', 'N/A'),
                 "Campaign status": campaign.get('status', 'N/A'),
                 "Campaign": campaign.get('name', 'N/A'),
                 "Currency code": customer.get('currency_code', 'N/A'),
-                "Budget": micros_to_currency(budget.get('amount_micros')), # Removed default 0
+                "Budget": micros_to_currency(budget.get('amount_micros')),
                 "Status": campaign.get('bidding_strategy_system_status', 'N/A'),
                 "Optimization score": campaign.get('optimization_score', 'N/A'),
                 "Account": customer.get('descriptive_name', 'N/A'),
                 "Campaign type": campaign.get('advertising_channel_type', 'N/A'),
                 "Avg. CPV": micros_to_currency(metrics.get('average_cpv')),
                 "Interactions": metrics.get('interactions', 'N/A'),
-                "Interaction rate": metrics.get('interaction_rate', 'N/A'), # Convert to percentage if it's a decimal
+                "Interaction rate": metrics.get('interaction_rate', 'N/A'),
                 "Avg. cost": micros_to_currency(metrics.get('average_cost')),
-                "Cost": cost, # Use the calculated cost
+                "Cost": cost,
                 "Impr.": metrics.get('impressions', 'N/A'),
                 "Bid strategy type": campaign.get('bidding_strategy_type', 'N/A'),
                 "Clicks": metrics.get('clicks', 'N/A'),
-                "Conv. value": conversions_value, # Use the float value
+                "Conv. value": conversions_value,
                 "Conv. value / cost": roas,
                 "Conversions": metrics.get('all_conversions', 'N/A'),
                 "Avg. CPC": micros_to_currency(metrics.get('average_cpc')),
                 "Cost / conv.": micros_to_currency(metrics.get('cost_per_conversion')),
-                "All Conversions Rate": all_conversions_rate # Calculated numeric value
+                "All Conversions Rate": all_conversions_rate
             }
             date_range_result['data'].append(data)
         all_results.append(date_range_result)
     return all_results
 
+
 def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None, ad_group_ids=None):
-    """Fetches keyword performance data from Google Ads API with optional filtering."""
+    """Fetches keyword performance data from Google Ads API."""
     ga_service = client.get_service("GoogleAdsService")
     all_results = []
 
-    # Parse date ranges from input strings
     parsed_date_ranges = []
     if isinstance(date_ranges_input, str):
         date_ranges_input = [date_ranges_input]
     for dr_input in date_ranges_input:
         parsed_date_ranges.append(parse_date_range(dr_input))
 
-    # Define base GAQL query template for keyword data
     query_template = """
         SELECT
-        ad_group_criterion.keyword.text,
-        metrics.impressions,
-        metrics.clicks,
-        metrics.cost_micros
+        ad_group_criterion.keyword.text, metrics.impressions,
+        metrics.clicks, metrics.cost_micros
         FROM keyword_view
         WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
         AND ad_group_criterion.status != 'REMOVED'
     """
 
-    # Add optional campaign filter
     if campaign_ids and len(campaign_ids) > 0:
         campaign_filter = ", ".join([f"'{cid}'" for cid in campaign_ids])
         query_template += f" AND campaign.id IN ({campaign_filter})"
 
-    # Add optional ad group filter
     if ad_group_ids and len(ad_group_ids) > 0:
         ad_group_filter = ", ".join([f"'{agid}'" for agid in ad_group_ids])
         query_template += f" AND ad_group.id IN ({ad_group_filter})"
-    
-    # Remove the LIMIT clause - process all available data
-    # query_template += " LIMIT 20"
-        
-    logger.info(f"Constructed GAQL Query Template for keywords: {query_template}")
 
-    # Process each date range
     for date_range in parsed_date_ranges:
         query = query_template.format(start_date=date_range['start_date'], end_date=date_range['end_date'])
-        logger.info(f"Executing GAQL Query for keyword data, date range {date_range['start_date']} to {date_range['end_date']}")
 
-        # Initialize result structure for this date range
         current_range_results = {
             'date_range': f"{date_range['start_date']} to {date_range['end_date']}",
             'error': None,
@@ -372,15 +279,10 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
         }
 
         try:
-            # Execute the Google Ads API search
             response = ga_service.search(customer_id=customer_id, query=query)
             
-            # Process each keyword row returned
             for row in response:
-                # Convert protobuf response to dictionary
                 row_dict = proto.Message.to_dict(row, use_integers_for_enums=False)
-                
-                # Extract data sections from the row
                 campaign = row_dict.get('campaign', {})
                 ad_group = row_dict.get('ad_group', {})
                 criterion = row_dict.get('ad_group_criterion', {})
@@ -388,10 +290,6 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
                 metrics = row_dict.get('metrics', {})
                 quality_info = criterion.get('quality_info', {})
                 
-                # Get conversion rate with safe default
-                conversion_rate = metrics.get('conversion_rate', 0.0)
-                
-                # Structure the keyword data for output
                 keyword_data = {
                     "Campaign ID": campaign.get('id', 'N/A'),
                     "Campaign": campaign.get('name', 'N/A'),
@@ -406,15 +304,14 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
                     "Clicks": metrics.get('clicks', 'N/A'),
                     "Cost": micros_to_currency(metrics.get('cost_micros')),
                     "Conversions": metrics.get('all_conversions', 'N/A'),
-                    "Conversion Rate": conversion_rate,
+                    "Conversion Rate": metrics.get('conversion_rate', 0.0),
                     "Interaction Rate": metrics.get('interaction_rate', 'N/A'),
                     "Avg. CPC": micros_to_currency(metrics.get('average_cpc'))
                 }
-                
                 current_range_results['data'].append(keyword_data)
 
         except Exception as e:
-            logger.error(f"Error during Google Ads API call for keyword data, range {date_range}: {str(e)}")
+            logger.error(f"Error during keyword data retrieval: {str(e)}")
             current_range_results['error'] = f"Failed to retrieve keyword data: {str(e)}"
         
         all_results.append(current_range_results)
@@ -422,133 +319,606 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
     return all_results
 
 
-# ---- Action Handlers ----
+# ---- Action Handlers: READ Operations ----
+
 @google_ads.action("retrieve_campaign_metrics")
-class AdwordsCampaignAction(ActionHandler):
-    """Action handler for retrieving campaign performance metrics from Google Ads."""
+class RetrieveCampaignMetricsAction(ActionHandler):
+    """Action handler for retrieving campaign performance metrics."""
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Extract authentication token from context
-            refresh_token = context.auth.get("credentials", {}).get("refresh_token")
-            
-            if not refresh_token:
-                logger.error("Refresh token is missing in auth credentials")
-                raise Exception("Refresh token is required for authentication with Google Ads API")
-
-            # Extract required input parameters
-            login_customer_id = inputs.get('login_customer_id')
-            customer_id = inputs.get('customer_id')
-            
-            # Validate required parameters
-            if not login_customer_id:
-                logger.error("Manager Account ID (login_customer_id) is missing in inputs")
-                raise Exception("Manager Account ID (login_customer_id) is required")
-                
-            if not customer_id:
-                logger.error("Customer ID is missing in inputs")
-                raise Exception("Customer ID is required")
-
-            # Build Google Ads API client credentials
-            credentials = {
-                "developer_token": DEVELOPER_TOKEN,
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "refresh_token": refresh_token,
-                "login_customer_id": login_customer_id,
-                "use_proto_plus": True
-            }
-
-            # Initialize the Google Ads API client
-            client = GoogleAdsClient.load_from_dict(credentials)
-
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
         except Exception as e:
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
-            raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
+            raise
 
-        # Get date ranges input parameter
         date_ranges_input = inputs.get('date_ranges')
-
-        # Validate date ranges parameter
-        if not date_ranges_input: # Catches None, empty list, empty string.
-            logger.error("'date_ranges' is a required input and was not provided or is empty.")
-            raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
+        if not date_ranges_input:
+            raise Exception("'date_ranges' is required.")
 
         try:
-            # Fetch campaign data using the API client
             results = fetch_campaign_data(client, customer_id, date_ranges_input)
             logger.info("Successfully retrieved campaign data.")
             return ActionResult(data=results, cost_usd=0.00)
-        except ValueError as ve:
-            logger.error(f"ValueError in AdwordsCampaignAction: {str(ve)}")
-            raise Exception(str(ve))
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
-            raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
+            raise
+
 
 @google_ads.action("retrieve_keyword_metrics")
-class AdwordsKeywordAction(ActionHandler):
-    """Action handler for retrieving keyword performance metrics from Google Ads."""
+class RetrieveKeywordMetricsAction(ActionHandler):
+    """Action handler for retrieving keyword performance metrics."""
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Extract authentication token from context
-            refresh_token = context.auth.get("credentials", {}).get("refresh_token")
-            
-            if not refresh_token:
-                logger.error("Refresh token is missing in auth credentials")
-                raise Exception("Refresh token is required for authentication with Google Ads API")
-
-            # Extract required input parameters
-            login_customer_id = inputs.get('login_customer_id')
-            customer_id = inputs.get('customer_id')
-            
-            # Validate required parameters
-            if not login_customer_id:
-                logger.error("Manager Account ID (login_customer_id) is missing in inputs")
-                raise Exception("Manager Account ID (login_customer_id) is required")
-                
-            if not customer_id:
-                logger.error("Customer ID is missing in inputs")
-                raise Exception("Customer ID is required")
-
-            # Build Google Ads API client credentials
-            credentials = {
-                "developer_token": DEVELOPER_TOKEN,
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "refresh_token": refresh_token,
-                "login_customer_id": login_customer_id,
-                "use_proto_plus": True
-            }
-
-            # Initialize the Google Ads API client
-            client = GoogleAdsClient.load_from_dict(credentials)
-
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
         except Exception as e:
             logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
-            raise Exception(f"Failed to initialize Google Ads client: {str(e)}")
+            raise
 
-        # Extract input parameters for filtering
         date_ranges_input = inputs.get('date_ranges')
         campaign_ids = inputs.get('campaign_ids', [])
         ad_group_ids = inputs.get('ad_group_ids', [])
 
-        # Validate required date ranges parameter
         if not date_ranges_input:
-            logger.error("'date_ranges' is a required input and was not provided or is empty.")
-            raise Exception("'date_ranges' is required. Provide a date range string like 'YYYY-MM-DD_YYYY-MM-DD' or a list of such strings.")
+            raise Exception("'date_ranges' is required.")
 
         try:
-            # Fetch keyword data using the API client with optional filters
             results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
             logger.info("Successfully retrieved keyword data.")
             return ActionResult(data=results, cost_usd=0.00)
-        except ValueError as ve:
-            logger.error(f"ValueError in AdwordsKeywordAction: {str(ve)}")
-            raise Exception(str(ve))
         except Exception as e:
             logger.exception(f"Exception during keyword data retrieval: {str(e)}")
-            raise Exception(f"An unexpected error occurred during data retrieval: {str(e)}")
+            raise
+
+
+# ---- Action Handlers: CAMPAIGN CRUD Operations ----
+
+@google_ads.action("create_campaign")
+class CreateCampaignAction(ActionHandler):
+    """Action handler for creating a new campaign with budget."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        campaign_name = inputs.get('campaign_name')
+        budget_amount_micros = inputs.get('budget_amount_micros')
+        budget_name = inputs.get('budget_name', f"Budget for {campaign_name}")
+        bidding_strategy = inputs.get('bidding_strategy', 'MANUAL_CPC')
+        
+        start_date = inputs.get('start_date')
+        end_date = inputs.get('end_date')
+        
+        if not start_date:
+            start_date = (datetime.now() + timedelta(days=1)).strftime('%Y%m%d')
+        if not end_date:
+            end_date = (datetime.now() + timedelta(days=365)).strftime('%Y%m%d')
+
+        try:
+            # Create campaign budget
+            campaign_budget_service = client.get_service("CampaignBudgetService")
+            campaign_budget_operation = client.get_type("CampaignBudgetOperation")
+            campaign_budget = campaign_budget_operation.create
+            campaign_budget.name = budget_name
+            campaign_budget.amount_micros = budget_amount_micros
+            campaign_budget.delivery_method = client.enums.BudgetDeliveryMethodEnum.STANDARD
+
+            budget_response = campaign_budget_service.mutate_campaign_budgets(
+                customer_id=customer_id,
+                operations=[campaign_budget_operation]
+            )
+            budget_resource_name = budget_response.results[0].resource_name
+            logger.info(f"Created budget: {budget_resource_name}")
+
+            # Create campaign
+            campaign_service = client.get_service("CampaignService")
+            campaign_operation = client.get_type("CampaignOperation")
+            campaign = campaign_operation.create
+            campaign.name = campaign_name
+            campaign.campaign_budget = budget_resource_name
+            campaign.advertising_channel_type = client.enums.AdvertisingChannelTypeEnum.SEARCH
+            campaign.status = client.enums.CampaignStatusEnum.PAUSED
+            campaign.start_date = start_date
+            campaign.end_date = end_date
+
+            # Set bidding strategy
+            if bidding_strategy == 'MANUAL_CPC':
+                campaign.manual_cpc.enhanced_cpc_enabled = False
+            elif bidding_strategy == 'TARGET_SPEND':
+                campaign.target_spend.target_spend_micros = 0
+            elif bidding_strategy == 'MAXIMIZE_CONVERSIONS':
+                campaign.maximize_conversions.target_cpa_micros = 0
+            elif bidding_strategy == 'MAXIMIZE_CLICKS':
+                campaign.maximize_clicks.cpc_bid_ceiling_micros = 0
+
+            # Network settings
+            campaign.network_settings.target_google_search = True
+            campaign.network_settings.target_search_network = True
+            campaign.network_settings.target_content_network = False
+            campaign.network_settings.target_partner_search_network = False
+
+            campaign_response = campaign_service.mutate_campaigns(
+                customer_id=customer_id,
+                operations=[campaign_operation]
+            )
+            campaign_resource_name = campaign_response.results[0].resource_name
+            campaign_id = campaign_resource_name.split('/')[-1]
+
+            logger.info(f"Created campaign: {campaign_resource_name}")
+
+            return ActionResult(data={
+                "campaign_resource_name": campaign_resource_name,
+                "budget_resource_name": budget_resource_name,
+                "campaign_id": campaign_id,
+                "status": "PAUSED"
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to create campaign: {str(e)}")
+            raise
+
+
+@google_ads.action("update_campaign")
+class UpdateCampaignAction(ActionHandler):
+    """Action handler for updating an existing campaign."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        campaign_id = inputs.get('campaign_id')
+        new_status = inputs.get('status')
+        new_name = inputs.get('name')
+
+        if not campaign_id:
+            raise Exception("campaign_id is required")
+
+        try:
+            campaign_service = client.get_service("CampaignService")
+            campaign_operation = client.get_type("CampaignOperation")
+            campaign = campaign_operation.update
+            
+            campaign.resource_name = campaign_service.campaign_path(customer_id, campaign_id)
+
+            if new_status:
+                if new_status == 'ENABLED':
+                    campaign.status = client.enums.CampaignStatusEnum.ENABLED
+                elif new_status == 'PAUSED':
+                    campaign.status = client.enums.CampaignStatusEnum.PAUSED
+
+            if new_name:
+                campaign.name = new_name
+
+            # Create field mask
+            client.copy_from(
+                campaign_operation.update_mask,
+                protobuf_helpers.field_mask(None, campaign._pb)
+            )
+
+            response = campaign_service.mutate_campaigns(
+                customer_id=customer_id,
+                operations=[campaign_operation]
+            )
+
+            result_resource_name = response.results[0].resource_name
+            logger.info(f"Updated campaign: {result_resource_name}")
+
+            return ActionResult(data={
+                "campaign_resource_name": result_resource_name,
+                "status": new_status or "unchanged"
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to update campaign: {str(e)}")
+            raise
+
+
+@google_ads.action("remove_campaign")
+class RemoveCampaignAction(ActionHandler):
+    """Action handler for removing a campaign."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        campaign_id = inputs.get('campaign_id')
+        if not campaign_id:
+            raise Exception("campaign_id is required")
+
+        try:
+            campaign_service = client.get_service("CampaignService")
+            campaign_operation = client.get_type("CampaignOperation")
+            
+            resource_name = campaign_service.campaign_path(customer_id, campaign_id)
+            campaign_operation.remove = resource_name
+
+            response = campaign_service.mutate_campaigns(
+                customer_id=customer_id,
+                operations=[campaign_operation]
+            )
+
+            removed_resource_name = response.results[0].resource_name
+            logger.info(f"Removed campaign: {removed_resource_name}")
+
+            return ActionResult(data={
+                "removed_campaign_resource_name": removed_resource_name,
+                "status": "REMOVED"
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to remove campaign: {str(e)}")
+            raise
+
+
+# ---- Action Handlers: AD GROUP Operations ----
+
+@google_ads.action("create_ad_group")
+class CreateAdGroupAction(ActionHandler):
+    """Action handler for creating a new ad group."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        campaign_id = inputs.get('campaign_id')
+        ad_group_name = inputs.get('ad_group_name')
+        cpc_bid_micros = inputs.get('cpc_bid_micros', 1000000)
+        status = inputs.get('status', 'PAUSED')
+
+        if not campaign_id or not ad_group_name:
+            raise Exception("campaign_id and ad_group_name are required")
+
+        try:
+            ad_group_service = client.get_service("AdGroupService")
+            campaign_service = client.get_service("CampaignService")
+            ad_group_operation = client.get_type("AdGroupOperation")
+            
+            ad_group = ad_group_operation.create
+            ad_group.name = ad_group_name
+            ad_group.campaign = campaign_service.campaign_path(customer_id, campaign_id)
+            ad_group.type_ = client.enums.AdGroupTypeEnum.SEARCH_STANDARD
+            ad_group.cpc_bid_micros = cpc_bid_micros
+            
+            if status == 'ENABLED':
+                ad_group.status = client.enums.AdGroupStatusEnum.ENABLED
+            else:
+                ad_group.status = client.enums.AdGroupStatusEnum.PAUSED
+
+            response = ad_group_service.mutate_ad_groups(
+                customer_id=customer_id,
+                operations=[ad_group_operation]
+            )
+
+            ad_group_resource_name = response.results[0].resource_name
+            ad_group_id = ad_group_resource_name.split('/')[-1]
+            logger.info(f"Created ad group: {ad_group_resource_name}")
+
+            return ActionResult(data={
+                "ad_group_resource_name": ad_group_resource_name,
+                "ad_group_id": ad_group_id,
+                "status": status
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to create ad group: {str(e)}")
+            raise
+
+
+# ---- Action Handlers: AD Operations ----
+
+@google_ads.action("create_responsive_search_ad")
+class CreateResponsiveSearchAdAction(ActionHandler):
+    """Action handler for creating a Responsive Search Ad."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        ad_group_id = inputs.get('ad_group_id')
+        headlines = inputs.get('headlines', [])
+        descriptions = inputs.get('descriptions', [])
+        final_url = inputs.get('final_url')
+        path1 = inputs.get('path1', '')
+        path2 = inputs.get('path2', '')
+        status = inputs.get('status', 'PAUSED')
+
+        if not ad_group_id or not headlines or not descriptions or not final_url:
+            raise Exception("ad_group_id, headlines, descriptions, and final_url are required")
+
+        if len(headlines) < 3:
+            raise Exception("At least 3 headlines are required for RSA")
+        if len(descriptions) < 2:
+            raise Exception("At least 2 descriptions are required for RSA")
+
+        try:
+            ad_group_ad_service = client.get_service("AdGroupAdService")
+            ad_group_service = client.get_service("AdGroupService")
+            ad_group_ad_operation = client.get_type("AdGroupAdOperation")
+            
+            ad_group_ad = ad_group_ad_operation.create
+            ad_group_ad.ad_group = ad_group_service.ad_group_path(customer_id, ad_group_id)
+            
+            if status == 'ENABLED':
+                ad_group_ad.status = client.enums.AdGroupAdStatusEnum.ENABLED
+            else:
+                ad_group_ad.status = client.enums.AdGroupAdStatusEnum.PAUSED
+
+            # Set final URL
+            ad_group_ad.ad.final_urls.append(final_url)
+
+            # Add headlines
+            for headline_text in headlines[:15]:
+                ad_text_asset = client.get_type("AdTextAsset")
+                ad_text_asset.text = headline_text[:30]
+                ad_group_ad.ad.responsive_search_ad.headlines.append(ad_text_asset)
+
+            # Add descriptions
+            for desc_text in descriptions[:4]:
+                ad_text_asset = client.get_type("AdTextAsset")
+                ad_text_asset.text = desc_text[:90]
+                ad_group_ad.ad.responsive_search_ad.descriptions.append(ad_text_asset)
+
+            # Add path
+            if path1:
+                ad_group_ad.ad.responsive_search_ad.path1 = path1[:15]
+            if path2:
+                ad_group_ad.ad.responsive_search_ad.path2 = path2[:15]
+
+            response = ad_group_ad_service.mutate_ad_group_ads(
+                customer_id=customer_id,
+                operations=[ad_group_ad_operation]
+            )
+
+            ad_resource_name = response.results[0].resource_name
+            ad_id = ad_resource_name.split('~')[-1] if '~' in ad_resource_name else ad_resource_name.split('/')[-1]
+            logger.info(f"Created RSA: {ad_resource_name}")
+
+            return ActionResult(data={
+                "ad_resource_name": ad_resource_name,
+                "ad_id": ad_id,
+                "status": status
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to create RSA: {str(e)}")
+            raise
+
+
+# ---- Action Handlers: KEYWORD Operations ----
+
+@google_ads.action("add_keywords")
+class AddKeywordsAction(ActionHandler):
+    """Action handler for adding keywords to an ad group."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        ad_group_id = inputs.get('ad_group_id')
+        keywords = inputs.get('keywords', [])
+
+        if not ad_group_id or not keywords:
+            raise Exception("ad_group_id and keywords are required")
+
+        try:
+            ad_group_criterion_service = client.get_service("AdGroupCriterionService")
+            ad_group_service = client.get_service("AdGroupService")
+            
+            operations = []
+            added_keywords = []
+
+            for kw in keywords:
+                keyword_text = kw.get('text')
+                match_type_str = kw.get('match_type', 'BROAD').upper()
+                
+                if not keyword_text:
+                    continue
+
+                operation = client.get_type("AdGroupCriterionOperation")
+                criterion = operation.create
+                criterion.ad_group = ad_group_service.ad_group_path(customer_id, ad_group_id)
+                criterion.status = client.enums.AdGroupCriterionStatusEnum.ENABLED
+                criterion.keyword.text = keyword_text
+                
+                if match_type_str == 'EXACT':
+                    criterion.keyword.match_type = client.enums.KeywordMatchTypeEnum.EXACT
+                elif match_type_str == 'PHRASE':
+                    criterion.keyword.match_type = client.enums.KeywordMatchTypeEnum.PHRASE
+                else:
+                    criterion.keyword.match_type = client.enums.KeywordMatchTypeEnum.BROAD
+
+                operations.append(operation)
+                added_keywords.append({
+                    "keyword_text": keyword_text,
+                    "match_type": match_type_str
+                })
+
+            if operations:
+                response = ad_group_criterion_service.mutate_ad_group_criteria(
+                    customer_id=customer_id,
+                    operations=operations
+                )
+
+                for i, result in enumerate(response.results):
+                    if i < len(added_keywords):
+                        added_keywords[i]["resource_name"] = result.resource_name
+
+                logger.info(f"Added {len(response.results)} keywords")
+
+            return ActionResult(data={
+                "added_keywords": added_keywords,
+                "status": "success"
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to add keywords: {str(e)}")
+            raise
+
+
+# ---- Action Handlers: KEYWORD PLANNER Operations ----
+
+@google_ads.action("generate_keyword_ideas")
+class GenerateKeywordIdeasAction(ActionHandler):
+    """Action handler for generating keyword ideas using Keyword Planner."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        seed_keywords = inputs.get('seed_keywords', [])
+        page_url = inputs.get('page_url')
+        language_id = inputs.get('language_id', '1000')
+        location_ids = inputs.get('location_ids', ['2840'])
+        include_adult_keywords = inputs.get('include_adult_keywords', False)
+
+        if not seed_keywords and not page_url:
+            raise Exception("At least one of seed_keywords or page_url is required")
+
+        try:
+            keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService")
+            
+            request = client.get_type("GenerateKeywordIdeasRequest")
+            request.customer_id = customer_id
+            request.language = client.get_service("GoogleAdsService").language_constant_path(language_id)
+            request.include_adult_keywords = include_adult_keywords
+            request.keyword_plan_network = client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
+
+            # Add geo target constants
+            for loc_id in location_ids:
+                request.geo_target_constants.append(
+                    client.get_service("GoogleAdsService").geo_target_constant_path(loc_id)
+                )
+
+            # Set seeds
+            if seed_keywords and page_url:
+                request.keyword_and_url_seed.url = page_url
+                request.keyword_and_url_seed.keywords.extend(seed_keywords)
+            elif seed_keywords:
+                request.keyword_seed.keywords.extend(seed_keywords)
+            elif page_url:
+                request.url_seed.url = page_url
+
+            response = keyword_plan_idea_service.generate_keyword_ideas(request=request)
+
+            keyword_ideas = []
+            for result in response:
+                metrics = result.keyword_idea_metrics
+                keyword_ideas.append({
+                    "keyword": result.text,
+                    "avg_monthly_searches": metrics.avg_monthly_searches if metrics.avg_monthly_searches else 0,
+                    "competition": str(metrics.competition.name) if metrics.competition else "UNKNOWN",
+                    "competition_index": metrics.competition_index if metrics.competition_index else 0,
+                    "low_top_of_page_bid_micros": metrics.low_top_of_page_bid_micros if metrics.low_top_of_page_bid_micros else 0,
+                    "high_top_of_page_bid_micros": metrics.high_top_of_page_bid_micros if metrics.high_top_of_page_bid_micros else 0
+                })
+
+            logger.info(f"Generated {len(keyword_ideas)} keyword ideas")
+
+            return ActionResult(data={
+                "keyword_ideas": keyword_ideas,
+                "total_results": len(keyword_ideas)
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to generate keyword ideas: {str(e)}")
+            raise
+
+
+@google_ads.action("generate_keyword_historical_metrics")
+class GenerateKeywordHistoricalMetricsAction(ActionHandler):
+    """Action handler for getting historical metrics for keywords."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            refresh_token, login_customer_id, customer_id = _validate_auth_and_inputs(inputs, context)
+            client = _get_google_ads_client(refresh_token, login_customer_id)
+        except Exception as e:
+            logger.exception(f"Failed to initialize GoogleAdsClient: {str(e)}")
+            raise
+
+        keywords = inputs.get('keywords', [])
+        language_id = inputs.get('language_id', '1000')
+        location_ids = inputs.get('location_ids', ['2840'])
+
+        if not keywords:
+            raise Exception("keywords list is required")
+
+        try:
+            keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService")
+            
+            request = client.get_type("GenerateKeywordHistoricalMetricsRequest")
+            request.customer_id = customer_id
+            request.keywords.extend(keywords)
+            request.language = client.get_service("GoogleAdsService").language_constant_path(language_id)
+            request.keyword_plan_network = client.enums.KeywordPlanNetworkEnum.GOOGLE_SEARCH
+
+            for loc_id in location_ids:
+                request.geo_target_constants.append(
+                    client.get_service("GoogleAdsService").geo_target_constant_path(loc_id)
+                )
+
+            response = keyword_plan_idea_service.generate_keyword_historical_metrics(request=request)
+
+            keyword_metrics = []
+            for result in response.results:
+                metrics = result.keyword_metrics
+                
+                monthly_volumes = []
+                if metrics.monthly_search_volumes:
+                    for vol in metrics.monthly_search_volumes:
+                        monthly_volumes.append({
+                            "month": str(vol.month.name) if vol.month else "UNKNOWN",
+                            "year": vol.year if vol.year else 0,
+                            "monthly_searches": vol.monthly_searches if vol.monthly_searches else 0
+                        })
+
+                keyword_metrics.append({
+                    "keyword": result.text,
+                    "avg_monthly_searches": metrics.avg_monthly_searches if metrics.avg_monthly_searches else 0,
+                    "competition": str(metrics.competition.name) if metrics.competition else "UNKNOWN",
+                    "competition_index": metrics.competition_index if metrics.competition_index else 0,
+                    "low_top_of_page_bid_micros": metrics.low_top_of_page_bid_micros if metrics.low_top_of_page_bid_micros else 0,
+                    "high_top_of_page_bid_micros": metrics.high_top_of_page_bid_micros if metrics.high_top_of_page_bid_micros else 0,
+                    "monthly_search_volumes": monthly_volumes
+                })
+
+            logger.info(f"Retrieved historical metrics for {len(keyword_metrics)} keywords")
+
+            return ActionResult(data={
+                "keyword_metrics": keyword_metrics
+            }, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to get keyword historical metrics: {str(e)}")
+            raise

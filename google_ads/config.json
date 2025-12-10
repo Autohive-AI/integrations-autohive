@@ -1,7 +1,7 @@
 {
     "name": "Google Ads",
-    "version": "1.0.0",
-    "description": "Fetches various performance data from the Google Ads API, including campaigns, ad groups, ads, and audience segments.",
+    "version": "2.0.0",
+    "description": "Full CRUD operations for Google Ads API including campaigns, ad groups, ads, keywords, and Keyword Planner functionality.",
     "entry_point": "google_ads.py",
     "auth": {
         "type": "platform",
@@ -12,113 +12,473 @@
     },
     "actions": {
         "retrieve_campaign_metrics": {
-            "display_name": "Get Campaign information",
+            "display_name": "Get Campaign Metrics",
             "description": "Retrieves overall performance metrics for campaigns (e.g., total clicks, cost, conversions per campaign). Use this for high-level summaries of how each campaign is performing as a whole.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "login_customer_id": {
                         "type": "string",
-                        "description": "Your Google Ads Manager Account ID (MCC) without dashes (e.g., '1234567890'). This is the account that has administrative access to the customer account being queried."
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes (e.g., '1234567890')."
                     },
                     "customer_id": {
                         "type": "string",
-                        "description": "The Google Ads Customer ID of the specific account you want to query data from (e.g., '1234567890'). This is the account whose campaign data will be retrieved."
+                        "description": "The Google Ads Customer ID of the specific account you want to query data from."
                     },
                     "date_ranges": {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"]), 'last 7 days' or 'last_7_days', or single dates 'DD/MM/YYYY' (e.g., [\"16/03/2024\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
+                        "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD', 'last 7 days', or single dates 'DD/MM/YYYY'."
                     }
                 },
-                "required": [
-                    "login_customer_id",
-                    "customer_id"
-                ]
+                "required": ["login_customer_id", "customer_id"]
             },
             "output_schema": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "date_range": {
-                            "type": "string",
-                            "description": "The date range this data represents"
-                        },
-                        "data": {
-                            "type": "array",
-                            "description": "Campaign data for the specified date range",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": true,
-                                "properties": {}
-                            }
-                        }
+                        "date_range": {"type": "string"},
+                        "data": {"type": "array", "items": {"type": "object", "additionalProperties": true}}
                     }
                 }
             }
         },
         "retrieve_keyword_metrics": {
-            "display_name": "Get Keyword information",
-            "description": "Retrieves detailed performance metrics for keywords including match type, impressions, clicks, cost, conversions, conversion rate, and interaction rate.",
+            "display_name": "Get Keyword Metrics",
+            "description": "Retrieves detailed performance metrics for keywords including match type, impressions, clicks, cost, conversions, and interaction rate.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "login_customer_id": {
                         "type": "string",
-                        "description": "Your Google Ads Manager Account ID (MCC) without dashes (e.g., '1234567890'). This is the account that has administrative access to the customer account being queried."
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
                     },
                     "customer_id": {
                         "type": "string",
-                        "description": "The Google Ads Customer ID of the specific account you want to query data from (e.g., '1234567890'). This is the account whose keyword data will be retrieved."
+                        "description": "The Google Ads Customer ID of the specific account."
                     },
                     "ad_group_ids": {
                         "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of ad group IDs to filter by"
+                        "items": {"type": "string"},
+                        "description": "List of ad group IDs to filter by."
                     },
                     "campaign_ids": {
                         "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of campaign IDs to filter by"
+                        "items": {"type": "string"},
+                        "description": "List of campaign IDs to filter by."
                     },
                     "date_ranges": {
                         "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD' (e.g., [\"2023-01-01_2023-01-31\"]), 'last 7 days' or 'last_7_days', or single dates 'DD/MM/YYYY' (e.g., [\"16/03/2024\"]). Defaults to [\"last_7_days\", \"prev_7_days\"]."
+                        "items": {"type": "string"},
+                        "description": "List of date ranges."
                     }
                 },
-                "required": [
-                    "login_customer_id",
-                    "customer_id",
-                    "ad_group_ids",
-                    "campaign_ids"
-                ]
+                "required": ["login_customer_id", "customer_id", "ad_group_ids", "campaign_ids"]
             },
             "output_schema": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "date_range": {
-                            "type": "string",
-                            "description": "The date range this data represents"
+                        "date_range": {"type": "string"},
+                        "data": {"type": "array", "items": {"type": "object", "additionalProperties": true}}
+                    }
+                }
+            }
+        },
+        "create_campaign": {
+            "display_name": "Create Campaign",
+            "description": "Creates a new Google Ads Search campaign with a budget. The campaign is created in PAUSED status by default.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "campaign_name": {
+                        "type": "string",
+                        "description": "Name for the new campaign."
+                    },
+                    "budget_amount_micros": {
+                        "type": "integer",
+                        "description": "Daily budget in micros (e.g., 1000000 = $1.00)."
+                    },
+                    "budget_name": {
+                        "type": "string",
+                        "description": "Name for the campaign budget."
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "description": "Campaign start date in YYYYMMDD format. Defaults to tomorrow."
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "Campaign end date in YYYYMMDD format. Defaults to 1 year from start."
+                    },
+                    "bidding_strategy": {
+                        "type": "string",
+                        "enum": ["MANUAL_CPC", "TARGET_SPEND", "MAXIMIZE_CONVERSIONS", "MAXIMIZE_CLICKS"],
+                        "description": "Bidding strategy for the campaign. Defaults to MANUAL_CPC."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "campaign_name", "budget_amount_micros"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "campaign_resource_name": {"type": "string"},
+                    "budget_resource_name": {"type": "string"},
+                    "campaign_id": {"type": "string"},
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "update_campaign": {
+            "display_name": "Update Campaign",
+            "description": "Updates an existing campaign's status (ENABLED, PAUSED) or other settings.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "campaign_id": {
+                        "type": "string",
+                        "description": "The ID of the campaign to update."
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["ENABLED", "PAUSED"],
+                        "description": "New status for the campaign."
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New name for the campaign (optional)."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "campaign_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "campaign_resource_name": {"type": "string"},
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "remove_campaign": {
+            "display_name": "Remove Campaign",
+            "description": "Removes (deletes) a campaign. This sets the campaign status to REMOVED.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "campaign_id": {
+                        "type": "string",
+                        "description": "The ID of the campaign to remove."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "campaign_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "removed_campaign_resource_name": {"type": "string"},
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "create_ad_group": {
+            "display_name": "Create Ad Group",
+            "description": "Creates a new ad group within an existing campaign.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "campaign_id": {
+                        "type": "string",
+                        "description": "The ID of the campaign to add the ad group to."
+                    },
+                    "ad_group_name": {
+                        "type": "string",
+                        "description": "Name for the new ad group."
+                    },
+                    "cpc_bid_micros": {
+                        "type": "integer",
+                        "description": "CPC bid in micros (e.g., 1000000 = $1.00). Defaults to 1000000."
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["ENABLED", "PAUSED"],
+                        "description": "Status for the ad group. Defaults to PAUSED."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "campaign_id", "ad_group_name"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "ad_group_resource_name": {"type": "string"},
+                    "ad_group_id": {"type": "string"},
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "create_responsive_search_ad": {
+            "display_name": "Create Responsive Search Ad",
+            "description": "Creates a new Responsive Search Ad (RSA) in an existing ad group with multiple headlines and descriptions.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "ad_group_id": {
+                        "type": "string",
+                        "description": "The ID of the ad group to add the ad to."
+                    },
+                    "headlines": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of headlines (3-15 required, each max 30 characters)."
+                    },
+                    "descriptions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of descriptions (2-4 required, each max 90 characters)."
+                    },
+                    "final_url": {
+                        "type": "string",
+                        "description": "The landing page URL for the ad."
+                    },
+                    "path1": {
+                        "type": "string",
+                        "description": "First path text that appears in display URL (optional, max 15 chars)."
+                    },
+                    "path2": {
+                        "type": "string",
+                        "description": "Second path text that appears in display URL (optional, max 15 chars)."
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["ENABLED", "PAUSED"],
+                        "description": "Status for the ad. Defaults to PAUSED."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "ad_group_id", "headlines", "descriptions", "final_url"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "ad_resource_name": {"type": "string"},
+                    "ad_id": {"type": "string"},
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "add_keywords": {
+            "display_name": "Add Keywords to Ad Group",
+            "description": "Adds keywords to an existing ad group with specified match types.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "ad_group_id": {
+                        "type": "string",
+                        "description": "The ID of the ad group to add keywords to."
+                    },
+                    "keywords": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string", "description": "The keyword text."},
+                                "match_type": {
+                                    "type": "string",
+                                    "enum": ["BROAD", "PHRASE", "EXACT"],
+                                    "description": "Match type for the keyword. Defaults to BROAD."
+                                }
+                            },
+                            "required": ["text"]
                         },
-                        "data": {
-                            "type": "array",
-                            "description": "Keyword data for the specified date range",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": true,
-                                "properties": {}
+                        "description": "List of keywords with their match types."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "ad_group_id", "keywords"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "added_keywords": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "resource_name": {"type": "string"},
+                                "keyword_text": {"type": "string"},
+                                "match_type": {"type": "string"}
+                            }
+                        }
+                    },
+                    "status": {"type": "string"}
+                }
+            }
+        },
+        "generate_keyword_ideas": {
+            "display_name": "Generate Keyword Ideas (Keyword Planner)",
+            "description": "Uses Keyword Planner to generate keyword ideas based on seed keywords and/or a URL. Returns search volume and competition data.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "seed_keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of seed keywords to generate ideas from."
+                    },
+                    "page_url": {
+                        "type": "string",
+                        "description": "URL to analyze for keyword ideas (optional)."
+                    },
+                    "language_id": {
+                        "type": "string",
+                        "description": "Language ID (e.g., '1000' for English). Defaults to English."
+                    },
+                    "location_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of geo target location IDs (e.g., ['2840'] for USA). Defaults to USA."
+                    },
+                    "include_adult_keywords": {
+                        "type": "boolean",
+                        "description": "Whether to include adult keywords. Defaults to false."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "keyword_ideas": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "keyword": {"type": "string"},
+                                "avg_monthly_searches": {"type": "integer"},
+                                "competition": {"type": "string"},
+                                "competition_index": {"type": "number"},
+                                "low_top_of_page_bid_micros": {"type": "integer"},
+                                "high_top_of_page_bid_micros": {"type": "integer"}
+                            }
+                        }
+                    },
+                    "total_results": {"type": "integer"}
+                }
+            }
+        },
+        "generate_keyword_historical_metrics": {
+            "display_name": "Get Keyword Historical Metrics",
+            "description": "Retrieves historical metrics (search volume, competition, bid estimates) for specific keywords using the Keyword Planner.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "login_customer_id": {
+                        "type": "string",
+                        "description": "Your Google Ads Manager Account ID (MCC) without dashes."
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The Google Ads Customer ID."
+                    },
+                    "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of keywords to get historical metrics for."
+                    },
+                    "language_id": {
+                        "type": "string",
+                        "description": "Language ID (e.g., '1000' for English). Defaults to English."
+                    },
+                    "location_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of geo target location IDs. Defaults to USA."
+                    }
+                },
+                "required": ["login_customer_id", "customer_id", "keywords"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "keyword_metrics": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "keyword": {"type": "string"},
+                                "avg_monthly_searches": {"type": "integer"},
+                                "competition": {"type": "string"},
+                                "competition_index": {"type": "number"},
+                                "low_top_of_page_bid_micros": {"type": "integer"},
+                                "high_top_of_page_bid_micros": {"type": "integer"},
+                                "monthly_search_volumes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "month": {"type": "string"},
+                                            "year": {"type": "integer"},
+                                            "monthly_searches": {"type": "integer"}
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -126,4 +486,4 @@
             }
         }
     }
-} 
+}
