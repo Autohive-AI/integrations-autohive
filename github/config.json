@@ -1971,7 +1971,7 @@
           "required_status_checks": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "string"
             }
           },
           "enforce_admins": {
@@ -2176,7 +2176,7 @@
           "events": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "string"
             }
           },
           "config": {
@@ -2231,7 +2231,7 @@
             "events": {
               "type": "array",
               "items": {
-                "type": "object"
+                "type": "string"
               }
             },
             "config": {
