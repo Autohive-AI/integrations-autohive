@@ -17,7 +17,11 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Google Ads
 
-[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
+[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations.
+
+### Google Analytics
+
+[google-analytics](google-analytics): Google Analytics 4 (GA4) integration for accessing analytics data, reports, and metrics through the Analytics Data API. Supports running customized reports with dimensions and metrics, real-time analytics for monitoring active users and current activity in the last 30 minutes, metadata discovery for exploring available dimensions and metrics, and batch processing for running multiple reports in a single API call. Features OAuth2 authentication with Analytics Data API scope, flexible date range filtering (absolute YYYY-MM-DD and relative formats like "7daysAgo"), pagination support with limit and offset, and access to all GA4 event data including common dimensions (country, city, deviceCategory, browser, pagePath, eventName) and metrics (activeUsers, sessions, screenPageViews, bounceRate, conversions, engagementRate). Includes 4 actions for standard reports, real-time data, metadata retrieval, and batch report execution. Ideal for analytics workflows, data analysis, reporting automation, and business intelligence.
 
 ### Box
 
