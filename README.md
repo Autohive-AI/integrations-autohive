@@ -131,9 +131,17 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [mailchimp](mailchimp): Email marketing integration with Mailchimp Marketing API v3.0 for managing mailing lists, audience members, and email campaigns. Supports complete list management (create, get, list audiences), member operations (add, update, get members with merge fields and tags), and campaign management (create, get, list campaigns with status filtering). Features OAuth2 authentication with dynamic data center resolution, automatic rate limiting with retry logic (max 10 simultaneous connections), MD5 subscriber hash generation, and pagination support for large datasets. Includes 10 actions covering audience management, subscriber lifecycle, and email campaign workflows.
 
+### Monday.com
+
+[monday-com](monday-com): Comprehensive project and workflow management integration with Monday.com GraphQL API for managing boards, items, updates, and team collaboration. Supports board discovery with columns and groups (list with filtering by board kind: public, private, share), complete item management (retrieve items with column values and cursor-based pagination, create items with optional group assignment, update item column values), update operations (create comments and updates on items), and user management (list workspace users with team associations and admin status). Features platform OAuth authentication, GraphQL API with flexible querying, pagination support (page-based for boards/users, cursor-based for items), column value management for custom fields, comprehensive error handling, and workspace-wide access. Includes 6 actions covering board management, item lifecycle operations, commenting workflows, and user discovery. Ideal for task automation, project tracking, team collaboration, and workflow management.
+
 ### Google Chat
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
+### Google Search Console
+
+[google-search-console](google-search-console): Comprehensive Google Search Console integration for accessing search analytics, URL inspection, sitemap management, and site verification data. Supports querying search performance data with dimensions (query, page, country, device, date) and metrics (clicks, impressions, CTR, position), advanced filtering and grouping, listing verified sites with permission levels, inspecting individual URLs for index status and mobile usability, and managing sitemaps with submission status tracking. Features OAuth2 authentication, pagination support for large datasets (up to 25,000 rows per request), support for both URL-prefix and Domain properties, and comprehensive error handling. Includes 5 actions covering search analytics queries, site listing, URL inspection, and sitemap management. Ideal for SEO automation, search performance monitoring, and website health tracking workflows.
 
 ### Hacker News
 
