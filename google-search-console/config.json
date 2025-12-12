@@ -8,7 +8,7 @@
         "type": "platform",
         "provider": "google_search_console",
         "scopes": [
-            "https://www.googleapis.com/auth/webmasters.readonly"
+            "https://www.googleapis.com/auth/webmasters"
         ]
     },
     "actions": {

@@ -36,7 +36,7 @@ This integration uses Google OAuth2 authentication. You'll need:
 - **Access Token**: A valid Google OAuth2 access token with Search Console API access
 
 Required OAuth2 scopes:
-- `https://www.googleapis.com/auth/webmasters.readonly` - Read-only access to Google Search Console data
+- `https://www.googleapis.com/auth/webmasters` - Full access to Google Search Console data (required for URL Inspection API)
 
 ## Actions
 
