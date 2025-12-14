@@ -26,7 +26,8 @@ from google.ads.googleads.client import GoogleAdsClient
 from google.api_core import protobuf_helpers
 
 # Load integration configuration
-google_ads = Integration.load()
+_config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+google_ads = Integration.load(_config_path)
 
 
 # ---- Utility Functions ----
