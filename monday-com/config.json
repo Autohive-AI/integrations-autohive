@@ -7,7 +7,13 @@
     "auth": {
         "type": "platform",
         "provider": "Monday",
-        "scopes": []
+        "scopes": [
+            "boards:read",
+            "boards:write",
+            "users:read",
+            "updates:write",
+            "account:read"
+        ]
     },
     "actions": {
         "get_boards": {

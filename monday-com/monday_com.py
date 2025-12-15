@@ -1,8 +1,9 @@
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
 from typing import Dict, Any, List
-import requests
+import os
 
-monday_com = Integration.load()
+_config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+monday_com = Integration.load(_config_path)
 
 def build_headers(context: ExecutionContext):
     """Build headers for Monday.com API requests.
@@ -21,7 +22,7 @@ def build_headers(context: ExecutionContext):
         'API-Version': '2024-10'
     }
 
-def execute_graphql_query(query: str, variables: Dict[str, Any], context: ExecutionContext):
+async def execute_graphql_query(query: str, variables: Dict[str, Any], context: ExecutionContext):
     """Execute a GraphQL query against Monday.com API.
 
     Args:
@@ -40,10 +41,9 @@ def execute_graphql_query(query: str, variables: Dict[str, Any], context: Execut
         'variables': variables
     }
 
-    response = requests.post(url, json=payload, headers=headers)
-    response.raise_for_status()
+    response = await context.fetch(url, method='POST', json=payload, headers=headers)
 
-    return response.json()
+    return response
 
 @monday_com.action("get_boards")
 class GetBoards(ActionHandler):
@@ -78,7 +78,7 @@ class GetBoards(ActionHandler):
                 'board_kind': inputs.get('board_kind')
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(
@@ -155,7 +155,7 @@ class GetItems(ActionHandler):
                 'cursor': inputs.get('cursor')
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(
@@ -230,7 +230,7 @@ class CreateItem(ActionHandler):
                 'column_values': inputs.get('column_values')
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(
@@ -292,7 +292,7 @@ class UpdateItem(ActionHandler):
                 'column_values': inputs['column_values']
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(
@@ -351,7 +351,7 @@ class CreateUpdate(ActionHandler):
                 'body': inputs['body']
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(
@@ -413,7 +413,7 @@ class GetUsers(ActionHandler):
                 'page': inputs.get('page', 1)
             }
 
-            result = execute_graphql_query(query, variables, context)
+            result = await execute_graphql_query(query, variables, context)
 
             if 'errors' in result:
                 return ActionResult(

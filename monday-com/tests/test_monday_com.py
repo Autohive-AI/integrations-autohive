@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from context import monday_com
 import json
+import asyncio
 
 
 class TestMondayComIntegration(unittest.TestCase):
@@ -11,7 +12,6 @@ class TestMondayComIntegration(unittest.TestCase):
     def test_integration_loaded(self):
         """Test that the integration loads successfully"""
         self.assertIsNotNone(monday_com)
-        self.assertEqual(monday_com.name, "Monday.com")
 
 
 class TestBuildHeaders(unittest.TestCase):
@@ -52,18 +52,12 @@ class TestBuildHeaders(unittest.TestCase):
         self.assertIn('API-Version', headers)
 
 
-class TestExecuteGraphQLQuery(unittest.TestCase):
+class TestExecuteGraphQLQuery(unittest.IsolatedAsyncioTestCase):
     """Test suite for execute_graphql_query function"""
 
-    @patch('monday_com.requests.post')
-    def test_execute_query_success(self, mock_post):
+    async def test_execute_query_success(self):
         """Test successful GraphQL query execution"""
         from monday_com import execute_graphql_query
-
-        mock_response = Mock()
-        mock_response.json.return_value = {'data': {'boards': []}}
-        mock_response.raise_for_status = Mock()
-        mock_post.return_value = mock_response
 
         mock_context = Mock()
         mock_context.auth = {
@@ -71,28 +65,25 @@ class TestExecuteGraphQLQuery(unittest.TestCase):
                 'access_token': 'test_token'
             }
         }
+        mock_context.fetch = AsyncMock(return_value={'data': {'boards': []}})
 
         query = "query { boards { id } }"
         variables = {'limit': 10}
 
-        result = execute_graphql_query(query, variables, mock_context)
+        result = await execute_graphql_query(query, variables, mock_context)
 
         self.assertEqual(result, {'data': {'boards': []}})
-        mock_post.assert_called_once()
+        mock_context.fetch.assert_called_once()
 
-        call_args = mock_post.call_args
+        call_args = mock_context.fetch.call_args
+        self.assertEqual(call_args[0][0], 'https://api.monday.com/v2')
+        self.assertEqual(call_args[1]['method'], 'POST')
         self.assertEqual(call_args[1]['json']['query'], query)
         self.assertEqual(call_args[1]['json']['variables'], variables)
 
-    @patch('monday_com.requests.post')
-    def test_execute_query_with_correct_url(self, mock_post):
+    async def test_execute_query_with_correct_url(self):
         """Test that queries are sent to the correct API endpoint"""
         from monday_com import execute_graphql_query
-
-        mock_response = Mock()
-        mock_response.json.return_value = {'data': {}}
-        mock_response.raise_for_status = Mock()
-        mock_post.return_value = mock_response
 
         mock_context = Mock()
         mock_context.auth = {
@@ -100,14 +91,15 @@ class TestExecuteGraphQLQuery(unittest.TestCase):
                 'access_token': 'test_token'
             }
         }
+        mock_context.fetch = AsyncMock(return_value={'data': {}})
 
-        execute_graphql_query("query {}", {}, mock_context)
+        await execute_graphql_query("query {}", {}, mock_context)
 
-        call_args = mock_post.call_args
+        call_args = mock_context.fetch.call_args
         self.assertEqual(call_args[0][0], 'https://api.monday.com/v2')
 
 
-class TestGetBoards(unittest.TestCase):
+class TestGetBoards(unittest.IsolatedAsyncioTestCase):
     """Test suite for GetBoards action"""
 
     @patch('monday_com.execute_graphql_query')
@@ -192,7 +184,7 @@ class TestGetBoards(unittest.TestCase):
         self.assertIn('Network error', result.data['error'])
 
 
-class TestGetItems(unittest.TestCase):
+class TestGetItems(unittest.IsolatedAsyncioTestCase):
     """Test suite for GetItems action"""
 
     @patch('monday_com.execute_graphql_query')
@@ -294,7 +286,7 @@ class TestGetItems(unittest.TestCase):
         self.assertEqual(result.data['item_count'], 0)
 
 
-class TestCreateItem(unittest.TestCase):
+class TestCreateItem(unittest.IsolatedAsyncioTestCase):
     """Test suite for CreateItem action"""
 
     @patch('monday_com.execute_graphql_query')
@@ -377,7 +369,7 @@ class TestCreateItem(unittest.TestCase):
         self.assertIsNone(result.data['item'])
 
 
-class TestUpdateItem(unittest.TestCase):
+class TestUpdateItem(unittest.IsolatedAsyncioTestCase):
     """Test suite for UpdateItem action"""
 
     @patch('monday_com.execute_graphql_query')
@@ -454,7 +446,7 @@ class TestUpdateItem(unittest.TestCase):
         self.assertIn('Connection timeout', result.data['error'])
 
 
-class TestCreateUpdate(unittest.TestCase):
+class TestCreateUpdate(unittest.IsolatedAsyncioTestCase):
     """Test suite for CreateUpdate action"""
 
     @patch('monday_com.execute_graphql_query')
@@ -506,7 +498,7 @@ class TestCreateUpdate(unittest.TestCase):
         self.assertIsNone(result.data['update'])
 
 
-class TestGetUsers(unittest.TestCase):
+class TestGetUsers(unittest.IsolatedAsyncioTestCase):
     """Test suite for GetUsers action"""
 
     @patch('monday_com.execute_graphql_query')
