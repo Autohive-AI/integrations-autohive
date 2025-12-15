@@ -14,20 +14,13 @@ This integration uses **OAuth 2.0** authentication for secure access to your Cli
 
 ### Authentication Method
 
-ClickUp supports two authentication methods:
-
-1. **OAuth 2.0** (Used by this integration)
+ **OAuth 2.0** (Used by this integration)
    - Provides secure, token-based authentication
    - Users authorize access to their workspace(s)
    - Tokens are managed automatically by the platform
    - Recommended for multi-user integrations
 
-2. **Personal API Token** (For personal use)
-   - Starts with `pk_`
-   - Used for single-user automations or testing
-   - Never expires
 
-This integration uses OAuth 2.0 for multi-user support and enhanced security.
 
 ### Setup Steps in Autohive
 
@@ -63,7 +56,7 @@ Team (Workspace)
 
 All actions return a standardized response structure:
 - `result` (boolean): Indicates whether the action succeeded (true) or failed (false)
-- `error` (string, optional): Contains error message if the action failed
+- `error` (string, optional): Contains an error message if the action failed
 - Additional action-specific data fields (e.g., `task`, `list`, `folder`)
 
 Example successful response:
