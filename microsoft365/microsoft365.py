@@ -587,11 +587,25 @@ class ListMailFoldersAction(ActionHandler):
             if include_hidden:
                 params["includeHiddenFolders"] = "true"
 
-            response = await context.fetch(api_url, params=params)
+            # Fetch all pages (default page size is 10)
+            all_folder_items = []
+            next_url = api_url
+            is_first_request = True
+
+            while next_url:
+                if is_first_request:
+                    response = await context.fetch(next_url, params=params)
+                    is_first_request = False
+                else:
+                    # nextLink already contains query params, don't pass params again
+                    response = await context.fetch(next_url)
+
+                all_folder_items.extend(response.get("value", []))
+                next_url = response.get("@odata.nextLink")
 
             # Format folders
             folders = []
-            for folder in response.get("value", []):
+            for folder in all_folder_items:
                 folder_data = {
                     "id": folder["id"],
                     "displayName": folder.get("displayName", ""),
@@ -642,10 +656,24 @@ class ListMailFoldersAction(ActionHandler):
             if include_hidden:
                 params["includeHiddenFolders"] = "true"
 
-            response = await context.fetch(api_url, params=params)
+            # Fetch all pages (default page size is 10)
+            all_folder_items = []
+            next_url = api_url
+            is_first_request = True
+
+            while next_url:
+                if is_first_request:
+                    response = await context.fetch(next_url, params=params)
+                    is_first_request = False
+                else:
+                    # nextLink already contains query params, don't pass params again
+                    response = await context.fetch(next_url)
+
+                all_folder_items.extend(response.get("value", []))
+                next_url = response.get("@odata.nextLink")
 
             folders = []
-            for folder in response.get("value", []):
+            for folder in all_folder_items:
                 folder_data = {
                     "id": folder["id"],
                     "displayName": folder.get("displayName", ""),

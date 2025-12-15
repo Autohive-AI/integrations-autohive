@@ -1251,6 +1251,64 @@ class TestListMailFoldersAction(unittest.TestCase):
         call_args = self.mock_context.fetch.call_args
         self.assertIn("/me/mailFolders", call_args[0][0])
 
+    async def test_list_mail_folders_pagination(self):
+        """Test mail folder listing handles pagination correctly when more than 10 folders exist."""
+        # First page with @odata.nextLink
+        mock_page1 = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBDAAAAA==",
+                    "displayName": "Inbox",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 10,
+                    "totalItemCount": 50,
+                    "isHidden": False
+                },
+                {
+                    "id": "AQMkADYAAAIBXQAAAA==",
+                    "displayName": "Archive",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 0,
+                    "totalItemCount": 100,
+                    "isHidden": False
+                }
+            ],
+            "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/mailFolders?$skiptoken=xxx"
+        }
+        # Second page without @odata.nextLink (last page)
+        mock_page2 = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBEAAAAA==",
+                    "displayName": "Drafts",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 2,
+                    "totalItemCount": 5,
+                    "isHidden": False
+                }
+            ]
+        }
+        self.mock_context.fetch.side_effect = [mock_page1, mock_page2]
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"include_hidden": False, "include_children": False}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        # Should have all 3 folders from both pages
+        self.assertEqual(len(result.data["folders"]), 3)
+        self.assertEqual(result.data["total_count"], 3)
+        self.assertEqual(result.data["folders"][0]["displayName"], "Inbox")
+        self.assertEqual(result.data["folders"][1]["displayName"], "Archive")
+        self.assertEqual(result.data["folders"][2]["displayName"], "Drafts")
+
+        # Verify fetch was called twice (once for each page)
+        self.assertEqual(self.mock_context.fetch.call_count, 2)
+
     async def test_list_mail_folders_with_children(self):
         """Test mail folder listing with recursive child folder retrieval."""
         # Mock root folders response
