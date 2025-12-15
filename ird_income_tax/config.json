@@ -1,0 +1,101 @@
+{
+  "name": "IRD Income Tax",
+  "version": "1.0.0",
+  "description": "Integration with New Zealand Inland Revenue Department (IRD) for Income Tax filing.",
+  "display_name": "IRD Income Tax",
+  "entry_point": "ird_income_tax.py",
+  "auth": {
+    "type": "oauth2",
+    "provider": "ird",
+    "scopes": [
+      "not_yet_defined"
+    ]
+  },
+  "actions": {
+    "retrieve_filing_obligations": {
+      "display_name": "Retrieve Filing Obligations",
+      "description": "Retrieve a list of tax returns that need to be filed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ird_number": {
+            "type": "string",
+            "description": "The customer's IRD Number"
+          },
+          "tax_type": {
+            "type": "string",
+            "description": "Tax Type (e.g., INC)",
+            "default": "INC"
+          },
+          "from_date": {
+            "type": "string",
+            "description": "Start date (YYYY-MM-DD)"
+          },
+          "to_date": {
+            "type": "string",
+            "description": "End date (YYYY-MM-DD)"
+          }
+        },
+        "required": [
+          "ird_number",
+          "from_date",
+          "to_date"
+        ]
+      },
+      "output_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "periodEndDate": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "dueDate": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "retrieve_return": {
+      "display_name": "Retrieve Return",
+      "description": "Get details of a specific return.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ird_number": {
+            "type": "string",
+            "description": "The customer's IRD Number"
+          },
+          "period_end_date": {
+            "type": "string",
+            "description": "Period End Date (YYYY-MM-DD)"
+          },
+          "tax_type": {
+            "type": "string",
+            "description": "Tax Type (e.g., INC)",
+            "default": "INC"
+          }
+        },
+        "required": [
+          "ird_number",
+          "period_end_date"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "returnId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
