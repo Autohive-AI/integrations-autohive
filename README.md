@@ -232,6 +232,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [code-analysis](code-analysis): Python code execution integration for data analysis, file processing, and automation tasks. Supports executing arbitrary Python code in a sandboxed environment, processing input files (CSV, Excel, JSON, images, PDFs), and automatically detecting and returning generated output files with base64 encoding. Pre-installed libraries include numpy, Pillow, PyPDF2, python-docx, reportlab, openpyxl, XlsxWriter, matplotlib, and python-pptx. Features ActionResult return type for cost tracking. No authentication required. Ideal for data transformation, document generation, chart creation, and custom automation workflows.
 
+### Shopify Customer
+
+[shopify-customer](shopify-customer): Facilitates customer self-service through the Shopify Customer Account API. Supports authenticated customer operations, including viewing and updating profiles, managing address books (list, create, update, delete, set default), and accessing order history. Features OAuth 2.0 with PKCE authentication helpers.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
