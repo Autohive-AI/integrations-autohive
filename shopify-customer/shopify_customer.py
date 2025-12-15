@@ -20,7 +20,7 @@ API Version: 2024-10
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 import secrets
 import hashlib
 import base64
