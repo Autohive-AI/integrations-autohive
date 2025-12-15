@@ -1203,6 +1203,374 @@ class TestReadSharePointDocumentAction(unittest.TestCase):
         self.assertIn("/drives/drive123/items/doc456/content", binary_call_args[0])
 
 
+class TestListMailFoldersAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for mail folder listing tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_list_mail_folders_success(self):
+        """Test successful mail folder listing."""
+        # Mock API response
+        mock_response = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBDAAAAA==",
+                    "displayName": "Inbox",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 2,
+                    "unreadItemCount": 10,
+                    "totalItemCount": 50,
+                    "isHidden": False
+                },
+                {
+                    "id": "AQMkADYAAAIBXQAAAA==",
+                    "displayName": "Archive",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 0,
+                    "totalItemCount": 100,
+                    "isHidden": False
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"include_hidden": False, "include_children": False}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["folders"]), 2)
+        self.assertEqual(result.data["total_count"], 2)
+        self.assertEqual(result.data["folders"][0]["displayName"], "Inbox")
+        self.assertEqual(result.data["folders"][1]["displayName"], "Archive")
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/me/mailFolders", call_args[0][0])
+
+    async def test_list_mail_folders_pagination(self):
+        """Test mail folder listing handles pagination correctly when more than 10 folders exist."""
+        # First page with @odata.nextLink
+        mock_page1 = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBDAAAAA==",
+                    "displayName": "Inbox",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 10,
+                    "totalItemCount": 50,
+                    "isHidden": False
+                },
+                {
+                    "id": "AQMkADYAAAIBXQAAAA==",
+                    "displayName": "Archive",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 0,
+                    "totalItemCount": 100,
+                    "isHidden": False
+                }
+            ],
+            "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/mailFolders?$skiptoken=xxx"
+        }
+        # Second page without @odata.nextLink (last page)
+        mock_page2 = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBEAAAAA==",
+                    "displayName": "Drafts",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 2,
+                    "totalItemCount": 5,
+                    "isHidden": False
+                }
+            ]
+        }
+        self.mock_context.fetch.side_effect = [mock_page1, mock_page2]
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"include_hidden": False, "include_children": False}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        # Should have all 3 folders from both pages
+        self.assertEqual(len(result.data["folders"]), 3)
+        self.assertEqual(result.data["total_count"], 3)
+        self.assertEqual(result.data["folders"][0]["displayName"], "Inbox")
+        self.assertEqual(result.data["folders"][1]["displayName"], "Archive")
+        self.assertEqual(result.data["folders"][2]["displayName"], "Drafts")
+
+        # Verify fetch was called twice (once for each page)
+        self.assertEqual(self.mock_context.fetch.call_count, 2)
+
+    async def test_list_mail_folders_with_children(self):
+        """Test mail folder listing with recursive child folder retrieval."""
+        # Mock root folders response
+        mock_root_response = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBDAAAAA==",
+                    "displayName": "Inbox",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 1,
+                    "unreadItemCount": 10,
+                    "totalItemCount": 50,
+                    "isHidden": False
+                }
+            ]
+        }
+
+        # Mock child folders response
+        mock_child_response = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBEAAAAA==",
+                    "displayName": "Clients",
+                    "parentFolderId": "AQMkADYAAAIBDAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 5,
+                    "totalItemCount": 20,
+                    "isHidden": False
+                }
+            ]
+        }
+
+        self.mock_context.fetch.side_effect = [mock_root_response, mock_child_response]
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"include_hidden": False, "include_children": True}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["folders"]), 2)  # Inbox + Clients
+        self.assertEqual(result.data["total_count"], 2)
+
+        # Verify both folders are returned
+        folder_names = [f["displayName"] for f in result.data["folders"]]
+        self.assertIn("Inbox", folder_names)
+        self.assertIn("Clients", folder_names)
+
+    async def test_list_mail_folders_with_hidden(self):
+        """Test mail folder listing including hidden folders."""
+        mock_response = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBDAAAAA==",
+                    "displayName": "Inbox",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 10,
+                    "totalItemCount": 50,
+                    "isHidden": False
+                },
+                {
+                    "id": "AQMkADYAAAIBFAAAAA==",
+                    "displayName": "Clutter",
+                    "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 0,
+                    "totalItemCount": 5,
+                    "isHidden": True
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"include_hidden": True, "include_children": False}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["folders"]), 2)
+
+        # Verify hidden folder parameter was passed
+        call_args = self.mock_context.fetch.call_args
+        self.assertEqual(call_args[1]["params"]["includeHiddenFolders"], "true")
+
+    async def test_list_mail_folders_specific_parent(self):
+        """Test listing child folders of a specific parent folder."""
+        mock_response = {
+            "value": [
+                {
+                    "id": "AQMkADYAAAIBEAAAAA==",
+                    "displayName": "Projects",
+                    "parentFolderId": "AQMkADYAAAIBDAAAAA==",
+                    "childFolderCount": 0,
+                    "unreadItemCount": 3,
+                    "totalItemCount": 15,
+                    "isHidden": False
+                }
+            ]
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.ListMailFoldersAction()
+        inputs = {"folder_id": "AQMkADYAAAIBDAAAAA==", "include_children": False}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(len(result.data["folders"]), 1)
+        self.assertEqual(result.data["folders"][0]["displayName"], "Projects")
+
+        # Verify API call uses childFolders endpoint
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/me/mailFolders/AQMkADYAAAIBDAAAAA==/childFolders", call_args[0][0])
+
+
+class TestGetMailFolderAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for get mail folder tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_get_mail_folder_by_id_success(self):
+        """Test getting a mail folder by ID."""
+        mock_response = {
+            "id": "AQMkADYAAAIBDAAAAA==",
+            "displayName": "Inbox",
+            "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+            "childFolderCount": 2,
+            "unreadItemCount": 10,
+            "totalItemCount": 50,
+            "isHidden": False
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.GetMailFolderAction()
+        inputs = {"folder_id": "AQMkADYAAAIBDAAAAA=="}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["folder"]["id"], "AQMkADYAAAIBDAAAAA==")
+        self.assertEqual(result.data["folder"]["displayName"], "Inbox")
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/me/mailFolders/AQMkADYAAAIBDAAAAA==", call_args[0][0])
+
+    async def test_get_mail_folder_by_well_known_name(self):
+        """Test getting a mail folder by well-known name."""
+        mock_response = {
+            "id": "AQMkADYAAAIBXQAAAA==",
+            "displayName": "Archive",
+            "parentFolderId": "AQMkADYAAAIBCAAAAA==",
+            "childFolderCount": 0,
+            "unreadItemCount": 0,
+            "totalItemCount": 100,
+            "isHidden": False
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.GetMailFolderAction()
+        inputs = {"folder_id": "archive"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["folder"]["displayName"], "Archive")
+
+        # Verify API call uses well-known name
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/me/mailFolders/archive", call_args[0][0])
+
+    async def test_get_mail_folder_not_found(self):
+        """Test getting a non-existent mail folder."""
+        self.mock_context.fetch.side_effect = Exception("Resource not found")
+
+        handler = microsoft365.GetMailFolderAction()
+        inputs = {"folder_id": "nonexistent"}
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertFalse(result.data["result"])
+        self.assertIn("error", result.data)
+
+
+class TestMoveEmailAction(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures for move email tests."""
+        self.mock_context = Mock()
+        self.mock_context.fetch = AsyncMock()
+
+    async def test_move_email_with_folder_id_success(self):
+        """Test moving email to folder using folder ID."""
+        mock_response = {
+            "id": "msg123-moved",
+            "parentFolderId": "AQMkADYAAAIBXQAAAA==",
+            "subject": "Test Email"
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.MoveEmailAction()
+        inputs = {
+            "email_id": "msg123",
+            "destination_folder_id": "AQMkADYAAAIBXQAAAA=="
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["id"], "msg123-moved")
+        self.assertEqual(result.data["parentFolderId"], "AQMkADYAAAIBXQAAAA==")
+        self.assertEqual(result.data["subject"], "Test Email")
+
+        # Verify API call
+        call_args = self.mock_context.fetch.call_args
+        self.assertIn("/me/messages/msg123/move", call_args[0][0])
+        self.assertEqual(call_args[1]["method"], "POST")
+        self.assertEqual(call_args[1]["json"]["destinationId"], "AQMkADYAAAIBXQAAAA==")
+
+    async def test_move_email_with_well_known_name_success(self):
+        """Test moving email to folder using well-known name."""
+        mock_response = {
+            "id": "msg456-moved",
+            "parentFolderId": "AQMkADYAAAIBGAAAAA==",
+            "subject": "Another Test Email"
+        }
+        self.mock_context.fetch.return_value = mock_response
+
+        handler = microsoft365.MoveEmailAction()
+        inputs = {
+            "email_id": "msg456",
+            "destination_folder_id": "deleteditems"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertTrue(result.data["result"])
+        self.assertEqual(result.data["id"], "msg456-moved")
+
+        # Verify API call uses well-known name
+        call_args = self.mock_context.fetch.call_args
+        self.assertEqual(call_args[1]["json"]["destinationId"], "deleteditems")
+
+    async def test_move_email_failure(self):
+        """Test move email failure handling."""
+        self.mock_context.fetch.side_effect = Exception("Folder not found")
+
+        handler = microsoft365.MoveEmailAction()
+        inputs = {
+            "email_id": "msg789",
+            "destination_folder_id": "invalid-folder"
+        }
+
+        result = await handler.execute(inputs, self.mock_context)
+
+        self.assertFalse(result.data["result"])
+        self.assertIn("error", result.data)
+        self.assertIn("Folder not found", result.data["error"])
+
+
 class TestReadSharePointPageContentAction(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures for SharePoint page content tests."""
