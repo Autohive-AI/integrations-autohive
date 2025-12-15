@@ -6,7 +6,7 @@
     "entry_point": "shopify_admin.py",
     "auth": {
         "type": "platform",
-        "provider": "Shopify",
+        "provider": "ShopifyAdmin",
         "scopes": [
             "read_customers",
             "write_customers",
