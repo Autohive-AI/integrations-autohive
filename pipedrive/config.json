@@ -7,7 +7,7 @@
     "auth": {
         "type": "platform",
         "provider": "Pipedrive",
-        "scopes": []
+        "scopes": ["base", "settings:read", "deals:read", "mail:read", "activities:read", "contacts:read", "products:read", "users:read", "recents:read", "search:read", "leads:read", "calls:write", "goals:read", "projects:read", "webhooks:read"]
     },
     "actions": {
         "create_deal": {
