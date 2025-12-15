@@ -28,7 +28,7 @@ API Version: 2024-10
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 # Create the integration using the config.json
 shopify_admin = Integration.load()
