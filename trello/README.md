@@ -211,7 +211,7 @@ Returns all lists on a board.
 
 ---
 
-### Cards (6 actions)
+### Cards (5 actions)
 
 #### `create_card`
 Creates a new card on a list.
