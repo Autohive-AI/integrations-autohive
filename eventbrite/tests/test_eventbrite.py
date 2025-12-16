@@ -348,32 +348,6 @@ async def test_create_venue():
             return None
 
 
-async def test_update_venue():
-    """Test updating a venue."""
-    auth = {
-        "auth_type": "PlatformOauth2",
-        "credentials": {
-            "access_token": "your_access_token_here"
-        }
-    }
-
-    inputs = {
-        "venue_id": "your_venue_id_here",
-        "name": "Updated Venue Name"
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await eventbrite.execute_action("update_venue", inputs, context)
-            print(f"Update Venue Result: {result}")
-            assert result.get('result') == True, f"Action failed: {result.get('error', 'Unknown error')}"
-            assert 'venue' in result, "Response missing 'venue' field"
-            return result
-        except Exception as e:
-            print(f"Error testing update_venue: {e}")
-            return None
-
-
 async def test_list_orders_by_event():
     """Test listing orders for an event."""
     auth = {
@@ -752,7 +726,7 @@ async def test_get_event_description():
 
 
 async def main():
-    print("Testing Eventbrite Integration - 28 Actions")
+    print("Testing Eventbrite Integration - 27 Actions")
     print("=" * 60)
     print()
     print("NOTE: Replace placeholders with actual values:")
@@ -838,24 +812,20 @@ async def main():
     await test_create_venue()
     print()
 
-    print("15. Testing update_venue...")
-    await test_update_venue()
-    print()
-
     print("=" * 60)
     print()
     print("ORDER ACTIONS")
     print("-" * 60)
 
-    print("16. Testing list_orders_by_event...")
+    print("15. Testing list_orders_by_event...")
     await test_list_orders_by_event()
     print()
 
-    print("17. Testing list_orders_by_organization...")
+    print("16. Testing list_orders_by_organization...")
     await test_list_orders_by_organization()
     print()
 
-    print("18. Testing get_order...")
+    print("17. Testing get_order...")
     await test_get_order()
     print()
 
@@ -864,11 +834,11 @@ async def main():
     print("ATTENDEE ACTIONS")
     print("-" * 60)
 
-    print("19. Testing list_attendees...")
+    print("18. Testing list_attendees...")
     await test_list_attendees()
     print()
 
-    print("20. Testing get_attendee...")
+    print("19. Testing get_attendee...")
     await test_get_attendee()
     print()
 
@@ -877,27 +847,27 @@ async def main():
     print("TICKET CLASS ACTIONS")
     print("-" * 60)
 
-    print("21. Testing list_ticket_classes...")
+    print("20. Testing list_ticket_classes...")
     await test_list_ticket_classes()
     print()
 
-    print("22. Testing get_ticket_class...")
+    print("21. Testing get_ticket_class...")
     await test_get_ticket_class()
     print()
 
-    print("23. Testing create_ticket_class (free)...")
+    print("22. Testing create_ticket_class (free)...")
     await test_create_ticket_class()
     print()
 
-    print("24. Testing create_ticket_class (paid)...")
+    print("23. Testing create_ticket_class (paid)...")
     await test_create_paid_ticket_class()
     print()
 
-    print("25. Testing update_ticket_class...")
+    print("24. Testing update_ticket_class...")
     await test_update_ticket_class()
     print()
 
-    print("26. Testing delete_ticket_class...")
+    print("25. Testing delete_ticket_class...")
     await test_delete_ticket_class()
     print()
 
@@ -906,19 +876,19 @@ async def main():
     print("CATEGORY ACTIONS")
     print("-" * 60)
 
-    print("27. Testing list_categories...")
+    print("26. Testing list_categories...")
     await test_list_categories()
     print()
 
-    print("28. Testing get_category...")
+    print("27. Testing get_category...")
     await test_get_category()
     print()
 
     print("=" * 60)
-    print("Testing completed - 28 actions total!")
+    print("Testing completed - 27 actions total!")
     print("  - 2 user/organization discovery actions")
     print("  - 9 event management actions")
-    print("  - 4 venue management actions")
+    print("  - 3 venue management actions")
     print("  - 3 order actions")
     print("  - 2 attendee actions")
     print("  - 6 ticket class actions")

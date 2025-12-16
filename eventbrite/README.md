@@ -284,20 +284,6 @@ Creates a new venue for an organization.
 
 ---
 
-#### `update_venue`
-
-Updates an existing venue.
-
-**Inputs:**
-- `venue_id` (string, required): The ID of the venue to update
-- All other venue fields are optional
-
-**Outputs:**
-- `venue` (object): Updated venue details
-- `result` (boolean): Operation success status
-
----
-
 ### Order Actions
 
 #### `get_order`

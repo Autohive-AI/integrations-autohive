@@ -5,11 +5,9 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any
-import os
 
-# Load integration using config.json in the same directory as this file
-_config_path = os.path.join(os.path.dirname(__file__), 'config.json')
-eventbrite = Integration.load(_config_path)
+# Create the integration using the config.json
+eventbrite = Integration.load()
 
 BASE_URL = "https://www.eventbriteapi.com/v3"
 
@@ -567,59 +565,6 @@ class CreateVenueAction(ActionHandler):
 
             response = await context.fetch(
                 f"{BASE_URL}/organizations/{organization_id}/venues/",
-                method="POST",
-                json=venue_data,
-            )
-
-            return ActionResult(
-                data={"result": True, "venue": response},
-                cost_usd=0.0
-            )
-        except Exception as e:
-            return ActionResult(
-                data={"result": False, "error": str(e)},
-                cost_usd=0.0
-            )
-
-
-@eventbrite.action("update_venue")
-class UpdateVenueAction(ActionHandler):
-    """Updates an existing venue."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        venue_id = inputs.get("venue_id")
-        if not venue_id:
-            return ActionResult(
-                data={"result": False, "error": "venue_id is required"},
-                cost_usd=0.0
-            )
-
-        try:
-            venue_data = {"venue": {"address": {}}}
-
-            if inputs.get("name"):
-                venue_data["venue"]["name"] = inputs["name"]
-            if inputs.get("capacity"):
-                venue_data["venue"]["capacity"] = inputs["capacity"]
-
-            # Add address fields
-            address_fields = ["address_1", "address_2", "city", "region", "postal_code", "country"]
-            for field in address_fields:
-                if inputs.get(field):
-                    venue_data["venue"]["address"][field] = inputs[field]
-
-            # Clean up empty address
-            if not venue_data["venue"]["address"]:
-                del venue_data["venue"]["address"]
-
-            if len(venue_data["venue"]) == 0:
-                return ActionResult(
-                    data={"result": False, "error": "No fields to update"},
-                    cost_usd=0.0
-                )
-
-            response = await context.fetch(
-                f"{BASE_URL}/venues/{venue_id}/",
                 method="POST",
                 json=venue_data,
             )
