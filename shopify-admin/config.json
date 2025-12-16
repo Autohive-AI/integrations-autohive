@@ -1,12 +1,12 @@
 {
-    "name": "ShopifyAdmin",
+    "name": "Shopify Admin",
     "display_name": "Shopify Admin API",
     "version": "1.0.0",
     "description": "Shopify Admin API integration for store management - customers, orders, products, inventory, locations, fulfillments, and draft orders",
     "entry_point": "shopify_admin.py",
     "auth": {
         "type": "platform",
-        "provider": "ShopifyAdmin",
+        "provider": "Shopify Admin",
         "scopes": [
             "read_customers",
             "write_customers",
