@@ -1,7 +1,7 @@
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from urllib.parse import quote
 
 fathom = Integration.load()
