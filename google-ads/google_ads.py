@@ -42,7 +42,7 @@ def micros_to_currency(micros):
     return float(micros) / 1000000 if micros is not None else 'N/A'
 
 
-def _get_google_ads_client(refresh_token: str, login_customer_id: str) -> GoogleAdsClient:
+def _get_google_ads_client(refresh_token: str, login_customer_id: Optional[str] = None) -> GoogleAdsClient:
     """Initialize and return a Google Ads API client."""
     credentials = {
         "developer_token": DEVELOPER_TOKEN,
@@ -50,9 +50,11 @@ def _get_google_ads_client(refresh_token: str, login_customer_id: str) -> Google
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
         "refresh_token": refresh_token,
-        "login_customer_id": login_customer_id,
         "use_proto_plus": True
     }
+    if login_customer_id:
+        credentials["login_customer_id"] = login_customer_id
+        
     return GoogleAdsClient.load_from_dict(credentials)
 
 
@@ -321,6 +323,73 @@ def fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids=None
 
 
 # ---- Action Handlers: READ Operations ----
+@google_ads.action("get_accessible_accounts")
+class GetAccessibleAccountsAction(ActionHandler):
+    """Action handler for listing accessible Google Ads accounts."""
+    
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        refresh_token = context.auth.get("credentials", {}).get("refresh_token")
+        if not refresh_token:
+            raise Exception("Refresh token is required for authentication with Google Ads API")
+            
+        try:
+            # 1. List accessible customers (no login_customer_id needed)
+            client = _get_google_ads_client(refresh_token, None)
+            customer_service = client.get_service("CustomerService")
+            
+            try:
+                response = customer_service.list_accessible_customers()
+            except Exception as e:
+                 logger.error(f"Failed to list accessible customers: {e}")
+                 raise
+
+            accounts = []
+            for resource_name in response.resource_names:
+                # Format: customers/{customer_id}
+                customer_id = resource_name.split("/")[-1]
+                accounts.append({
+                    "resource_name": resource_name,
+                    "customer_id": customer_id,
+                    "descriptive_name": "Unknown",
+                    "currency_code": "N/A"
+                })
+
+            # 2. Try to fetch details for each account
+            final_accounts = []
+            
+            for account in accounts:
+                try:
+                    # Re-initialize client specifically for this customer
+                    sub_client = _get_google_ads_client(refresh_token, account['customer_id'])
+                    google_ads_service = sub_client.get_service("GoogleAdsService")
+                    
+                    query = """
+                        SELECT customer.id, customer.descriptive_name, customer.currency_code 
+                        FROM customer 
+                        LIMIT 1
+                    """
+                    
+                    stream = google_ads_service.search(customer_id=account['customer_id'], query=query)
+                    
+                    found = False
+                    for row in stream:
+                        account['descriptive_name'] = row.customer.descriptive_name
+                        account['currency_code'] = row.customer.currency_code
+                        found = True
+                        break
+                    
+                    final_accounts.append(account)
+                    
+                except Exception as e:
+                    logger.warning(f"Could not fetch details for {account['customer_id']}: {str(e)}")
+                    final_accounts.append(account)
+
+            return ActionResult(data={"accounts": final_accounts}, cost_usd=0.00)
+
+        except Exception as e:
+            logger.exception(f"Failed to get accessible accounts: {str(e)}")
+            raise
+
 
 @google_ads.action("retrieve_campaign_metrics")
 class RetrieveCampaignMetricsAction(ActionHandler):

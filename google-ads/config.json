@@ -11,6 +11,32 @@
         ]
     },
     "actions": {
+        "get_accessible_accounts": {
+            "display_name": "Get Accessible Accounts",
+            "description": "Lists all Google Ads accounts accessible to the authenticated user via OAuth.",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "accounts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "resource_name": {"type": "string"},
+                                "customer_id": {"type": "string"},
+                                "descriptive_name": {"type": "string"},
+                                "currency_code": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "retrieve_campaign_metrics": {
             "display_name": "Get Campaign Metrics",
             "description": "Retrieves overall performance metrics for campaigns (e.g., total clicks, cost, conversions per campaign). Use this for high-level summaries of how each campaign is performing as a whole.",

@@ -18,6 +18,20 @@ TEST_INPUTS = {
 }
 
 
+async def test_get_accessible_accounts():
+    """Test retrieving accessible accounts."""
+    context = ExecutionContext(auth=TEST_AUTH)
+    inputs = {}
+
+    try:
+        result = await google_ads.execute_action("get_accessible_accounts", inputs, context)
+        print("\n=== Get Accessible Accounts Test ===")
+        pprint(result)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
 async def test_retrieve_campaign_metrics():
     """Test retrieving campaign metrics."""
     context = ExecutionContext(auth=TEST_AUTH)
@@ -239,6 +253,7 @@ async def main():
     print("=" * 50)
     
     # Read operations
+    await test_get_accessible_accounts()
     await test_retrieve_campaign_metrics()
     await test_retrieve_keyword_metrics()
     
