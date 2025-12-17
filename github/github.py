@@ -1599,48 +1599,6 @@ class DiffBranchToBranch(ActionHandler):
 
 # ---- Webhook Actions ----
 
-@github.action("diff_branch_to_branch")
-class DiffBranchToBranch(ActionHandler):
-    """Compare two branches"""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        diff = await GitHubAPI.compare_branches(
-            context,
-            inputs['owner'],
-            inputs['repo'],
-            inputs['base_branch'],
-            inputs['head_branch']
-        )
-
-        return ActionResult(
-            data={
-                'status': diff.get('status'),
-                'ahead_by': diff.get('ahead_by'),
-                'behind_by': diff.get('behind_by'),
-                'total_commits': diff.get('total_commits'),
-                'commits': [{
-                    'sha': commit['sha'],
-                    'author': {
-                        'name': commit['commit']['author']['name'],
-                        'email': commit['commit']['author']['email'],
-                        'date': commit['commit']['author']['date']
-                    },
-                    'message': commit['commit']['message'],
-                    'url': commit['html_url']
-                } for commit in diff.get('commits', [])],
-                'files': [{
-                    'filename': file['filename'],
-                    'status': file['status'],
-                    'additions': file['additions'],
-                    'deletions': file['deletions'],
-                    'changes': file['changes'],
-                    'patch': file.get('patch')
-                } for file in diff.get('files', [])]
-            },
-            cost_usd=0.0
-        )
-
-
 @github.action("create_webhook")
 class CreateWebhook(ActionHandler):
     """Create a webhook"""
