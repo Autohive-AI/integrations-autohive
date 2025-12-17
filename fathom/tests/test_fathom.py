@@ -1,10 +1,6 @@
 # Test suite for Fathom integration
 import asyncio
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from fathom import fathom
+from context import fathom
 from autohive_integrations_sdk import ExecutionContext
 
 async def test_list_meetings():
