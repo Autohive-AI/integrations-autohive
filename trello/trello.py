@@ -1,7 +1,7 @@
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 # Create the integration using the config.json
 trello = Integration.load()
