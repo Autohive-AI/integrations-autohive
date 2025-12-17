@@ -70,6 +70,10 @@ Creates a new GitHub repository in your account or an organization.
 - `auto_init` (boolean, optional): Initialize with README (default: true)
 - `gitignore_template` (string, optional): Gitignore template (e.g., 'Python', 'Node', 'Java')
 - `license_template` (string, optional): License template (e.g., 'mit', 'apache-2.0', 'gpl-3.0')
+- `homepage` (string, optional): Home page URL
+- `has_issues` (boolean, optional): Enable issues (default: true)
+- `has_projects` (boolean, optional): Enable projects (default: true)
+- `has_wiki` (boolean, optional): Enable wiki (default: true)
 
 **Outputs:**
 - `repository` (object): Created repository details including id, name, url, clone_url, etc.
@@ -402,6 +406,24 @@ Deletes a branch from the repository.
 
 **Outputs:**
 - `result` (boolean): Operation success status
+
+#### `diff_branch_to_branch`
+
+Compare two branches to see commits and file changes.
+
+**Inputs:**
+- `owner` (string, required): Repository owner
+- `repo` (string, required): Repository name
+- `base_branch` (string, required): Base branch (e.g., 'main')
+- `head_branch` (string, required): Head branch (e.g., 'feature-branch')
+
+**Outputs:**
+- `status` (string): Comparison status (e.g., 'ahead', 'diverged')
+- `ahead_by` (integer): Number of commits ahead
+- `behind_by` (integer): Number of commits behind
+- `total_commits` (integer): Total distinct commits
+- `commits` (array): List of commit objects
+- `files` (array): List of changed files with stats
 
 ---
 

@@ -51,6 +51,25 @@
           "org": {
             "type": "string",
             "description": "Organization name (if creating in an org)"
+          },
+          "homepage": {
+            "type": "string",
+            "description": "Home page URL"
+          },
+          "has_issues": {
+            "type": "boolean",
+            "description": "Enable issues",
+            "default": true
+          },
+          "has_projects": {
+            "type": "boolean",
+            "description": "Enable projects",
+            "default": true
+          },
+          "has_wiki": {
+            "type": "boolean",
+            "description": "Enable wiki",
+            "default": true
           }
         },
         "required": [
