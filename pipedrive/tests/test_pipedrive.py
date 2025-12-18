@@ -149,8 +149,8 @@ async def test_deal_lifecycle():
             try:
                 delete_action = pipedrive.get_action("delete_deal")
                 await delete_action.execute({"deal_id": deal_id}, context)
-            except:
-                pass
+            except Exception:
+                pass  # Cleanup errors can be ignored
 
 
 async def test_person_operations():
@@ -203,8 +203,8 @@ async def test_person_operations():
             try:
                 delete_action = pipedrive.get_action("delete_person")
                 await delete_action.execute({"person_id": person_id}, context)
-            except:
-                pass
+            except Exception:
+                pass  # Cleanup errors can be ignored
 
 
 async def test_activity_operations():
@@ -260,8 +260,8 @@ async def test_activity_operations():
             try:
                 delete_action = pipedrive.get_action("delete_activity")
                 await delete_action.execute({"activity_id": activity_id}, context)
-            except:
-                pass
+            except Exception:
+                pass  # Cleanup errors can be ignored
 
 
 async def test_pipeline_operations():
