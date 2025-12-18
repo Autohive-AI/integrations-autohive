@@ -77,7 +77,8 @@ class GitHubAPI:
     async def create_repository(context: ExecutionContext, name: str, description: str = None,
                                private: bool = False, auto_init: bool = False,
                                gitignore_template: str = None, license_template: str = None,
-                               org: str = None) -> Dict[str, Any]:
+                               org: str = None, homepage: str = None, has_issues: bool = True,
+                               has_projects: bool = True, has_wiki: bool = True) -> Dict[str, Any]:
         """Create a new repository"""
         if org:
             url = f"{GitHubAPI.BASE_URL}/orgs/{org}/repos"
@@ -87,11 +88,16 @@ class GitHubAPI:
         data = {
             'name': name,
             'private': private,
-            'auto_init': auto_init
+            'auto_init': auto_init,
+            'has_issues': has_issues,
+            'has_projects': has_projects,
+            'has_wiki': has_wiki
         }
 
         if description:
             data['description'] = description
+        if homepage:
+            data['homepage'] = homepage
         if gitignore_template:
             data['gitignore_template'] = gitignore_template
         if license_template:
@@ -672,7 +678,11 @@ class CreateRepository(ActionHandler):
             auto_init=inputs.get('auto_init', False),
             gitignore_template=inputs.get('gitignore_template'),
             license_template=inputs.get('license_template'),
-            org=inputs.get('org')
+            org=inputs.get('org'),
+            homepage=inputs.get('homepage'),
+            has_issues=inputs.get('has_issues', True),
+            has_projects=inputs.get('has_projects', True),
+            has_wiki=inputs.get('has_wiki', True)
         )
 
         return ActionResult(
