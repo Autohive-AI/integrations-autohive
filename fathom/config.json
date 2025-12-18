@@ -52,16 +52,6 @@
                         "description": "Include CRM matches for each meeting. Only returns data from your or your team's linked CRM.",
                         "default": false
                     },
-                    "include_summary": {
-                        "type": "boolean",
-                        "description": "Include the summary for each meeting. Unavailable for OAuth connected apps (use /recordings instead).",
-                        "default": false
-                    },
-                    "include_transcript": {
-                        "type": "boolean",
-                        "description": "Include the transcript for each meeting. Unavailable for OAuth connected apps (use /recordings instead).",
-                        "default": false
-                    },
                     "meeting_type": {
                         "type": "string",
                         "description": "Filter by meeting type.",

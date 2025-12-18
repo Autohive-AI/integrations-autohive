@@ -12,9 +12,7 @@ async def test_list_meetings():
         "api_key": "test_api_key"
     }
 
-    inputs = {
-        "include_transcript": False
-    }
+    inputs = {}
 
     async with ExecutionContext(auth=auth) as context:
         try:

@@ -62,10 +62,6 @@ class ListMeetingsAction(ActionHandler):
 
         if inputs.get("cursor"):
             params["cursor"] = inputs["cursor"]
-        if inputs.get("include_transcript"):
-            params["include_transcript"] = inputs["include_transcript"]
-        if inputs.get("include_summary"):
-            params["include_summary"] = inputs["include_summary"]
         if inputs.get("include_action_items"):
             params["include_action_items"] = inputs["include_action_items"]
         if inputs.get("include_crm_matches"):
