@@ -175,6 +175,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [stripe](stripe): Comprehensive payment and billing integration with Stripe API for managing customers, invoices, and invoice items. Supports full customer lifecycle management (create, list, get, update, delete) with address and metadata support. Features complete invoice workflow including draft creation, finalization, sending via email, payment processing, and voiding. Includes invoice item management for adding line items with quantities, unit amounts, and descriptions. Supports pagination with cursor-based navigation, filtering by customer/status/date, and multi-currency invoicing. Features API key authentication (test and production keys), automatic invoice advance settings, and flexible collection methods (charge automatically or send invoice). Includes 20 actions covering customers, invoices, and invoice items. Ideal for billing automation, subscription management, and payment processing workflows.
 
+### Shopify Customer
+
+[shopify-customer](shopify-customer): Facilitates customer self-service through the Shopify Customer Account API. Supports authenticated customer operations, including viewing and updating profiles, managing address books (list, create, update, delete, set default), and accessing order history. Features OAuth 2.0 with PKCE authentication helpers.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
