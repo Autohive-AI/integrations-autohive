@@ -1249,23 +1249,46 @@ class CreatePullRequest(ActionHandler):
 
         return ActionResult(
             data={
+            'id': pr['id'],
+            'node_id': pr['node_id'],
             'number': pr['number'],
             'title': pr['title'],
             'body': pr['body'],
             'state': pr['state'],
+            'html_url': pr['html_url'],
+            'url': pr.get('url', pr['html_url']),
+            'diff_url': pr['diff_url'],
+            'patch_url': pr['patch_url'],
             'created_at': pr['created_at'],
             'updated_at': pr['updated_at'],
+            'closed_at': pr.get('closed_at'),
+            'merged_at': pr.get('merged_at'),
             'draft': pr['draft'],
+            'merged': pr.get('merged'),
             'mergeable': pr.get('mergeable'),
             'mergeable_state': pr.get('mergeable_state'),
+            'merge_commit_sha': pr.get('merge_commit_sha'),
             'user': {
                 'avatar_url': pr['user']['avatar_url'],
                 'login': pr['user']['login'],
                 'id': pr['user']['id']
             },
-            'assignees': [{'login': assignee['login']} for assignee in pr.get('assignees', [])],
-            'requested_reviewers': [{'login': reviewer['login']} for reviewer in pr.get('requested_reviewers', [])],
+            'author_association': pr.get('author_association'),
+            'assignee': {
+                'login': pr['assignee']['login'],
+                'id': pr['assignee']['id'],
+                'avatar_url': pr['assignee']['avatar_url']
+            } if pr.get('assignee') else None,
+            'assignees': [{'login': a['login'], 'id': a['id'], 'avatar_url': a['avatar_url']} for a in pr.get('assignees', [])],
+            'requested_reviewers': [{'login': r['login'], 'id': r['id'], 'avatar_url': r['avatar_url']} for r in pr.get('requested_reviewers', [])],
+            'requested_teams': [{'id': t['id'], 'name': t['name'], 'slug': t['slug']} for t in pr.get('requested_teams', [])],
             'labels': [{'name': label['name'], 'color': label['color']} for label in pr.get('labels', [])],
+            'milestone': {
+                'id': pr['milestone']['id'],
+                'number': pr['milestone']['number'],
+                'title': pr['milestone']['title'],
+                'state': pr['milestone']['state']
+            } if pr.get('milestone') else None,
             'head': {
                 'ref': pr['head']['ref'],
                 'sha': pr['head']['sha'],
@@ -1284,7 +1307,12 @@ class CreatePullRequest(ActionHandler):
                     'id': pr['base']['repo']['id']
                 }
             },
-            'url': pr['html_url']
+            'comments': pr.get('comments', 0),
+            'review_comments': pr.get('review_comments', 0),
+            'commits': pr.get('commits', 0),
+            'additions': pr.get('additions', 0),
+            'deletions': pr.get('deletions', 0),
+            'changed_files': pr.get('changed_files', 0)
         },
             cost_usd=0.0
         )

@@ -1,7 +1,7 @@
 {
-    "name": "Microsoft 365",
+    "name": "Microsoft Copilot 365",
     "version": "1.0.0",
-    "description": "Microsoft 365 integration for Outlook, OneDrive, and Calendar",
+    "description": "Microsoft Copilot 365 integration for Outlook, OneDrive, and Calendar",
     "entry_point": "microsoft365.py",
     "auth": {
         "type": "platform",
@@ -654,9 +654,149 @@
                 "required": ["result", "id", "isRead", "lastModifiedDateTime"]
             }
         },
+        "list_mail_folders": {
+            "display_name": "List Mail Folders",
+            "description": "List mail folders in the user's mailbox. Returns folder IDs needed for move_email action. Use include_children=true to get all folders including nested subfolders.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder_id": {
+                        "type": "string",
+                        "description": "Optional: ID of a parent folder to list children of. If not provided, lists root-level folders."
+                    },
+                    "include_hidden": {
+                        "type": "boolean",
+                        "description": "Include hidden system folders in the response",
+                        "default": false
+                    },
+                    "include_children": {
+                        "type": "boolean",
+                        "description": "Recursively include all nested child folders. Recommended when searching for a custom folder.",
+                        "default": false
+                    }
+                }
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "folders": {
+                        "type": "array",
+                        "description": "List of mail folders",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Folder ID - use this value for move_email destination_folder_id"
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Human-readable folder name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "ID of the parent folder"
+                                },
+                                "childFolderCount": {
+                                    "type": "integer",
+                                    "description": "Number of child folders"
+                                },
+                                "unreadItemCount": {
+                                    "type": "integer",
+                                    "description": "Number of unread items in the folder"
+                                },
+                                "totalItemCount": {
+                                    "type": "integer",
+                                    "description": "Total number of items in the folder"
+                                },
+                                "isHidden": {
+                                    "type": "boolean",
+                                    "description": "Whether the folder is hidden"
+                                }
+                            }
+                        }
+                    },
+                    "total_count": {
+                        "type": "integer",
+                        "description": "Total number of folders returned"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["folders", "total_count", "result"]
+            }
+        },
+        "get_mail_folder": {
+            "display_name": "Get Mail Folder",
+            "description": "Get details of a specific mail folder by ID or well-known name. Well-known names (lowercase): inbox, drafts, sentitems, deleteditems, junkemail, archive, outbox, clutter, scheduled, searchfolders, conversationhistory",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder_id": {
+                        "type": "string",
+                        "description": "Folder ID or well-known folder name (lowercase, no spaces). Examples: 'inbox', 'drafts', 'deleteditems', 'junkemail', 'archive'"
+                    }
+                },
+                "required": ["folder_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "folder": {
+                        "type": "object",
+                        "description": "Mail folder details",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Folder ID"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "description": "Human-readable folder name"
+                            },
+                            "parentFolderId": {
+                                "type": "string",
+                                "description": "ID of the parent folder"
+                            },
+                            "childFolderCount": {
+                                "type": "integer",
+                                "description": "Number of child folders"
+                            },
+                            "unreadItemCount": {
+                                "type": "integer",
+                                "description": "Number of unread items"
+                            },
+                            "totalItemCount": {
+                                "type": "integer",
+                                "description": "Total number of items"
+                            },
+                            "isHidden": {
+                                "type": "boolean",
+                                "description": "Whether the folder is hidden"
+                            }
+                        }
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the operation failed"
+                    }
+                },
+                "required": ["folder", "result"]
+            }
+        },
         "move_email": {
             "display_name": "Move Email to Folder",
-            "description": "Move an email to a different folder",
+            "description": "Move an email to a different folder. IMPORTANT: For custom folders, first use list_mail_folders with include_children=true to find the folder ID. For system folders, use well-known names (lowercase): inbox, drafts, sentitems, deleteditems, junkemail, archive, outbox, clutter, scheduled.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -664,12 +804,12 @@
                         "type": "string",
                         "description": "The ID of the email to move"
                     },
-                    "destination_folder": {
+                    "destination_folder_id": {
                         "type": "string",
-                        "description": "Name or ID of the destination folder (e.g., 'Archive', 'Junk Email', 'Drafts')"
+                        "description": "Destination folder ID (from list_mail_folders) OR a well-known folder name (lowercase, no spaces). Well-known names: inbox, drafts, sentitems, deleteditems, junkemail, archive, outbox, clutter, scheduled. For custom folders like 'Clients' or 'Projects', you MUST use list_mail_folders first to get the folder ID."
                     }
                 },
-                "required": ["email_id", "destination_folder"]
+                "required": ["email_id", "destination_folder_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -682,6 +822,10 @@
                         "type": "string",
                         "description": "The ID of the folder the email was moved to"
                     },
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject of the moved email"
+                    },
                     "result": {
                         "type": "boolean",
                         "description": "Whether the operation was successful"
@@ -691,7 +835,7 @@
                         "description": "Error message if the operation failed"
                     }
                 },
-                "required": ["result", "id", "parentFolderId"]
+                "required": ["result"]
             }
         },
         "read_email": {

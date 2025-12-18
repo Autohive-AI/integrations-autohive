@@ -17,7 +17,11 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Google Ads
 
-[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
+[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations.
+
+### Google Analytics
+
+[google-analytics](google-analytics): Google Analytics 4 (GA4) integration for accessing analytics data, reports, and metrics through the Analytics Data API. Supports running customized reports with dimensions and metrics, real-time analytics for monitoring active users and current activity in the last 30 minutes, metadata discovery for exploring available dimensions and metrics, and batch processing for running multiple reports in a single API call. Features OAuth2 authentication with Analytics Data API scope, flexible date range filtering (absolute YYYY-MM-DD and relative formats like "7daysAgo"), pagination support with limit and offset, and access to all GA4 event data including common dimensions (country, city, deviceCategory, browser, pagePath, eventName) and metrics (activeUsers, sessions, screenPageViews, bounceRate, conversions, engagementRate). Includes 4 actions for standard reports, real-time data, metadata retrieval, and batch report execution. Ideal for analytics workflows, data analysis, reporting automation, and business intelligence.
 
 ### Box
 
@@ -31,6 +35,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
 
+### ClickUp
+
+[clickup](clickup): Comprehensive project management integration with ClickUp API v2 for task management, list organization, and team collaboration automation. Supports full CRUD operations for tasks (create, get, update, delete, list with filtering by status, assignees, and pagination), lists (create in folders or spaces, get, update, delete), and folders (create, get, update, delete, list). Includes space management (get space details, list spaces in workspace), team/workspace discovery, and comment operations (create, get, update, delete task comments with markdown support). Features OAuth 2.0 authentication with automatic token management, priority levels (Urgent, High, Normal, Low), assignee management, due dates with timestamps, tag support, and subtask handling. Includes 22 actions covering tasks, lists, folders, spaces, teams, and comments. Ideal for task automation, project organization, workflow management, and team collaboration workflows.
+
 ### Coda
 
 [coda](coda): Comprehensive Coda integration for managing documents, pages, tables, and rows. Supports full CRUD operations for docs (list, get, create, update, delete) and pages (list, get, create with HTML/Markdown content, update metadata, delete). Includes table and column discovery (list tables/columns, get table/column details) and complete row management (list with filtering/sorting, get, upsert with keyColumns, update, delete single/multiple). Features Bearer token authentication, pagination support, async processing (HTTP 202 responses), multiple value formats (simple/rich), and comprehensive error handling. Ideal for document automation, content management, and data synchronization workflows.
@@ -39,6 +47,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [elevenlabs](elevenlabs): AI-powered text-to-speech integration with ElevenLabs API for voice generation and audio management. Supports converting text to realistic speech with customizable voice settings, browsing and filtering available voices by category and use case, accessing voice metadata and settings, tracking generation history, downloading previously generated audio files, and monitoring subscription usage and credits. Features 7 actions (1 paid, 6 free), API key authentication, multiple output formats (MP3, PCM), voice customization controls (stability, similarity, style), and base64-encoded audio file outputs. Includes 20 premade professional voices with various accents. Ideal for content creation, audiobook narration, voiceovers, and automated audio generation workflows.
 
+### Eventbrite
+
+[eventbrite](eventbrite): Comprehensive event management integration with Eventbrite API v3 for managing events, venues, attendees, orders, and ticket classes. Supports full event lifecycle management (create, update, delete, publish, unpublish, cancel, copy events), venue operations (create, update, list venues with address management), ticket class management (create, update, delete ticket types with pricing and quantity controls), order tracking by event or organization with status filtering, attendee management with check-in status, and category browsing. Features OAuth2 platform authentication with scopes for events, orders, attendees, venues, organizations, and user data. Includes 28 actions covering user info, organizations, events, venues, orders, attendees, ticket classes, and categories. Ideal for event automation, ticketing workflows, attendee tracking, and venue management.
+
 ### Front
 
 [front](front): Customer service integration for Front's communication platform. Supports comprehensive inbox and conversation management, including listing and accessing inboxes, managing conversations and messages, creating new messages and replies through channels, accessing message templates for consistent responses, and managing conversation assignments and tags. Features channel-based message creation, conversation filtering, teammate and tag management, and complete message lifecycle operations for customer support workflows.
@@ -46,6 +58,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Gong
 
 [gong](gong): Integrates with Gong's conversation analytics platform to access call recordings, transcripts, and user data. Supports listing and searching calls, retrieving detailed call information and transcripts with speaker mapping, and managing user accounts. Includes comprehensive error handling and date filtering capabilities.
+
+### Grammarly
+
+[grammarly](grammarly): Comprehensive writing analysis integration with Grammarly API for quality assessment, AI detection, plagiarism checking, and analytics automation. Supports analyzing documents for writing quality with detailed scores (engagement, correctness, delivery, clarity), detecting AI-generated content with confidence scores and percentage metrics, checking for plagiarism against billions of sources with originality scores, and retrieving user analytics for team usage tracking (active days, sessions, improvements, AI prompt usage). Features OAuth 2.0 client credentials authentication with automatic token management, asynchronous job processing with status polling, 30-day result retention, and pagination support for analytics. Includes 7 actions covering Writing Score API (2 actions), Analytics API (1 action), AI Detection API (2 actions, Beta), and Plagiarism Detection API (2 actions, Beta). Supports multiple file formats (.doc, .docx, .odt, .txt, .rtf) with 4MB maximum file size. Ideal for content quality automation, academic integrity compliance, AI content verification, and team productivity tracking workflows.
 
 ### Google Looker
 
@@ -58,6 +74,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Zoho CRM
 
 [Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls, with notes management across all 7 modules. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 54 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+
+### Facebook Pages
+
+[facebook](facebook): Comprehensive Facebook Pages integration for managing social media presence through the Graph API v21.0. Supports page discovery, full post lifecycle (create, retrieve, schedule, delete) with text, photo, video, and link content types, comment management (read, reply, hide/unhide, like/unlike, delete), and page/post-level analytics. Features scheduled posting (10 min to 75 days ahead) with ISO 8601 and Unix timestamp support. Uses a multi-file structure pattern for maintainability with separate action modules. Includes OAuth2 authentication with comprehensive page permissions.
 
 ### Reddit
 
@@ -99,9 +119,9 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-business-profile](google-business-profile): Connects to Google My Business API for comprehensive business profile and review management. Supports listing business accounts and locations, reading customer reviews with ratings and comments, replying to customer reviews professionally, and managing review interactions. Features secure OAuth2 authentication with Google Maps Reviews provider and comprehensive error handling for reputation management workflows.
 
-### Microsoft 365
+### Microsoft Copilot 365
 
-[microsoft365](microsoft365): Comprehensive integration with Microsoft 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
+[Microsoft Copilot 365](microsoft365): Comprehensive integration with Microsoft Copilot 365 services including Outlook, OneDrive, Calendar, and SharePoint through Microsoft Graph API. Supports email management (send, draft, reply, forward, search with attachments), calendar operations (create, update, list events with date filtering), OneDrive file operations (search, read with PDF conversion), SharePoint site and document library access (search sites, list libraries, search documents across all drives, read files), and contact management. Features multi-drive SharePoint support, automatic PDF conversion for Office documents, timezone-aware calendar queries, null-safe field handling, and OAuth2 authentication with enterprise-grade permissions including Sites.Read.All for organizational knowledge base access.
 
 ### Microsoft Planner
 
@@ -122,6 +142,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Google Chat
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
+### Google Search Console
+
+[google-search-console](google-search-console): Comprehensive Google Search Console integration for accessing search analytics, URL inspection, sitemap management, and site verification data. Supports querying search performance data with dimensions (query, page, country, device, date) and metrics (clicks, impressions, CTR, position), advanced filtering and grouping, listing verified sites with permission levels, inspecting individual URLs for index status and mobile usability, and managing sitemaps with submission status tracking. Features OAuth2 authentication, pagination support for large datasets (up to 25,000 rows per request), support for both URL-prefix and Domain properties, and comprehensive error handling. Includes 5 actions covering search analytics queries, site listing, URL inspection, and sitemap management. Ideal for SEO automation, search performance monitoring, and website health tracking workflows.
 
 ### Hacker News
 
@@ -146,6 +170,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Float
 
 [float](float): Comprehensive resource management and project scheduling integration with Float API for team capacity planning, time tracking, and project coordination. Supports full CRUD operations for team members (people) with roles, departments, rates, and availability management. Includes complete project lifecycle management with client associations, budgets, timelines, and team assignments. Features task/allocation scheduling across team members, time off management with leave types, logged time tracking with billable hours, and client relationship management. Provides access to organizational structure (departments, roles), account settings, project stages, phases, milestones, and expenses. Includes comprehensive reporting capabilities (people utilization, project analytics) with date range filtering. Features 60 actions covering all Float API v3 endpoints, custom API key authentication with required User-Agent header, connected account information display, pagination support (up to 200 items per page), rate limiting awareness (200 GET/min, 100 non-GET/min), field filtering, sorting, modified-since sync capabilities, and ActionResult return type for cost tracking. Ideal for resource planning, capacity management, project scheduling, time tracking workflows, and team utilization analysis.
+
+### Stripe
+
+[stripe](stripe): Comprehensive payment and billing integration with Stripe API for managing customers, invoices, and invoice items. Supports full customer lifecycle management (create, list, get, update, delete) with address and metadata support. Features complete invoice workflow including draft creation, finalization, sending via email, payment processing, and voiding. Includes invoice item management for adding line items with quantities, unit amounts, and descriptions. Supports pagination with cursor-based navigation, filtering by customer/status/date, and multi-currency invoicing. Features API key authentication (test and production keys), automatic invoice advance settings, and flexible collection methods (charge automatically or send invoice). Includes 20 actions covering customers, invoices, and invoice items. Ideal for billing automation, subscription management, and payment processing workflows.
 
 ## Template
 
