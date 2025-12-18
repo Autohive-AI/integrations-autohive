@@ -410,7 +410,11 @@
           "repo": { "type": "string", "description": "Repository name" },
           "state": { "type": "string", "enum": ["open", "closed", "all"], "default": "all" },
           "sort": { "type": "string", "enum": ["created", "updated", "popularity", "long-running"], "default": "updated" },
-          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+          "direction": { "type": "string", "enum": ["asc", "desc"], "default": "desc" },
+          "after": { "type": "string", "description": "ISO 8601 timestamp to filter PRs created after this date" },
+          "before": { "type": "string", "description": "ISO 8601 timestamp to filter PRs created before this date" },
+          "author": { "type": "string", "description": "Filter by PR author username" },
+          "limit": { "type": "integer", "description": "Maximum number of PRs to return" }
         },
         "required": ["owner", "repo"]
       },
@@ -425,10 +429,9 @@
             "state": { "type": "string" },
             "created_at": { "type": "string" },
             "updated_at": { "type": "string" },
-            "merged_at": { "type": ["string", "null"] },
+            "closed_at": { "type": ["string", "null"] },
             "draft": { "type": "boolean" },
-            "merged": { "type": "boolean" },
-            "author": { "type": "object" },
+            "author": { "type": "object", "properties": { "login": { "type": "string" }, "avatar_url": { "type": "string" } } },
             "url": { "type": "string" }
           }
         }

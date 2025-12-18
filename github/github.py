@@ -278,11 +278,53 @@ class GitHubAPI:
     @staticmethod
     async def get_pull_requests(context: ExecutionContext, owner: str, repo: str,
                                state: str = 'all', sort: str = 'updated',
-                               direction: str = 'desc') -> List[Dict[str, Any]]:
-        """Get pull requests for a repository"""
-        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/pulls"
-        params = {'state': state, 'sort': sort, 'direction': direction}
-        return await GitHubAPI.paginated_fetch(context, url, params)
+                               direction: str = 'desc', after: str = None,
+                               before: str = None, author: str = None,
+                               limit: int = None) -> List[Dict[str, Any]]:
+        """Get pull requests for a repository using GitHub Search API"""
+        url = f"{GitHubAPI.BASE_URL}/search/issues"
+        
+        q_parts = [f"is:pr repo:{owner}/{repo}"]
+        if state == 'open':
+            q_parts.append("is:open")
+        elif state == 'closed':
+            q_parts.append("is:closed")
+        if author:
+            q_parts.append(f"author:{author}")
+        if after:
+            q_parts.append(f"created:>={after}")
+        if before:
+            q_parts.append(f"created:<={before}")
+
+        sort_map = {'updated': 'updated', 'created': 'created', 'popularity': 'comments', 'long-running': 'created'}
+        params = {
+            'q': ' '.join(q_parts),
+            'sort': sort_map.get(sort, 'updated'),
+            'order': direction,
+            'per_page': min(limit, 100) if limit else 100,
+            'page': 1,
+        }
+
+        headers = GitHubAPI.get_headers(context)
+        all_prs: List[Dict[str, Any]] = []
+
+        while True:
+            response = await context.fetch(url, params=params, headers=headers)
+            items = response.get('items', [])
+            if not items:
+                break
+
+            all_prs.extend(items)
+
+            if limit and len(all_prs) >= limit:
+                return all_prs[:limit]
+
+            if len(items) < params['per_page']:
+                break
+
+            params['page'] += 1
+
+        return all_prs
 
     @staticmethod
     async def get_pull_request(context: ExecutionContext, owner: str, repo: str,
@@ -1106,7 +1148,11 @@ class ListPullRequests(ActionHandler):
             inputs['repo'],
             state=inputs.get('state', 'all'),
             sort=inputs.get('sort', 'updated'),
-            direction=inputs.get('direction', 'desc')
+            direction=inputs.get('direction', 'desc'),
+            after=inputs.get('after'),
+            before=inputs.get('before'),
+            author=inputs.get('author'),
+            limit=inputs.get('limit')
         )
 
         return ActionResult(
@@ -1117,9 +1163,8 @@ class ListPullRequests(ActionHandler):
             'state': pr['state'],
             'created_at': pr['created_at'],
             'updated_at': pr['updated_at'],
-            'merged_at': pr.get('merged_at'),
+            'closed_at': pr.get('closed_at'),
             'draft': pr.get('draft', False),
-            'merged': pr.get('merged', False),
             'author': {
                 'login': pr['user']['login'],
                 'avatar_url': pr['user']['avatar_url']
