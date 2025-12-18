@@ -1,0 +1,206 @@
+{
+  "name": "gemini-deep-research",
+  "display_name": "Gemini Deep Research",
+  "version": "1.0.0",
+  "description": "Autonomous AI research agent powered by Google Gemini 2.0. Performs multi-step research tasks with web search, synthesizes findings, and generates comprehensive reports.",
+  "entry_point": "gemini_deep_research.py",
+  "supports_billing": false,
+  "supports_connected_account": false,
+  "auth": {
+    "type": "custom",
+    "title": "Google Gemini API Credentials",
+    "fields": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "format": "password",
+          "label": "Gemini API Key",
+          "help_text": "Your Google AI Studio API key. Get one at https://aistudio.google.com/apikey"
+        }
+      },
+      "required": ["api_key"]
+    }
+  },
+  "actions": {
+    "start_deep_research": {
+      "display_name": "Start Deep Research",
+      "description": "Start an autonomous deep research task using Gemini 2.0 Pro. The agent will plan, search the web, and synthesize findings. Returns an interaction ID to poll for results. Research can take up to 60 minutes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The research question or topic to investigate. Be specific for better results.",
+            "maxLength": 10000
+          },
+          "output_format": {
+            "type": "string",
+            "description": "Optional instructions for formatting the output (e.g., 'structured with sections and bullet points', 'academic style with citations', 'executive summary format')"
+          },
+          "enable_file_search": {
+            "type": "boolean",
+            "description": "Enable searching through previously uploaded files for private data research",
+            "default": false
+          }
+        },
+        "required": ["query"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": ["string", "null"],
+            "description": "Unique ID to use for polling research status"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the research task",
+            "enum": ["in_progress", "completed", "failed"]
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the action succeeded"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "get_research_status": {
+      "display_name": "Get Research Status",
+      "description": "Check the status of a deep research task and retrieve results when complete. Poll this endpoint periodically until status is 'completed' or 'failed'.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "description": "The interaction ID returned from start_deep_research"
+          }
+        },
+        "required": ["interaction_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Current status: in_progress, completed, or failed",
+            "enum": ["in_progress", "completed", "failed"]
+          },
+          "research_output": {
+            "type": ["string", "null"],
+            "description": "The full research report text (only present when status is 'completed')"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the action succeeded"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": ["status", "result"]
+      }
+    },
+    "continue_research": {
+      "display_name": "Continue Research",
+      "description": "Ask follow-up questions or request additional research on a completed research task. Uses the context from the previous research.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "previous_interaction_id": {
+            "type": "string",
+            "description": "The interaction ID of the completed research to continue from"
+          },
+          "follow_up_query": {
+            "type": "string",
+            "description": "Follow-up question or request for additional research",
+            "maxLength": 10000
+          },
+          "output_format": {
+            "type": "string",
+            "description": "Optional instructions for formatting the follow-up output"
+          }
+        },
+        "required": ["previous_interaction_id", "follow_up_query"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": ["string", "null"],
+            "description": "New interaction ID for the follow-up research"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the follow-up task",
+            "enum": ["in_progress", "completed", "failed"]
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the action succeeded"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "get_research_with_streaming": {
+      "display_name": "Get Research with Thought Updates",
+      "description": "Get research status with intermediate thinking summaries. Useful for showing progress during long research tasks.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "description": "The interaction ID returned from start_deep_research"
+          },
+          "include_thoughts": {
+            "type": "boolean",
+            "description": "Include intermediate thinking summaries in the response",
+            "default": true
+          }
+        },
+        "required": ["interaction_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Current status: in_progress, completed, or failed",
+            "enum": ["in_progress", "completed", "failed"]
+          },
+          "research_output": {
+            "type": ["string", "null"],
+            "description": "The full research report text (only present when status is 'completed')"
+          },
+          "thought_summaries": {
+            "type": "array",
+            "description": "List of intermediate thinking/progress updates",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the action succeeded"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if the action failed"
+          }
+        },
+        "required": ["status", "result"]
+      }
+    }
+  }
+}
