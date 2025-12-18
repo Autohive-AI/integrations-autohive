@@ -21,7 +21,7 @@ Running Tests:
 import asyncio
 import time
 import os
-import shopify_admin
+from context import shopify_admin
 from autohive_integrations_sdk import ExecutionContext
 
 
