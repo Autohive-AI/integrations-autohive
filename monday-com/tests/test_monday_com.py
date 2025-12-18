@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock
 from context import monday_com
 import json
-import asyncio
 
 
 class TestMondayComIntegration(unittest.TestCase):
