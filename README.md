@@ -17,7 +17,11 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 ### Google Ads
 
-[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations. 
+[adwords_tool](adwords_tool): Fetches campaign data from the Google Ads API using the `google-ads` library. The scope can currently perform all CRUD operations.
+
+### Google Analytics
+
+[google-analytics](google-analytics): Google Analytics 4 (GA4) integration for accessing analytics data, reports, and metrics through the Analytics Data API. Supports running customized reports with dimensions and metrics, real-time analytics for monitoring active users and current activity in the last 30 minutes, metadata discovery for exploring available dimensions and metrics, and batch processing for running multiple reports in a single API call. Features OAuth2 authentication with Analytics Data API scope, flexible date range filtering (absolute YYYY-MM-DD and relative formats like "7daysAgo"), pagination support with limit and offset, and access to all GA4 event data including common dimensions (country, city, deviceCategory, browser, pagePath, eventName) and metrics (activeUsers, sessions, screenPageViews, bounceRate, conversions, engagementRate). Includes 4 actions for standard reports, real-time data, metadata retrieval, and batch report execution. Ideal for analytics workflows, data analysis, reporting automation, and business intelligence.
 
 ### Box
 
@@ -31,6 +35,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [circle](circle): Comprehensive integration with Circle.so community platform for managing posts, members, spaces, and events. Features searching and creating posts with markdown-to-TipTap conversion, member management with email search and profile access, space discovery and filtering by type, event tracking for upcoming/past community events, and comment operations for engagement. Includes comprehensive error handling, pagination support, and access to community-wide information and statistics.
 
+### ClickUp
+
+[clickup](clickup): Comprehensive project management integration with ClickUp API v2 for task management, list organization, and team collaboration automation. Supports full CRUD operations for tasks (create, get, update, delete, list with filtering by status, assignees, and pagination), lists (create in folders or spaces, get, update, delete), and folders (create, get, update, delete, list). Includes space management (get space details, list spaces in workspace), team/workspace discovery, and comment operations (create, get, update, delete task comments with markdown support). Features OAuth 2.0 authentication with automatic token management, priority levels (Urgent, High, Normal, Low), assignee management, due dates with timestamps, tag support, and subtask handling. Includes 22 actions covering tasks, lists, folders, spaces, teams, and comments. Ideal for task automation, project organization, workflow management, and team collaboration workflows.
+
 ### Coda
 
 [coda](coda): Comprehensive Coda integration for managing documents, pages, tables, and rows. Supports full CRUD operations for docs (list, get, create, update, delete) and pages (list, get, create with HTML/Markdown content, update metadata, delete). Includes table and column discovery (list tables/columns, get table/column details) and complete row management (list with filtering/sorting, get, upsert with keyColumns, update, delete single/multiple). Features Bearer token authentication, pagination support, async processing (HTTP 202 responses), multiple value formats (simple/rich), and comprehensive error handling. Ideal for document automation, content management, and data synchronization workflows.
@@ -42,6 +50,9 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Fathom
 
 [fathom](fathom): Conversation intelligence integration with Fathom AI for accessing meeting recordings, transcripts, and team data. Supports listing and filtering meeting recordings with advanced search capabilities by date range, participants, domains, and meeting type, retrieving full transcripts with speaker attribution and timestamps, accessing team and team member information, and comprehensive pagination support for all endpoints. Features OAuth 2.0 authentication with public_api scope and integration with Fathom's video meeting recording and transcription platform. Includes 4 actions covering meeting data access, transcript retrieval, and team management. Ideal for meeting analytics, conversation intelligence workflows, and automated report generation from meeting data.
+### Eventbrite
+
+[eventbrite](eventbrite): Comprehensive event management integration with Eventbrite API v3 for managing events, venues, attendees, orders, and ticket classes. Supports full event lifecycle management (create, update, delete, publish, unpublish, cancel, copy events), venue operations (create, update, list venues with address management), ticket class management (create, update, delete ticket types with pricing and quantity controls), order tracking by event or organization with status filtering, attendee management with check-in status, and category browsing. Features OAuth2 platform authentication with scopes for events, orders, attendees, venues, organizations, and user data. Includes 28 actions covering user info, organizations, events, venues, orders, attendees, ticket classes, and categories. Ideal for event automation, ticketing workflows, attendee tracking, and venue management.
 
 ### Front
 
@@ -66,6 +77,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Zoho CRM
 
 [Zoho](Zoho): Comprehensive Zoho CRM integration providing full customer lifecycle management capabilities. Supports complete CRUD operations across all major CRM modules including contacts, accounts, deals, leads, tasks, events, and calls, with notes management across all 7 modules. Features lead-to-deal conversion workflows, advanced relationship queries, hierarchical account structures, activity tracking, and custom COQL query execution. Includes OAuth 2.0 authentication, robust error handling, pagination support, and 54 distinct actions covering sales pipeline management, customer onboarding, and CRM automation workflows.
+
+### Facebook Pages
+
+[facebook](facebook): Comprehensive Facebook Pages integration for managing social media presence through the Graph API v21.0. Supports page discovery, full post lifecycle (create, retrieve, schedule, delete) with text, photo, video, and link content types, comment management (read, reply, hide/unhide, like/unlike, delete), and page/post-level analytics. Features scheduled posting (10 min to 75 days ahead) with ISO 8601 and Unix timestamp support. Uses a multi-file structure pattern for maintainability with separate action modules. Includes OAuth2 authentication with comprehensive page permissions.
 
 ### Reddit
 
@@ -130,6 +145,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Google Chat
 
 [google-chat](google-chat): User-authenticated Google Chat integration for messaging and space management. Supports sending and managing messages with threading and @mentions, creating and managing Chat spaces, listing and reacting to messages with emojis, managing space memberships, and finding direct message conversations. Features 13 actions including full CRUD operations for messages, space management, reaction support, and OAuth2 authentication with user context. Ideal for team communication automation, notification workflows, and Chat bot alternatives using user credentials.
+
+### Google Search Console
+
+[google-search-console](google-search-console): Comprehensive Google Search Console integration for accessing search analytics, URL inspection, sitemap management, and site verification data. Supports querying search performance data with dimensions (query, page, country, device, date) and metrics (clicks, impressions, CTR, position), advanced filtering and grouping, listing verified sites with permission levels, inspecting individual URLs for index status and mobile usability, and managing sitemaps with submission status tracking. Features OAuth2 authentication, pagination support for large datasets (up to 25,000 rows per request), support for both URL-prefix and Domain properties, and comprehensive error handling. Includes 5 actions covering search analytics queries, site listing, URL inspection, and sitemap management. Ideal for SEO automation, search performance monitoring, and website health tracking workflows.
 
 ### Hacker News
 
