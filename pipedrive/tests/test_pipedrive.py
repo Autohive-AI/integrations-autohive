@@ -60,7 +60,8 @@ def create_mock_context():
                 elif method == "DELETE":
                     async with session.delete(url, params=params) as response:
                         return await response.json()
-
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
     context = ExecutionContext(
         auth={
             "type": "api_token",
