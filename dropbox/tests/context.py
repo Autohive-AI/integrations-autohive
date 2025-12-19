@@ -4,4 +4,4 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../dependencies")))
 
-from dropbox import dropbox
+from dropbox import dropbox  # noqa: F401

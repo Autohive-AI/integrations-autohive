@@ -203,13 +203,17 @@
         },
         "upload_file": {
             "display_name": "Upload File",
-            "description": "Upload a file to Dropbox. Note: File content handling depends on platform implementation.",
+            "description": "Upload a file to Dropbox.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "Path where the file should be saved (e.g., '/folder/file.txt')"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "File content as a base64-encoded string"
                     },
                     "mode": {
                         "type": "string",
@@ -228,7 +232,7 @@
                         "default": false
                     }
                 },
-                "required": ["path"]
+                "required": ["path", "content"]
             },
             "output_schema": {
                 "type": "object",
