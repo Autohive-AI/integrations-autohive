@@ -27,6 +27,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
 
+### Dropbox
+
+[dropbox](dropbox): Cloud file storage integration with Dropbox API v2 for comprehensive file and folder management. Supports folder listing with recursive browsing and pagination (list_folder, list_folder_continue), file and folder metadata retrieval, temporary download link generation (valid for 4 hours), file uploads with conflict handling modes (add, overwrite, update), folder creation, and complete file operations (delete, move, copy with autorename support). Features OAuth 2.0 authentication with automatic token management, cursor-based pagination for large directories, and support for mounted folders. Includes 9 actions covering file browsing, metadata access, uploads, and file organization. Ideal for file synchronization, backup workflows, document management, and cloud storage automation.
+
 ### Canva
 
 [canva](canva): Comprehensive Canva integration for managing assets, designs, folders, and brand templates through the Canva Connect API. Supports uploading and managing assets (images, videos, audio), creating and exporting designs in various formats (PNG, JPG, PDF, PPTX, etc.), organizing content with folders, and accessing brand templates for Enterprise users. Features OAuth 2.0 with PKCE authentication, asynchronous job tracking for uploads and exports, pagination support for large datasets, and complete CRUD operations across all resource types. Includes 18 actions covering asset management, design creation and export, folder organization, and brand template access. Ideal for content creation automation and asset management workflows.
