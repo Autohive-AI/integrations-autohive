@@ -2,7 +2,6 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any
-import aiohttp
 import json
 import base64
 
@@ -186,42 +185,32 @@ class UploadFileAction(ActionHandler):
             }
 
             # Get file content - expected as base64 or bytes
-            content = inputs.get('content', b'')
+            content = inputs.get('content')
+            if not content:
+                return ActionResult(
+                    data={"file": {}, "result": False, "error": "File content is required"},
+                    cost_usd=0.0
+                )
             if isinstance(content, str):
                 content = base64.b64decode(content)
 
-            # Use aiohttp directly for content upload (context.fetch doesn't handle this properly)
-            url = f"{DROPBOX_CONTENT_BASE_URL}/files/upload"
+            # Upload using context.fetch with custom headers for Dropbox content API
+            headers = {
+                "Dropbox-API-Arg": json.dumps(api_arg),
+                "Content-Type": "application/octet-stream"
+            }
 
-            async with context:
-                session = context._session
-                if not session:
-                    session = aiohttp.ClientSession()
-                    context._session = session
+            response = await context.fetch(
+                f"{DROPBOX_CONTENT_BASE_URL}/files/upload",
+                method="POST",
+                headers=headers,
+                data=content
+            )
 
-                # Get auth headers from context
-                headers = {
-                    "Dropbox-API-Arg": json.dumps(api_arg),
-                    "Content-Type": "application/octet-stream"
-                }
-                if context.auth and "credentials" in context.auth:
-                    credentials = context.auth["credentials"]
-                    if "access_token" in credentials:
-                        headers["Authorization"] = f"Bearer {credentials['access_token']}"
-
-                async with session.post(url, headers=headers, data=content) as response:
-                    if response.status not in [200, 201]:
-                        error_text = await response.text()
-                        return ActionResult(
-                            data={"file": {}, "result": False, "error": f"Dropbox upload error: {response.status} - {error_text}"},
-                            cost_usd=0.0
-                        )
-
-                    upload_result = await response.json()
-                    return ActionResult(
-                        data={"file": upload_result, "result": True},
-                        cost_usd=0.0
-                    )
+            return ActionResult(
+                data={"file": response, "result": True},
+                cost_usd=0.0
+            )
 
         except Exception as e:
             return ActionResult(

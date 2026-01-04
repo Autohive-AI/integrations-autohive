@@ -1,12 +1,12 @@
 # Dropbox Integration for Autohive
 
-Connects Autohive to the Dropbox API to enable file browsing, metadata retrieval, search, and account management (read-only operations).
+Connects Autohive to the Dropbox API to enable file browsing, metadata retrieval, uploads, and file management operations.
 
 ## Description
 
-This integration provides read-only access to Dropbox's file storage platform. It allows users to browse folders, search files, retrieve metadata, get temporary download links, and access account information directly from Autohive.
+This integration provides full access to Dropbox's file storage platform. It allows users to browse folders, retrieve metadata, get temporary download links, upload files, create folders, and manage files (move, copy, delete) directly from Autohive.
 
-The integration uses Dropbox API v2 with OAuth 2.0 authentication and implements 10 comprehensive read-only actions covering files, folders, search, and account information.
+The integration uses Dropbox API v2 with OAuth 2.0 authentication and implements 9 comprehensive actions covering file listing, metadata, downloads, uploads, and file management.
 
 ## Setup & Authentication
 
@@ -18,6 +18,8 @@ The integration uses OAuth 2.0 with the following scopes:
 - `account_info.read` - Read account information
 - `files.metadata.read` - Read file and folder metadata
 - `files.content.read` - Read file content and download files
+- `files.content.write` - Upload, create, delete, move, and copy files/folders
+- `contacts.write` - Write access for sharing operations
 
 ### Setup Steps in Autohive
 
@@ -128,7 +130,7 @@ Returns metadata for a file or folder at a given path.
 
 ---
 
-### Download and Preview (3 actions)
+### Download (1 action)
 
 #### `get_temporary_link`
 Gets a temporary link to stream content of a file. Valid for 4 hours.
@@ -146,120 +148,78 @@ Gets a temporary link to stream content of a file. Valid for 4 hours.
 
 ---
 
-#### `get_preview`
-Gets a preview for a file. Supports documents, images, and more.
+### Write Operations (5 actions)
+
+#### `upload_file`
+Upload a file to Dropbox.
 
 **Inputs:**
-- `path` (required): Path to the file to preview
+- `path` (required): Path where the file should be saved (e.g., "/folder/file.txt")
+- `content` (required): File content as a base64-encoded string
+- `mode` (optional): How to handle conflicts - "add" (rename if exists), "overwrite", or "update" (default: "add")
+- `autorename` (optional): If true, rename the file if there's a conflict (default: false)
+- `mute` (optional): If true, don't notify the user about this upload (default: false)
 
 **Outputs:**
-- `preview`: Preview content or data
+- `file`: Uploaded file metadata
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
-**Supported File Types:**
-- Documents (PDF, Word, Excel, PowerPoint, etc.)
-- Images (JPEG, PNG, GIF, etc.)
-- Text files
-- And more
-
 ---
 
-#### `get_thumbnail`
-Gets a thumbnail for an image file.
+#### `create_folder`
+Create a new folder in Dropbox.
 
 **Inputs:**
-- `path` (required): Path to the image file
-- `format` (optional): Image format - "jpeg" or "png" (default: "jpeg")
-- `size` (optional): Thumbnail size (default: "w64h64")
-  - Options: "w32h32", "w64h64", "w128h128", "w256h256", "w480h320", "w640h480", "w960h640", "w1024h768", "w2048h1536"
-- `mode` (optional): How to resize the image (default: "strict")
-  - "strict": Scale down the image to fit within size
-  - "bestfit": Scale down the image to fit within size, preserving aspect ratio
-  - "fitone_bestfit": Scale down the image to cover size, preserving aspect ratio
+- `path` (required): Path of the folder to create (e.g., "/my_folder")
+- `autorename` (optional): If true, rename the folder if there's a conflict (default: false)
 
 **Outputs:**
-- `thumbnail`: Thumbnail data
+- `folder`: Created folder metadata
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
 ---
 
-### Search (2 actions)
-
-#### `search`
-Searches for files and folders by name and content.
+#### `delete`
+Delete a file or folder from Dropbox. Works for both files and folders.
 
 **Inputs:**
-- `query` (required): Search query string
-- `path` (optional): Scope search to a specific folder path
-- `max_results` (optional): Maximum number of results (1-1000, default: 100)
-- `file_status` (optional): Filter by file status - "active" or "deleted"
-- `filename_only` (optional): If true, search only file names, not content (default: false)
+- `path` (required): Path to the file or folder to delete (e.g., "/folder/file.txt" or "/folder")
 
 **Outputs:**
-- `matches`: Array of search matches (each contains match_type and metadata)
-- `has_more`: Whether there are more results
-- `cursor`: Cursor for pagination (use with search_continue)
+- `metadata`: Metadata of the deleted item
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
-**Match Structure:**
-Each match includes:
-- `match_type`: Type of match (e.g., "filename", "content")
-- `metadata`: File or folder metadata
-
 ---
 
-#### `search_continue`
-Continues search results using a cursor from search.
+#### `move`
+Move a file or folder to a different location in Dropbox.
 
 **Inputs:**
-- `cursor` (required): Cursor from previous search call
+- `from_path` (required): Current path of the file or folder
+- `to_path` (required): New path for the file or folder
+- `autorename` (optional): If true, rename if there's a conflict at destination (default: false)
+- `allow_ownership_transfer` (optional): Allow moving a shared folder to a different parent (default: false)
 
 **Outputs:**
-- `matches`: Array of search matches
-- `has_more`: Whether there are more results
-- `cursor`: Cursor for pagination
+- `metadata`: Metadata of the moved item
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
 ---
 
-### Account Information (2 actions)
+#### `copy`
+Copy a file or folder to a different location in Dropbox.
 
-#### `get_current_account`
-Gets information about the current user's Dropbox account.
-
-**Inputs:** None
-
-**Outputs:**
-- `account`: Account information object
-  - `account_id`: Unique account identifier
-  - `name`: User's name (display_name, given_name, surname, etc.)
-  - `email`: User's email address
-  - `email_verified`: Whether email is verified
-  - `profile_photo_url`: URL to profile photo (if available)
-  - `disabled`: Whether account is disabled
-  - `country`: User's country code
-  - `locale`: User's locale
-  - `account_type`: Account type (.tag: "basic", "pro", "business")
-- `result`: Success status (boolean)
-- `error`: Error message if action failed (optional)
-
----
-
-#### `get_space_usage`
-Gets the space usage information for the current user's account.
-
-**Inputs:** None
+**Inputs:**
+- `from_path` (required): Path of the file or folder to copy
+- `to_path` (required): Destination path for the copy
+- `autorename` (optional): If true, rename if there's a conflict at destination (default: false)
 
 **Outputs:**
-- `used`: Total space used in bytes
-- `allocation`: Space allocation details
-  - `.tag`: Allocation type ("individual" or "team")
-  - `allocated`: Total allocated space in bytes
-  - Additional fields based on allocation type
+- `metadata`: Metadata of the copied item
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
@@ -290,7 +250,7 @@ Gets the space usage information for the current user's account.
 - Files and folders have both `path_display` (display format) and `path_lower` (normalized lowercase)
 - Each file and folder has a unique `id` (e.g., "id:abc123xyz")
 - Temporary links from `get_temporary_link` expire after 4 hours
-- This integration provides **read-only** access - no upload, delete, or modify operations
+- Write operations (upload, delete, move, copy) require appropriate OAuth scopes
 
 ## Testing
 
@@ -311,28 +271,21 @@ To test the integration:
 
 **File Access:**
 1. Get temporary download links for files
-2. Generate previews for documents and images
-3. Create thumbnails for image files
-4. Access file content without full download
+2. Access file content without full download
 
-**Search and Discovery:**
-1. Search for files by name
-2. Search file contents for specific text
-3. Filter search results by folder
-4. Find recently modified files
-
-**Account Management:**
-1. View account information
-2. Check space usage and quota
-3. Monitor storage allocation
-4. View account type and status
+**File Management:**
+1. Upload new files to Dropbox
+2. Create folder structures
+3. Delete files or folders
+4. Move files between folders
+5. Copy files to new locations
 
 **Workflow Automation:**
 1. Monitor folders for new files
 2. Extract metadata for reporting
 3. Generate download links for sharing
-4. Search and index file contents
-5. Track file modifications
+4. Automate file organization (move/copy)
+5. Backup workflows with uploads
 
 ## Path Examples
 
@@ -345,17 +298,18 @@ To test the integration:
 ## OAuth Scopes Explained
 
 - **account_info.read**: Allows reading basic account information like name, email, and account type
-- **files.metadata.read**: Allows listing folders, reading file/folder metadata, and searching
-- **files.content.read**: Allows downloading file content, getting temporary links, and previews
+- **files.metadata.read**: Allows listing folders and reading file/folder metadata
+- **files.content.read**: Allows downloading file content and getting temporary links
+- **files.content.write**: Allows uploading files, creating folders, deleting, moving, and copying files/folders
+- **contacts.write**: Allows write access for sharing operations
 
 ## Version History
 
-- **1.0.0** - Initial release with 10 read-only actions
+- **1.0.0** - Initial release with 9 actions
   - Listing: list_folder, list_folder_continue (2 actions)
   - Metadata: get_metadata (1 action)
-  - Download/Preview: get_temporary_link, get_preview, get_thumbnail (3 actions)
-  - Search: search, search_continue (2 actions)
-  - Account: get_current_account, get_space_usage (2 actions)
+  - Download: get_temporary_link (1 action)
+  - Write Operations: upload_file, create_folder, delete, move, copy (5 actions)
 
 ## Sources
 
