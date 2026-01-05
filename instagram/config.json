@@ -2,6 +2,7 @@
     "name": "Instagram",
     "version": "1.0.0",
     "description": "Instagram Business/Creator integration for managing posts, comments, and insights",
+    "supports_connected_account": true,
     "entry_point": "instagram.py",
     "auth": {
         "type": "platform",

@@ -4,7 +4,7 @@ Instagram Business/Creator integration for Autohive, providing comprehensive man
 
 ## Features
 
-- **Account Management**: Retrieve account details and profile information
+- **Connected Account**: Displays authorized user's profile info (username, name, avatar)
 - **Post Publishing**: Create images, videos, reels, carousels, and stories
 - **Comment Moderation**: Read, reply, hide/unhide, and delete comments
 - **Insights & Analytics**: Account and post performance metrics
