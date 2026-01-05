@@ -3,7 +3,7 @@ Instagram Insights actions - Analytics for accounts and media.
 """
 
 from autohive_integrations_sdk import ActionHandler, ActionResult, ExecutionContext
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from instagram import instagram
 from helpers import INSTAGRAM_GRAPH_API_BASE, get_instagram_account_id
