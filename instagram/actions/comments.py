@@ -48,20 +48,30 @@ class GetCommentsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         media_id = inputs["media_id"]
         limit = min(inputs.get("limit", 25), 100)
+        after_cursor = inputs.get("after_cursor")
         
         fields = "id,text,timestamp,username,like_count,from{id,username},replies{id,text,timestamp,username,from{id,username}}"
+        
+        params = {"fields": fields, "limit": limit}
+        if after_cursor:
+            params["after"] = after_cursor
         
         response = await context.fetch(
             f"{INSTAGRAM_GRAPH_API_BASE}/{media_id}/comments",
             method="GET",
-            params={"fields": fields, "limit": limit}
+            params=params
         )
         
         comments = [_build_comment_response(c) for c in response.get("data", [])]
         
+        paging = response.get("paging", {})
+        cursors = paging.get("cursors", {})
+        next_cursor = cursors.get("after") if paging.get("next") else None
+        
         return ActionResult(data={
             "comments": comments,
-            "total_count": len(comments)
+            "total_count": len(comments),
+            "next_cursor": next_cursor
         })
 
 

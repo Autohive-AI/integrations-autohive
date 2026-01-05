@@ -37,6 +37,23 @@ This integration uses **Business Login for Instagram** (users log in with Instag
 | `delete_comment` | Delete a comment |
 | `get_insights` | Get account or post analytics |
 
+## Pagination
+
+The `get_posts` and `get_comments` actions support cursor-based pagination for accessing large datasets:
+
+1. Make an initial request with a `limit` (default 25, max 100)
+2. If more results exist, the response includes a `next_cursor`
+3. Pass `after_cursor` in subsequent requests to fetch the next page
+
+```
+# First request
+{ "limit": 25 }
+# Response includes: { "media": [...], "next_cursor": "abc123" }
+
+# Next page
+{ "limit": 25, "after_cursor": "abc123" }
+```
+
 ## Rate Limits
 
 - **Content Publishing**: 100 posts per 24 hours (carousels count as 1)

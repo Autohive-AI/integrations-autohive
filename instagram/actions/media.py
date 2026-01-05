@@ -41,6 +41,7 @@ class GetPostsAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         media_id = inputs.get("media_id")
         limit = min(inputs.get("limit", 25), 100)
+        after_cursor = inputs.get("after_cursor")
         
         fields = ",".join([
             "id",
@@ -62,16 +63,28 @@ class GetPostsAction(ActionHandler):
                 params={"fields": fields}
             )
             media_list = [_build_media_response(response)]
+            next_cursor = None
         else:
             account_id = await get_instagram_account_id(context)
+            params = {"fields": fields, "limit": limit}
+            if after_cursor:
+                params["after"] = after_cursor
+            
             response = await context.fetch(
                 f"{INSTAGRAM_GRAPH_API_BASE}/{account_id}/media",
                 method="GET",
-                params={"fields": fields, "limit": limit}
+                params=params
             )
             media_list = [_build_media_response(m) for m in response.get("data", [])]
+            
+            paging = response.get("paging", {})
+            cursors = paging.get("cursors", {})
+            next_cursor = cursors.get("after") if paging.get("next") else None
         
-        return ActionResult(data={"media": media_list})
+        return ActionResult(data={
+            "media": media_list,
+            "next_cursor": next_cursor
+        })
 
 
 @instagram.action("create_post")
