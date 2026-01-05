@@ -20,4 +20,4 @@ config_path = os.path.join(os.path.dirname(__file__), "config.json")
 instagram = Integration.load(config_path)
 
 # Import actions to register handlers
-import actions  # noqa: F401 - import triggers action registration via decorators
+import actions  # noqa: F401 - registers action handlers
