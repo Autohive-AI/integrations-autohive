@@ -52,6 +52,10 @@
                         "type": "integer",
                         "description": "Maximum number of posts to return (default: 25, max: 100)",
                         "default": 25
+                    },
+                    "after_cursor": {
+                        "type": "string",
+                        "description": "Optional: Pagination cursor from a previous response to fetch the next page of results."
                     }
                 },
                 "required": []
@@ -76,6 +80,10 @@
                                 "comments_count": {"type": "integer", "description": "Number of comments"}
                             }
                         }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Pagination cursor to fetch the next page. Null if no more results."
                     }
                 },
                 "required": ["media"]
@@ -161,6 +169,10 @@
                         "type": "integer",
                         "description": "Maximum number of comments to return (default: 25, max: 100)",
                         "default": 25
+                    },
+                    "after_cursor": {
+                        "type": "string",
+                        "description": "Optional: Pagination cursor from a previous response to fetch the next page of results."
                     }
                 },
                 "required": ["media_id"]
@@ -194,6 +206,10 @@
                                 }
                             }
                         }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Pagination cursor to fetch the next page. Null if no more results."
                     }
                 },
                 "required": ["comments"]
