@@ -151,11 +151,11 @@ async def test_get_account_success():
 
 
 # =============================================================================
-# GET MEDIA TESTS
+# GET POSTS TESTS
 # =============================================================================
 
-async def test_get_media_list():
-    """Test listing media from account."""
+async def test_get_posts_list():
+    """Test listing posts from account."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
         "GET /media": {
@@ -182,7 +182,7 @@ async def test_get_media_list():
         }
     }
     context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_media", {}, context)
+    result = await instagram.execute_action("get_posts", {}, context)
     data = result.result.data
 
     assert "media" in data
@@ -193,8 +193,8 @@ async def test_get_media_list():
 
 
 @pytest.mark.skip(reason="Mock URL routing complexity - works with real API")
-async def test_get_media_single():
-    """Test fetching a single media by ID."""
+async def test_get_posts_single():
+    """Test fetching a single post by ID."""
     responses = {
         "GET /media/single": {
             "id": "17841400000000001",
@@ -210,7 +210,7 @@ async def test_get_media_single():
         }
     }
     context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_media", {
+    result = await instagram.execute_action("get_posts", {
         "media_id": "17841400000000001"
     }, context)
     data = result.result.data
@@ -220,14 +220,14 @@ async def test_get_media_single():
     assert data["media"][0]["media_type"] == "IMAGE"
 
 
-async def test_get_media_empty():
-    """Test getting media when account has no posts."""
+async def test_get_posts_empty():
+    """Test getting posts when account has no posts."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
         "GET /media": {"data": []}
     }
     context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_media", {}, context)
+    result = await instagram.execute_action("get_posts", {}, context)
     data = result.result.data
 
     assert "media" in data
@@ -235,10 +235,10 @@ async def test_get_media_empty():
 
 
 # =============================================================================
-# CREATE MEDIA TESTS
+# CREATE POST TESTS
 # =============================================================================
 
-async def test_create_media_image():
+async def test_create_post_image():
     """Test creating an image post."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
@@ -248,7 +248,7 @@ async def test_create_media_image():
         "GET /media/permalink": {"permalink": "https://www.instagram.com/p/ABC123/"}
     }
     context = MockExecutionContext(responses)
-    result = await instagram.execute_action("create_media", {
+    result = await instagram.execute_action("create_post", {
         "media_type": "IMAGE",
         "media_url": "https://example.com/image.jpg",
         "caption": "My new post!"
@@ -259,7 +259,7 @@ async def test_create_media_image():
     assert "instagram.com" in data["permalink"]
 
 
-async def test_create_media_reels():
+async def test_create_post_reels():
     """Test creating a reel."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
@@ -269,7 +269,7 @@ async def test_create_media_reels():
         "GET /media/permalink": {"permalink": "https://www.instagram.com/reel/XYZ789/"}
     }
     context = MockExecutionContext(responses)
-    result = await instagram.execute_action("create_media", {
+    result = await instagram.execute_action("create_post", {
         "media_type": "REELS",
         "media_url": "https://example.com/video.mp4",
         "caption": "My new reel!"
@@ -279,7 +279,7 @@ async def test_create_media_reels():
     assert data["media_id"] == "17841400000000002"
 
 
-async def test_create_media_missing_url():
+async def test_create_post_missing_url():
     """Test error when media_url is missing for image."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"}
@@ -287,7 +287,7 @@ async def test_create_media_missing_url():
     context = MockExecutionContext(responses)
     
     try:
-        await instagram.execute_action("create_media", {
+        await instagram.execute_action("create_post", {
             "media_type": "IMAGE",
             "caption": "Missing URL"
         }, context)
@@ -296,7 +296,7 @@ async def test_create_media_missing_url():
         assert "media_url is required" in str(e)
 
 
-async def test_create_media_carousel_too_few():
+async def test_create_post_carousel_too_few():
     """Test error when carousel has fewer than 2 items."""
     responses = {
         "GET /me": {"id": "17841400000000000", "username": "testbusiness"}
@@ -304,32 +304,13 @@ async def test_create_media_carousel_too_few():
     context = MockExecutionContext(responses)
     
     try:
-        await instagram.execute_action("create_media", {
+        await instagram.execute_action("create_post", {
             "media_type": "CAROUSEL",
             "children": ["https://example.com/image1.jpg"]
         }, context)
         assert False, "Should have raised exception"
     except Exception as e:
         assert "at least 2" in str(e)
-
-
-# =============================================================================
-# DELETE MEDIA TESTS
-# =============================================================================
-
-async def test_delete_media_success():
-    """Test successfully deleting media."""
-    responses = {
-        "DELETE": {"success": True}
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("delete_media", {
-        "media_id": "17841400000000001"
-    }, context)
-    data = result.result.data
-
-    assert data["success"] == True
-    assert data["deleted_media_id"] == "17841400000000001"
 
 
 # =============================================================================
@@ -590,117 +571,4 @@ async def test_get_insights_media_missing_target_id():
         assert "target_id is required" in str(e)
 
 
-# =============================================================================
-# GET MENTIONS TESTS
-# =============================================================================
 
-async def test_get_mentions_success():
-    """Test getting mentions."""
-    responses = {
-        "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
-        "GET /tags": {
-            "data": [
-                {
-                    "id": "17841400000000010",
-                    "caption": "Thanks @testbusiness!",
-                    "permalink": "https://instagram.com/p/MNO789/",
-                    "timestamp": "2024-01-05T10:00:00+0000",
-                    "username": "customer123",
-                    "media_type": "IMAGE"
-                }
-            ]
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_mentions", {}, context)
-    data = result.result.data
-
-    assert "mentions" in data
-    assert len(data["mentions"]) == 1
-    assert data["mentions"][0]["mentioned_by_username"] == "customer123"
-    assert "@testbusiness" in data["mentions"][0]["caption"]
-
-
-async def test_get_mentions_empty():
-    """Test getting mentions when there are none."""
-    responses = {
-        "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
-        "GET /tags": {"data": []}
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_mentions", {}, context)
-    data = result.result.data
-
-    assert len(data["mentions"]) == 0
-
-
-# =============================================================================
-# GET CONVERSATIONS TESTS
-# =============================================================================
-
-async def test_get_conversations_success():
-    """Test getting DM conversations."""
-    responses = {
-        "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
-        "GET /conversations": {
-            "data": [
-                {
-                    "id": "conv_123",
-                    "participants": {
-                        "data": [
-                            {"id": "user_1", "username": "customer1", "name": "Customer One"}
-                        ]
-                    },
-                    "updated_time": "2024-01-10T15:00:00+0000",
-                    "messages": {
-                        "data": [
-                            {"id": "msg_1", "message": "Hi there!", "created_time": "2024-01-10T15:00:00+0000"}
-                        ]
-                    }
-                }
-            ]
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_conversations", {}, context)
-    data = result.result.data
-
-    assert "conversations" in data
-    assert len(data["conversations"]) == 1
-    assert data["conversations"][0]["id"] == "conv_123"
-    assert data["conversations"][0]["message_count"] == 1
-
-
-async def test_get_conversations_empty():
-    """Test getting conversations when there are none."""
-    responses = {
-        "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
-        "GET /conversations": {"data": []}
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("get_conversations", {}, context)
-    data = result.result.data
-
-    assert len(data["conversations"]) == 0
-
-
-# =============================================================================
-# SEND MESSAGE TESTS
-# =============================================================================
-
-async def test_send_message_success():
-    """Test sending a DM."""
-    responses = {
-        "GET /me": {"id": "17841400000000000", "username": "testbusiness"},
-        "POST /messages": {"message_id": "msg_new_456"}
-    }
-    context = MockExecutionContext(responses)
-    result = await instagram.execute_action("send_message", {
-        "recipient_id": "user_123",
-        "message": "Thanks for reaching out!"
-    }, context)
-    data = result.result.data
-
-    assert data["success"] == True
-    assert data["message_id"] == "msg_new_456"
-    assert data["recipient_id"] == "user_123"
