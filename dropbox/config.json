@@ -18,7 +18,7 @@
     "actions": {
         "list_folder": {
             "display_name": "List Folder",
-            "description": "Lists contents of a folder. Returns entries, cursor for pagination, and has_more flag.",
+            "description": "Lists contents of a folder. Returns entries, cursor for pagination, and has_more flag. To continue listing when has_more is true, call again with the returned cursor.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -26,6 +26,10 @@
                         "type": "string",
                         "description": "Path to the folder (empty string '' for root folder, or '/folder_name' for subfolders)",
                         "default": ""
+                    },
+                    "cursor": {
+                        "type": "string",
+                        "description": "Cursor from a previous list_folder call to continue pagination. When provided, other parameters are ignored."
                     },
                     "recursive": {
                         "type": "boolean",
@@ -66,46 +70,6 @@
                     "cursor": {
                         "type": "string",
                         "description": "Cursor for pagination (use with list_folder_continue)"
-                    },
-                    "has_more": {
-                        "type": "boolean",
-                        "description": "Whether there are more entries to fetch"
-                    },
-                    "result": {
-                        "type": "boolean",
-                        "description": "Whether the operation was successful"
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if the action failed"
-                    }
-                },
-                "required": ["entries", "has_more", "result"]
-            }
-        },
-        "list_folder_continue": {
-            "display_name": "List Folder Continue",
-            "description": "Continues listing folder contents using a cursor from list_folder.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "cursor": {
-                        "type": "string",
-                        "description": "Cursor from previous list_folder call"
-                    }
-                },
-                "required": ["cursor"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "entries": {
-                        "type": "array",
-                        "description": "List of file and folder entries"
-                    },
-                    "cursor": {
-                        "type": "string",
-                        "description": "Cursor for pagination"
                     },
                     "has_more": {
                         "type": "boolean",

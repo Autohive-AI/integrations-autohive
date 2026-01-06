@@ -23,71 +23,46 @@ DROPBOX_CONTENT_BASE_URL = "https://content.dropboxapi.com/2"
 
 @dropbox.action("list_folder")
 class ListFolderAction(ActionHandler):
-    """List contents of a folder."""
+    """List contents of a folder. Supports pagination via optional cursor parameter."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            # Build request body
-            data = {
-                "path": inputs.get('path', ''),
-                "recursive": inputs.get('recursive', False),
-                "include_deleted": inputs.get('include_deleted', False),
-                "include_has_explicit_shared_members": inputs.get('include_has_explicit_shared_members', False),
-                "include_mounted_folders": inputs.get('include_mounted_folders', True)
-            }
+            # If cursor is provided, use the continue endpoint for pagination
+            cursor = inputs.get('cursor')
+            if cursor:
+                data = {"cursor": cursor}
+                response = await context.fetch(
+                    f"{DROPBOX_API_BASE_URL}/files/list_folder/continue",
+                    method="POST",
+                    json=data
+                )
+            else:
+                # Initial listing request
+                data = {
+                    "path": inputs.get('path', ''),
+                    "recursive": inputs.get('recursive', False),
+                    "include_deleted": inputs.get('include_deleted', False),
+                    "include_has_explicit_shared_members": inputs.get('include_has_explicit_shared_members', False),
+                    "include_mounted_folders": inputs.get('include_mounted_folders', True)
+                }
 
-            if 'limit' in inputs:
-                data['limit'] = inputs['limit']
+                if 'limit' in inputs:
+                    data['limit'] = inputs['limit']
 
-            response = await context.fetch(
-                f"{DROPBOX_API_BASE_URL}/files/list_folder",
-                method="POST",
-                json=data
-            )
+                response = await context.fetch(
+                    f"{DROPBOX_API_BASE_URL}/files/list_folder",
+                    method="POST",
+                    json=data
+                )
 
             entries = response.get('entries', [])
-            cursor = response.get('cursor')
+            new_cursor = response.get('cursor')
             has_more = response.get('has_more', False)
 
             return ActionResult(
                 data={
                     "entries": entries,
-                    "cursor": cursor,
-                    "has_more": has_more,
-                    "result": True
-                },
-                cost_usd=0.0
-            )
-
-        except Exception as e:
-            return ActionResult(
-                data={"entries": [], "cursor": None, "has_more": False, "result": False, "error": str(e)},
-                cost_usd=0.0
-            )
-
-
-@dropbox.action("list_folder_continue")
-class ListFolderContinueAction(ActionHandler):
-    """Continue listing folder contents using a cursor from list_folder."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            data = {"cursor": inputs['cursor']}
-
-            response = await context.fetch(
-                f"{DROPBOX_API_BASE_URL}/files/list_folder/continue",
-                method="POST",
-                json=data
-            )
-
-            entries = response.get('entries', [])
-            cursor = response.get('cursor')
-            has_more = response.get('has_more', False)
-
-            return ActionResult(
-                data={
-                    "entries": entries,
-                    "cursor": cursor,
+                    "cursor": new_cursor,
                     "has_more": has_more,
                     "result": True
                 },
