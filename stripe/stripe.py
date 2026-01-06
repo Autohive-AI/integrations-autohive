@@ -3,7 +3,7 @@ from autohive_integrations_sdk import (
     ActionResult
 )
 from typing import Dict, Any
-import base64
+
 
 # Load integration from config.json
 stripe = Integration.load()
@@ -15,26 +15,14 @@ API_VERSION = "v1"
 
 # ---- Helper Functions ----
 
-def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
+def get_common_headers() -> Dict[str, str]:
     """
-    Build authentication headers for Stripe API requests.
-    Stripe uses HTTP Basic Auth with the API key as username.
-
-    Args:
-        context: ExecutionContext containing auth credentials
-
-    Returns:
-        Dictionary with Authorization header
+    Return common headers for Stripe API requests.
+    Auth headers are automatically added by the SDK when using platform auth.
     """
-    credentials = context.auth.get("credentials", {})
-    api_key = credentials.get("api_key", "")
-
-    # Stripe uses Basic Auth: base64(api_key:)
-    auth_string = base64.b64encode(f"{api_key}:".encode()).decode()
-
     return {
-        "Authorization": f"Basic {auth_string}",
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Stripe-Version": "2025-12-15.preview"
     }
 
 
@@ -103,7 +91,7 @@ class ListCustomersAction(ActionHandler):
             if 'created_lte' in inputs and inputs['created_lte']:
                 params['created[lte]'] = inputs['created_lte']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/customers",
@@ -142,7 +130,7 @@ class GetCustomerAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             customer_id = inputs['customer_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/customers/{customer_id}",
@@ -191,7 +179,7 @@ class CreateCustomerAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -243,7 +231,7 @@ class UpdateCustomerAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -279,7 +267,7 @@ class DeleteCustomerAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             customer_id = inputs['customer_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/customers/{customer_id}",
@@ -328,7 +316,7 @@ class ListInvoicesAction(ActionHandler):
             if 'created_lte' in inputs and inputs['created_lte']:
                 params['created[lte]'] = inputs['created_lte']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoices",
@@ -367,7 +355,7 @@ class GetInvoiceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_id = inputs['invoice_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoices/{invoice_id}",
@@ -418,7 +406,7 @@ class CreateInvoiceAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -468,7 +456,7 @@ class UpdateInvoiceAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -504,7 +492,7 @@ class DeleteInvoiceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_id = inputs['invoice_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoices/{invoice_id}",
@@ -545,7 +533,7 @@ class FinalizeInvoiceAction(ActionHandler):
             if 'auto_advance' in inputs:
                 body['auto_advance'] = inputs['auto_advance']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body) if body else {}
 
             response = await context.fetch(
@@ -581,7 +569,7 @@ class SendInvoiceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_id = inputs['invoice_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoices/{invoice_id}/send",
@@ -620,7 +608,7 @@ class PayInvoiceAction(ActionHandler):
             if 'payment_method' in inputs and inputs['payment_method']:
                 body['payment_method'] = inputs['payment_method']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body) if body else {}
 
             response = await context.fetch(
@@ -656,7 +644,7 @@ class VoidInvoiceAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_id = inputs['invoice_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoices/{invoice_id}/void",
@@ -701,7 +689,7 @@ class ListInvoiceItemsAction(ActionHandler):
             if 'pending' in inputs:
                 params['pending'] = 'true' if inputs['pending'] else 'false'
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoiceitems",
@@ -740,7 +728,7 @@ class GetInvoiceItemAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_item_id = inputs['invoice_item_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoiceitems/{invoice_item_id}",
@@ -793,7 +781,7 @@ class CreateInvoiceItemAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -843,7 +831,7 @@ class UpdateInvoiceItemAction(ActionHandler):
             if 'metadata' in inputs and inputs['metadata']:
                 body['metadata'] = inputs['metadata']
 
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
             form_data = build_form_data(body)
 
             response = await context.fetch(
@@ -879,7 +867,7 @@ class DeleteInvoiceItemAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             invoice_item_id = inputs['invoice_item_id']
-            headers = get_auth_headers(context)
+            headers = get_common_headers()
 
             response = await context.fetch(
                 f"{STRIPE_API_BASE_URL}/{API_VERSION}/invoiceitems/{invoice_item_id}",
@@ -901,6 +889,847 @@ class DeleteInvoiceItemAction(ActionHandler):
                 data={
                     "id": inputs.get('invoice_item_id', ''),
                     "deleted": False,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+# ---- Product Action Handlers ----
+
+@stripe.action("list_products")
+class ListProductsAction(ActionHandler):
+    """Retrieve a paginated list of products from Stripe."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = build_list_params(inputs)
+
+            # Add optional filters
+            if 'active' in inputs and inputs['active'] is not None:
+                params['active'] = 'true' if inputs['active'] else 'false'
+            if 'type' in inputs and inputs['type']:
+                params['type'] = inputs['type']
+            if 'created_gte' in inputs and inputs['created_gte']:
+                params['created[gte]'] = inputs['created_gte']
+            if 'created_lte' in inputs and inputs['created_lte']:
+                params['created[lte]'] = inputs['created_lte']
+
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/products",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            products = response.get('data', [])
+
+            return ActionResult(
+                data={
+                    "products": products,
+                    "has_more": response.get('has_more', False),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "products": [],
+                    "has_more": False,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("get_product")
+class GetProductAction(ActionHandler):
+    """Retrieve details of a specific product by its ID."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            product_id = inputs['product_id']
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/products/{product_id}",
+                method="GET",
+                headers=headers
+            )
+
+            return ActionResult(
+                data={
+                    "product": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "product": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("create_product")
+class CreateProductAction(ActionHandler):
+    """Create a new product in Stripe."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            body = {
+                "name": inputs['name']
+            }
+
+            # Add optional fields
+            if 'description' in inputs and inputs['description']:
+                body['description'] = inputs['description']
+            if 'active' in inputs and inputs['active'] is not None:
+                body['active'] = inputs['active']
+            if 'default_price_data' in inputs and inputs['default_price_data']:
+                body['default_price_data'] = inputs['default_price_data']
+            if 'images' in inputs and inputs['images']:
+                body['images'] = inputs['images']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+            if 'tax_code' in inputs and inputs['tax_code']:
+                body['tax_code'] = inputs['tax_code']
+            if 'unit_label' in inputs and inputs['unit_label']:
+                body['unit_label'] = inputs['unit_label']
+            if 'url' in inputs and inputs['url']:
+                body['url'] = inputs['url']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/products",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "product": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "product": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("update_product")
+class UpdateProductAction(ActionHandler):
+    """Update an existing product's information."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            product_id = inputs['product_id']
+            body = {}
+
+            # Add only provided fields
+            if 'name' in inputs and inputs['name']:
+                body['name'] = inputs['name']
+            if 'description' in inputs and inputs['description']:
+                body['description'] = inputs['description']
+            if 'active' in inputs and inputs['active'] is not None:
+                body['active'] = inputs['active']
+            if 'default_price' in inputs and inputs['default_price']:
+                body['default_price'] = inputs['default_price']
+            if 'images' in inputs and inputs['images']:
+                body['images'] = inputs['images']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+            if 'tax_code' in inputs and inputs['tax_code']:
+                body['tax_code'] = inputs['tax_code']
+            if 'unit_label' in inputs and inputs['unit_label']:
+                body['unit_label'] = inputs['unit_label']
+            if 'url' in inputs and inputs['url']:
+                body['url'] = inputs['url']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/products/{product_id}",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "product": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "product": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+# ---- Price Action Handlers ----
+
+@stripe.action("list_prices")
+class ListPricesAction(ActionHandler):
+    """Retrieve a paginated list of prices from Stripe."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = build_list_params(inputs)
+
+            # Add optional filters
+            if 'active' in inputs and inputs['active'] is not None:
+                params['active'] = 'true' if inputs['active'] else 'false'
+            if 'product' in inputs and inputs['product']:
+                params['product'] = inputs['product']
+            if 'type' in inputs and inputs['type']:
+                params['type'] = inputs['type']
+            if 'currency' in inputs and inputs['currency']:
+                params['currency'] = inputs['currency']
+            if 'created_gte' in inputs and inputs['created_gte']:
+                params['created[gte]'] = inputs['created_gte']
+            if 'created_lte' in inputs and inputs['created_lte']:
+                params['created[lte]'] = inputs['created_lte']
+
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/prices",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            prices = response.get('data', [])
+
+            return ActionResult(
+                data={
+                    "prices": prices,
+                    "has_more": response.get('has_more', False),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "prices": [],
+                    "has_more": False,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("get_price")
+class GetPriceAction(ActionHandler):
+    """Retrieve details of a specific price by its ID."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            price_id = inputs['price_id']
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/prices/{price_id}",
+                method="GET",
+                headers=headers
+            )
+
+            return ActionResult(
+                data={
+                    "price": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "price": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("create_price")
+class CreatePriceAction(ActionHandler):
+    """Create a new price for a product in Stripe."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            body = {
+                "currency": inputs.get('currency', 'usd'),
+                "product": inputs['product']
+            }
+
+            # Add unit_amount or custom_unit_amount
+            if 'unit_amount' in inputs and inputs['unit_amount'] is not None:
+                body['unit_amount'] = inputs['unit_amount']
+            elif 'unit_amount_decimal' in inputs and inputs['unit_amount_decimal']:
+                body['unit_amount_decimal'] = inputs['unit_amount_decimal']
+
+            # Add optional fields
+            if 'active' in inputs and inputs['active'] is not None:
+                body['active'] = inputs['active']
+            if 'nickname' in inputs and inputs['nickname']:
+                body['nickname'] = inputs['nickname']
+            if 'recurring' in inputs and inputs['recurring']:
+                body['recurring'] = inputs['recurring']
+            if 'billing_scheme' in inputs and inputs['billing_scheme']:
+                body['billing_scheme'] = inputs['billing_scheme']
+            if 'tiers' in inputs and inputs['tiers']:
+                body['tiers'] = inputs['tiers']
+            if 'tiers_mode' in inputs and inputs['tiers_mode']:
+                body['tiers_mode'] = inputs['tiers_mode']
+            if 'tax_behavior' in inputs and inputs['tax_behavior']:
+                body['tax_behavior'] = inputs['tax_behavior']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/prices",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "price": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "price": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("update_price")
+class UpdatePriceAction(ActionHandler):
+    """Update an existing price (limited fields can be updated)."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            price_id = inputs['price_id']
+            body = {}
+
+            # Only certain fields can be updated on a price
+            if 'active' in inputs and inputs['active'] is not None:
+                body['active'] = inputs['active']
+            if 'nickname' in inputs and inputs['nickname']:
+                body['nickname'] = inputs['nickname']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+            if 'tax_behavior' in inputs and inputs['tax_behavior']:
+                body['tax_behavior'] = inputs['tax_behavior']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/prices/{price_id}",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "price": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "price": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+# ---- Subscription Action Handlers ----
+
+@stripe.action("list_subscriptions")
+class ListSubscriptionsAction(ActionHandler):
+    """Retrieve a paginated list of subscriptions from Stripe."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = build_list_params(inputs)
+
+            # Add optional filters
+            if 'customer' in inputs and inputs['customer']:
+                params['customer'] = inputs['customer']
+            if 'price' in inputs and inputs['price']:
+                params['price'] = inputs['price']
+            if 'status' in inputs and inputs['status']:
+                params['status'] = inputs['status']
+            if 'created_gte' in inputs and inputs['created_gte']:
+                params['created[gte]'] = inputs['created_gte']
+            if 'created_lte' in inputs and inputs['created_lte']:
+                params['created[lte]'] = inputs['created_lte']
+            if 'current_period_start_gte' in inputs and inputs['current_period_start_gte']:
+                params['current_period_start[gte]'] = inputs['current_period_start_gte']
+            if 'current_period_start_lte' in inputs and inputs['current_period_start_lte']:
+                params['current_period_start[lte]'] = inputs['current_period_start_lte']
+
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            subscriptions = response.get('data', [])
+
+            return ActionResult(
+                data={
+                    "subscriptions": subscriptions,
+                    "has_more": response.get('has_more', False),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "subscriptions": [],
+                    "has_more": False,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("get_subscription")
+class GetSubscriptionAction(ActionHandler):
+    """Retrieve details of a specific subscription by its ID."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            subscription_id = inputs['subscription_id']
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions/{subscription_id}",
+                method="GET",
+                headers=headers
+            )
+
+            return ActionResult(
+                data={
+                    "subscription": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "subscription": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("create_subscription")
+class CreateSubscriptionAction(ActionHandler):
+    """Create a new subscription for a customer."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            body = {
+                "customer": inputs['customer']
+            }
+
+            # Add items (required for most subscriptions)
+            if 'items' in inputs and inputs['items']:
+                body['items'] = inputs['items']
+
+            # Add optional fields
+            if 'default_payment_method' in inputs and inputs['default_payment_method']:
+                body['default_payment_method'] = inputs['default_payment_method']
+            if 'payment_behavior' in inputs and inputs['payment_behavior']:
+                body['payment_behavior'] = inputs['payment_behavior']
+            if 'billing_cycle_anchor' in inputs and inputs['billing_cycle_anchor']:
+                body['billing_cycle_anchor'] = inputs['billing_cycle_anchor']
+            if 'cancel_at_period_end' in inputs and inputs['cancel_at_period_end'] is not None:
+                body['cancel_at_period_end'] = inputs['cancel_at_period_end']
+            if 'cancel_at' in inputs and inputs['cancel_at']:
+                body['cancel_at'] = inputs['cancel_at']
+            if 'collection_method' in inputs and inputs['collection_method']:
+                body['collection_method'] = inputs['collection_method']
+            if 'days_until_due' in inputs and inputs['days_until_due']:
+                body['days_until_due'] = inputs['days_until_due']
+            if 'trial_period_days' in inputs and inputs['trial_period_days']:
+                body['trial_period_days'] = inputs['trial_period_days']
+            if 'trial_end' in inputs and inputs['trial_end']:
+                body['trial_end'] = inputs['trial_end']
+            if 'proration_behavior' in inputs and inputs['proration_behavior']:
+                body['proration_behavior'] = inputs['proration_behavior']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "subscription": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "subscription": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("update_subscription")
+class UpdateSubscriptionAction(ActionHandler):
+    """Update an existing subscription."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            subscription_id = inputs['subscription_id']
+            body = {}
+
+            # Add only provided fields
+            if 'items' in inputs and inputs['items']:
+                body['items'] = inputs['items']
+            if 'default_payment_method' in inputs and inputs['default_payment_method']:
+                body['default_payment_method'] = inputs['default_payment_method']
+            if 'payment_behavior' in inputs and inputs['payment_behavior']:
+                body['payment_behavior'] = inputs['payment_behavior']
+            if 'cancel_at_period_end' in inputs and inputs['cancel_at_period_end'] is not None:
+                body['cancel_at_period_end'] = inputs['cancel_at_period_end']
+            if 'cancel_at' in inputs and inputs['cancel_at']:
+                body['cancel_at'] = inputs['cancel_at']
+            if 'collection_method' in inputs and inputs['collection_method']:
+                body['collection_method'] = inputs['collection_method']
+            if 'days_until_due' in inputs and inputs['days_until_due']:
+                body['days_until_due'] = inputs['days_until_due']
+            if 'trial_end' in inputs and inputs['trial_end']:
+                body['trial_end'] = inputs['trial_end']
+            if 'proration_behavior' in inputs and inputs['proration_behavior']:
+                body['proration_behavior'] = inputs['proration_behavior']
+            if 'metadata' in inputs and inputs['metadata']:
+                body['metadata'] = inputs['metadata']
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions/{subscription_id}",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "subscription": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "subscription": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("cancel_subscription")
+class CancelSubscriptionAction(ActionHandler):
+    """Cancel a subscription immediately or at period end."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            subscription_id = inputs['subscription_id']
+            headers = get_common_headers()
+
+            # Check if we should cancel at period end or immediately
+            cancel_at_period_end = inputs.get('cancel_at_period_end', False)
+
+            if cancel_at_period_end:
+                # Update subscription to cancel at period end
+                body = {"cancel_at_period_end": True}
+                form_data = build_form_data(body)
+
+                response = await context.fetch(
+                    f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions/{subscription_id}",
+                    method="POST",
+                    headers=headers,
+                    data=form_data
+                )
+            else:
+                # Cancel immediately
+                body = {}
+                if 'cancellation_details' in inputs and inputs['cancellation_details']:
+                    body['cancellation_details'] = inputs['cancellation_details']
+                if 'invoice_now' in inputs and inputs['invoice_now'] is not None:
+                    body['invoice_now'] = inputs['invoice_now']
+                if 'prorate' in inputs and inputs['prorate'] is not None:
+                    body['prorate'] = inputs['prorate']
+
+                form_data = build_form_data(body) if body else {}
+
+                response = await context.fetch(
+                    f"{STRIPE_API_BASE_URL}/{API_VERSION}/subscriptions/{subscription_id}",
+                    method="DELETE",
+                    headers=headers,
+                    data=form_data if form_data else None
+                )
+
+            return ActionResult(
+                data={
+                    "subscription": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "subscription": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+# ---- Payment Method Action Handlers ----
+
+@stripe.action("list_payment_methods")
+class ListPaymentMethodsAction(ActionHandler):
+    """Retrieve a paginated list of payment methods for a customer."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            params = build_list_params(inputs)
+
+            # Customer is required for listing payment methods
+            if 'customer' in inputs and inputs['customer']:
+                params['customer'] = inputs['customer']
+
+            # Add optional filters
+            if 'type' in inputs and inputs['type']:
+                params['type'] = inputs['type']
+
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/payment_methods",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+
+            payment_methods = response.get('data', [])
+
+            return ActionResult(
+                data={
+                    "payment_methods": payment_methods,
+                    "has_more": response.get('has_more', False),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "payment_methods": [],
+                    "has_more": False,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("get_payment_method")
+class GetPaymentMethodAction(ActionHandler):
+    """Retrieve details of a specific payment method by its ID."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            payment_method_id = inputs['payment_method_id']
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/payment_methods/{payment_method_id}",
+                method="GET",
+                headers=headers
+            )
+
+            return ActionResult(
+                data={
+                    "payment_method": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "payment_method": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("attach_payment_method")
+class AttachPaymentMethodAction(ActionHandler):
+    """Attach a payment method to a customer."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            payment_method_id = inputs['payment_method_id']
+            body = {
+                "customer": inputs['customer']
+            }
+
+            headers = get_common_headers()
+            form_data = build_form_data(body)
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/payment_methods/{payment_method_id}/attach",
+                method="POST",
+                headers=headers,
+                data=form_data
+            )
+
+            return ActionResult(
+                data={
+                    "payment_method": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "payment_method": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
+@stripe.action("detach_payment_method")
+class DetachPaymentMethodAction(ActionHandler):
+    """Detach a payment method from its attached customer."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            payment_method_id = inputs['payment_method_id']
+            headers = get_common_headers()
+
+            response = await context.fetch(
+                f"{STRIPE_API_BASE_URL}/{API_VERSION}/payment_methods/{payment_method_id}/detach",
+                method="POST",
+                headers=headers
+            )
+
+            return ActionResult(
+                data={
+                    "payment_method": response,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "payment_method": {},
                     "result": False,
                     "error": str(e)
                 },
