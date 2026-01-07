@@ -1593,9 +1593,8 @@ class ListPaymentMethodsAction(ActionHandler):
             if 'customer' in inputs and inputs['customer']:
                 params['customer'] = inputs['customer']
 
-            # Add optional filters
-            if 'type' in inputs and inputs['type']:
-                params['type'] = inputs['type']
+            # Type is required by Stripe API - default to 'card'
+            params['type'] = inputs.get('type', 'card')
 
             headers = get_common_headers()
 
