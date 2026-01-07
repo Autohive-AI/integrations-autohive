@@ -6,40 +6,41 @@ Connects Autohive to the HeyGen API to enable AI avatar generation, video creati
 
 This integration provides comprehensive access to HeyGen's AI avatar platform. It allows users to generate AI photo avatars with customizable attributes, train custom avatar groups, create multi-scene videos with avatars, manage avatar looks and appearances, add motion and sound effects, and access existing avatar libraries directly from Autohive.
 
-The integration uses HeyGen API v2 with API Key authentication and implements 14 actions covering the complete avatar-to-video workflow.
+The integration uses HeyGen API v2 and implements 17 actions covering the complete avatar-to-video workflow. It uses **OAuth 2.0** authentication with PKCE for secure access.
 
 ## Setup & Authentication
 
-This integration uses **Custom Authentication** with HeyGen API Key.
+This integration uses **OAuth 2.0** authentication with PKCE (Proof Key for Code Exchange) for enhanced security.
 
-### Authentication Method
+### OAuth 2.0 Flow
 
-HeyGen uses API Key authentication passed via the `X-API-KEY` header. The integration handles authentication automatically by adding your API key to request headers.
+1. **User Authorization**: User is redirected to HeyGen to grant access
+2. **Authorization Code**: HeyGen returns a code to your redirect URL
+3. **Token Exchange**: Code is exchanged for access/refresh tokens
+4. **API Access**: Access token is used as Bearer token in API requests
 
-### Required Authentication Fields
+### OAuth 2.0 Endpoints
 
-- **`api_key`**: Your HeyGen API Key
-  - Created in HeyGen Settings > API Keys
-  - Long-lived key that doesn't expire automatically
-  - Must be kept secure (treat like a password)
+| Endpoint | URL |
+|----------|-----|
+| Authorization | `https://app.heygen.com/oauth/authorize` |
+| Token | `https://api2.heygen.com/v1/oauth/token` |
+| Refresh | `https://api2.heygen.com/v1/oauth/refresh_token` |
 
-### How to Get Your API Key
+### Setup in Autohive
 
-1. **Sign up/Login**: Go to https://app.heygen.com
-2. **Navigate to Settings**: Click your profile icon, then "Settings"
-3. **Access API Keys**: Click "API Keys" in the left sidebar
-4. **Create Key**: Click "Create API Key" button
-5. **Name and Create**: Enter a name (e.g., "Autohive Integration"), click "Create"
-6. **Copy Immediately**: Copy the key right away (shown only once!)
+1. Add HeyGen integration in Autohive
+2. Click "Connect with HeyGen"
+3. Authorize the application in HeyGen
+4. You're connected! Token refresh is handled automatically
 
-**Direct Link:** https://app.heygen.com/settings
+### Request Headers
 
-### Setup Steps in Autohive
-
-1. Get your API Key (follow steps above)
-2. Add HeyGen integration in Autohive
-3. Paste your API key in the `api_key` field
-4. Save configuration
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+User-Agent: AutoHive/1.0
+```
 
 ## Actions
 
@@ -243,8 +244,10 @@ Check the status of a video generation request and get the video URL when comple
 
 - **API Version**: v2
 - **Base URL**: `https://api.heygen.com/v2`
-- **Authentication**: API Key via `X-API-KEY` header
+- **Authentication**: OAuth 2.0 Bearer Token (`Authorization: Bearer <token>`)
+- **User-Agent**: `AutoHive/1.0` (Required for HeyGen partnership)
 - **Documentation**: https://docs.heygen.com
+- **OAuth Documentation**: https://docs.heygen.com/docs/heygen-oauth
 - **Rate Limits**: Check your plan limits in HeyGen dashboard
 
 ## Plan Tiers & Video Quality
@@ -404,7 +407,7 @@ To test the integration:
 
 1. Navigate to the integration directory: `cd heygen`
 2. Install dependencies: `pip install -r requirements.txt`
-3. Update test credentials in `tests/test_heygen.py`
+3. Update `access_token` in `tests/test_heygen.py` with your OAuth token
 4. Run tests: `python tests/test_heygen.py`
 
 ## Usage Examples
@@ -527,6 +530,17 @@ final = heygen.get_video_status({"video_id": video["data"]["video_id"]})
    - Ensure motion/sound effects are added if needed
 
 ## Version History
+
+- **1.2.0** - OAuth 2.0 Authentication (HeyGen Partnership)
+  - Implemented OAuth 2.0 authentication with PKCE flow
+  - Added `User-Agent: AutoHive/1.0` header for HeyGen partnership tracking
+  - Updated to 17 actions
+
+- **1.1.0** - Expanded Actions
+  - Added list_avatar_groups, list_avatars_in_group actions
+  - Added get_photo_avatar_details action
+  - Added create_photo_avatar_video action (Avatar IV endpoint)
+  - Added list_voice_locales action
 
 - **1.0.0** - Initial release with 14 actions
   - Avatar Generation: generate_photo_avatar, check_generation_status

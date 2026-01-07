@@ -3,11 +3,11 @@ import asyncio
 from context import heygen
 from autohive_integrations_sdk import ExecutionContext
 
-# Test configuration
-# IMPORTANT: Replace with your actual HeyGen API key
+# Test configuration - OAuth 2.0 Authentication
+# Get your access_token via HeyGen OAuth flow: https://app.heygen.com/oauth/authorize
 TEST_AUTH = {
     "credentials": {
-        "api_key": "your_api_key_here"
+        "access_token": "your_oauth_access_token_here"
     }
 }
 
@@ -265,10 +265,12 @@ async def main():
     print("HeyGen Integration Test Suite")
     print("=" * 70)
     print("\n📝 SETUP INSTRUCTIONS:")
-    print("1. Get your API key from https://app.heygen.com/settings?nav=API")
-    print("2. Replace 'your_api_key_here' in TEST_AUTH with your actual key")
-    print("3. Free actions: list_voices, list_avatars, list_avatar_groups, etc.")
-    print("4. Paid actions: generate_photo_avatar, create_avatar_video (costs credits)")
+    print("1. Complete OAuth flow via https://app.heygen.com/oauth/authorize")
+    print("2. Replace 'your_oauth_access_token_here' in TEST_AUTH with your token")
+    print("")
+    print("📋 ACTION TYPES:")
+    print("   - Free actions: list_voices, list_avatars, list_avatar_groups, etc.")
+    print("   - Paid actions: generate_photo_avatar, create_avatar_video (costs credits)")
     print("\n" + "=" * 70)
 
     try:
@@ -303,6 +305,7 @@ async def main():
         print("✓ Test suite completed!")
         print("=" * 70)
         print("\n📊 Summary: 5 actions tested")
+        print("  - Auth Method: OAuth 2.0 (Bearer Token)")
         print("  - 5 FREE actions (no credits used)")
         print("  - 2 PAID actions (commented out by default)")
         print("=" * 70)
