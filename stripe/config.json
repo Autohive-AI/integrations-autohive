@@ -1,7 +1,7 @@
 {
     "name": "Stripe",
     "display_name": "Stripe",
-    "version": "1.0.2",
+    "version": "2.0.0",
     "description": "Stripe integration for managing customers, invoices, products, prices, subscriptions, payment methods and invoice items via the Stripe API",
     "entry_point": "stripe.py",
     "supports_billing": true,
@@ -9,7 +9,9 @@
     "auth": {
         "type": "platform",
         "provider": "stripe",
-        "scopes": ["read_write"]
+        "scopes": [
+            "read_write"
+        ]
     },
     "actions": {
         "list_customers": {
@@ -80,7 +82,9 @@
                         "description": "The Stripe customer ID (starts with cus_)"
                     }
                 },
-                "required": ["customer_id"]
+                "required": [
+                    "customer_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -126,12 +130,25 @@
                         "type": "object",
                         "description": "Customer's address",
                         "properties": {
-                            "line1": {"type": "string"},
-                            "line2": {"type": "string"},
-                            "city": {"type": "string"},
-                            "state": {"type": "string"},
-                            "postal_code": {"type": "string"},
-                            "country": {"type": "string", "description": "Two-letter ISO country code"}
+                            "line1": {
+                                "type": "string"
+                            },
+                            "line2": {
+                                "type": "string"
+                            },
+                            "city": {
+                                "type": "string"
+                            },
+                            "state": {
+                                "type": "string"
+                            },
+                            "postal_code": {
+                                "type": "string"
+                            },
+                            "country": {
+                                "type": "string",
+                                "description": "Two-letter ISO country code"
+                            }
                         }
                     },
                     "metadata": {
@@ -189,12 +206,24 @@
                         "type": "object",
                         "description": "Customer's address",
                         "properties": {
-                            "line1": {"type": "string"},
-                            "line2": {"type": "string"},
-                            "city": {"type": "string"},
-                            "state": {"type": "string"},
-                            "postal_code": {"type": "string"},
-                            "country": {"type": "string"}
+                            "line1": {
+                                "type": "string"
+                            },
+                            "line2": {
+                                "type": "string"
+                            },
+                            "city": {
+                                "type": "string"
+                            },
+                            "state": {
+                                "type": "string"
+                            },
+                            "postal_code": {
+                                "type": "string"
+                            },
+                            "country": {
+                                "type": "string"
+                            }
                         }
                     },
                     "metadata": {
@@ -202,7 +231,9 @@
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["customer_id"]
+                "required": [
+                    "customer_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -233,7 +264,9 @@
                         "description": "The Stripe customer ID to delete"
                     }
                 },
-                "required": ["customer_id"]
+                "required": [
+                    "customer_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -284,7 +317,13 @@
                     "status": {
                         "type": "string",
                         "description": "Filter by status: draft, open, paid, uncollectible, or void",
-                        "enum": ["draft", "open", "paid", "uncollectible", "void"]
+                        "enum": [
+                            "draft",
+                            "open",
+                            "paid",
+                            "uncollectible",
+                            "void"
+                        ]
                     },
                     "created_gte": {
                         "type": "integer",
@@ -330,7 +369,9 @@
                         "description": "The Stripe invoice ID (starts with in_)"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -377,7 +418,10 @@
                     "collection_method": {
                         "type": "string",
                         "description": "How to collect payment: charge_automatically or send_invoice",
-                        "enum": ["charge_automatically", "send_invoice"],
+                        "enum": [
+                            "charge_automatically",
+                            "send_invoice"
+                        ],
                         "default": "send_invoice"
                     },
                     "days_until_due": {
@@ -389,7 +433,9 @@
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["customer"]
+                "required": [
+                    "customer"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -430,7 +476,10 @@
                     "collection_method": {
                         "type": "string",
                         "description": "How to collect payment",
-                        "enum": ["charge_automatically", "send_invoice"]
+                        "enum": [
+                            "charge_automatically",
+                            "send_invoice"
+                        ]
                     },
                     "days_until_due": {
                         "type": "integer",
@@ -441,7 +490,9 @@
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -472,7 +523,9 @@
                         "description": "The Stripe invoice ID to delete (must be draft)"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -511,7 +564,9 @@
                         "description": "Whether to auto-advance after finalizing"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -542,7 +597,9 @@
                         "description": "The Stripe invoice ID to send"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -577,7 +634,9 @@
                         "description": "Specific payment method ID to use (optional)"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -608,7 +667,9 @@
                         "description": "The Stripe invoice ID to void"
                     }
                 },
-                "required": ["invoice_id"]
+                "required": [
+                    "invoice_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -696,7 +757,9 @@
                         "description": "The Stripe invoice item ID (starts with ii_)"
                     }
                 },
-                "required": ["invoice_item_id"]
+                "required": [
+                    "invoice_item_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -757,7 +820,9 @@
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["customer"]
+                "required": [
+                    "customer"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -808,7 +873,9 @@
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["invoice_item_id"]
+                "required": [
+                    "invoice_item_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -839,7 +906,9 @@
                         "description": "The Stripe invoice item ID to delete"
                     }
                 },
-                "required": ["invoice_item_id"]
+                "required": [
+                    "invoice_item_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -890,7 +959,10 @@
                     "type": {
                         "type": "string",
                         "description": "Filter by product type",
-                        "enum": ["good", "service"]
+                        "enum": [
+                            "good",
+                            "service"
+                        ]
                     },
                     "created_gte": {
                         "type": "integer",
@@ -936,7 +1008,9 @@
                         "description": "The Stripe product ID (starts with prod_)"
                     }
                 },
-                "required": ["product_id"]
+                "required": [
+                    "product_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -979,15 +1053,23 @@
                         "type": "object",
                         "description": "Default price data for the product",
                         "properties": {
-                            "currency": {"type": "string"},
-                            "unit_amount": {"type": "integer"},
-                            "recurring": {"type": "object"}
+                            "currency": {
+                                "type": "string"
+                            },
+                            "unit_amount": {
+                                "type": "integer"
+                            },
+                            "recurring": {
+                                "type": "object"
+                            }
                         }
                     },
                     "images": {
                         "type": "array",
                         "description": "List of image URLs for the product",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string"
+                        }
                     },
                     "metadata": {
                         "type": "object",
@@ -1006,7 +1088,9 @@
                         "description": "URL for the product"
                     }
                 },
-                "required": ["name"]
+                "required": [
+                    "name"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1055,7 +1139,9 @@
                     "images": {
                         "type": "array",
                         "description": "List of image URLs",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string"
+                        }
                     },
                     "metadata": {
                         "type": "object",
@@ -1074,7 +1160,9 @@
                         "description": "URL for the product"
                     }
                 },
-                "required": ["product_id"]
+                "required": [
+                    "product_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1125,7 +1213,10 @@
                     "type": {
                         "type": "string",
                         "description": "Filter by price type",
-                        "enum": ["one_time", "recurring"]
+                        "enum": [
+                            "one_time",
+                            "recurring"
+                        ]
                     },
                     "currency": {
                         "type": "string",
@@ -1175,7 +1266,9 @@
                         "description": "The Stripe price ID (starts with price_)"
                     }
                 },
-                "required": ["price_id"]
+                "required": [
+                    "price_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1233,7 +1326,12 @@
                         "properties": {
                             "interval": {
                                 "type": "string",
-                                "enum": ["day", "week", "month", "year"]
+                                "enum": [
+                                    "day",
+                                    "week",
+                                    "month",
+                                    "year"
+                                ]
                             },
                             "interval_count": {
                                 "type": "integer",
@@ -1244,7 +1342,10 @@
                     "billing_scheme": {
                         "type": "string",
                         "description": "How to compute the price",
-                        "enum": ["per_unit", "tiered"]
+                        "enum": [
+                            "per_unit",
+                            "tiered"
+                        ]
                     },
                     "tiers": {
                         "type": "array",
@@ -1253,19 +1354,30 @@
                     "tiers_mode": {
                         "type": "string",
                         "description": "Tiered pricing mode",
-                        "enum": ["graduated", "volume"]
+                        "enum": [
+                            "graduated",
+                            "volume"
+                        ]
                     },
                     "tax_behavior": {
                         "type": "string",
                         "description": "Tax behavior",
-                        "enum": ["exclusive", "inclusive", "unspecified"]
+                        "enum": [
+                            "exclusive",
+                            "inclusive",
+                            "unspecified"
+                        ]
                     },
                     "metadata": {
                         "type": "object",
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["product", "currency", "unit_amount"]
+                "required": [
+                    "product",
+                    "currency",
+                    "unit_amount"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1306,14 +1418,20 @@
                     "tax_behavior": {
                         "type": "string",
                         "description": "Tax behavior",
-                        "enum": ["exclusive", "inclusive", "unspecified"]
+                        "enum": [
+                            "exclusive",
+                            "inclusive",
+                            "unspecified"
+                        ]
                     },
                     "metadata": {
                         "type": "object",
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["price_id"]
+                "required": [
+                    "price_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1364,7 +1482,17 @@
                     "status": {
                         "type": "string",
                         "description": "Filter by subscription status",
-                        "enum": ["active", "past_due", "unpaid", "canceled", "incomplete", "incomplete_expired", "trialing", "all", "ended"]
+                        "enum": [
+                            "active",
+                            "past_due",
+                            "unpaid",
+                            "canceled",
+                            "incomplete",
+                            "incomplete_expired",
+                            "trialing",
+                            "all",
+                            "ended"
+                        ]
                     },
                     "created_gte": {
                         "type": "integer",
@@ -1418,7 +1546,9 @@
                         "description": "The Stripe subscription ID (starts with sub_)"
                     }
                 },
-                "required": ["subscription_id"]
+                "required": [
+                    "subscription_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1454,8 +1584,14 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "price": {"type": "string", "description": "Price ID"},
-                                "quantity": {"type": "integer", "default": 1}
+                                "price": {
+                                    "type": "string",
+                                    "description": "Price ID"
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "default": 1
+                                }
                             }
                         }
                     },
@@ -1466,7 +1602,12 @@
                     "payment_behavior": {
                         "type": "string",
                         "description": "How to handle payment failures",
-                        "enum": ["default_incomplete", "error_if_incomplete", "allow_incomplete", "pending_if_incomplete"]
+                        "enum": [
+                            "default_incomplete",
+                            "error_if_incomplete",
+                            "allow_incomplete",
+                            "pending_if_incomplete"
+                        ]
                     },
                     "billing_cycle_anchor": {
                         "type": "integer",
@@ -1484,7 +1625,10 @@
                     "collection_method": {
                         "type": "string",
                         "description": "How to collect payments",
-                        "enum": ["charge_automatically", "send_invoice"],
+                        "enum": [
+                            "charge_automatically",
+                            "send_invoice"
+                        ],
                         "default": "charge_automatically"
                     },
                     "days_until_due": {
@@ -1502,14 +1646,21 @@
                     "proration_behavior": {
                         "type": "string",
                         "description": "How to handle prorations",
-                        "enum": ["create_prorations", "none", "always_invoice"]
+                        "enum": [
+                            "create_prorations",
+                            "none",
+                            "always_invoice"
+                        ]
                     },
                     "metadata": {
                         "type": "object",
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["customer", "items"]
+                "required": [
+                    "customer",
+                    "items"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1545,10 +1696,20 @@
                         "items": {
                             "type": "object",
                             "properties": {
-                                "id": {"type": "string", "description": "Subscription item ID"},
-                                "price": {"type": "string", "description": "New price ID"},
-                                "quantity": {"type": "integer"},
-                                "deleted": {"type": "boolean"}
+                                "id": {
+                                    "type": "string",
+                                    "description": "Subscription item ID"
+                                },
+                                "price": {
+                                    "type": "string",
+                                    "description": "New price ID"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                },
+                                "deleted": {
+                                    "type": "boolean"
+                                }
                             }
                         }
                     },
@@ -1559,7 +1720,12 @@
                     "payment_behavior": {
                         "type": "string",
                         "description": "How to handle payment failures",
-                        "enum": ["default_incomplete", "error_if_incomplete", "allow_incomplete", "pending_if_incomplete"]
+                        "enum": [
+                            "default_incomplete",
+                            "error_if_incomplete",
+                            "allow_incomplete",
+                            "pending_if_incomplete"
+                        ]
                     },
                     "cancel_at_period_end": {
                         "type": "boolean",
@@ -1572,7 +1738,10 @@
                     "collection_method": {
                         "type": "string",
                         "description": "How to collect payments",
-                        "enum": ["charge_automatically", "send_invoice"]
+                        "enum": [
+                            "charge_automatically",
+                            "send_invoice"
+                        ]
                     },
                     "days_until_due": {
                         "type": "integer",
@@ -1585,14 +1754,20 @@
                     "proration_behavior": {
                         "type": "string",
                         "description": "How to handle prorations",
-                        "enum": ["create_prorations", "none", "always_invoice"]
+                        "enum": [
+                            "create_prorations",
+                            "none",
+                            "always_invoice"
+                        ]
                     },
                     "metadata": {
                         "type": "object",
                         "description": "Key-value pairs for storing additional information"
                     }
                 },
-                "required": ["subscription_id"]
+                "required": [
+                    "subscription_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1631,10 +1806,21 @@
                         "type": "object",
                         "description": "Details about the cancellation",
                         "properties": {
-                            "comment": {"type": "string"},
+                            "comment": {
+                                "type": "string"
+                            },
                             "feedback": {
                                 "type": "string",
-                                "enum": ["customer_service", "low_quality", "missing_features", "other", "switched_service", "too_complex", "too_expensive", "unused"]
+                                "enum": [
+                                    "customer_service",
+                                    "low_quality",
+                                    "missing_features",
+                                    "other",
+                                    "switched_service",
+                                    "too_complex",
+                                    "too_expensive",
+                                    "unused"
+                                ]
                             }
                         }
                     },
@@ -1647,7 +1833,9 @@
                         "description": "Prorate the final invoice"
                     }
                 },
-                "required": ["subscription_id"]
+                "required": [
+                    "subscription_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1680,7 +1868,14 @@
                     "type": {
                         "type": "string",
                         "description": "Filter by payment method type",
-                        "enum": ["card", "us_bank_account", "sepa_debit", "bacs_debit", "au_becs_debit", "link"]
+                        "enum": [
+                            "card",
+                            "us_bank_account",
+                            "sepa_debit",
+                            "bacs_debit",
+                            "au_becs_debit",
+                            "link"
+                        ]
                     },
                     "limit": {
                         "type": "integer",
@@ -1697,7 +1892,9 @@
                         "description": "Cursor for pagination"
                     }
                 },
-                "required": ["customer"]
+                "required": [
+                    "customer"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1732,7 +1929,9 @@
                         "description": "The Stripe payment method ID (starts with pm_)"
                     }
                 },
-                "required": ["payment_method_id"]
+                "required": [
+                    "payment_method_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1767,7 +1966,10 @@
                         "description": "The Stripe customer ID to attach to"
                     }
                 },
-                "required": ["payment_method_id", "customer"]
+                "required": [
+                    "payment_method_id",
+                    "customer"
+                ]
             },
             "output_schema": {
                 "type": "object",
@@ -1798,7 +2000,9 @@
                         "description": "The Stripe payment method ID to detach"
                     }
                 },
-                "required": ["payment_method_id"]
+                "required": [
+                    "payment_method_id"
+                ]
             },
             "output_schema": {
                 "type": "object",
