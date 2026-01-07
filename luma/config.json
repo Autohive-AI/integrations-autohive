@@ -1,0 +1,531 @@
+{
+    "name": "Luma",
+    "version": "1.0.0",
+    "description": "Luma integration for event management - create events, manage guests, send invitations, and track registrations",
+    "entry_point": "luma.py",
+    "supports_connected_account": false,
+    "auth": {
+        "type": "custom",
+        "title": "Enter your Luma API key",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Enter your Luma API key - Go to your Luma Calendar Settings → Developer → API Keys to generate one. Requires Luma Plus subscription."
+                }
+            }
+        }
+    },
+    "actions": {
+        "get_self": {
+            "display_name": "Get Current User",
+            "description": "Get information about the authenticated user to verify the API key is valid.",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "api_id": {"type": "string", "description": "User's API ID"},
+                    "email": {"type": "string", "description": "User's email address"},
+                    "name": {"type": "string", "description": "User's display name"},
+                    "username": {"type": "string", "description": "User's username"}
+                }
+            }
+        },
+        "get_events": {
+            "display_name": "Get Events",
+            "description": "Get events from your calendar. Fetch a single event by API ID or list all events with pagination.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "Optional: Specific event API ID to retrieve. If omitted, returns list of events."
+                    },
+                    "after": {
+                        "type": "string",
+                        "description": "ISO 8601 timestamp - only return events after this date (for listing)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of events to return when listing (default: 50, max: 100)",
+                        "default": 50
+                    },
+                    "pagination_cursor": {
+                        "type": "string",
+                        "description": "Cursor for pagination from previous response"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "api_id": {"type": "string", "description": "Event's unique API ID"},
+                                "name": {"type": "string", "description": "Event name"},
+                                "description": {"type": "string", "description": "Event description (HTML)"},
+                                "description_md": {"type": "string", "description": "Event description (Markdown)"},
+                                "start_at": {"type": "string", "description": "Event start time (ISO 8601)"},
+                                "end_at": {"type": "string", "description": "Event end time (ISO 8601)"},
+                                "duration_interval": {"type": "string", "description": "Duration in ISO 8601 interval format"},
+                                "timezone": {"type": "string", "description": "Event timezone"},
+                                "url": {"type": "string", "description": "Event URL on Luma"},
+                                "cover_url": {"type": "string", "description": "Event cover image URL"},
+                                "visibility": {"type": "string", "description": "Event visibility"},
+                                "event_type": {"type": "string", "description": "Type of event"},
+                                "geo_address": {"type": ["object", "null"], "description": "Location details if in-person event"},
+                                "meeting_url": {"type": ["string", "null"], "description": "Virtual meeting URL if online event"},
+                                "created_at": {"type": "string", "description": "When the event was created"}
+                            }
+                        }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for fetching next page. Null if no more results."
+                    }
+                }
+            }
+        },
+        "create_event": {
+            "display_name": "Create Event",
+            "description": "Create a new event on your Luma calendar.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Event name/title"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Event description (supports Markdown)"
+                    },
+                    "start_at": {
+                        "type": "string",
+                        "description": "Event start time in ISO 8601 format (e.g., 2024-12-25T18:00:00)"
+                    },
+                    "end_at": {
+                        "type": "string",
+                        "description": "Event end time in ISO 8601 format. If not provided, duration must be specified."
+                    },
+                    "duration_interval": {
+                        "type": "string",
+                        "description": "Duration in ISO 8601 interval format (e.g., 'PT2H' for 2 hours). Used if end_at not provided."
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "Timezone for the event (e.g., 'America/New_York', 'Europe/London')"
+                    },
+                    "geo_address_json": {
+                        "type": "object",
+                        "description": "Location details for in-person events. Include 'address' and optional 'city', 'region', 'country' fields."
+                    },
+                    "meeting_url": {
+                        "type": "string",
+                        "description": "Virtual meeting URL for online events (Zoom, Google Meet, etc.)"
+                    },
+                    "require_rsvp_approval": {
+                        "type": "boolean",
+                        "description": "Whether RSVPs require host approval (default: false)"
+                    },
+                    "visibility": {
+                        "type": "string",
+                        "enum": ["public", "private"],
+                        "description": "Event visibility (default: public)"
+                    }
+                },
+                "required": ["name", "start_at", "timezone"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "api_id": {"type": "string", "description": "Created event's API ID"},
+                    "url": {"type": "string", "description": "Event URL on Luma"},
+                    "name": {"type": "string", "description": "Event name"}
+                }
+            }
+        },
+        "update_event": {
+            "display_name": "Update Event",
+            "description": "Update an existing event's details.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event to update"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Updated event name"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Updated event description"
+                    },
+                    "start_at": {
+                        "type": "string",
+                        "description": "Updated start time (ISO 8601)"
+                    },
+                    "end_at": {
+                        "type": "string",
+                        "description": "Updated end time (ISO 8601)"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "description": "Updated timezone"
+                    },
+                    "geo_address_json": {
+                        "type": "object",
+                        "description": "Updated location details"
+                    },
+                    "meeting_url": {
+                        "type": "string",
+                        "description": "Updated virtual meeting URL"
+                    }
+                },
+                "required": ["event_api_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {"type": "boolean", "description": "Whether the update succeeded"},
+                    "api_id": {"type": "string", "description": "Updated event's API ID"}
+                }
+            }
+        },
+        "get_guests": {
+            "display_name": "Get Guests",
+            "description": "Get guests registered for an event. Fetch a single guest by API ID or list all guests with pagination.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "guest_api_id": {
+                        "type": "string",
+                        "description": "Optional: Specific guest API ID to retrieve. If omitted, returns list of guests."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of guests to return when listing (default: 50, max: 100)",
+                        "default": 50
+                    },
+                    "pagination_cursor": {
+                        "type": "string",
+                        "description": "Cursor for pagination from previous response"
+                    }
+                },
+                "required": ["event_api_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "guests": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "api_id": {"type": "string", "description": "Guest's API ID"},
+                                "email": {"type": "string", "description": "Guest's email"},
+                                "name": {"type": "string", "description": "Guest's name"},
+                                "approval_status": {"type": "string", "description": "Approval status (approved, pending, declined)"},
+                                "registered_at": {"type": "string", "description": "When the guest registered"},
+                                "checked_in_at": {"type": ["string", "null"], "description": "When the guest checked in (if applicable)"},
+                                "ticket_info": {"type": ["object", "null"], "description": "Ticket details if applicable"}
+                            }
+                        }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for fetching next page. Null if no more results or single guest fetched."
+                    }
+                }
+            }
+        },
+        "add_guests": {
+            "display_name": "Add Guests to Event",
+            "description": "Add one or more guests to an event. Guests will be registered automatically.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "guests": {
+                        "type": "array",
+                        "description": "List of guests to add",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "email": {"type": "string", "description": "Guest's email (required)"},
+                                "name": {"type": "string", "description": "Guest's name"}
+                            },
+                            "required": ["email"]
+                        }
+                    }
+                },
+                "required": ["event_api_id", "guests"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {"type": "boolean", "description": "Whether guests were added successfully"},
+                    "added_count": {"type": "integer", "description": "Number of guests added"}
+                }
+            }
+        },
+        "update_guest_status": {
+            "display_name": "Update Guest Status",
+            "description": "Update a guest's approval status (approve, decline, or set to pending).",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "guest_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the guest"
+                    },
+                    "approval_status": {
+                        "type": "string",
+                        "enum": ["approved", "declined", "pending"],
+                        "description": "New approval status for the guest"
+                    }
+                },
+                "required": ["event_api_id", "guest_api_id", "approval_status"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {"type": "boolean", "description": "Whether the status update succeeded"},
+                    "guest_api_id": {"type": "string", "description": "The guest's API ID"},
+                    "new_status": {"type": "string", "description": "The updated approval status"}
+                }
+            }
+        },
+        "send_invites": {
+            "display_name": "Send Event Invitations",
+            "description": "Send email invitations to a list of email addresses for an event.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "emails": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of email addresses to invite"
+                    }
+                },
+                "required": ["event_api_id", "emails"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "success": {"type": "boolean", "description": "Whether invitations were sent"},
+                    "invited_count": {"type": "integer", "description": "Number of invitations sent"}
+                }
+            }
+        },
+        "list_ticket_types": {
+            "display_name": "List Ticket Types",
+            "description": "Get all ticket types available for an event (for paid/ticketed events).",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    }
+                },
+                "required": ["event_api_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "ticket_types": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "api_id": {"type": "string", "description": "Ticket type API ID"},
+                                "name": {"type": "string", "description": "Ticket type name"},
+                                "price": {"type": "number", "description": "Ticket price"},
+                                "currency": {"type": "string", "description": "Price currency"},
+                                "capacity": {"type": "integer", "description": "Maximum tickets available"},
+                                "sold_count": {"type": "integer", "description": "Number of tickets sold"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "create_ticket_type": {
+            "display_name": "Create Ticket Type",
+            "description": "Create a new ticket type for a paid event.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Ticket type name (e.g., 'General Admission', 'VIP')"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Ticket price (0 for free tickets)"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "Currency code (e.g., 'USD', 'EUR')",
+                        "default": "USD"
+                    },
+                    "capacity": {
+                        "type": "integer",
+                        "description": "Maximum number of tickets available"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what's included with this ticket"
+                    }
+                },
+                "required": ["event_api_id", "name", "price"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "api_id": {"type": "string", "description": "Created ticket type API ID"},
+                    "name": {"type": "string", "description": "Ticket type name"}
+                }
+            }
+        },
+        "list_people": {
+            "display_name": "List Calendar People",
+            "description": "Get a list of people (contacts) associated with your calendar.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of people to return (default: 50)",
+                        "default": 50
+                    },
+                    "pagination_cursor": {
+                        "type": "string",
+                        "description": "Cursor for pagination"
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "people": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "api_id": {"type": "string", "description": "Person's API ID"},
+                                "email": {"type": "string", "description": "Person's email"},
+                                "name": {"type": "string", "description": "Person's name"},
+                                "events_attended": {"type": "integer", "description": "Number of events attended"}
+                            }
+                        }
+                    },
+                    "next_cursor": {"type": ["string", "null"], "description": "Pagination cursor"}
+                }
+            }
+        },
+        "list_coupons": {
+            "display_name": "List Event Coupons",
+            "description": "Get all discount coupons for an event.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    }
+                },
+                "required": ["event_api_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "coupons": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "api_id": {"type": "string", "description": "Coupon API ID"},
+                                "code": {"type": "string", "description": "Coupon code"},
+                                "discount_type": {"type": "string", "description": "Type of discount (percentage/fixed)"},
+                                "discount_value": {"type": "number", "description": "Discount amount"},
+                                "uses_remaining": {"type": "integer", "description": "Number of uses remaining"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "create_coupon": {
+            "display_name": "Create Coupon",
+            "description": "Create a discount coupon for an event.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_api_id": {
+                        "type": "string",
+                        "description": "The API ID of the event"
+                    },
+                    "code": {
+                        "type": "string",
+                        "description": "Coupon code (what users will enter)"
+                    },
+                    "discount_type": {
+                        "type": "string",
+                        "enum": ["percentage", "fixed"],
+                        "description": "Type of discount"
+                    },
+                    "discount_value": {
+                        "type": "number",
+                        "description": "Discount amount (percentage or fixed amount)"
+                    },
+                    "max_uses": {
+                        "type": "integer",
+                        "description": "Maximum number of times coupon can be used"
+                    }
+                },
+                "required": ["event_api_id", "code", "discount_type", "discount_value"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "api_id": {"type": "string", "description": "Created coupon API ID"},
+                    "code": {"type": "string", "description": "Coupon code"}
+                }
+            }
+        }
+    }
+}
