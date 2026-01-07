@@ -6,7 +6,7 @@ Connects Autohive to the HeyGen API to enable AI avatar generation, video creati
 
 This integration provides comprehensive access to HeyGen's AI avatar platform. It allows users to generate AI photo avatars with customizable attributes, train custom avatar groups, create multi-scene videos with avatars, manage avatar looks and appearances, add motion and sound effects, and access existing avatar libraries directly from Autohive.
 
-The integration uses HeyGen API v2 and implements 17 actions covering the complete avatar-to-video workflow. It uses **OAuth 2.0** authentication with PKCE for secure access.
+The integration uses HeyGen API v2 and implements actions covering the complete avatar-to-video workflow. It uses **OAuth 2.0** authentication with PKCE for secure access.
 
 ## Setup & Authentication
 
