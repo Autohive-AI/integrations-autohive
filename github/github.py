@@ -14,7 +14,7 @@ Reference: https://docs.github.com/en/rest
 """
 
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
-from typing import Dict, Any, List, Optional, Callable, TypeVar
+from typing import Dict, Any, List, Callable, TypeVar
 from urllib.parse import quote
 from functools import wraps
 import base64
