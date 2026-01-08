@@ -689,6 +689,46 @@ class GitHubAPI:
 
         return await GitHubAPI.paginated_fetch(context, url, params, 'workflow_runs')
 
+    # ---- Tag Operations ----
+
+    @staticmethod
+    async def list_tags(context: ExecutionContext, owner: str, repo: str,
+                       per_page: int = 30, page: int = 1) -> List[Dict[str, Any]]:
+        """List tags for a repository"""
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/tags"
+        params = {'per_page': per_page, 'page': page}
+        return await GitHubAPI.paginated_fetch(context, url, params)
+
+    # ---- Release Operations ----
+
+    @staticmethod
+    async def list_releases(context: ExecutionContext, owner: str, repo: str,
+                           per_page: int = 30, page: int = 1) -> List[Dict[str, Any]]:
+        """List releases for a repository"""
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases"
+        params = {'per_page': per_page, 'page': page}
+        return await GitHubAPI.paginated_fetch(context, url, params)
+
+    @staticmethod
+    async def get_release(context: ExecutionContext, owner: str, repo: str,
+                         release_id: int) -> Dict[str, Any]:
+        """Get a specific release by ID"""
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/{release_id}"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
+
+    @staticmethod
+    async def get_latest_release(context: ExecutionContext, owner: str, repo: str) -> Dict[str, Any]:
+        """Get the latest release for a repository"""
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/latest"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
+
+    @staticmethod
+    async def get_release_by_tag(context: ExecutionContext, owner: str, repo: str,
+                                tag: str) -> Dict[str, Any]:
+        """Get a release by tag name"""
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/tags/{tag}"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
+
     # ---- Rate Limiting ----
 
     @staticmethod
@@ -2102,6 +2142,214 @@ class ListOrganizationRepositories(ActionHandler):
             'open_issues_count': repo['open_issues_count'],
             'default_branch': repo['default_branch']
         } for repo in repos],
+            cost_usd=0.0
+        )
+
+
+# ---- Tag Actions ----
+
+@github.action("list_tags")
+class ListTags(ActionHandler):
+    """List tags for a repository"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        tags = await GitHubAPI.list_tags(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            per_page=inputs.get('per_page', 30),
+            page=inputs.get('page', 1)
+        )
+
+        return ActionResult(
+            data=[{
+                'name': tag['name'],
+                'commit': {
+                    'sha': tag['commit']['sha'],
+                    'url': tag['commit']['url']
+                },
+                'zipball_url': tag.get('zipball_url'),
+                'tarball_url': tag.get('tarball_url'),
+                'node_id': tag.get('node_id')
+            } for tag in tags],
+            cost_usd=0.0
+        )
+
+
+# ---- Release Actions ----
+
+@github.action("list_releases")
+class ListReleases(ActionHandler):
+    """List releases for a repository"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        releases = await GitHubAPI.list_releases(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            per_page=inputs.get('per_page', 30),
+            page=inputs.get('page', 1)
+        )
+
+        return ActionResult(
+            data=[{
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            } for release in releases],
+            cost_usd=0.0
+        )
+
+
+@github.action("get_release")
+class GetRelease(ActionHandler):
+    """Get a specific release by ID"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_release(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            inputs['release_id']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'label': asset.get('label'),
+                    'state': asset['state'],
+                    'content_type': asset['content_type'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url'],
+                    'created_at': asset['created_at'],
+                    'updated_at': asset['updated_at']
+                } for asset in release.get('assets', [])]
+            },
+            cost_usd=0.0
+        )
+
+
+@github.action("get_latest_release")
+class GetLatestRelease(ActionHandler):
+    """Get the latest release for a repository"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_latest_release(
+            context,
+            inputs['owner'],
+            inputs['repo']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            },
+            cost_usd=0.0
+        )
+
+
+@github.action("get_release_by_tag")
+class GetReleaseByTag(ActionHandler):
+    """Get a release by tag name"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_release_by_tag(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            inputs['tag']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            },
             cost_usd=0.0
         )
 

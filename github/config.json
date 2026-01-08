@@ -3106,6 +3106,221 @@
           }
         }
       }
+    },
+    "list_tags": {
+      "display_name": "List Tags",
+      "description": "List all tags for a repository",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Results per page (max 100)",
+            "default": 30
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number",
+            "default": 1
+          }
+        },
+        "required": ["owner", "repo"]
+      },
+      "output_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "commit": {
+              "type": "object",
+              "properties": {
+                "sha": { "type": "string" },
+                "url": { "type": "string" }
+              }
+            },
+            "zipball_url": { "type": ["string", "null"] },
+            "tarball_url": { "type": ["string", "null"] },
+            "node_id": { "type": "string" }
+          }
+        }
+      }
+    },
+    "list_releases": {
+      "display_name": "List Releases",
+      "description": "List releases for a repository",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Results per page (max 100)",
+            "default": 30
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number",
+            "default": 1
+          }
+        },
+        "required": ["owner", "repo"]
+      },
+      "output_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "tag_name": { "type": "string" },
+            "name": { "type": ["string", "null"] },
+            "body": { "type": ["string", "null"] },
+            "draft": { "type": "boolean" },
+            "prerelease": { "type": "boolean" },
+            "created_at": { "type": "string" },
+            "published_at": { "type": ["string", "null"] },
+            "html_url": { "type": "string" },
+            "tarball_url": { "type": ["string", "null"] },
+            "zipball_url": { "type": ["string", "null"] },
+            "author": { "type": ["object", "null"] },
+            "assets": { "type": "array" }
+          }
+        }
+      }
+    },
+    "get_release": {
+      "display_name": "Get Release",
+      "description": "Get a specific release by ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "release_id": {
+            "type": "integer",
+            "description": "The unique identifier of the release"
+          }
+        },
+        "required": ["owner", "repo", "release_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tag_name": { "type": "string" },
+          "target_commitish": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "body": { "type": ["string", "null"] },
+          "draft": { "type": "boolean" },
+          "prerelease": { "type": "boolean" },
+          "created_at": { "type": "string" },
+          "published_at": { "type": ["string", "null"] },
+          "html_url": { "type": "string" },
+          "tarball_url": { "type": ["string", "null"] },
+          "zipball_url": { "type": ["string", "null"] },
+          "author": { "type": ["object", "null"] },
+          "assets": { "type": "array" }
+        }
+      }
+    },
+    "get_latest_release": {
+      "display_name": "Get Latest Release",
+      "description": "Get the latest published release for a repository",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
+        },
+        "required": ["owner", "repo"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tag_name": { "type": "string" },
+          "target_commitish": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "body": { "type": ["string", "null"] },
+          "draft": { "type": "boolean" },
+          "prerelease": { "type": "boolean" },
+          "created_at": { "type": "string" },
+          "published_at": { "type": ["string", "null"] },
+          "html_url": { "type": "string" },
+          "tarball_url": { "type": ["string", "null"] },
+          "zipball_url": { "type": ["string", "null"] },
+          "author": { "type": ["object", "null"] },
+          "assets": { "type": "array" }
+        }
+      }
+    },
+    "get_release_by_tag": {
+      "display_name": "Get Release by Tag",
+      "description": "Get a release by tag name",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner (user or organization)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Tag name (e.g., 'v1.0.0')"
+          }
+        },
+        "required": ["owner", "repo", "tag"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tag_name": { "type": "string" },
+          "target_commitish": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "body": { "type": ["string", "null"] },
+          "draft": { "type": "boolean" },
+          "prerelease": { "type": "boolean" },
+          "created_at": { "type": "string" },
+          "published_at": { "type": ["string", "null"] },
+          "html_url": { "type": "string" },
+          "tarball_url": { "type": ["string", "null"] },
+          "zipball_url": { "type": ["string", "null"] },
+          "author": { "type": ["object", "null"] },
+          "assets": { "type": "array" }
+        }
+      }
     }
   },
   "polling_triggers": {}
