@@ -132,16 +132,31 @@ async def execute_graphql(context: ExecutionContext, query: str, variables: dict
     return response.get("data", {})
 
 
+def escape_graphql_query_value(value: str) -> str:
+    """Escape and quote a value for use in GraphQL query filter strings.
+
+    Values containing spaces or special characters need to be quoted.
+    Double quotes within the value are escaped with backslash.
+    """
+    value = str(value)
+    # Escape backslashes first, then double quotes
+    escaped = value.replace('\\', '\\\\').replace('"', '\\"')
+    # Always quote the value to handle spaces and special characters safely
+    return f'"{escaped}"'
+
+
 def build_product_query_filter(inputs: Dict[str, Any]) -> str:
     """Build GraphQL query filter string from inputs."""
     filters = []
 
     if inputs.get('title'):
-        filters.append(f"title:*{inputs['title']}*")
+        # For wildcard search with spaces, format is: title:*"value"*
+        title = str(inputs['title']).replace('\\', '\\\\').replace('"', '\\"')
+        filters.append(f'title:*"{title}"*')
     if inputs.get('vendor'):
-        filters.append(f"vendor:{inputs['vendor']}")
+        filters.append(f"vendor:{escape_graphql_query_value(inputs['vendor'])}")
     if inputs.get('product_type'):
-        filters.append(f"product_type:{inputs['product_type']}")
+        filters.append(f"product_type:{escape_graphql_query_value(inputs['product_type'])}")
     if inputs.get('status'):
         filters.append(f"status:{inputs['status']}")
     if inputs.get('created_at_min'):
@@ -774,9 +789,31 @@ class CreateProductHandler(ActionHandler):
                 if graphql_variants:
                     product_input['variants'] = graphql_variants
 
-            # Handle options
+            # Handle options - convert REST format to GraphQL productOptions format
+            # REST format: [{"name": "Size", "values": ["S", "M"]}]
+            # GraphQL format: [{name: "Size", values: [{name: "S"}, {name: "M"}]}]
+            # Note: GraphQL uses 'productOptions' field, not 'options'
             if inputs.get('options'):
-                product_input['options'] = inputs['options']
+                options = inputs['options']
+                graphql_options = []
+                for opt in options:
+                    if isinstance(opt, dict) and 'name' in opt:
+                        graphql_opt = {'name': opt['name']}
+                        # Convert values from strings to objects if needed
+                        if opt.get('values'):
+                            values = opt['values']
+                            if values and isinstance(values[0], str):
+                                # REST format: ["S", "M"] -> [{name: "S"}, {name: "M"}]
+                                graphql_opt['values'] = [{'name': v} for v in values]
+                            else:
+                                # Already in GraphQL format
+                                graphql_opt['values'] = values
+                        graphql_options.append(graphql_opt)
+                    elif isinstance(opt, str):
+                        # Simple string option name
+                        graphql_options.append({'name': opt})
+                if graphql_options:
+                    product_input['productOptions'] = graphql_options
 
             variables = {"input": product_input}
 
