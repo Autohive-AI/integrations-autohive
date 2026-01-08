@@ -89,7 +89,7 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "private": {
             "type": "boolean"
@@ -104,7 +104,7 @@
             "type": "string"
           },
           "pushed_at": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "clone_url": {
             "type": "string"
@@ -356,7 +356,7 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "private": {
             "type": "boolean"
@@ -979,7 +979,7 @@
             "type": "integer"
           },
           "body": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "created_at": {
             "type": "string"
@@ -1030,7 +1030,7 @@
               "type": "integer"
             },
             "body": {
-              "type": "string"
+              "type": ["string", "null"]
             },
             "created_at": {
               "type": "string"
@@ -2578,7 +2578,7 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "public": {
             "type": "boolean"
