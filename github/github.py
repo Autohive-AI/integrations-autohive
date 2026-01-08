@@ -1,11 +1,124 @@
+"""
+GitHub Integration for Autohive Platform
+
+This module provides comprehensive GitHub API integration including:
+- Repository management (CRUD operations)
+- Issues and Pull Requests
+- Branches, Tags, and Releases
+- Workflows and Actions
+- File operations and Gists
+
+Author: Tamil
+GitHub API Version: 2022-11-28
+Reference: https://docs.github.com/en/rest
+"""
+
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Callable, TypeVar
+from urllib.parse import quote
+from functools import wraps
 import base64
 import os
 
 # Load integration using config.json in the same directory as this file
 _config_path = os.path.join(os.path.dirname(__file__), 'config.json')
 github = Integration.load(_config_path)
+
+T = TypeVar('T')
+
+
+# =============================================================================
+# ERROR HANDLING
+# Author: Tamil
+# =============================================================================
+
+class GitHubAPIError(Exception):
+    """
+    Custom exception for GitHub API errors.
+    
+    Attributes:
+        message: Human-readable error description
+        status_code: HTTP status code from GitHub API
+        response_data: Raw response data from the API
+    """
+    def __init__(self, message: str, status_code: int = None, response_data: Dict = None):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.response_data = response_data or {}
+
+
+def handle_github_errors(action_name: str):
+    """
+    Decorator that wraps action execute methods with error handling.
+    
+    Catches exceptions and returns ActionResult.failure() with proper error messages.
+    Handles common GitHub API error codes (401, 403, 404, 422) with user-friendly messages.
+    
+    Args:
+        action_name: Name of the action for error context
+        
+    Returns:
+        Decorated async function with error handling
+        
+    Author: Tamil
+    Reference: https://docs.github.com/en/rest/overview/troubleshooting
+    """
+    def decorator(func: Callable):
+        @wraps(func)
+        async def wrapper(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
+            try:
+                # Validate token is present
+                credentials = context.auth.get("credentials", {})
+                token = credentials.get("access_token")
+                if not token:
+                    return ActionResult.failure(
+                        error="GitHub authentication failed: No access token found. Please reconnect your GitHub account."
+                    )
+                
+                return await func(self, inputs, context)
+                
+            except GitHubAPIError as e:
+                error_msg = e.message
+                if e.status_code == 401:
+                    error_msg = "GitHub authentication failed: Invalid or expired token. Please reconnect your GitHub account."
+                elif e.status_code == 403:
+                    error_msg = f"GitHub access denied: {e.message}. Check your token permissions."
+                elif e.status_code == 404:
+                    error_msg = f"GitHub resource not found: {e.message}"
+                elif e.status_code == 422:
+                    error_msg = f"GitHub validation error: {e.message}"
+                
+                return ActionResult.failure(error=error_msg)
+                
+            except Exception as e:
+                error_message = str(e)
+                
+                # Parse common HTTP error patterns
+                if "401" in error_message:
+                    return ActionResult.failure(
+                        error="GitHub authentication failed: Invalid or expired token. Please reconnect your GitHub account."
+                    )
+                elif "403" in error_message:
+                    return ActionResult.failure(
+                        error=f"GitHub access denied: {error_message}. Check your token permissions or rate limits."
+                    )
+                elif "404" in error_message:
+                    return ActionResult.failure(
+                        error=f"GitHub resource not found: The requested {action_name} resource does not exist."
+                    )
+                elif "422" in error_message:
+                    return ActionResult.failure(
+                        error=f"GitHub validation error: {error_message}"
+                    )
+                
+                return ActionResult.failure(
+                    error=f"GitHub API error in {action_name}: {error_message}"
+                )
+        
+        return wrapper
+    return decorator
+
 
 class GitHubAPI:
     """Helper class for GitHub API operations with comprehensive functionality"""
@@ -671,8 +784,7 @@ class GitHubAPI:
     async def list_workflows(context: ExecutionContext, owner: str, repo: str) -> List[Dict[str, Any]]:
         """List workflows for a repository"""
         url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/actions/workflows"
-        response = await context.fetch(url, headers=GitHubAPI.get_headers(context))
-        return response.get('workflows', [])
+        return await GitHubAPI.paginated_fetch(context, url, params={}, data_key='workflows')
 
     @staticmethod
     async def get_workflow_runs(context: ExecutionContext, owner: str, repo: str,
@@ -688,6 +800,123 @@ class GitHubAPI:
             params['branch'] = branch
 
         return await GitHubAPI.paginated_fetch(context, url, params, 'workflow_runs')
+
+    # -------------------------------------------------------------------------
+    # Tag Operations
+    # Author: Tamil
+    # Reference: https://docs.github.com/en/rest/repos/repos#list-repository-tags
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    async def list_tags(context: ExecutionContext, owner: str, repo: str,
+                       per_page: int = 30, page: int = 1) -> List[Dict[str, Any]]:
+        """
+        List tags for a repository (single page fetch).
+        
+        Args:
+            owner: Repository owner (user or organization)
+            repo: Repository name
+            per_page: Number of results per page (max 100)
+            page: Page number to fetch
+            
+        Returns:
+            List of tag objects with name, commit SHA, and download URLs
+            
+        Author: Tamil
+        """
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/tags"
+        params = {'per_page': per_page, 'page': page}
+        return await context.fetch(url, params=params, headers=GitHubAPI.get_headers(context))
+
+    # -------------------------------------------------------------------------
+    # Release Operations
+    # Author: Tamil
+    # Reference: https://docs.github.com/en/rest/releases/releases
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    async def list_releases(context: ExecutionContext, owner: str, repo: str,
+                           per_page: int = 30, page: int = 1) -> List[Dict[str, Any]]:
+        """
+        List releases for a repository (single page fetch).
+        
+        Args:
+            owner: Repository owner (user or organization)
+            repo: Repository name
+            per_page: Number of results per page (max 100)
+            page: Page number to fetch
+            
+        Returns:
+            List of release objects (does not include regular Git tags)
+            
+        Author: Tamil
+        """
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases"
+        params = {'per_page': per_page, 'page': page}
+        return await context.fetch(url, params=params, headers=GitHubAPI.get_headers(context))
+
+    @staticmethod
+    async def get_release(context: ExecutionContext, owner: str, repo: str,
+                         release_id: int) -> Dict[str, Any]:
+        """
+        Get a specific release by ID.
+        
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            release_id: The unique identifier of the release
+            
+        Returns:
+            Release object with full details including assets
+            
+        Author: Tamil
+        Reference: https://docs.github.com/en/rest/releases/releases#get-a-release
+        """
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/{release_id}"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
+
+    @staticmethod
+    async def get_latest_release(context: ExecutionContext, owner: str, repo: str) -> Dict[str, Any]:
+        """
+        Get the latest published release for a repository.
+        
+        The latest release is the most recent non-prerelease, non-draft release.
+        
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            
+        Returns:
+            Latest release object
+            
+        Author: Tamil
+        Reference: https://docs.github.com/en/rest/releases/releases#get-the-latest-release
+        """
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/latest"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
+
+    @staticmethod
+    async def get_release_by_tag(context: ExecutionContext, owner: str, repo: str,
+                                tag: str) -> Dict[str, Any]:
+        """
+        Get a release by tag name.
+        
+        Note: Tag is URL-encoded to handle special characters like '/' or spaces.
+        
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            tag: Tag name (e.g., 'v1.0.0', 'release/2024-01')
+            
+        Returns:
+            Release object matching the tag
+            
+        Author: Tamil
+        Reference: https://docs.github.com/en/rest/releases/releases#get-a-release-by-tag-name
+        """
+        encoded_tag = quote(tag, safe='')
+        url = f"{GitHubAPI.BASE_URL}/repos/{owner}/{repo}/releases/tags/{encoded_tag}"
+        return await context.fetch(url, headers=GitHubAPI.get_headers(context))
 
     # ---- Rate Limiting ----
 
@@ -711,6 +940,7 @@ class GitHubAPI:
 class CreateRepository(ActionHandler):
     """Create a new repository"""
 
+    @handle_github_errors("create_repository")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         repo = await GitHubAPI.create_repository(
             context,
@@ -750,6 +980,7 @@ class CreateRepository(ActionHandler):
 class GetRepository(ActionHandler):
     """Get repository details"""
 
+    @handle_github_errors("get_repository")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         repo_data = await GitHubAPI.get_repository(
             context,
@@ -784,6 +1015,7 @@ class GetRepository(ActionHandler):
 class ListRepositories(ActionHandler):
     """List repositories"""
 
+    @handle_github_errors("list_repositories")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         repos = await GitHubAPI.list_repositories(
             context,
@@ -818,6 +1050,7 @@ class ListRepositories(ActionHandler):
 class UpdateRepository(ActionHandler):
     """Update repository settings"""
 
+    @handle_github_errors("update_repository")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         update_data = {
             'name': inputs.get('name'),
@@ -853,6 +1086,7 @@ class UpdateRepository(ActionHandler):
 class DeleteRepository(ActionHandler):
     """Delete a repository"""
 
+    @handle_github_errors("delete_repository")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         await GitHubAPI.delete_repository(
             context,
@@ -875,6 +1109,7 @@ class DeleteRepository(ActionHandler):
 class ListCommits(ActionHandler):
     """List commits for a repository"""
 
+    @handle_github_errors("list_commits")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         commits = await GitHubAPI.get_commits(
             context,
@@ -910,6 +1145,7 @@ class ListCommits(ActionHandler):
 class GetCommit(ActionHandler):
     """Get a specific commit"""
 
+    @handle_github_errors("get_commit")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         commit = await GitHubAPI.get_commit(
             context,
@@ -946,6 +1182,7 @@ class GetCommit(ActionHandler):
 class ListIssues(ActionHandler):
     """List issues for a repository"""
 
+    @handle_github_errors("list_issues")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         issues = await GitHubAPI.get_issues(
             context,
@@ -983,6 +1220,7 @@ class ListIssues(ActionHandler):
 class GetIssue(ActionHandler):
     """Get a specific issue"""
 
+    @handle_github_errors("get_issue")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         issue = await GitHubAPI.get_issue(
             context,
@@ -1017,6 +1255,7 @@ class GetIssue(ActionHandler):
 class CreateIssue(ActionHandler):
     """Create a new issue"""
 
+    @handle_github_errors("create_issue")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         issue = await GitHubAPI.create_issue(
             context,
@@ -1053,6 +1292,7 @@ class CreateIssue(ActionHandler):
 class UpdateIssue(ActionHandler):
     """Update an existing issue"""
 
+    @handle_github_errors("update_issue")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         issue = await GitHubAPI.update_issue(
             context,
@@ -1092,6 +1332,7 @@ class UpdateIssue(ActionHandler):
 class CreateIssueComment(ActionHandler):
     """Create a comment on an issue"""
 
+    @handle_github_errors("create_issue_comment")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         comment = await GitHubAPI.create_issue_comment(
             context,
@@ -1121,6 +1362,7 @@ class CreateIssueComment(ActionHandler):
 class GetIssueComments(ActionHandler):
     """Get comments for an issue"""
 
+    @handle_github_errors("get_issue_comments")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         comments = await GitHubAPI.get_issue_comments(
             context,
@@ -1151,6 +1393,7 @@ class GetIssueComments(ActionHandler):
 class ListPullRequests(ActionHandler):
     """List pull requests for a repository"""
 
+    @handle_github_errors("list_pull_requests")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         prs = await GitHubAPI.get_pull_requests(
             context,
@@ -1189,6 +1432,7 @@ class ListPullRequests(ActionHandler):
 class GetPullRequest(ActionHandler):
     """Get detailed information about a pull request"""
 
+    @handle_github_errors("get_pull_request")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         pr = await GitHubAPI.get_pull_request(
             context,
@@ -1244,6 +1488,7 @@ class GetPullRequest(ActionHandler):
 class CreatePullRequest(ActionHandler):
     """Create a new pull request"""
 
+    @handle_github_errors("create_pull_request")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         pr = await GitHubAPI.create_pull_request(
             context,
@@ -1332,6 +1577,7 @@ class CreatePullRequest(ActionHandler):
 class MergePullRequest(ActionHandler):
     """Merge a pull request"""
 
+    @handle_github_errors("merge_pull_request")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.merge_pull_request(
             context,
@@ -1359,6 +1605,7 @@ class MergePullRequest(ActionHandler):
 class AddPullRequestReviewers(ActionHandler):
     """Add reviewers to a pull request"""
 
+    @handle_github_errors("add_pull_request_reviewers")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.add_pull_request_reviewers(
             context,
@@ -1384,6 +1631,7 @@ class AddPullRequestReviewers(ActionHandler):
 class RemovePullRequestReviewers(ActionHandler):
     """Remove reviewers from a pull request"""
 
+    @handle_github_errors("remove_pull_request_reviewers")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.remove_pull_request_reviewers(
             context,
@@ -1409,6 +1657,7 @@ class RemovePullRequestReviewers(ActionHandler):
 class ListPullRequestReviewers(ActionHandler):
     """List reviewers for a pull request"""
 
+    @handle_github_errors("list_pull_request_reviewers")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.list_pull_request_reviewers(
             context,
@@ -1432,6 +1681,7 @@ class ListPullRequestReviewers(ActionHandler):
 class CreatePullRequestReview(ActionHandler):
     """Create a review for a pull request"""
 
+    @handle_github_errors("create_pull_request_review")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         review = await GitHubAPI.create_pull_request_review(
             context,
@@ -1465,6 +1715,7 @@ class CreatePullRequestReview(ActionHandler):
 class ListBranches(ActionHandler):
     """List branches for a repository"""
 
+    @handle_github_errors("list_branches")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         branches = await GitHubAPI.list_branches(
             context,
@@ -1489,6 +1740,7 @@ class ListBranches(ActionHandler):
 class GetBranch(ActionHandler):
     """Get branch details"""
 
+    @handle_github_errors("get_branch")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         branch = await GitHubAPI.get_branch(
             context,
@@ -1515,6 +1767,7 @@ class GetBranch(ActionHandler):
 class CreateBranch(ActionHandler):
     """Create a new branch"""
 
+    @handle_github_errors("create_branch")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.create_branch(
             context,
@@ -1542,6 +1795,7 @@ class CreateBranch(ActionHandler):
 class DeleteBranch(ActionHandler):
     """Delete a branch"""
 
+    @handle_github_errors("delete_branch")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         await GitHubAPI.delete_branch(
             context,
@@ -1563,6 +1817,7 @@ class DeleteBranch(ActionHandler):
 class GetBranchProtection(ActionHandler):
     """Get branch protection rules"""
 
+    @handle_github_errors("get_branch_protection")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             protection = await GitHubAPI.get_branch_protection(
@@ -1604,6 +1859,7 @@ class GetBranchProtection(ActionHandler):
 class DiffBranchToBranch(ActionHandler):
     """Compare two branches"""
 
+    @handle_github_errors("diff_branch_to_branch")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         diff_data = await GitHubAPI.compare_branches(
             context,
@@ -1648,6 +1904,7 @@ class DiffBranchToBranch(ActionHandler):
 class CreateWebhook(ActionHandler):
     """Create a webhook"""
 
+    @handle_github_errors("create_webhook")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         webhook = await GitHubAPI.create_webhook(
             context,
@@ -1682,6 +1939,7 @@ class CreateWebhook(ActionHandler):
 class ListWebhooks(ActionHandler):
     """List webhooks for a repository"""
 
+    @handle_github_errors("list_webhooks")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         webhooks = await GitHubAPI.list_webhooks(
             context,
@@ -1711,6 +1969,7 @@ class ListWebhooks(ActionHandler):
 class DeleteWebhook(ActionHandler):
     """Delete a webhook"""
 
+    @handle_github_errors("delete_webhook")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         await GitHubAPI.delete_webhook(
             context,
@@ -1734,6 +1993,7 @@ class DeleteWebhook(ActionHandler):
 class GetFileContent(ActionHandler):
     """Get file content from repository"""
 
+    @handle_github_errors("get_file_content")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         file_data = await GitHubAPI.get_file_content(
             context,
@@ -1759,6 +2019,7 @@ class GetFileContent(ActionHandler):
 class CreateFile(ActionHandler):
     """Create a new file in repository"""
 
+    @handle_github_errors("create_file")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.create_file(
             context,
@@ -1791,6 +2052,7 @@ class CreateFile(ActionHandler):
 class UpdateFile(ActionHandler):
     """Update an existing file in repository"""
 
+    @handle_github_errors("update_file")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.update_file(
             context,
@@ -1824,6 +2086,7 @@ class UpdateFile(ActionHandler):
 class DeleteFile(ActionHandler):
     """Delete a file from repository"""
 
+    @handle_github_errors("delete_file")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         result = await GitHubAPI.delete_file(
             context,
@@ -1854,6 +2117,7 @@ class DeleteFile(ActionHandler):
 class CreateGist(ActionHandler):
     """Create a new gist"""
 
+    @handle_github_errors("create_gist")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         gist = await GitHubAPI.create_gist(
             context,
@@ -1883,6 +2147,7 @@ class CreateGist(ActionHandler):
 class GetUser(ActionHandler):
     """Get user information"""
 
+    @handle_github_errors("get_user")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         user = await GitHubAPI.get_user(
             context,
@@ -1918,6 +2183,7 @@ class GetUser(ActionHandler):
 class ListOrganizationMembers(ActionHandler):
     """List organization members"""
 
+    @handle_github_errors("list_organization_members")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         members = await GitHubAPI.list_organization_members(
             context,
@@ -1944,6 +2210,7 @@ class ListOrganizationMembers(ActionHandler):
 class ListWorkflows(ActionHandler):
     """List GitHub Actions workflows"""
 
+    @handle_github_errors("list_workflows")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         workflows = await GitHubAPI.list_workflows(
             context,
@@ -1969,6 +2236,7 @@ class ListWorkflows(ActionHandler):
 class GetWorkflowRuns(ActionHandler):
     """Get workflow runs"""
 
+    @handle_github_errors("get_workflow_runs")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         runs = await GitHubAPI.get_workflow_runs(
             context,
@@ -2010,6 +2278,7 @@ class GetWorkflowRuns(ActionHandler):
 class GetRateLimit(ActionHandler):
     """Get current rate limit status"""
 
+    @handle_github_errors("get_rate_limit")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         rate_limit = await GitHubAPI.get_rate_limit(context)
 
@@ -2042,6 +2311,7 @@ class GetRateLimit(ActionHandler):
 class ListUserRepositories(ActionHandler):
     """List repositories for a specific user or authenticated user"""
 
+    @handle_github_errors("list_user_repositories")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         repos = await GitHubAPI.list_user_repositories(
             context,
@@ -2076,6 +2346,7 @@ class ListUserRepositories(ActionHandler):
 class ListOrganizationRepositories(ActionHandler):
     """List repositories for a specific organization"""
 
+    @handle_github_errors("list_organization_repositories")
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         repos = await GitHubAPI.list_organization_repositories(
             context,
@@ -2102,6 +2373,219 @@ class ListOrganizationRepositories(ActionHandler):
             'open_issues_count': repo['open_issues_count'],
             'default_branch': repo['default_branch']
         } for repo in repos],
+            cost_usd=0.0
+        )
+
+
+# ---- Tag Actions ----
+
+@github.action("list_tags")
+class ListTags(ActionHandler):
+    """List tags for a repository"""
+
+    @handle_github_errors("list_tags")
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        tags = await GitHubAPI.list_tags(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            per_page=inputs.get('per_page', 30),
+            page=inputs.get('page', 1)
+        )
+
+        return ActionResult(
+            data=[{
+                'name': tag['name'],
+                'commit': {
+                    'sha': tag['commit']['sha'],
+                    'url': tag['commit']['url']
+                },
+                'zipball_url': tag.get('zipball_url'),
+                'tarball_url': tag.get('tarball_url'),
+                'node_id': tag.get('node_id')
+            } for tag in tags],
+            cost_usd=0.0
+        )
+
+
+# ---- Release Actions ----
+
+@github.action("list_releases")
+class ListReleases(ActionHandler):
+    """List releases for a repository"""
+
+    @handle_github_errors("list_releases")
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        releases = await GitHubAPI.list_releases(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            per_page=inputs.get('per_page', 30),
+            page=inputs.get('page', 1)
+        )
+
+        return ActionResult(
+            data=[{
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            } for release in releases],
+            cost_usd=0.0
+        )
+
+
+@github.action("get_release")
+class GetRelease(ActionHandler):
+    """Get a specific release by ID"""
+
+    @handle_github_errors("get_release")
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_release(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            inputs['release_id']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'label': asset.get('label'),
+                    'state': asset['state'],
+                    'content_type': asset['content_type'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url'],
+                    'created_at': asset['created_at'],
+                    'updated_at': asset['updated_at']
+                } for asset in release.get('assets', [])]
+            },
+            cost_usd=0.0
+        )
+
+
+@github.action("get_latest_release")
+class GetLatestRelease(ActionHandler):
+    """Get the latest release for a repository"""
+
+    @handle_github_errors("get_latest_release")
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_latest_release(
+            context,
+            inputs['owner'],
+            inputs['repo']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            },
+            cost_usd=0.0
+        )
+
+
+@github.action("get_release_by_tag")
+class GetReleaseByTag(ActionHandler):
+    """Get a release by tag name"""
+
+    @handle_github_errors("get_release_by_tag")
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        release = await GitHubAPI.get_release_by_tag(
+            context,
+            inputs['owner'],
+            inputs['repo'],
+            inputs['tag']
+        )
+
+        return ActionResult(
+            data={
+                'id': release['id'],
+                'tag_name': release['tag_name'],
+                'target_commitish': release.get('target_commitish'),
+                'name': release.get('name'),
+                'body': release.get('body'),
+                'draft': release.get('draft', False),
+                'prerelease': release.get('prerelease', False),
+                'created_at': release['created_at'],
+                'published_at': release.get('published_at'),
+                'html_url': release['html_url'],
+                'tarball_url': release.get('tarball_url'),
+                'zipball_url': release.get('zipball_url'),
+                'author': {
+                    'login': release['author']['login'],
+                    'id': release['author']['id'],
+                    'avatar_url': release['author']['avatar_url']
+                } if release.get('author') else None,
+                'assets': [{
+                    'id': asset['id'],
+                    'name': asset['name'],
+                    'size': asset['size'],
+                    'download_count': asset['download_count'],
+                    'browser_download_url': asset['browser_download_url']
+                } for asset in release.get('assets', [])]
+            },
             cost_usd=0.0
         )
 
