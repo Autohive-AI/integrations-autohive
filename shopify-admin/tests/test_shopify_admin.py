@@ -3,6 +3,7 @@ Shopify Admin API Integration Tests
 ====================================
 
 Real API integration testing against Shopify Admin API.
+Product operations use GraphQL Admin API (migrated from REST).
 
 Prerequisites:
 1. Shopify development store or Partner account
@@ -206,17 +207,20 @@ async def test_create_order():
 
 
 # -----------------------------------------------------------------------------
-# Product Tests
+# Product Tests (GraphQL API)
 # -----------------------------------------------------------------------------
 
 async def test_list_products():
-    """Test listing products."""
+    """Test listing products using GraphQL API."""
     inputs = {"limit": 10}
     async with ExecutionContext(auth=AUTH) as context:
         try:
             result = await execute_wrapper("list_products", inputs, context)
             print(f"List Products Result: {result}")
             assert result.get('success') == True, f"Failed: {result.get('message')}"
+            # GraphQL returns pagination info
+            print(f"  hasNextPage: {result.get('hasNextPage')}")
+            print(f"  endCursor: {result.get('endCursor')}")
             print(f"✓ test_list_products passed - Found {result['count']} products")
             return result
         except Exception as e:
@@ -224,14 +228,34 @@ async def test_list_products():
             return None
 
 
+async def test_list_products_with_filter():
+    """Test listing products with GraphQL filter."""
+    inputs = {"limit": 5, "status": "active"}
+    async with ExecutionContext(auth=AUTH) as context:
+        try:
+            result = await execute_wrapper("list_products", inputs, context)
+            print(f"List Products (filtered) Result: {result}")
+            assert result.get('success') == True, f"Failed: {result.get('message')}"
+            print(f"✓ test_list_products_with_filter passed - Found {result['count']} active products")
+            return result
+        except Exception as e:
+            print(f"✗ Error: {e}")
+            return None
+
+
 async def test_get_product():
-    """Test getting a specific product."""
+    """Test getting a specific product using GraphQL API."""
     inputs = {"product_id": TEST_PRODUCT_ID}
     async with ExecutionContext(auth=AUTH) as context:
         try:
             result = await execute_wrapper("get_product", inputs, context)
             print(f"Get Product Result: {result}")
             assert result.get('success') == True, f"Failed: {result.get('message')}"
+            # Verify GraphQL response fields are transformed correctly
+            product = result.get('product', {})
+            print(f"  Product ID: {product.get('id')}")
+            print(f"  Title: {product.get('title')}")
+            print(f"  Variants: {len(product.get('variants', []))}")
             print(f"✓ test_get_product passed")
             return result
         except Exception as e:
@@ -240,14 +264,14 @@ async def test_get_product():
 
 
 async def test_create_product():
-    """Test creating a product."""
+    """Test creating a product using GraphQL API."""
     timestamp = int(time.time())
     inputs = {
         "title": f"Test Product {timestamp}",
-        "body_html": "<p>Test product created via API</p>",
+        "body_html": "<p>Test product created via GraphQL API</p>",
         "vendor": "Test Vendor",
         "product_type": "Test",
-        "tags": "test,automated",
+        "tags": "test,automated,graphql",
         "status": "draft",
         "variants": [{"price": "19.99", "sku": f"TEST-{timestamp}"}]
     }
@@ -257,7 +281,10 @@ async def test_create_product():
             print(f"Create Product Result: {result}")
             assert result.get('success') == True, f"Failed: {result.get('message')}"
             assert result['product'].get('id')
-            print(f"✓ test_create_product passed - ID: {result['product']['id']}")
+            # Verify ID is numeric (transformed from GID)
+            product_id = result['product']['id']
+            print(f"  Product ID: {product_id}")
+            print(f"✓ test_create_product passed - ID: {product_id}")
             return result
         except Exception as e:
             print(f"✗ Error: {e}")
@@ -265,11 +292,11 @@ async def test_create_product():
 
 
 async def test_update_product():
-    """Test updating a product."""
+    """Test updating a product using GraphQL API."""
     inputs = {
         "product_id": TEST_PRODUCT_ID,
         "title": f"Updated Product {int(time.time())}",
-        "tags": "test,updated"
+        "tags": "test,updated,graphql"
     }
     async with ExecutionContext(auth=AUTH) as context:
         try:
@@ -406,7 +433,8 @@ async def run_safe_tests():
         ("List Customers", test_list_customers),
         ("Search Customers", test_search_customers),
         ("List Orders", test_list_orders),
-        ("List Products", test_list_products),
+        ("List Products (GraphQL)", test_list_products),
+        ("List Products with Filter (GraphQL)", test_list_products_with_filter),
         ("List Locations", test_list_locations),
         ("Get Shop", test_get_shop),
         ("List Draft Orders", test_list_draft_orders),

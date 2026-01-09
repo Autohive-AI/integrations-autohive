@@ -248,19 +248,18 @@
         },
         "list_products": {
             "display_name": "List Products",
-            "description": "Retrieve products with optional filtering",
+            "description": "Retrieve products with optional filtering (GraphQL API)",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "limit": {"type": "integer", "description": "Maximum products", "label": "Limit", "default": 50},
-                    "since_id": {"type": "string", "description": "After this ID", "label": "Since ID"},
-                    "title": {"type": "string", "description": "Filter by title", "label": "Title"},
+                    "limit": {"type": "integer", "description": "Maximum products (max 250)", "label": "Limit", "default": 50},
+                    "after": {"type": "string", "description": "Cursor for pagination (from endCursor)", "label": "After Cursor"},
+                    "title": {"type": "string", "description": "Filter by title (partial match)", "label": "Title"},
                     "vendor": {"type": "string", "description": "Filter by vendor", "label": "Vendor"},
                     "product_type": {"type": "string", "description": "Filter by type", "label": "Product Type"},
-                    "collection_id": {"type": "string", "description": "Filter by collection", "label": "Collection ID"},
                     "status": {"type": "string", "description": "Filter by status", "label": "Status", "enum": ["active", "archived", "draft"]},
-                    "created_at_min": {"type": "string", "description": "Created after", "label": "Created After"},
-                    "created_at_max": {"type": "string", "description": "Created before", "label": "Created Before"}
+                    "created_at_min": {"type": "string", "description": "Created after (ISO 8601)", "label": "Created After"},
+                    "created_at_max": {"type": "string", "description": "Created before (ISO 8601)", "label": "Created Before"}
                 },
                 "required": []
             },
@@ -270,6 +269,8 @@
                     "success": {"type": "boolean"},
                     "products": {"type": "array"},
                     "count": {"type": "integer"},
+                    "hasNextPage": {"type": "boolean", "description": "Whether more results exist"},
+                    "endCursor": {"type": "string", "description": "Cursor for next page"},
                     "message": {"type": "string"}
                 },
                 "required": ["success"]
@@ -277,11 +278,11 @@
         },
         "get_product": {
             "display_name": "Get Product",
-            "description": "Retrieve a single product by ID",
+            "description": "Retrieve a single product by ID (GraphQL API)",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "product_id": {"type": "string", "description": "Product ID", "label": "Product ID"}
+                    "product_id": {"type": "string", "description": "Product ID (numeric or GID format)", "label": "Product ID"}
                 },
                 "required": ["product_id"]
             },
@@ -297,7 +298,7 @@
         },
         "create_product": {
             "display_name": "Create Product",
-            "description": "Create a new product",
+            "description": "Create a new product (GraphQL API)",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -305,11 +306,10 @@
                     "body_html": {"type": "string", "description": "Description HTML", "label": "Description"},
                     "vendor": {"type": "string", "description": "Vendor name", "label": "Vendor"},
                     "product_type": {"type": "string", "description": "Product type", "label": "Product Type"},
-                    "tags": {"type": "string", "description": "Tags", "label": "Tags"},
+                    "tags": {"type": "string", "description": "Comma-separated tags", "label": "Tags"},
                     "status": {"type": "string", "description": "Status", "label": "Status", "enum": ["active", "archived", "draft"], "default": "draft"},
-                    "variants": {"type": "array", "description": "Product variants", "label": "Variants"},
-                    "options": {"type": "array", "description": "Product options", "label": "Options"},
-                    "images": {"type": "array", "description": "Product images", "label": "Images"}
+                    "variants": {"type": "array", "description": "Product variants with price, sku, barcode, weight", "label": "Variants"},
+                    "options": {"type": "array", "description": "Product options (e.g., Size, Color)", "label": "Options"}
                 },
                 "required": ["title"]
             },
@@ -325,16 +325,16 @@
         },
         "update_product": {
             "display_name": "Update Product",
-            "description": "Update an existing product",
+            "description": "Update an existing product (GraphQL API). Note: Variant updates require separate API calls.",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "product_id": {"type": "string", "description": "Product ID", "label": "Product ID"},
+                    "product_id": {"type": "string", "description": "Product ID (numeric or GID format)", "label": "Product ID"},
                     "title": {"type": "string", "description": "Title", "label": "Title"},
-                    "body_html": {"type": "string", "description": "Description", "label": "Description"},
+                    "body_html": {"type": "string", "description": "Description HTML", "label": "Description"},
                     "vendor": {"type": "string", "description": "Vendor", "label": "Vendor"},
                     "product_type": {"type": "string", "description": "Type", "label": "Product Type"},
-                    "tags": {"type": "string", "description": "Tags", "label": "Tags"},
+                    "tags": {"type": "string", "description": "Comma-separated tags", "label": "Tags"},
                     "status": {"type": "string", "description": "Status", "label": "Status", "enum": ["active", "archived", "draft"]}
                 },
                 "required": ["product_id"]
