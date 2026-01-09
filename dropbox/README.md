@@ -19,7 +19,7 @@ The integration uses OAuth 2.0 with the following scopes:
 - `files.metadata.read` - Read file and folder metadata
 - `files.content.read` - Read file content and download files
 - `files.content.write` - Upload, create, delete, move, and copy files/folders
-- `contacts.write` - Write access for sharing operations
+
 
 ### Setup Steps in Autohive
 
@@ -301,7 +301,7 @@ To test the integration:
 - **files.metadata.read**: Allows listing folders and reading file/folder metadata
 - **files.content.read**: Allows downloading file content and getting temporary links
 - **files.content.write**: Allows uploading files, creating folders, deleting, moving, and copying files/folders
-- **contacts.write**: Allows write access for sharing operations
+
 
 ## Version History
 
