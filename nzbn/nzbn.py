@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 
@@ -223,12 +223,12 @@ async def make_api_request(context: ExecutionContext, url: str, params: dict = N
 class SearchEntitiesAction(ActionHandler):
     """Search the NZBN directory by name, trading name, NZBN, or company number."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         search_term = inputs.get("search_term")
         if not search_term:
             raise ValueError("search_term is required")
         
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         params = {"search-term": search_term}
         
@@ -249,12 +249,15 @@ class SearchEntitiesAction(ActionHandler):
             items = response.get("items", [])
             transformed_items = [transform_search_entity(item) for item in items]
             
-            return {
-                "total_items": response.get("totalItems", 0),
-                "page": response.get("page", 0),
-                "page_size": response.get("pageSize", 0),
-                "items": transformed_items
-            }
+            return ActionResult(
+                data={
+                    "total_items": response.get("totalItems", 0),
+                    "page": response.get("page", 0),
+                    "page_size": response.get("pageSize", 0),
+                    "items": transformed_items
+                },
+                cost_usd=0.0
+            )
             
         except Exception as e:
             raise Exception(f"Failed to search NZBN entities: {str(e)}")
@@ -264,13 +267,16 @@ class SearchEntitiesAction(ActionHandler):
 class GetEntityAction(ActionHandler):
     """Get full details about a specific business entity by NZBN."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}")
-            return transform_entity_detail(response)
+            return ActionResult(
+                data=transform_entity_detail(response),
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity details: {str(e)}")
 
@@ -279,12 +285,12 @@ class GetEntityAction(ActionHandler):
 class GetEntityChangesAction(ActionHandler):
     """Search for entities that have been updated within a time period."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         change_event_type = inputs.get("change_event_type")
         if not change_event_type:
             raise ValueError("change_event_type is required")
         
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         params = {"change-event-type": change_event_type}
         
@@ -302,12 +308,15 @@ class GetEntityChangesAction(ActionHandler):
         try:
             response = await make_api_request(context, f"{base_url}/entities/changes", params)
             
-            return {
-                "total_items": response.get("totalItems", 0),
-                "page": response.get("page", 0),
-                "page_size": response.get("pageSize", 0),
-                "items": response.get("items", [])
-            }
+            return ActionResult(
+                data={
+                    "total_items": response.get("totalItems", 0),
+                    "page": response.get("page", 0),
+                    "page_size": response.get("pageSize", 0),
+                    "items": response.get("items", [])
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity changes: {str(e)}")
 
@@ -316,9 +325,9 @@ class GetEntityChangesAction(ActionHandler):
 class GetEntityRolesAction(ActionHandler):
     """Get roles (directors, shareholders, partners) for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/roles")
@@ -326,10 +335,13 @@ class GetEntityRolesAction(ActionHandler):
             items = response.get("items", []) if isinstance(response, dict) else response
             roles = [transform_role(role) for role in items]
             
-            return {
-                "nzbn": nzbn_number,
-                "roles": roles
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "roles": roles
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity roles: {str(e)}")
 
@@ -338,9 +350,9 @@ class GetEntityRolesAction(ActionHandler):
 class GetEntityAddressesAction(ActionHandler):
     """Get addresses for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         params = {}
         if inputs.get("address_type"):
@@ -356,10 +368,13 @@ class GetEntityAddressesAction(ActionHandler):
             items = response.get("items", []) if isinstance(response, dict) else response
             addresses = [transform_address(addr) for addr in items]
             
-            return {
-                "nzbn": nzbn_number,
-                "addresses": addresses
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "addresses": addresses
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity addresses: {str(e)}")
 
@@ -368,9 +383,9 @@ class GetEntityAddressesAction(ActionHandler):
 class GetEntityTradingNamesAction(ActionHandler):
     """Get trading names for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/trading-names")
@@ -386,10 +401,13 @@ class GetEntityTradingNamesAction(ActionHandler):
                 for tn in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "trading_names": trading_names
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "trading_names": trading_names
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity trading names: {str(e)}")
 
@@ -398,9 +416,9 @@ class GetEntityTradingNamesAction(ActionHandler):
 class GetEntityPhoneNumbersAction(ActionHandler):
     """Get phone numbers for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/phone-numbers")
@@ -419,10 +437,13 @@ class GetEntityPhoneNumbersAction(ActionHandler):
                 for p in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "phone_numbers": phone_numbers
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "phone_numbers": phone_numbers
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity phone numbers: {str(e)}")
 
@@ -431,9 +452,9 @@ class GetEntityPhoneNumbersAction(ActionHandler):
 class GetEntityEmailAddressesAction(ActionHandler):
     """Get email addresses for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/email-addresses")
@@ -450,10 +471,13 @@ class GetEntityEmailAddressesAction(ActionHandler):
                 for e in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "email_addresses": email_addresses
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "email_addresses": email_addresses
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity email addresses: {str(e)}")
 
@@ -462,9 +486,9 @@ class GetEntityEmailAddressesAction(ActionHandler):
 class GetEntityWebsitesAction(ActionHandler):
     """Get websites for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/websites")
@@ -481,10 +505,13 @@ class GetEntityWebsitesAction(ActionHandler):
                 for w in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "websites": websites
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "websites": websites
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity websites: {str(e)}")
 
@@ -493,9 +520,9 @@ class GetEntityWebsitesAction(ActionHandler):
 class GetEntityGstNumbersAction(ActionHandler):
     """Get GST registration numbers for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/gst-numbers")
@@ -511,10 +538,13 @@ class GetEntityGstNumbersAction(ActionHandler):
                 for g in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "gst_numbers": gst_numbers
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "gst_numbers": gst_numbers
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity GST numbers: {str(e)}")
 
@@ -523,9 +553,9 @@ class GetEntityGstNumbersAction(ActionHandler):
 class GetEntityIndustryClassificationsAction(ActionHandler):
     """Get BIC industry classifications for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/industry-classifications")
@@ -542,10 +572,13 @@ class GetEntityIndustryClassificationsAction(ActionHandler):
                 for c in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "classifications": classifications
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "classifications": classifications
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity industry classifications: {str(e)}")
 
@@ -554,24 +587,27 @@ class GetEntityIndustryClassificationsAction(ActionHandler):
 class GetEntityCompanyDetailsAction(ActionHandler):
     """Get company-specific details (for NZ companies only)."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/company-details")
             
-            return {
-                "nzbn": nzbn_number,
-                "company_details": {
-                    "constitution_filed": response.get("constitutionFiled"),
-                    "annual_return_filing_month": response.get("annualReturnFilingMonth"),
-                    "annual_return_last_filed_date": response.get("annualReturnLastFiledDate"),
-                    "country_of_origin": response.get("countryOfOrigin"),
-                    "extensive_shareholders": response.get("extensiveShareholders"),
-                    "ultimate_holding_company": response.get("ultimateHoldingCompany")
-                }
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "company_details": {
+                        "constitution_filed": response.get("constitutionFiled"),
+                        "annual_return_filing_month": response.get("annualReturnFilingMonth"),
+                        "annual_return_last_filed_date": response.get("annualReturnLastFiledDate"),
+                        "country_of_origin": response.get("countryOfOrigin"),
+                        "extensive_shareholders": response.get("extensiveShareholders"),
+                        "ultimate_holding_company": response.get("ultimateHoldingCompany")
+                    }
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN company details: {str(e)}")
 
@@ -580,19 +616,22 @@ class GetEntityCompanyDetailsAction(ActionHandler):
 class GetEntityHistoryAction(ActionHandler):
     """Get change history for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/history")
             
             items = response.get("items", []) if isinstance(response, dict) else response
             
-            return {
-                "nzbn": nzbn_number,
-                "history": items
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "history": items
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity history: {str(e)}")
 
@@ -601,9 +640,9 @@ class GetEntityHistoryAction(ActionHandler):
 class GetEntityTradingAreasAction(ActionHandler):
     """Get geographic trading areas for a business entity."""
     
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url(context)
+        base_url = get_base_url()
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/trading-areas")
@@ -620,9 +659,12 @@ class GetEntityTradingAreasAction(ActionHandler):
                 for a in items
             ]
             
-            return {
-                "nzbn": nzbn_number,
-                "trading_areas": trading_areas
-            }
+            return ActionResult(
+                data={
+                    "nzbn": nzbn_number,
+                    "trading_areas": trading_areas
+                },
+                cost_usd=0.0
+            )
         except Exception as e:
             raise Exception(f"Failed to get NZBN entity trading areas: {str(e)}")
