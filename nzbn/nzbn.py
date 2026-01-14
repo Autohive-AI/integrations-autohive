@@ -2,86 +2,19 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler
 )
 from typing import Dict, Any, List, Optional
-import base64
 
 nzbn = Integration.load()
 
-# OAuth Token endpoint (from MBIE docs)
-TOKEN_URL = "https://login.microsoftonline.com/b2cessmapprd.onmicrosoft.com/oauth2/v2.0/token"
-
-# API base URLs
-PRODUCTION_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
-SANDBOX_BASE_URL = "https://api.business.govt.nz/sandbox/nzbn/v5"
-
-# OAuth scopes
-PRODUCTION_SCOPE = "https://api.business.govt.nz/gateway/.default"
-SANDBOX_SCOPE = "https://api.business.govt.nz/sandbox/.default"
-
-# Token cache
-_token_cache: Dict[str, str] = {}
+# API base URL (production)
+NZBN_API_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
 
 
-def get_environment(context: ExecutionContext) -> str:
-    return context.auth.get("credentials", {}).get("environment", "production").lower()
+def get_base_url() -> str:
+    return NZBN_API_BASE_URL
 
 
-def get_base_url(context: ExecutionContext) -> str:
-    if get_environment(context) == "sandbox":
-        return SANDBOX_BASE_URL
-    return PRODUCTION_BASE_URL
-
-
-def get_scope(context: ExecutionContext) -> str:
-    if get_environment(context) == "sandbox":
-        return SANDBOX_SCOPE
-    return PRODUCTION_SCOPE
-
-
-async def get_access_token(context: ExecutionContext) -> str:
-    """Get OAuth2 access token using 2-legged client credentials flow."""
-    credentials = context.auth.get("credentials", {})
-    client_id = credentials.get("client_id", "")
-    client_secret = credentials.get("client_secret", "")
-    
-    if not client_id or not client_secret:
-        raise ValueError("client_id and client_secret are required for OAuth authentication")
-    
-    cache_key = f"{client_id}_{get_environment(context)}"
-    if cache_key in _token_cache:
-        return _token_cache[cache_key]
-    
-    auth_credentials = f"{client_id}:{client_secret}"
-    encoded = base64.b64encode(auth_credentials.encode()).decode()
-    
-    headers = {
-        "Authorization": f"Basic {encoded}",
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-    
-    scope = get_scope(context)
-    
-    response = await context.fetch(
-        TOKEN_URL,
-        method="POST",
-        headers=headers,
-        data=f"grant_type=client_credentials&scope={scope}"
-    )
-    
-    if isinstance(response, dict) and response.get("access_token"):
-        token = response["access_token"]
-        _token_cache[cache_key] = token
-        return token
-    
-    error = response.get("error", "Unknown error") if isinstance(response, dict) else str(response)
-    error_desc = response.get("error_description", "") if isinstance(response, dict) else ""
-    raise ValueError(f"Failed to get OAuth token: {error}. {error_desc}")
-
-
-def get_headers(context: ExecutionContext, access_token: str) -> Dict[str, str]:
-    subscription_key = context.auth.get("credentials", {}).get("subscription_key", "")
+def get_headers() -> Dict[str, str]:
     return {
-        "Ocp-Apim-Subscription-Key": subscription_key,
-        "Authorization": f"Bearer {access_token}",
         "Accept": "application/json",
         "Content-Type": "application/json"
     }
@@ -272,9 +205,8 @@ def transform_entity_detail(entity: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def make_api_request(context: ExecutionContext, url: str, params: dict = None):
-    """Make an authenticated API request."""
-    access_token = await get_access_token(context)
-    headers = get_headers(context, access_token)
+    """Make an authenticated API request. Platform OAuth handles authentication automatically."""
+    headers = get_headers()
     
     response = await context.fetch(
         url,

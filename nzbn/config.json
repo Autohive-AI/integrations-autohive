@@ -4,38 +4,9 @@
     "description": "New Zealand Business Number (NZBN) API integration for searching and retrieving business entity information from the NZBN Register",
     "entry_point": "nzbn.py",
     "auth": {
-        "type": "custom",
-        "identifier": "nzbn",
-        "fields": {
-            "type": "object",
-            "properties": {
-                "subscription_key": {
-                    "type": "string",
-                    "format": "password",
-                    "label": "API Subscription Key",
-                    "help_text": "Your NZBN API subscription key (Ocp-Apim-Subscription-Key) from api.business.govt.nz"
-                },
-                "client_id": {
-                    "type": "string",
-                    "format": "text",
-                    "label": "Client ID",
-                    "help_text": "OAuth Client ID from your registered application (required for 2-legged OAuth subscriptions)"
-                },
-                "client_secret": {
-                    "type": "string",
-                    "format": "password",
-                    "label": "Client Secret",
-                    "help_text": "OAuth Client Secret from your registered application"
-                },
-                "environment": {
-                    "type": "string",
-                    "format": "text",
-                    "label": "Environment",
-                    "help_text": "Use 'sandbox' for testing or 'production' for live data (default: production)"
-                }
-            },
-            "required": ["subscription_key", "client_id", "client_secret"]
-        }
+        "type": "platform",
+        "provider": "NZBN",
+        "scopes": []
     },
     "actions": {
         "search_entities": {

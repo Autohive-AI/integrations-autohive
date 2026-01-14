@@ -15,28 +15,9 @@ The NZBN API provides access to the New Zealand Business Number Register, which 
 
 ## Authentication
 
-This integration uses **2-legged OAuth** authentication. You need:
+This integration uses **Platform OAuth** authentication. The Autohive platform handles OAuth token management automatically.
 
-1. **Subscription Key** - From your NZBN API subscription
-2. **Client ID** - From your registered application
-3. **Client Secret** - From your registered application
-
-### Getting Your Credentials
-
-1. Register at [api.business.govt.nz](https://portal.api.business.govt.nz)
-2. Subscribe to the **NZBN API** product (choose 2-legged OAuth method)
-3. Create an **Application** under "My Applications"
-4. Copy your Client ID and Client Secret
-5. Get your Subscription Key from "My Subscriptions"
-
-### Configuration Fields
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `subscription_key` | Yes | Your NZBN API subscription key (Ocp-Apim-Subscription-Key) |
-| `client_id` | Yes | OAuth Client ID from your registered application |
-| `client_secret` | Yes | OAuth Client Secret from your registered application |
-| `environment` | No | `sandbox` for testing, `production` for live data (default: production) |
+When connecting this integration, you will be redirected to authenticate with the NZBN API portal.
 
 ## Available Actions
 
@@ -144,23 +125,11 @@ Get geographic trading areas for a business entity.
 - `Inactive`
 - `RemovedClosed`
 
-## API Environments
+## API Endpoint
 
 | Environment | Base URL |
 |-------------|----------|
 | Production | `https://api.business.govt.nz/gateway/nzbn/v5` |
-| Sandbox | `https://api.business.govt.nz/sandbox/nzbn/v5` |
-
-> **Note:** Sandbox data is not a mirror of production. It contains test cases and old Companies Register data (prior to 2010).
-
-## OAuth Token Endpoint
-
-Token URL: `https://login.microsoftonline.com/b2cessmapprd.onmicrosoft.com/oauth2/v2.0/token`
-
-| Environment | Scope |
-|-------------|-------|
-| Production | `https://api.business.govt.nz/gateway/.default` |
-| Sandbox | `https://api.business.govt.nz/sandbox/.default` |
 
 ## Testing
 
