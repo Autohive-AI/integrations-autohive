@@ -15,9 +15,15 @@ PRODUCTION_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
 
 def get_base_url(context: ExecutionContext) -> str:
     """Get the API base URL based on the environment setting in credentials."""
-    # Get environment from credentials (custom auth stores in credentials dict)
-    credentials = context.auth.get('credentials', {}) if context.auth else {}
-    environment = credentials.get('environment', 'production')
+    environment = 'production'
+    if context.auth:
+        # Try direct access
+        environment = context.auth.get('environment', '')
+        # Try nested credentials
+        if not environment:
+            credentials = context.auth.get('credentials', {})
+            if isinstance(credentials, dict):
+                environment = credentials.get('environment', 'production')
     return SANDBOX_BASE_URL if environment == 'sandbox' else PRODUCTION_BASE_URL
 
 
@@ -28,11 +34,21 @@ def get_headers(context: ExecutionContext) -> Dict[str, str]:
         "Content-Type": "application/json"
     }
 
-    # Get subscription key from credentials (custom auth stores in credentials dict)
-    credentials = context.auth.get('credentials', {}) if context.auth else {}
-    subscription_key = credentials.get('subscription_key')
+    # Get subscription key - try multiple paths for different auth structures
+    subscription_key = None
+    if context.auth:
+        # Try direct access (if auth is the credentials dict)
+        subscription_key = context.auth.get('subscription_key')
+        # Try nested credentials (if auth is AuthCredentials object)
+        if not subscription_key:
+            credentials = context.auth.get('credentials', {})
+            if isinstance(credentials, dict):
+                subscription_key = credentials.get('subscription_key')
+
     if subscription_key:
         headers["Ocp-Apim-Subscription-Key"] = subscription_key
+    else:
+        print(f"[NZBN] Warning: No subscription_key found. Auth structure: {context.auth}")
 
     return headers
 
