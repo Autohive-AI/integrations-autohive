@@ -4,9 +4,23 @@
     "description": "New Zealand Business Number (NZBN) API integration for searching and retrieving business entity information from the NZBN Register",
     "entry_point": "nzbn.py",
     "auth": {
-        "type": "platform",
-        "provider": "NZBN",
-        "scopes": []
+        "type": "custom",
+        "title": "NZBN API Credentials",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "subscription_key": {
+                    "type": "string",
+                    "label": "Subscription Key",
+                    "help_text": "Your NZBN API subscription key (Ocp-Apim-Subscription-Key)"
+                },
+                "environment": {
+                    "type": "string",
+                    "label": "Environment",
+                    "help_text": "API environment: sandbox or production"
+                }
+            }
+        }
     },
     "actions": {
         "search_entities": {

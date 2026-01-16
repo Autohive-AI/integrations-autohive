@@ -14,25 +14,23 @@ PRODUCTION_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
 
 
 def get_base_url(context: ExecutionContext) -> str:
-    """Get the API base URL based on the environment setting in context."""
-    # Check for environment in auth (from auth provider details or credentials)
-    environment = (
-        context.auth.get('environment') or
-        context.auth.get('credentials', {}).get('environment') or
-        'production'
-    )
+    """Get the API base URL based on the environment setting in credentials."""
+    # Get environment from credentials (custom auth stores in credentials dict)
+    credentials = context.auth.get('credentials', {}) if context.auth else {}
+    environment = credentials.get('environment', 'production')
     return SANDBOX_BASE_URL if environment == 'sandbox' else PRODUCTION_BASE_URL
 
 
 def get_headers(context: ExecutionContext) -> Dict[str, str]:
-    """Get headers including subscription key from auth provider details."""
+    """Get headers including subscription key from auth credentials."""
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json"
     }
 
-    # Get subscription key from auth provider details
-    subscription_key = context.auth.get('subscription_key')
+    # Get subscription key from credentials (custom auth stores in credentials dict)
+    credentials = context.auth.get('credentials', {}) if context.auth else {}
+    subscription_key = credentials.get('subscription_key')
     if subscription_key:
         headers["Ocp-Apim-Subscription-Key"] = subscription_key
 
