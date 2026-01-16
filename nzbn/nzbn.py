@@ -241,16 +241,28 @@ def transform_entity_detail(entity: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def make_api_request(context: ExecutionContext, url: str, params: dict = None):
-    """Make an authenticated API request. Platform OAuth handles authentication automatically."""
+    """Make an authenticated API request using direct HTTP."""
+    import aiohttp
+
     headers = get_headers(context)
 
-    response = await context.fetch(
-        url,
-        method="GET",
-        headers=headers,
-        params=params
-    )
-    
+    # Debug: verify headers are set
+    if "Ocp-Apim-Subscription-Key" not in headers:
+        raise ValueError(f"Subscription key header not set! Headers: {headers}")
+
+    # Build URL with params
+    if params:
+        from urllib.parse import urlencode
+        url = f"{url}?{urlencode(params)}"
+
+    # Use direct aiohttp request instead of context.fetch
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                raise Exception(f"HTTP {resp.status}: {error_text}")
+            response = await resp.json()
+
     check_api_error(response)
     return response
 
