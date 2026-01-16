@@ -9,7 +9,8 @@ _config_path = os.path.join(os.path.dirname(__file__), 'config.json')
 nzbn = Integration.load(config_path=_config_path)
 
 # API base URLs
-SANDBOX_BASE_URL = "https://sandbox.api.business.govt.nz/gateway/nzbn/v5"
+# Note: Both sandbox and production use api.business.govt.nz, just different paths
+SANDBOX_BASE_URL = "https://api.business.govt.nz/sandbox/nzbn/v5"
 PRODUCTION_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
 
 
@@ -245,6 +246,7 @@ async def make_api_request(context: ExecutionContext, url: str, params: dict = N
     import aiohttp
 
     headers = get_headers(context)
+    sub_key = headers.get("Ocp-Apim-Subscription-Key", "NOT SET")
 
     # Debug: verify headers are set
     if "Ocp-Apim-Subscription-Key" not in headers:
@@ -260,7 +262,8 @@ async def make_api_request(context: ExecutionContext, url: str, params: dict = N
         async with session.get(url, headers=headers) as resp:
             if resp.status != 200:
                 error_text = await resp.text()
-                raise Exception(f"HTTP {resp.status}: {error_text}")
+                # Include debug info in error
+                raise Exception(f"HTTP {resp.status}: {error_text}\n[DEBUG] URL: {url}\n[DEBUG] Key (first 8 chars): {sub_key[:8]}...")
             response = await resp.json()
 
     check_api_error(response)
