@@ -2,22 +2,41 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
+import os
 
-nzbn = Integration.load()
+# Load integration with explicit config path
+_config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+nzbn = Integration.load(config_path=_config_path)
 
-# API base URL (production)
-NZBN_API_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
+# API base URLs
+SANDBOX_BASE_URL = "https://sandbox.api.business.govt.nz/gateway/nzbn/v5"
+PRODUCTION_BASE_URL = "https://api.business.govt.nz/gateway/nzbn/v5"
 
 
-def get_base_url() -> str:
-    return NZBN_API_BASE_URL
+def get_base_url(context: ExecutionContext) -> str:
+    """Get the API base URL based on the environment setting in context."""
+    # Check for environment in auth (from auth provider details or credentials)
+    environment = (
+        context.auth.get('environment') or
+        context.auth.get('credentials', {}).get('environment') or
+        'production'
+    )
+    return SANDBOX_BASE_URL if environment == 'sandbox' else PRODUCTION_BASE_URL
 
 
-def get_headers() -> Dict[str, str]:
-    return {
+def get_headers(context: ExecutionContext) -> Dict[str, str]:
+    """Get headers including subscription key from auth provider details."""
+    headers = {
         "Accept": "application/json",
         "Content-Type": "application/json"
     }
+
+    # Get subscription key from auth provider details
+    subscription_key = context.auth.get('subscription_key')
+    if subscription_key:
+        headers["Ocp-Apim-Subscription-Key"] = subscription_key
+
+    return headers
 
 
 def validate_nzbn(nzbn_number: str) -> str:
@@ -206,8 +225,8 @@ def transform_entity_detail(entity: Dict[str, Any]) -> Dict[str, Any]:
 
 async def make_api_request(context: ExecutionContext, url: str, params: dict = None):
     """Make an authenticated API request. Platform OAuth handles authentication automatically."""
-    headers = get_headers()
-    
+    headers = get_headers(context)
+
     response = await context.fetch(
         url,
         method="GET",
@@ -228,7 +247,7 @@ class SearchEntitiesAction(ActionHandler):
         if not search_term:
             raise ValueError("search_term is required")
         
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         params = {"search-term": search_term}
         
@@ -269,7 +288,7 @@ class GetEntityAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}")
@@ -290,7 +309,7 @@ class GetEntityChangesAction(ActionHandler):
         if not change_event_type:
             raise ValueError("change_event_type is required")
         
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         params = {"change-event-type": change_event_type}
         
@@ -327,7 +346,7 @@ class GetEntityRolesAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/roles")
@@ -352,7 +371,7 @@ class GetEntityAddressesAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         params = {}
         if inputs.get("address_type"):
@@ -385,7 +404,7 @@ class GetEntityTradingNamesAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/trading-names")
@@ -418,7 +437,7 @@ class GetEntityPhoneNumbersAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/phone-numbers")
@@ -454,7 +473,7 @@ class GetEntityEmailAddressesAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/email-addresses")
@@ -488,7 +507,7 @@ class GetEntityWebsitesAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/websites")
@@ -522,7 +541,7 @@ class GetEntityGstNumbersAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/gst-numbers")
@@ -555,7 +574,7 @@ class GetEntityIndustryClassificationsAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/industry-classifications")
@@ -589,7 +608,7 @@ class GetEntityCompanyDetailsAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/company-details")
@@ -618,7 +637,7 @@ class GetEntityHistoryAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/history")
@@ -642,7 +661,7 @@ class GetEntityTradingAreasAction(ActionHandler):
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         nzbn_number = validate_nzbn(inputs.get("nzbn", ""))
-        base_url = get_base_url()
+        base_url = get_base_url(context)
         
         try:
             response = await make_api_request(context, f"{base_url}/entities/{nzbn_number}/trading-areas")
