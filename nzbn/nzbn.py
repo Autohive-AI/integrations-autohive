@@ -48,7 +48,10 @@ def get_headers(context: ExecutionContext) -> Dict[str, str]:
     if subscription_key:
         headers["Ocp-Apim-Subscription-Key"] = subscription_key
     else:
-        print(f"[NZBN] Warning: No subscription_key found. Auth structure: {context.auth}")
+        # Raise error with auth details for debugging
+        import json
+        auth_debug = json.dumps(context.auth, default=str) if context.auth else "None"
+        raise ValueError(f"No subscription_key found in auth. Auth structure: {auth_debug}")
 
     return headers
 
