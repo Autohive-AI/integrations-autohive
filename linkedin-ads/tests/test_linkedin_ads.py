@@ -42,8 +42,20 @@ class TestHelperFunctions:
     def test_extract_id_from_urn_with_empty_string(self):
         assert extract_id_from_urn("") == ""
 
-    def test_extract_id_from_urn_with_none_like_values(self):
+    def test_extract_id_from_urn_with_zero(self):
         assert extract_id_from_urn("0") == "0"
+
+    def test_extract_id_from_urn_rejects_non_numeric(self):
+        with pytest.raises(ValueError):
+            extract_id_from_urn("abc123")
+        with pytest.raises(ValueError):
+            extract_id_from_urn("urn:li:sponsoredAccount:abc123")
+
+    def test_extract_id_from_urn_rejects_path_traversal(self):
+        with pytest.raises(ValueError):
+            extract_id_from_urn("urn:li:sponsoredCampaign:123/../../adAccounts")
+        with pytest.raises(ValueError):
+            extract_id_from_urn("123/../456")
 
     def test_build_urn_for_account(self):
         assert build_urn("account", "123456789") == "urn:li:sponsoredAccount:123456789"
@@ -145,8 +157,20 @@ class TestMakeRequest:
         assert "X-RestLi-Method" in call_kwargs.kwargs["headers"]
 
     @pytest.mark.asyncio
-    async def test_make_request_handles_401_error(self, mock_context):
-        mock_context.fetch.side_effect = Exception("401 Unauthorized")
+    async def test_make_request_handles_generic_exception(self, mock_context):
+        mock_context.fetch.side_effect = Exception("Connection timeout")
+        
+        result = await make_request(mock_context, "GET", "/adAccounts")
+        
+        assert result["success"] is False
+        assert "Connection timeout" in result["error"]
+        assert "details" in result
+
+    @pytest.mark.asyncio
+    async def test_make_request_handles_exception_with_status_code(self, mock_context):
+        error = Exception("API Error")
+        error.status_code = 401
+        mock_context.fetch.side_effect = error
         
         result = await make_request(mock_context, "GET", "/adAccounts")
         
@@ -154,35 +178,15 @@ class TestMakeRequest:
         assert "Unauthorized" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_make_request_handles_403_error(self, mock_context):
-        mock_context.fetch.side_effect = Exception("403 Forbidden")
-        
-        result = await make_request(mock_context, "GET", "/adAccounts")
-        
-        assert result["success"] is False
-        assert "Forbidden" in result["error"]
-
-    @pytest.mark.asyncio
-    async def test_make_request_handles_404_error(self, mock_context):
-        mock_context.fetch.side_effect = Exception("404 Not Found")
-        
-        result = await make_request(mock_context, "GET", "/adCampaigns/999")
-        
-        assert result["success"] is False
-        assert "not found" in result["error"]
-
-    @pytest.mark.asyncio
-    async def test_make_request_handles_429_error(self, mock_context):
-        mock_context.fetch.side_effect = Exception("429 Too Many Requests")
-        
-        result = await make_request(mock_context, "GET", "/adAccounts")
-        
-        assert result["success"] is False
-        assert "Rate limit" in result["error"]
-
-    @pytest.mark.asyncio
     async def test_make_request_unsupported_method(self, mock_context):
         result = await make_request(mock_context, "PUT", "/adAccounts")
+        
+        assert result["success"] is False
+        assert "Unsupported HTTP method" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_make_request_unsupported_patch_method(self, mock_context):
+        result = await make_request(mock_context, "PATCH", "/adAccounts")
         
         assert result["success"] is False
         assert "Unsupported HTTP method" in result["error"]

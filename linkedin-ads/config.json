@@ -156,6 +156,15 @@
                         "description": "Initial campaign status",
                         "enum": ["ACTIVE", "PAUSED", "DRAFT"],
                         "default": "DRAFT"
+                    },
+                    "cost_type": {
+                        "type": "string",
+                        "description": "Bid cost type (optional - LinkedIn will use defaults if not provided)",
+                        "enum": ["CPM", "CPC", "CPV"]
+                    },
+                    "unit_cost_amount": {
+                        "type": "number",
+                        "description": "Bid amount per unit (optional - only set if cost_type is provided)"
                     }
                 },
                 "required": ["account_id", "campaign_group_id", "name", "objective_type", "type", "daily_budget_amount"]

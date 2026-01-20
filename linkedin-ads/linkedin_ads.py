@@ -21,10 +21,18 @@ def get_headers() -> Dict[str, str]:
 
 
 def extract_id_from_urn(urn: str) -> str:
-    """Extract numeric ID from LinkedIn URN."""
-    if urn and ":" in urn:
-        return urn.split(":")[-1]
-    return urn
+    """Extract numeric ID from LinkedIn URN with validation."""
+    if not urn:
+        return urn
+    
+    id_part = urn
+    if ":" in urn:
+        id_part = urn.split(":")[-1]
+    
+    if not id_part.isdigit():
+        raise ValueError(f"Invalid ID format: {id_part}. Expected numeric ID.")
+    
+    return id_part
 
 
 def build_urn(entity_type: str, entity_id: str) -> str:
@@ -61,8 +69,6 @@ async def make_request(
             response = await context.fetch(url, params=params, headers=headers)
         elif method == "POST":
             response = await context.fetch(url, method="POST", json=json_body, headers=headers)
-        elif method == "PATCH":
-            response = await context.fetch(url, method="PATCH", json=json_body, headers=headers)
         elif method == "DELETE":
             response = await context.fetch(url, method="DELETE", headers=headers)
         else:
@@ -71,16 +77,20 @@ async def make_request(
         return {"success": True, "data": response}
     except Exception as e:
         error_message = str(e)
-        if "401" in error_message:
-            return {"success": False, "error": "Unauthorized - check your access token"}
-        elif "403" in error_message:
-            return {"success": False, "error": "Forbidden - insufficient permissions"}
-        elif "404" in error_message:
-            return {"success": False, "error": "Resource not found"}
-        elif "429" in error_message:
-            return {"success": False, "error": "Rate limit exceeded - try again later"}
-        else:
-            return {"success": False, "error": error_message}
+        error_details = {"raw_error": error_message}
+        
+        if hasattr(e, 'status_code'):
+            status_code = e.status_code
+            if status_code == 401:
+                return {"success": False, "error": "Unauthorized - check your access token", "details": error_details}
+            elif status_code == 403:
+                return {"success": False, "error": "Forbidden - insufficient permissions", "details": error_details}
+            elif status_code == 404:
+                return {"success": False, "error": "Resource not found", "details": error_details}
+            elif status_code == 429:
+                return {"success": False, "error": "Rate limit exceeded - try again later", "details": error_details}
+        
+        return {"success": False, "error": error_message, "details": error_details}
 
 
 @linkedin_ads.action("get_ad_accounts")
@@ -108,21 +118,41 @@ class GetAdAccountsAction(ActionHandler):
                 )
             
             elements = result["data"].get("elements", [])
-            accounts = []
             
+            account_ids = []
             for element in elements:
                 account_urn = element.get("account")
                 if account_urn:
-                    account_result = await make_request(
-                        context,
-                        "GET",
-                        f"/adAccounts/{extract_id_from_urn(account_urn)}"
-                    )
-                    if account_result["success"]:
-                        accounts.append(account_result["data"])
+                    try:
+                        account_ids.append(extract_id_from_urn(account_urn))
+                    except ValueError:
+                        continue
+            
+            if not account_ids:
+                return ActionResult(
+                    data={"result": True, "accounts": []},
+                    cost_usd=0.0
+                )
+            
+            ids_param = ",".join(account_ids)
+            batch_result = await make_request(
+                context,
+                "GET",
+                "/adAccounts",
+                params={"ids": f"List({ids_param})"}
+            )
+            
+            if not batch_result["success"]:
+                return ActionResult(
+                    data={"result": False, "error": batch_result["error"], "accounts": []},
+                    cost_usd=0.0
+                )
+            
+            accounts = batch_result["data"].get("results", {})
+            account_list = list(accounts.values()) if isinstance(accounts, dict) else accounts
             
             return ActionResult(
-                data={"result": True, "accounts": accounts},
+                data={"result": True, "accounts": account_list},
                 cost_usd=0.0
             )
         except Exception as e:
@@ -225,6 +255,8 @@ class CreateCampaignAction(ActionHandler):
             daily_budget = inputs.get("daily_budget_amount")
             currency_code = inputs.get("currency_code", "USD")
             status = inputs.get("status", "DRAFT")
+            cost_type = inputs.get("cost_type")
+            unit_cost_amount = inputs.get("unit_cost_amount")
             
             if not all([account_id, campaign_group_id, name, objective_type, campaign_type, daily_budget]):
                 return ActionResult(
@@ -232,8 +264,14 @@ class CreateCampaignAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            account_urn = build_urn("account", account_id)
-            campaign_group_urn = build_urn("campaign_group", campaign_group_id)
+            try:
+                account_urn = build_urn("account", extract_id_from_urn(account_id))
+                campaign_group_urn = build_urn("campaign_group", extract_id_from_urn(campaign_group_id))
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e)},
+                    cost_usd=0.0
+                )
             
             campaign_data = {
                 "account": account_urn,
@@ -245,13 +283,16 @@ class CreateCampaignAction(ActionHandler):
                 "dailyBudget": {
                     "amount": str(daily_budget),
                     "currencyCode": currency_code
-                },
-                "costType": "CPM",
-                "unitCost": {
-                    "amount": "10",
-                    "currencyCode": currency_code
                 }
             }
+            
+            if cost_type:
+                campaign_data["costType"] = cost_type
+            if unit_cost_amount is not None:
+                campaign_data["unitCost"] = {
+                    "amount": str(unit_cost_amount),
+                    "currencyCode": currency_code
+                }
             
             result = await make_request(
                 context,
