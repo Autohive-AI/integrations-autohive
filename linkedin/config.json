@@ -391,6 +391,10 @@
             "type": "integer",
             "description": "Number of posts returned."
           },
+          "start": {
+            "type": "integer",
+            "description": "Pagination offset used."
+          },
           "error": {
             "type": "string",
             "description": "Error message if operation failed."
@@ -462,6 +466,10 @@
           "comment_id": {
             "type": "string",
             "description": "The ID of the created comment."
+          },
+          "comment": {
+            "type": "object",
+            "description": "Full comment object returned by LinkedIn."
           },
           "error": {
             "type": "string",
@@ -550,6 +558,10 @@
           "reaction_type": {
             "type": "string",
             "description": "The type of reaction added."
+          },
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post that was reacted to."
           },
           "error": {
             "type": "string",
