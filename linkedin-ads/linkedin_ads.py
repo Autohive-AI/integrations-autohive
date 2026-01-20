@@ -11,10 +11,9 @@ API_BASE_URL = "https://api.linkedin.com/rest"
 API_VERSION = "202601"
 
 
-def get_headers(access_token: str) -> Dict[str, str]:
+def get_headers() -> Dict[str, str]:
     """Build headers for LinkedIn Marketing API requests."""
     return {
-        "Authorization": f"Bearer {access_token}",
         "LinkedIn-Version": API_VERSION,
         "X-Restli-Protocol-Version": "2.0.0",
         "Content-Type": "application/json"
@@ -51,47 +50,37 @@ async def make_request(
     extra_headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """Make a request to the LinkedIn Marketing API."""
-    access_token = context.auth.get("credentials", {}).get("access_token")
-    if not access_token:
-        return {"success": False, "error": "Access token is required"}
-    
-    headers = get_headers(access_token)
+    headers = get_headers()
     if extra_headers:
         headers.update(extra_headers)
     
     url = f"{API_BASE_URL}{endpoint}"
     
-    kwargs = {"method": method, "headers": headers}
-    if params:
-        kwargs["params"] = params
-    if json_body:
-        kwargs["json"] = json_body
-    
-    response = await context.fetch(url, **kwargs)
-    
-    if hasattr(response, 'status_code'):
-        if response.status_code in [200, 201]:
-            try:
-                return {"success": True, "data": response.json()}
-            except Exception:
-                return {"success": True, "data": {}}
-        elif response.status_code == 204:
-            return {"success": True, "data": None}
-        elif response.status_code == 400:
-            error_data = response.json() if hasattr(response, 'json') else {}
-            return {"success": False, "error": error_data.get("message", "Bad request")}
-        elif response.status_code == 401:
+    try:
+        if method == "GET":
+            response = await context.fetch(url, params=params, headers=headers)
+        elif method == "POST":
+            response = await context.fetch(url, method="POST", json=json_body, headers=headers)
+        elif method == "PATCH":
+            response = await context.fetch(url, method="PATCH", json=json_body, headers=headers)
+        elif method == "DELETE":
+            response = await context.fetch(url, method="DELETE", headers=headers)
+        else:
+            return {"success": False, "error": f"Unsupported HTTP method: {method}"}
+        
+        return {"success": True, "data": response}
+    except Exception as e:
+        error_message = str(e)
+        if "401" in error_message:
             return {"success": False, "error": "Unauthorized - check your access token"}
-        elif response.status_code == 403:
+        elif "403" in error_message:
             return {"success": False, "error": "Forbidden - insufficient permissions"}
-        elif response.status_code == 404:
+        elif "404" in error_message:
             return {"success": False, "error": "Resource not found"}
-        elif response.status_code == 429:
+        elif "429" in error_message:
             return {"success": False, "error": "Rate limit exceeded - try again later"}
         else:
-            return {"success": False, "error": f"API error: {response.status_code}"}
-    
-    return {"success": True, "data": response}
+            return {"success": False, "error": error_message}
 
 
 @linkedin_ads.action("get_ad_accounts")
