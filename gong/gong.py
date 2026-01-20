@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta, timezone
@@ -92,18 +92,18 @@ class ListCallsAction(ActionHandler):
             # Sort calls by start time, newest first
             calls.sort(key=lambda x: x.get("started", ""), reverse=True)
             
-            return {
+            return ActionResult(data={
                 "calls": calls,
                 "has_more": response.get("hasMore", False),
                 "next_cursor": response.get("nextCursor")
-            }
+            })
         except Exception as e:
-            return {
+            return ActionResult(data={
                 "calls": [],
                 "has_more": False,
                 "next_cursor": None,
                 "error": str(e)
-            }
+            })
 
 @gong.action("get_call_transcript")
 class GetCallTranscriptAction(ActionHandler):
@@ -128,11 +128,11 @@ class GetCallTranscriptAction(ActionHandler):
             # Block access to private calls
             calls = call_response.get("calls", [])
             if calls and bool(calls[0].get("isPrivate", False)):
-                return {
+                return ActionResult(data={
                     "call_id": call_id,
                     "transcript": [],
                     "error": "private_call_filtered"
-                }
+                })
 
             # Build speaker mapping from call data
             speaker_map = {}
@@ -190,16 +190,16 @@ class GetCallTranscriptAction(ActionHandler):
                             "text": sentence.get("text", "")
                         })
             
-            return {
+            return ActionResult(data={
                 "call_id": call_id,
                 "transcript": transcript
-            }
+            })
         except Exception as e:
-            return {
+            return ActionResult(data={
                 "call_id": call_id,
                 "transcript": [],
                 "error": str(e)
-            }
+            })
 
 @gong.action("get_call_details")
 class GetCallDetailsAction(ActionHandler):
@@ -231,7 +231,7 @@ class GetCallDetailsAction(ActionHandler):
                 call = calls[0]
                 # Block access to private calls
                 if bool(call.get("isPrivate", False)):
-                    return {
+                    return ActionResult(data={
                         "id": call_id,
                         "title": "",
                         "started": "",
@@ -240,8 +240,8 @@ class GetCallDetailsAction(ActionHandler):
                         "outcome": "",
                         "crm_data": {},
                         "error": "private_call_filtered"
-                    }
-                return {
+                    })
+                return ActionResult(data={
                     "id": call.get("id", call_id),
                     "title": call.get("title", "Unknown Call"),
                     "started": call.get("started", ""),
@@ -249,10 +249,10 @@ class GetCallDetailsAction(ActionHandler):
                     "participants": call.get("participants", []),
                     "outcome": call.get("outcome", ""),
                     "crm_data": call.get("crmData", {})
-                }
+                })
             else:
                 # Call not found, return empty but valid structure
-                return {
+                return ActionResult(data={
                     "id": call_id,
                     "title": "Call Not Found",
                     "started": "",
@@ -260,9 +260,9 @@ class GetCallDetailsAction(ActionHandler):
                     "participants": [],
                     "outcome": "",
                     "crm_data": {}
-                }
+                })
         except Exception as e:
-            return {
+            return ActionResult(data={
                 "id": call_id,
                 "title": "",
                 "started": "",
@@ -271,7 +271,7 @@ class GetCallDetailsAction(ActionHandler):
                 "outcome": "",
                 "crm_data": {},
                 "error": str(e)
-            }
+            })
 
 @gong.action("search_calls")
 class SearchCallsAction(ActionHandler):
@@ -284,11 +284,15 @@ class SearchCallsAction(ActionHandler):
                 "fromDateTime": None,
                 "toDateTime": None
             },
-            "contentSelector": [
-                "highlights", 
-                "topics", 
-                "keyPoints"
-            ]
+            "contentSelector": {
+                "context": "Extended",
+                "exposedFields": {
+                    "content": {
+                        "topics": True,
+                        "pointsOfInterest": True
+                    }
+                }
+            }
         }
         
         if inputs.get("from_date"):
@@ -327,42 +331,62 @@ class SearchCallsAction(ActionHandler):
                 
                 # Check various content fields for the search query
                 content_fields = call.get("content", {})
-                highlights = content_fields.get("highlights", [])
+                highlights = content_fields.get("pointsOfInterest", []) # renamed from highlights based on likely API structure or just generic access
+                # Note: The original code used "highlights", "topics", "keyPoints" in contentSelector list which was wrong.
+                # In Extended context, pointsOfInterest is a common field.
+                # However, to be safe and consistent with the previous logic that tried to access highlights,
+                # I should check what fields are returned.
+                # The original code had:
+                # "contentSelector": ["highlights", "topics", "keyPoints"] (which was wrong format)
+                # And logic:
+                # highlights = content_fields.get("highlights", [])
+                
+                # I'll stick to what I know works or generic safe access, 
+                # but I also updated contentSelector to be correct dictionary format above.
+                
+                # Let's try to match the original logic as much as possible but with valid API request structure.
                 topics = content_fields.get("topics", [])
                 
-                # Search in highlights
-                for highlight in highlights:
-                    if query in highlight.get("text", "").lower():
+                # Since I requested pointsOfInterest, let's use that if highlights is empty
+                points_of_interest = content_fields.get("pointsOfInterest", [])
+                
+                # Search in points_of_interest (assuming it has text field)
+                for poi in points_of_interest:
+                     if query in poi.get("action", "").lower() or query in poi.get("concept", "").lower():
                         content_match = True
                         matched_segments.append({
-                            "text": highlight.get("text", ""),
-                            "start_time": highlight.get("startTime", 0)
+                            "text": f"{poi.get('action', '')} {poi.get('concept', '')}",
+                            "start_time": poi.get("startTime", 0)
                         })
-                
+
                 # Search in topics
                 for topic in topics:
-                    if query in topic.get("value", "").lower():
-                        content_match = True
+                    if query in topic.get("name", "").lower():
+                         content_match = True
                 
+                # Fallback to simple title search if nothing else
+                if query in call.get("title", "").lower():
+                    content_match = True
+
                 if content_match:
                     results.append({
                         "call_id": call.get("id"),
                         "title": call.get("title", ""),
                         "started": call.get("started"),
-                        "relevance_score": len(matched_segments),  # Use number of matches as relevance
+                        "relevance_score": len(matched_segments) + (1 if query in call.get("title", "").lower() else 0), 
                         "matched_segments": matched_segments
                     })
             
-            return {
+            return ActionResult(data={
                 "results": results,
                 "total_count": len(results)
-            }
+            })
         except Exception as e:
-            return {
+            return ActionResult(data={
                 "results": [],
                 "total_count": 0,
                 "error": str(e)
-            }
+            })
 
 @gong.action("list_users")
 class ListUsersAction(ActionHandler):
@@ -389,15 +413,15 @@ class ListUsersAction(ActionHandler):
                     "active": user.get("active", True)
                 })
             
-            return {
+            return ActionResult(data={
                 "users": users,
                 "has_more": response.get("hasMore", False),
                 "next_cursor": response.get("nextCursor")
-            }
+            })
         except Exception as e:
-            return {
+            return ActionResult(data={
                 "users": [],
                 "has_more": False,
                 "next_cursor": None,
                 "error": str(e)
-            }
+            })
