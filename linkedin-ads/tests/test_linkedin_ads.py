@@ -22,8 +22,8 @@ class TestHelperFunctions:
         assert build_urn("account", "urn:li:sponsoredAccount:123456789") == "urn:li:sponsoredAccount:123456789"
 
     def test_get_headers(self):
-        headers = get_headers("test_token_123")
-        assert headers["Authorization"] == "Bearer test_token_123"
+        headers = get_headers()
+        assert headers["Authorization"].startswith("Bearer ")
         assert headers["LinkedIn-Version"] == API_VERSION
         assert headers["X-Restli-Protocol-Version"] == "2.0.0"
         assert headers["Content-Type"] == "application/json"
