@@ -18,8 +18,6 @@ from linkedin_ads import (
     CreateCampaignAction,
     PauseCampaignAction,
     ActivateCampaignAction,
-    GetCampaignGroupsAction,
-    GetCreativesAction,
     GetAdAnalyticsAction,
     GetAdAccountUsersAction,
 )
