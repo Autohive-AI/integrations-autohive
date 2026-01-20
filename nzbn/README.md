@@ -28,7 +28,7 @@ The following environment variables must be set at deployment time:
 ### Security Model
 
 - OAuth credentials are injected server-side at deployment, not distributed to users
-- Tokens are cached with automatic refresh before expiry
+- Tokens are cached with automatic refresh before expiry (60-second buffer)
 - Zero-config experience for end users
 
 ## Actions
@@ -38,11 +38,13 @@ The following environment variables must be set at deployment time:
 Search the NZBN directory by name, trading name, NZBN, or company number.
 
 **Inputs:**
-- `search_term` (required): Text to search for
-- `entity_status`: Filter by status (Registered, InLiquidation, etc.)
-- `entity_type`: Filter by type (NZCompany, SoleTrader, Partnership, etc.)
-- `page`: Page number (zero-indexed, default: 0)
-- `page_size`: Results per page (default: 25, max: 100)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `search_term` | string | Yes | Text to search for |
+| `entity_status` | string | No | Filter by status (Registered, InLiquidation, etc.) |
+| `entity_type` | string | No | Filter by type (NZCompany, SoleTrader, Partnership, etc.) |
+| `page` | integer | No | Page number (zero-indexed, default: 0) |
+| `page_size` | integer | No | Results per page (default: 25, max: 100) |
 
 **Example:**
 ```json
@@ -58,7 +60,9 @@ Search the NZBN directory by name, trading name, NZBN, or company number.
 Retrieve detailed information about a specific business entity.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 **Example:**
 ```json
@@ -72,54 +76,68 @@ Retrieve detailed information about a specific business entity.
 Retrieve addresses for a business entity.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
-- `address_type`: Filter by type (RegisteredOffice, Physical, Postal)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
+| `address_type` | string | No | Filter by type (RegisteredOffice, Physical, Postal) |
 
 ### get_entity_roles
 
 Retrieve roles/officers (directors, shareholders) for an entity.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 ### get_entity_trading_names
 
 Retrieve trading names for a business entity.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 ### get_company_details
 
 Retrieve company-specific details for NZ companies.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 ### get_entity_gst_numbers
 
 Retrieve GST numbers registered to a business.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 ### get_entity_industry_classifications
 
 Retrieve industry classification codes (ANZSIC) for an entity.
 
 **Inputs:**
-- `nzbn` (required): The 13-digit NZBN identifier
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nzbn` | string | Yes | The 13-digit NZBN identifier |
 
 ### get_changes
 
 Search for entities that have changed within a time period.
 
 **Inputs:**
-- `change_event_type` (required): Type of change (NewRegistration, NameChange, StatusChange, etc.)
-- `start_date`: Start date (ISO format: YYYY-MM-DD)
-- `end_date`: End date (ISO format: YYYY-MM-DD)
-- `page`: Page number (zero-indexed)
-- `page_size`: Results per page (max: 100)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `change_event_type` | string | Yes | Type of change (NewRegistration, NameChange, StatusChange, etc.) |
+| `start_date` | string | No | Start date (ISO format: YYYY-MM-DD) |
+| `end_date` | string | No | End date (ISO format: YYYY-MM-DD) |
+| `page` | integer | No | Page number (zero-indexed) |
+| `page_size` | integer | No | Results per page (max: 100) |
 
 ## Entity Types
 
@@ -158,8 +176,13 @@ Search for entities that have changed within a time period.
 ## Testing
 
 ```bash
-cd nzbn
-python -m pytest tests/ -v
+# Run validation tests only (no API credentials needed)
+cd nzbn/tests
+python test_nzbn.py --quick
+
+# Run full test suite (requires API credentials)
+cd nzbn/tests
+python test_nzbn.py
 ```
 
 ## API Documentation
@@ -174,6 +197,5 @@ The NZBN API is free to use but may have rate limits. Check the API portal for c
 
 ## Notes
 
-- Sandbox data is test data and not a mirror of production
 - Some PBD (Primary Business Data) may be private if set by the business
 - ETags can be used for efficient data retrieval (If-None-Match header)
