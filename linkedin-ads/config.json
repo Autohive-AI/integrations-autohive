@@ -1,5 +1,5 @@
 {
-    "name": "linkedin-ads",
+    "name": "LinkedIn Ads",
     "display_name": "LinkedIn Ads",
     "version": "1.0.0",
     "description": "Integration with LinkedIn Marketing API for managing ad accounts, campaigns, creatives, and analytics.",
