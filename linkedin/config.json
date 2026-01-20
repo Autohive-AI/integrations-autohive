@@ -1,60 +1,24 @@
 {
   "name": "linkedin",
   "display_name": "LinkedIn",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "entry_point": "linkedin.py",
-  "description": "Share content and access basic profile information.",
-  "icon": "https://example.com/linkedin_icon.png",
+  "description": "Comprehensive LinkedIn integration for sharing content, managing posts, and engaging with your professional network.",
+  "icon": "icon.png",
   "auth": {
     "type": "platform",
     "provider": "linkedin",
     "scopes": [
       "w_member_social",
+      "r_member_social",
+      "w_organization_social",
+      "r_organization_social",
       "openid",
       "profile",
       "email"
     ]
   },
   "actions": {
-    "share_content": {
-      "display_name": "Share Content",
-      "description": "Share content on LinkedIn as a person.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "string",
-            "description": "The content text to share."
-          },
-          "author_id": {
-            "type": "string",
-            "description": "The LinkedIn ID for the person posting the content. If not provided, attempts to use the authenticated user."
-          }
-        },
-        "required": [
-          "content"
-        ]
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "type": "string",
-            "description": "Result of the sharing action."
-          },
-          "post_data": {
-            "type": ["object", "null"],
-            "description": "The post data returned by LinkedIn API when successful."
-          },
-          "details": {
-            "description": "Error details if the operation failed."
-          }
-        },
-        "required": [
-          "result"
-        ]
-      }
-    },
     "get_user_info": {
       "display_name": "Get User Info",
       "description": "Retrieve profile information for the authenticated LinkedIn user.",
@@ -67,17 +31,532 @@
         "type": "object",
         "properties": {
           "result": {
-            "type": "string",
-            "description": "Status of the user info retrieval operation."
+            "type": "boolean",
+            "description": "Whether the operation succeeded."
           },
-          "user_info": {
-            "type": "object",
-            "description": "User profile information following OpenID Connect standard claims."
+          "user_id": {
+            "type": "string",
+            "description": "The LinkedIn user ID."
+          },
+          "name": {
+            "type": "string",
+            "description": "The user's full name."
+          },
+          "email": {
+            "type": "string",
+            "description": "The user's email address."
+          },
+          "picture": {
+            "type": "string",
+            "description": "URL to the user's profile picture."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
           }
         },
-        "required": [
-          "result"
-        ]
+        "required": ["result"]
+      }
+    },
+    "share_content": {
+      "display_name": "Share Text Post",
+      "description": "Share text content on LinkedIn as a person.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The text content to share."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["PUBLIC", "CONNECTIONS"],
+            "default": "PUBLIC",
+            "description": "Post visibility. PUBLIC or CONNECTIONS only."
+          }
+        },
+        "required": ["content"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the post was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created post."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "share_image_post": {
+      "display_name": "Share Image Post",
+      "description": "Share a post with an image attachment on LinkedIn.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The text content/caption for the post."
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the image to upload and share."
+          },
+          "alt_text": {
+            "type": "string",
+            "description": "Accessibility text for the image."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["image_url"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the post was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created post."
+          },
+          "image_urn": {
+            "type": "string",
+            "description": "The URN of the uploaded image."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "share_article_post": {
+      "display_name": "Share Article/Link Post",
+      "description": "Share an article or link with a preview card on LinkedIn.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The text commentary for the post."
+          },
+          "article_url": {
+            "type": "string",
+            "description": "URL of the article to share."
+          },
+          "article_title": {
+            "type": "string",
+            "description": "Title for the article card."
+          },
+          "article_description": {
+            "type": "string",
+            "description": "Description for the article card."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["article_url", "article_title"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the post was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created post."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "share_organization_post": {
+      "display_name": "Share Organization Post",
+      "description": "Post on behalf of a LinkedIn Company Page. Requires admin permissions on the page.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The text content to share."
+          },
+          "organization_id": {
+            "type": "string",
+            "description": "The LinkedIn organization/company ID."
+          }
+        },
+        "required": ["content", "organization_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the post was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created post."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "create_poll_post": {
+      "display_name": "Create Poll Post",
+      "description": "Create a poll post on LinkedIn with 2-4 options.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The poll question or context text."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Poll options (2-4 choices required)."
+          },
+          "duration": {
+            "type": "string",
+            "enum": ["ONE_DAY", "THREE_DAYS", "ONE_WEEK", "TWO_WEEKS"],
+            "default": "THREE_DAYS",
+            "description": "How long the poll should run."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["content", "options"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the poll was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created poll post."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "create_draft_post": {
+      "display_name": "Create Draft Post",
+      "description": "Create a post as draft for later publishing.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The text content for the draft post."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["content"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the draft was created successfully."
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created draft post."
+          },
+          "status": {
+            "type": "string",
+            "description": "The lifecycle state (DRAFT)."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "get_post": {
+      "display_name": "Get Post",
+      "description": "Retrieve a specific LinkedIn post by its URN.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post to retrieve (e.g., urn:li:share:123 or urn:li:ugcPost:123)."
+          }
+        },
+        "required": ["post_urn"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation succeeded."
+          },
+          "post": {
+            "type": "object",
+            "description": "The post data."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "get_member_posts": {
+      "display_name": "Get Member Posts",
+      "description": "Retrieve posts by the authenticated member or specified author.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          },
+          "count": {
+            "type": "integer",
+            "default": 10,
+            "description": "Number of posts to retrieve (max 100)."
+          },
+          "start": {
+            "type": "integer",
+            "default": 0,
+            "description": "Pagination offset."
+          }
+        },
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation succeeded."
+          },
+          "posts": {
+            "type": "array",
+            "description": "List of posts."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of posts returned."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "delete_post": {
+      "display_name": "Delete Post",
+      "description": "Delete a LinkedIn post.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post to delete."
+          }
+        },
+        "required": ["post_urn"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the post was deleted successfully."
+          },
+          "deleted_post_urn": {
+            "type": "string",
+            "description": "The URN of the deleted post."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "create_comment": {
+      "display_name": "Create Comment",
+      "description": "Add a comment to a LinkedIn post.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post to comment on."
+          },
+          "message": {
+            "type": "string",
+            "description": "The comment text."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["post_urn", "message"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the comment was created successfully."
+          },
+          "comment_id": {
+            "type": "string",
+            "description": "The ID of the created comment."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "get_post_comments": {
+      "display_name": "Get Post Comments",
+      "description": "Retrieve comments on a LinkedIn post.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post."
+          },
+          "count": {
+            "type": "integer",
+            "default": 10,
+            "description": "Number of comments to retrieve (max 100)."
+          },
+          "start": {
+            "type": "integer",
+            "default": 0,
+            "description": "Pagination offset."
+          }
+        },
+        "required": ["post_urn"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation succeeded."
+          },
+          "comments": {
+            "type": "array",
+            "description": "List of comments."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of comments returned."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "add_reaction": {
+      "display_name": "Add Reaction",
+      "description": "React to a LinkedIn post (like, celebrate, support, etc.).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_urn": {
+            "type": "string",
+            "description": "The URN of the post to react to."
+          },
+          "reaction_type": {
+            "type": "string",
+            "enum": ["LIKE", "PRAISE", "APPRECIATION", "EMPATHY", "INTEREST", "ENTERTAINMENT"],
+            "default": "LIKE",
+            "description": "Type of reaction. LIKE (thumbs up), PRAISE (clapping), APPRECIATION (heart), EMPATHY (support), INTEREST (lightbulb), ENTERTAINMENT (laughing)"
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn person ID. If not provided, uses the authenticated user."
+          }
+        },
+        "required": ["post_urn"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "boolean",
+            "description": "Whether the reaction was added successfully."
+          },
+          "reaction_type": {
+            "type": "string",
+            "description": "The type of reaction added."
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if operation failed."
+          }
+        },
+        "required": ["result"]
       }
     }
   }
