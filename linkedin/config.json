@@ -1,0 +1,84 @@
+{
+  "name": "linkedin",
+  "display_name": "LinkedIn",
+  "version": "0.1.0",
+  "entry_point": "linkedin.py",
+  "description": "Share content and access basic profile information.",
+  "icon": "https://example.com/linkedin_icon.png",
+  "auth": {
+    "type": "platform",
+    "provider": "linkedin",
+    "scopes": [
+      "w_member_social",
+      "openid",
+      "profile",
+      "email"
+    ]
+  },
+  "actions": {
+    "share_content": {
+      "display_name": "Share Content",
+      "description": "Share content on LinkedIn as a person.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The content text to share."
+          },
+          "author_id": {
+            "type": "string",
+            "description": "The LinkedIn ID for the person posting the content. If not provided, attempts to use the authenticated user."
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "Result of the sharing action."
+          },
+          "post_data": {
+            "type": ["object", "null"],
+            "description": "The post data returned by LinkedIn API when successful."
+          },
+          "details": {
+            "description": "Error details if the operation failed."
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_user_info": {
+      "display_name": "Get User Info",
+      "description": "Retrieve profile information for the authenticated LinkedIn user.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "Status of the user info retrieval operation."
+          },
+          "user_info": {
+            "type": "object",
+            "description": "User profile information following OpenID Connect standard claims."
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    }
+  }
+}
