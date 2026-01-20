@@ -212,6 +212,15 @@ class GetCallDetailsAction(ActionHandler):
             data = {
                 "filter": {
                     "callIds": [call_id]
+                },
+                "contentSelector": {
+                    "context": "Extended",
+                    "exposedFields": {
+                        "parties": True,
+                        "content": {
+                            "callOutcome": True
+                        }
+                    }
                 }
             }
             response = await client._make_request("calls/extensive", method="POST", data=data)
