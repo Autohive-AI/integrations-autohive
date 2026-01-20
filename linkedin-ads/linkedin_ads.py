@@ -175,7 +175,14 @@ class GetCampaignsAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            account_urn = build_urn("account", account_id)
+            try:
+                validated_id = extract_id_from_urn(account_id)
+                account_urn = build_urn("account", validated_id)
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e), "campaigns": []},
+                    cost_usd=0.0
+                )
             status = inputs.get("status")
             page_size = inputs.get("page_size", 25)
             
@@ -479,7 +486,14 @@ class GetCampaignGroupsAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            account_urn = build_urn("account", account_id)
+            try:
+                validated_id = extract_id_from_urn(account_id)
+                account_urn = build_urn("account", validated_id)
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e), "campaign_groups": []},
+                    cost_usd=0.0
+                )
             status = inputs.get("status")
             
             params = {
@@ -523,7 +537,14 @@ class GetCreativesAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            campaign_urn = build_urn("campaign", campaign_id)
+            try:
+                validated_id = extract_id_from_urn(campaign_id)
+                campaign_urn = build_urn("campaign", validated_id)
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e), "creatives": []},
+                    cost_usd=0.0
+                )
             
             params = {
                 "q": "search",
@@ -566,7 +587,14 @@ class GetAdAnalyticsAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            account_urn = build_urn("account", account_id)
+            try:
+                validated_id = extract_id_from_urn(account_id)
+                account_urn = build_urn("account", validated_id)
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e), "analytics": []},
+                    cost_usd=0.0
+                )
             campaign_ids = inputs.get("campaign_ids", [])
             time_granularity = inputs.get("time_granularity", "DAILY")
             
@@ -630,7 +658,14 @@ class GetAdAccountUsersAction(ActionHandler):
                     cost_usd=0.0
                 )
             
-            account_urn = build_urn("account", account_id)
+            try:
+                validated_id = extract_id_from_urn(account_id)
+                account_urn = build_urn("account", validated_id)
+            except ValueError as e:
+                return ActionResult(
+                    data={"result": False, "error": str(e), "users": []},
+                    cost_usd=0.0
+                )
             
             params = {
                 "q": "account",

@@ -211,6 +211,11 @@
                     "total_budget_amount": {
                         "type": "number",
                         "description": "New total budget amount"
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "description": "Currency code for budget amounts (e.g., USD, EUR)",
+                        "default": "USD"
                     }
                 },
                 "required": ["campaign_id"]
