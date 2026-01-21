@@ -15,19 +15,24 @@ Authentication:
 
 Protocol: GraphQL only
 API Version: 2024-10
+
+Note: Uses Shopify Customer Account API (not Admin API).
+Endpoint: https://{shop}/customer/api/{version}/graphql
 """
 
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Tuple
 import secrets
 import hashlib
 import base64
+import os
 from urllib.parse import urlencode
 
-# Create the integration using the config.json
-shopify_customer = Integration.load()
+# Load integration using config.json in the same directory as this file
+_config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+shopify_customer = Integration.load(_config_path)
 
 # Shopify API version
 API_VERSION = "2024-10"
@@ -48,9 +53,13 @@ def get_shop_url(context: ExecutionContext) -> str:
 
 
 def get_customer_api_url(context: ExecutionContext) -> str:
-    """Build Customer Account API GraphQL endpoint URL."""
+    """Build Customer Account API GraphQL endpoint URL.
+    
+    Uses the correct Customer Account API path: /customer/api/{version}/graphql
+    (not /account/customer/api/ which is incorrect)
+    """
     shop_url = get_shop_url(context)
-    return f"https://{shop_url}/account/customer/api/{API_VERSION}/graphql"
+    return f"https://{shop_url}/customer/api/{API_VERSION}/graphql"
 
 
 def build_headers(context: ExecutionContext) -> Dict[str, str]:
@@ -66,7 +75,10 @@ def build_headers(context: ExecutionContext) -> Dict[str, str]:
 
 async def execute_graphql(context: ExecutionContext, query: str,
                           variables: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Execute a GraphQL query against the Customer Account API."""
+    """Execute a GraphQL query against the Customer Account API.
+    
+    Returns the parsed JSON response body.
+    """
     url = get_customer_api_url(context)
     headers = build_headers(context)
 
@@ -75,19 +87,30 @@ async def execute_graphql(context: ExecutionContext, query: str,
         payload["variables"] = variables
 
     response = await context.fetch(url, method="POST", json=payload, headers=headers)
+    
+    # Handle response - context.fetch may return dict directly or response object
+    if hasattr(response, 'json'):
+        # Response object - need to parse JSON
+        if callable(response.json):
+            import asyncio
+            if asyncio.iscoroutinefunction(response.json):
+                return await response.json()
+            return response.json()
+    
+    # Already a dict (some SDK versions return parsed JSON directly)
     return response
 
 
 def success_response(**kwargs) -> ActionResult:
     """Build standardized success response."""
-    return ActionResult(data={"success": True, **kwargs}, cost_usd=0)
+    return ActionResult(data={"success": True, **kwargs}, cost_usd=0.0)
 
 
 def error_response(message: str, **kwargs) -> ActionResult:
     """Build standardized error response."""
     data = {"success": False, "message": str(message)}
     data.update(kwargs)
-    return ActionResult(data=data, cost_usd=0)
+    return ActionResult(data=data, cost_usd=0.0)
 
 
 def extract_edges(data: Dict, path: str) -> List[Dict]:
@@ -119,7 +142,12 @@ def generate_pkce_pair() -> tuple:
 def build_authorization_url(shop_url: str, client_id: str, redirect_uri: str,
                             scopes: List[str], state: str,
                             code_challenge: str) -> str:
-    """Build Shopify customer authorization URL."""
+    """Build Shopify customer authorization URL.
+    
+    Uses the OIDC-style authorization endpoint for Customer Account API.
+    The correct endpoint can be discovered via /.well-known/openid-configuration
+    but we use the standard path here for simplicity.
+    """
     params = {
         'client_id': client_id,
         'redirect_uri': redirect_uri,
@@ -129,7 +157,8 @@ def build_authorization_url(shop_url: str, client_id: str, redirect_uri: str,
         'code_challenge': code_challenge,
         'code_challenge_method': 'S256'
     }
-    return f"https://{shop_url}/account/authorize?{urlencode(params)}"
+    # Use the standard OIDC authorization endpoint
+    return f"https://{shop_url}/authentication/oauth/authorize?{urlencode(params)}"
 
 
 # ============================================================================
@@ -747,10 +776,11 @@ class GenerateOAuthUrlHandler(ActionHandler):
             shop_url = get_shop_url(context)
             client_id = inputs.get('client_id')
             redirect_uri = inputs.get('redirect_uri')
+            # Use OIDC-style scopes for Customer Account API
             scopes = inputs.get('scopes', [
-                'customer_read_customers',
-                'customer_write_customers',
-                'customer_read_orders'
+                'openid',
+                'email',
+                'customer-account-api:full'
             ])
 
             if not client_id:
@@ -796,7 +826,8 @@ class ExchangeCodeHandler(ActionHandler):
             if not all([code, code_verifier, redirect_uri, client_id]):
                 return error_response("code, code_verifier, redirect_uri, and client_id are required")
 
-            url = f"https://{shop_url}/account/oauth/token"
+            # Use the standard OIDC token endpoint
+            url = f"https://{shop_url}/authentication/oauth/token"
             data = {
                 'client_id': client_id,
                 'code': code,
@@ -811,6 +842,15 @@ class ExchangeCodeHandler(ActionHandler):
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
+            
+            # Handle response object if needed
+            if hasattr(response, 'json'):
+                if callable(response.json):
+                    import asyncio
+                    if asyncio.iscoroutinefunction(response.json):
+                        response = await response.json()
+                    else:
+                        response = response.json()
 
             if 'error' in response:
                 return error_response(response.get('error_description', response['error']))
@@ -842,7 +882,8 @@ class RefreshTokenHandler(ActionHandler):
             if not client_id:
                 return error_response("client_id is required")
 
-            url = f"https://{shop_url}/account/oauth/token"
+            # Use the standard OIDC token endpoint
+            url = f"https://{shop_url}/authentication/oauth/token"
             data = {
                 'client_id': client_id,
                 'refresh_token': refresh_token,
@@ -855,6 +896,15 @@ class RefreshTokenHandler(ActionHandler):
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
+            
+            # Handle response object if needed
+            if hasattr(response, 'json'):
+                if callable(response.json):
+                    import asyncio
+                    if asyncio.iscoroutinefunction(response.json):
+                        response = await response.json()
+                    else:
+                        response = response.json()
 
             if 'error' in response:
                 return error_response(response.get('error_description', response['error']))

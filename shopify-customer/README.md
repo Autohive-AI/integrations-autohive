@@ -16,10 +16,10 @@ Key capabilities:
 
 This integration uses **OAuth 2.0 with PKCE** (Proof Key for Code Exchange) as it acts on behalf of a specific customer.
 
-**Scopes Required:**
-- `customer_read_customers`
-- `customer_write_customers`
-- `customer_read_orders`
+**Scopes Required (OIDC-style for Customer Account API):**
+- `openid`
+- `email`
+- `customer-account-api:full`
 
 ### OAuth Flow Implementation
 Since this integration runs on behalf of a customer, you will typically need to:

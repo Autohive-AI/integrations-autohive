@@ -8,9 +8,9 @@
         "type": "oauth2_pkce",
         "provider": "ShopifyCustomerAccount",
         "scopes": [
-            "customer_read_customers",
-            "customer_write_customers",
-            "customer_read_orders"
+            "openid",
+            "email",
+            "customer-account-api:full"
         ]
     },
     "actions": {
