@@ -1,1 +1,1 @@
-# LinkedIn Integration Tests
+# -*- coding: utf-8 -*-
