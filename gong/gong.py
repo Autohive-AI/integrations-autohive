@@ -336,18 +336,7 @@ class SearchCallsAction(ActionHandler):
                 
                 # Check various content fields for the search query
                 content_fields = call.get("content", {})
-                highlights = content_fields.get("pointsOfInterest", []) # renamed from highlights based on likely API structure or just generic access
-                # Note: The original code used "highlights", "topics", "keyPoints" in contentSelector list which was wrong.
-                # In Extended context, pointsOfInterest is a common field.
-                # However, to be safe and consistent with the previous logic that tried to access highlights,
-                # I should check what fields are returned.
-                # The original code had:
-                # "contentSelector": ["highlights", "topics", "keyPoints"] (which was wrong format)
-                # And logic:
-                # highlights = content_fields.get("highlights", [])
-                
-                # I'll stick to what I know works or generic safe access, 
-                # but I also updated contentSelector to be correct dictionary format above.
+                highlights = content_fields.get("pointsOfInterest", [])
                 
                 # Let's try to match the original logic as much as possible but with valid API request structure.
                 topics = content_fields.get("topics", [])
