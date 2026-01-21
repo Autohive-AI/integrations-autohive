@@ -134,8 +134,18 @@
                 "description": "URL of the user's profile picture."
               },
               "locale": {
-                "type": "string",
-                "description": "User's locale (e.g., en-US)."
+                "type": "object",
+                "description": "User's locale information.",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "description": "Country code (e.g., US)."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Language code (e.g., en)."
+                  }
+                }
               },
               "email": {
                 "type": "string",

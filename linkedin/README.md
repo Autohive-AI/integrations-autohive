@@ -25,7 +25,7 @@ Retrieve profile information for the authenticated LinkedIn user using OpenID Co
 | `given_name` | First name |
 | `family_name` | Last name |
 | `picture` | Profile picture URL |
-| `locale` | User's locale (e.g., en-US) |
+| `locale` | User's locale object with `country` and `language` |
 | `email` | Email address (if email scope granted) |
 | `email_verified` | Whether email has been verified |
 

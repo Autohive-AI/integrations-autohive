@@ -54,7 +54,7 @@ class MockExecutionContext:
                 "given_name": "Test",
                 "family_name": "User",
                 "picture": "https://media.licdn.com/pic.jpg",
-                "locale": "en-US",
+                "locale": {"country": "US", "language": "en"},
                 "email": "test@example.com",
                 "email_verified": True
             })
@@ -87,7 +87,7 @@ async def test_get_user_info_success():
             "given_name": "John",
             "family_name": "Doe",
             "picture": "https://media.licdn.com/profile.jpg",
-            "locale": "en-US",
+            "locale": {"country": "US", "language": "en"},
             "email": "john.doe@example.com",
             "email_verified": True
         }
@@ -114,7 +114,7 @@ async def test_get_user_info_without_email():
             "given_name": "Jane",
             "family_name": "Smith",
             "picture": "https://media.licdn.com/jane.jpg",
-            "locale": "en-GB"
+            "locale": {"country": "GB", "language": "en"}
         }
     }
     context = MockExecutionContext(responses)
