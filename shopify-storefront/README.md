@@ -238,6 +238,26 @@ Send password recovery email.
 - `message` (string): Status message
 - `success` (boolean)
 
+---
+
+#### `storefront_update_customer`
+Update customer profile using access token.
+
+**Inputs:**
+- `customer_access_token` (string, required): Token from login
+- `first_name` (string, optional)
+- `last_name` (string, optional)
+- `email` (string, optional): New email address
+- `phone` (string, optional)
+- `password` (string, optional): New password
+- `accepts_marketing` (boolean, optional)
+
+**Outputs:**
+- `customer` (object): Updated customer profile
+- `customer_access_token` (string): New access token (if credentials changed)
+- `expires_at` (string): Token expiration time
+- `success` (boolean)
+
 ## Requirements
 
 - `autohive-integrations-sdk`

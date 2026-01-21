@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Test context setup for Shopify Storefront API integration.
 """
