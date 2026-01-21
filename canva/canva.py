@@ -17,7 +17,7 @@ class CanvaConnectedAccountHandler(ConnectedAccountHandler):
         """Fetch Canva user information"""
         # Get user profile (returns display name)
         profile_response = await context.fetch(
-            f"{service_endpoint}/v1/users/profile",
+            f"{service_endpoint}/v1/users/me/profile",
             method="GET"
         )
 

@@ -15,20 +15,21 @@ HEYGEN_API_BASE_URL = "https://api.heygen.com/v2"
 def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
     """
     Build authentication headers for HeyGen API requests.
-    HeyGen uses the 'X-API-KEY' header for authentication.
+    Uses OAuth 2.0 Bearer token authentication (required for HeyGen partnership).
 
     Args:
         context: ExecutionContext containing auth credentials
 
     Returns:
-        Dictionary with X-API-KEY header
+        Dictionary with authentication headers
     """
     credentials = context.auth.get("credentials", {})
-    api_key = credentials.get("api_key", "")
+    access_token = credentials.get("access_token", "")
 
     return {
-        "X-API-KEY": api_key,
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+        "User-Agent": "AutoHive/1.0"
     }
 
 

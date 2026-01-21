@@ -89,15 +89,51 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
     *   `result`: Boolean indicating success/failure
     *   `error`: Error message if operation failed
 
-### Action: `move_email_to_folder`
+### Action: `list_mail_folders`
 
-*   **Description:** Move emails between folders (Archive, Junk, etc.)
+*   **Description:** List mail folders in the user's mailbox. Returns folder IDs needed for move_email action. Use include_children=true to get all folders including nested subfolders.
 *   **Inputs:**
-    *   `email_id`: Unique identifier of the email
-    *   `destination_folder`: Target folder name
+    *   `folder_id`: (Optional) ID of a parent folder to list children of. If not provided, lists root-level folders.
+    *   `include_hidden`: (Optional) Include hidden system folders in the response (default: false)
+    *   `include_children`: (Optional) Recursively include all nested child folders. Recommended when searching for a custom folder. (default: false)
 *   **Outputs:**
     *   `result`: Boolean indicating success/failure
+    *   `folders`: List of folder objects with:
+        *   `id`: Folder ID - use this for move_email destination_folder_id
+        *   `displayName`: Human-readable folder name
+        *   `parentFolderId`: ID of the parent folder
+        *   `childFolderCount`: Number of child folders
+        *   `unreadItemCount`: Number of unread items
+        *   `totalItemCount`: Total number of items
+        *   `isHidden`: Whether the folder is hidden
+    *   `total_count`: Total number of folders returned
     *   `error`: Error message if operation failed
+
+### Action: `get_mail_folder`
+
+*   **Description:** Get details of a specific mail folder by ID or well-known name
+*   **Inputs:**
+    *   `folder_id`: Folder ID or well-known folder name (lowercase, no spaces)
+*   **Well-known folder names:** `inbox`, `drafts`, `sentitems`, `deleteditems`, `junkemail`, `archive`, `outbox`, `clutter`, `scheduled`, `searchfolders`, `conversationhistory`
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `folder`: Folder object with id, displayName, parentFolderId, childFolderCount, unreadItemCount, totalItemCount, isHidden
+    *   `error`: Error message if operation failed
+
+### Action: `move_email`
+
+*   **Description:** Move an email to a different folder. For custom folders, first use list_mail_folders to find the folder ID.
+*   **Inputs:**
+    *   `email_id`: Unique identifier of the email
+    *   `destination_folder_id`: Destination folder ID (from list_mail_folders) OR a well-known folder name
+*   **Well-known folder names (use lowercase, no spaces):** `inbox`, `drafts`, `sentitems`, `deleteditems`, `junkemail`, `archive`, `outbox`, `clutter`, `scheduled`
+*   **Outputs:**
+    *   `result`: Boolean indicating success/failure
+    *   `id`: ID of the moved email
+    *   `parentFolderId`: ID of the destination folder
+    *   `subject`: Subject of the moved email
+    *   `error`: Error message if operation failed
+*   **Note:** For custom folders (e.g., "Clients", "Projects"), you must first call `list_mail_folders` with `include_children=true` to find the folder ID, then use that ID as `destination_folder_id`.
 
 ### Action: `create_draft_email`
 
@@ -458,7 +494,53 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 5: List recent emails with timezone handling**
+**Example 5: List all mail folders including subfolders**
+
+```json
+{
+  "include_children": true,
+  "include_hidden": false
+}
+```
+
+**Example 6: Move email to a custom folder (2-step process)**
+
+Step 1: Find the folder ID
+```json
+// Call list_mail_folders with include_children=true
+{
+  "include_children": true
+}
+// Response includes: { "id": "AQMkADYAAAIBXQAAAA==", "displayName": "Clients", ... }
+```
+
+Step 2: Move the email using the folder ID
+```json
+// Call move_email with the folder ID
+{
+  "email_id": "AAMkAGVmMDEzMTM4LTZmYWUtNDdkNC...",
+  "destination_folder_id": "AQMkADYAAAIBXQAAAA=="
+}
+```
+
+**Example 7: Move email to a system folder using well-known name**
+
+```json
+{
+  "email_id": "AAMkAGVmMDEzMTM4LTZmYWUtNDdkNC...",
+  "destination_folder_id": "archive"
+}
+```
+
+**Example 8: Get details of a specific folder**
+
+```json
+{
+  "folder_id": "inbox"
+}
+```
+
+**Example 9: List recent emails with timezone handling**
 
 ```json
 {
@@ -469,7 +551,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 6: Create and send a draft email**
+**Example 10: Create and send a draft email**
 
 ```json
 {
@@ -484,7 +566,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 7: Reply to an email**
+**Example 11: Reply to an email**
 
 ```json
 {
@@ -493,7 +575,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 8: Search emails for specific content**
+**Example 12: Search emails for specific content**
 
 ```json
 {
@@ -503,7 +585,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 9: Download an email attachment**
+**Example 13: Download an email attachment**
 
 ```json
 {
@@ -513,7 +595,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 10: Search OneDrive files**
+**Example 14: Search OneDrive files**
 
 ```json
 {
@@ -522,7 +604,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 11: Read OneDrive file content**
+**Example 15: Read OneDrive file content**
 
 ```json
 {
@@ -530,7 +612,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 12: Search SharePoint sites**
+**Example 16: Search SharePoint sites**
 
 ```json
 {
@@ -539,7 +621,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 13: Search SharePoint documents across all libraries**
+**Example 17: Search SharePoint documents across all libraries**
 
 ```json
 {
@@ -549,7 +631,7 @@ The integration uses platform-level OAuth2 authentication, so no manual configur
 }
 ```
 
-**Example 14: Read SharePoint document from specific library**
+**Example 18: Read SharePoint document from specific library**
 
 ```json
 {

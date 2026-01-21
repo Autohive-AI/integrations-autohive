@@ -560,39 +560,236 @@ class MarkEmailReadAction(ActionHandler):
                 cost_usd=0.0
             )
 
+@microsoft365.action("list_mail_folders")
+class ListMailFoldersAction(ActionHandler):
+    """List mail folders in the user's mailbox.
+
+    Returns root-level folders by default. Use include_hidden to show hidden folders.
+    Use include_children to recursively fetch all nested folders.
+    """
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
+        try:
+            include_hidden = inputs.get("include_hidden", False)
+            include_children = inputs.get("include_children", False)
+            folder_id = inputs.get("folder_id")  # Optional: list children of specific folder
+
+            # Build API URL
+            if folder_id:
+                api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder_id}/childFolders"
+            else:
+                api_url = f"{GRAPH_API_BASE}/me/mailFolders"
+
+            # Build query parameters
+            params = {
+                "$select": "id,displayName,parentFolderId,childFolderCount,unreadItemCount,totalItemCount,isHidden"
+            }
+
+            if include_hidden:
+                params["includeHiddenFolders"] = "true"
+
+            # Fetch all pages (default page size is 10)
+            all_folder_items = []
+            next_url = api_url
+            is_first_request = True
+
+            while next_url:
+                if is_first_request:
+                    response = await context.fetch(next_url, params=params)
+                    is_first_request = False
+                else:
+                    # nextLink already contains query params, don't pass params again
+                    response = await context.fetch(next_url)
+
+                all_folder_items.extend(response.get("value", []))
+                next_url = response.get("@odata.nextLink")
+
+            # Format folders
+            folders = []
+            for folder in all_folder_items:
+                folder_data = {
+                    "id": folder["id"],
+                    "displayName": folder.get("displayName", ""),
+                    "parentFolderId": folder.get("parentFolderId", ""),
+                    "childFolderCount": folder.get("childFolderCount", 0),
+                    "unreadItemCount": folder.get("unreadItemCount", 0),
+                    "totalItemCount": folder.get("totalItemCount", 0),
+                    "isHidden": folder.get("isHidden", False)
+                }
+                folders.append(folder_data)
+
+                # Recursively fetch child folders if requested
+                if include_children and folder.get("childFolderCount", 0) > 0:
+                    child_folders = await self._fetch_child_folders_recursive(
+                        folder["id"], context, include_hidden
+                    )
+                    folders.extend(child_folders)
+
+            return ActionResult(
+                data={
+                    "folders": folders,
+                    "total_count": len(folders),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "folders": [],
+                    "total_count": 0,
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+    async def _fetch_child_folders_recursive(
+        self, parent_folder_id: str, context: ExecutionContext, include_hidden: bool
+    ) -> List[Dict[str, Any]]:
+        """Recursively fetch all child folders under a parent folder."""
+        try:
+            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{parent_folder_id}/childFolders"
+            params = {
+                "$select": "id,displayName,parentFolderId,childFolderCount,unreadItemCount,totalItemCount,isHidden"
+            }
+            if include_hidden:
+                params["includeHiddenFolders"] = "true"
+
+            # Fetch all pages (default page size is 10)
+            all_folder_items = []
+            next_url = api_url
+            is_first_request = True
+
+            while next_url:
+                if is_first_request:
+                    response = await context.fetch(next_url, params=params)
+                    is_first_request = False
+                else:
+                    # nextLink already contains query params, don't pass params again
+                    response = await context.fetch(next_url)
+
+                all_folder_items.extend(response.get("value", []))
+                next_url = response.get("@odata.nextLink")
+
+            folders = []
+            for folder in all_folder_items:
+                folder_data = {
+                    "id": folder["id"],
+                    "displayName": folder.get("displayName", ""),
+                    "parentFolderId": folder.get("parentFolderId", ""),
+                    "childFolderCount": folder.get("childFolderCount", 0),
+                    "unreadItemCount": folder.get("unreadItemCount", 0),
+                    "totalItemCount": folder.get("totalItemCount", 0),
+                    "isHidden": folder.get("isHidden", False)
+                }
+                folders.append(folder_data)
+
+                # Recursively fetch children if this folder has child folders
+                if folder.get("childFolderCount", 0) > 0:
+                    child_folders = await self._fetch_child_folders_recursive(
+                        folder["id"], context, include_hidden
+                    )
+                    folders.extend(child_folders)
+
+            return folders
+        except Exception:
+            # If fetching children fails, return empty list but don't fail the whole operation
+            return []
+
+
+@microsoft365.action("get_mail_folder")
+class GetMailFolderAction(ActionHandler):
+    """Get a specific mail folder by ID or well-known name.
+
+    Well-known folder names: inbox, drafts, sentitems, deleteditems, junkemail,
+    archive, outbox, clutter, scheduled, searchfolders, conversationhistory
+    """
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
+        try:
+            folder_id = inputs["folder_id"]
+
+            # Build API URL - works with both folder IDs and well-known names
+            api_url = f"{GRAPH_API_BASE}/me/mailFolders/{folder_id}"
+
+            params = {
+                "$select": "id,displayName,parentFolderId,childFolderCount,unreadItemCount,totalItemCount,isHidden"
+            }
+
+            response = await context.fetch(api_url, params=params)
+
+            folder_data = {
+                "id": response["id"],
+                "displayName": response.get("displayName", ""),
+                "parentFolderId": response.get("parentFolderId", ""),
+                "childFolderCount": response.get("childFolderCount", 0),
+                "unreadItemCount": response.get("unreadItemCount", 0),
+                "totalItemCount": response.get("totalItemCount", 0),
+                "isHidden": response.get("isHidden", False)
+            }
+
+            return ActionResult(
+                data={
+                    "folder": folder_data,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={
+                    "folder": {},
+                    "result": False,
+                    "error": str(e)
+                },
+                cost_usd=0.0
+            )
+
+
 @microsoft365.action("move_email")
 class MoveEmailAction(ActionHandler):
+    """Move an email to a different folder.
+
+    The destination_folder_id must be either:
+    1. A folder ID (e.g., 'AQMkADYAAAIBXQAAAA==') obtained from list_mail_folders
+    2. A well-known folder name (lowercase, no spaces): inbox, drafts, sentitems,
+       deleteditems, junkemail, archive, outbox, clutter, scheduled
+
+    For custom folders, use list_mail_folders with include_children=true to find the folder ID.
+    """
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             email_id = inputs["email_id"]
-            destination_folder = inputs["destination_folder"]
-            
+            destination_folder_id = inputs["destination_folder_id"]
+
             # Move email to destination folder
             move_data = {
-                "destinationId": destination_folder
+                "destinationId": destination_folder_id
             }
-            
+
             response = await context.fetch(
                 f"{GRAPH_API_BASE}/me/messages/{email_id}/move",
                 method="POST",
                 json=move_data
             )
-            
+
             return ActionResult(
                 data={
-                "id": response["id"],
-                "parentFolderId": response["parentFolderId"],
-                "result": True
-            },
+                    "id": response["id"],
+                    "parentFolderId": response["parentFolderId"],
+                    "subject": response.get("subject", ""),
+                    "result": True
+                },
                 cost_usd=0.0
             )
-            
+
         except Exception as e:
             return ActionResult(
                 data={
-                "result": False,
-                "error": str(e)
-            },
+                    "result": False,
+                    "error": str(e)
+                },
                 cost_usd=0.0
             )
 
