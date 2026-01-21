@@ -1,10 +1,8 @@
 {
-  "name": "linkedin",
-  "display_name": "LinkedIn",
-  "version": "0.1.0",
+  "name": "LinkedIn",
+  "version": "1.0.0",
+  "description": "Share content and access basic profile information on LinkedIn.",
   "entry_point": "linkedin.py",
-  "description": "Share content and access basic profile information.",
-  "icon": "https://example.com/linkedin_icon.png",
   "auth": {
     "type": "platform",
     "provider": "linkedin",
@@ -18,17 +16,23 @@
   "actions": {
     "share_content": {
       "display_name": "Share Content",
-      "description": "Share content on LinkedIn as a person.",
+      "description": "Share a text post on LinkedIn as the authenticated user. Uses the LinkedIn Posts API.",
       "input_schema": {
         "type": "object",
         "properties": {
           "content": {
             "type": "string",
-            "description": "The content text to share."
+            "description": "The text content/commentary to share in the post."
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["PUBLIC", "CONNECTIONS"],
+            "description": "Post visibility. PUBLIC makes it visible to everyone, CONNECTIONS limits to your connections. Defaults to PUBLIC.",
+            "default": "PUBLIC"
           },
           "author_id": {
             "type": "string",
-            "description": "The LinkedIn ID for the person posting the content. If not provided, attempts to use the authenticated user."
+            "description": "The LinkedIn user ID (sub) for the person posting. If not provided, uses the authenticated user."
           }
         },
         "required": [
@@ -42,11 +46,46 @@
             "type": "string",
             "description": "Result of the sharing action."
           },
+          "post_id": {
+            "type": "string",
+            "description": "The URN of the created post (e.g., urn:li:share:123456)."
+          },
           "post_data": {
             "type": ["object", "null"],
-            "description": "The post data returned by LinkedIn API when successful."
+            "description": "The full post data returned by LinkedIn API.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Post URN identifier."
+              },
+              "author": {
+                "type": "string",
+                "description": "Author URN (urn:li:person:{id})."
+              },
+              "lifecycleState": {
+                "type": "string",
+                "description": "Post state (PUBLISHED)."
+              },
+              "visibility": {
+                "type": "string",
+                "description": "Post visibility setting."
+              },
+              "commentary": {
+                "type": "string",
+                "description": "The post text content."
+              },
+              "createdAt": {
+                "type": "integer",
+                "description": "Creation timestamp in milliseconds since epoch."
+              },
+              "publishedAt": {
+                "type": "integer",
+                "description": "Publication timestamp in milliseconds since epoch."
+              }
+            }
           },
           "details": {
+            "type": ["string", "object", "null"],
             "description": "Error details if the operation failed."
           }
         },
@@ -57,7 +96,7 @@
     },
     "get_user_info": {
       "display_name": "Get User Info",
-      "description": "Retrieve profile information for the authenticated LinkedIn user.",
+      "description": "Retrieve profile information for the authenticated LinkedIn user using OpenID Connect.",
       "input_schema": {
         "type": "object",
         "properties": {},
@@ -72,7 +111,41 @@
           },
           "user_info": {
             "type": "object",
-            "description": "User profile information following OpenID Connect standard claims."
+            "description": "User profile information following OpenID Connect standard claims.",
+            "properties": {
+              "sub": {
+                "type": "string",
+                "description": "Subject identifier - unique LinkedIn user ID."
+              },
+              "name": {
+                "type": "string",
+                "description": "Full name of the user."
+              },
+              "given_name": {
+                "type": "string",
+                "description": "First name of the user."
+              },
+              "family_name": {
+                "type": "string",
+                "description": "Last name of the user."
+              },
+              "picture": {
+                "type": "string",
+                "description": "URL of the user's profile picture."
+              },
+              "locale": {
+                "type": "string",
+                "description": "User's locale (e.g., en-US)."
+              },
+              "email": {
+                "type": "string",
+                "description": "User's primary email address (if email scope granted)."
+              },
+              "email_verified": {
+                "type": "boolean",
+                "description": "Whether the email has been verified."
+              }
+            }
           }
         },
         "required": [
