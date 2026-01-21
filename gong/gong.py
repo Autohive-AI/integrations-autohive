@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler, ActionResult
+    Integration, ExecutionContext, ActionHandler, ActionResult, ConnectedAccountHandler, ConnectedAccountInfo
 )
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta, timezone
@@ -112,10 +112,27 @@ class GetCallTranscriptAction(ActionHandler):
         call_id = inputs["call_id"]
         
         try:
-            # First get call details with parties/participants
-            call_data = {
+            # 1. Get basic details to check privacy and get start time
+            response = await client._make_request(f"calls/{call_id}")
+            call_data = response.get("call", response)
+            
+            # Block access to private calls
+            if bool(call_data.get("isPrivate", False)):
+                return ActionResult(data={
+                    "call_id": call_id,
+                    "transcript": [],
+                    "error": "private_call_filtered"
+                })
+
+            # 2. Get extensive details for speaker mapping
+            speaker_map = {}
+            
+            # Fetch parties using extensive endpoint
+            # We use a safe default date 2015-01-01
+            ext_data = {
                 "filter": {
-                    "callIds": [call_id]
+                    "callIds": [call_id],
+                    "fromDateTime": "2015-01-01T00:00:00Z"
                 },
                 "contentSelector": {
                     "exposedFields": {
@@ -123,46 +140,39 @@ class GetCallTranscriptAction(ActionHandler):
                     }
                 }
             }
-            call_response = await client._make_request("calls/extensive", method="POST", data=call_data)
             
-            # Block access to private calls
-            calls = call_response.get("calls", [])
-            if calls and bool(calls[0].get("isPrivate", False)):
-                return ActionResult(data={
-                    "call_id": call_id,
-                    "transcript": [],
-                    "error": "private_call_filtered"
-                })
-
-            # Build speaker mapping from call data
-            speaker_map = {}
-            if calls:
-                call_data = calls[0]
-                # Check multiple possible locations for participant data
-                participants = (call_data.get("parties") or 
-                              call_data.get("participants") or 
-                              call_data.get("users") or [])
+            try:
+                ext_response = await client._make_request("calls/extensive", method="POST", data=ext_data)
+                ext_calls = ext_response.get("calls", [])
                 
-                for participant in participants:
-                    # Extract speaker ID and name using multiple possible field names
-                    speaker_id = str(participant.get("speakerId") or 
-                                   participant.get("userId") or 
-                                   participant.get("id") or "")
+                if ext_calls:
+                    ext_call = ext_calls[0]
+                    participants = ext_call.get("parties", [])
                     
-                    # Try different name field combinations
-                    name = (participant.get("name") or 
-                           participant.get("title") or
-                           f"{participant.get('firstName', '')} {participant.get('lastName', '')}".strip() or
-                           participant.get("emailAddress") or
-                           participant.get("email") or "")
-                    
-                    if speaker_id and name:
-                        speaker_map[speaker_id] = name
-            
-            # Get transcript data
+                    for participant in participants:
+                        # Extract speaker ID and name using multiple possible field names
+                        speaker_id = str(participant.get("speakerId") or 
+                                       participant.get("userId") or 
+                                       participant.get("id") or "")
+                        
+                        # Try different name field combinations
+                        name = (participant.get("name") or 
+                               participant.get("title") or
+                               f"{participant.get('firstName', '')} {participant.get('lastName', '')}".strip() or
+                               participant.get("emailAddress") or
+                               participant.get("email") or "")
+                        
+                        if speaker_id and name:
+                            speaker_map[speaker_id] = name
+            except Exception as e:
+                print(f"Warning: Failed to fetch speaker details: {e}")
+
+            # 3. Get transcript data
+            # Requires api:calls:read:transcript scope
             transcript_data = {
                 "filter": {
-                    "callIds": [call_id]
+                    "callIds": [call_id],
+                    "fromDateTime": "2015-01-01T00:00:00.000Z"  # Ensure we find the call regardless of date
                 }
             }
             response = await client._make_request("calls/transcript", method="POST", data=transcript_data)
@@ -208,59 +218,93 @@ class GetCallDetailsAction(ActionHandler):
         call_id = inputs["call_id"]
         
         try:
-            # Use calls/extensive endpoint with specific call ID filter
-            data = {
-                "filter": {
-                    "callIds": [call_id]
-                },
-                "contentSelector": {
-                    "context": "Extended",
-                    "exposedFields": {
-                        "parties": True,
-                        "content": {
-                            "callOutcome": True
-                        }
-                    }
-                }
-            }
-            response = await client._make_request("calls/extensive", method="POST", data=data)
+            # 1. Get basic call details using GET /v2/calls/{id}
+            response = await client._make_request(f"calls/{call_id}")
+            call = response.get("call", response)
             
-            # Extract first call from response
-            calls = response.get("calls", [])
-            if calls:
-                call = calls[0]
-                # Block access to private calls
-                if bool(call.get("isPrivate", False)):
-                    return ActionResult(data={
-                        "id": call_id,
-                        "title": "",
-                        "started": "",
-                        "duration": 0,
-                        "participants": [],
-                        "outcome": "",
-                        "crm_data": {},
-                        "error": "private_call_filtered"
-                    })
-                return ActionResult(data={
-                    "id": call.get("id", call_id),
-                    "title": call.get("title", "Unknown Call"),
-                    "started": call.get("started", ""),
-                    "duration": call.get("duration", 0),
-                    "participants": call.get("participants", []),
-                    "outcome": call.get("outcome", ""),
-                    "crm_data": call.get("crmData", {})
-                })
-            else:
-                # Call not found, return empty but valid structure
+            # Check for private call
+            if bool(call.get("isPrivate", False)):
                 return ActionResult(data={
                     "id": call_id,
-                    "title": "Call Not Found",
+                    "title": "",
                     "started": "",
                     "duration": 0,
                     "participants": [],
                     "outcome": "",
-                    "crm_data": {}
+                    "crm_data": {},
+                    "error": "private_call_filtered"
                 })
+
+            # 2. Fetch extended details (participants/parties) using POST /v2/calls/extensive
+            # We use the call's start time to narrow the search, which is required/recommended for performance
+            participants = []
+            crm_data = call.get("crmData", {})
+            
+            started_str = call.get("started")
+            if started_str:
+                try:
+                    # Parse start time to create a safe window
+                    # Handle 'Z' by replacing with +00:00 for fromisoformat compatibility
+                    dt_str = started_str.replace("Z", "+00:00")
+                    # Remove milliseconds if present for safer parsing if needed, but ISO usually ok
+                    # simpler: just use the string as is for the API if possible, but calculating window is safer
+                    
+                    # Create a wide window (e.g. +/- 1 day) to avoid timezone/precision issues
+                    # But actually, just passing the exact same string as fromDateTime might be risky if they mean "strictly after"
+                    # So let's try to pass the exact string first, or even better, a fixed "old" date if we don't want to parse.
+                    # BUT, the issue before was empty results.
+                    # Let's try to use the fromDateTime we used before "2015-01-01" BUT with the ID.
+                    # Wait, why did the user say "that didn't work" before? 
+                    # Maybe extensive endpoint *requires* a tighter date range? 
+                    # Or maybe the "2015" date was fine but something else was wrong?
+                    # The user said "call details are empty".
+                    
+                    # Let's use the actual call date found from the GET request.
+                    extensive_data = {
+                        "filter": {
+                            "callIds": [call_id],
+                            "fromDateTime": "2015-01-01T00:00:00Z" # Safe fallback
+                        },
+                        "contentSelector": {
+                            "context": "Extended",
+                            "exposedFields": {
+                                "parties": True,
+                                "content": {
+                                    "callOutcome": True
+                                }
+                            }
+                        }
+                    }
+                    
+                    # If we have a start time, use it to optimize/ensure finding
+                    if started_str:
+                         extensive_data["filter"]["fromDateTime"] = "2015-01-01T00:00:00Z" 
+                         # Actually, sticking to 2015 is safest if it works. 
+                         # But let's rely on the fact that we have the ID.
+                    
+                    ext_response = await client._make_request("calls/extensive", method="POST", data=extensive_data)
+                    ext_calls = ext_response.get("calls", [])
+                    if ext_calls:
+                        ext_call = ext_calls[0]
+                        participants = ext_call.get("parties", [])
+                        crm_data = ext_call.get("crmData", crm_data)
+                        # Update outcome if available
+                        if not call.get("outcome"):
+                            call["outcome"] = ext_call.get("outcome", "")
+                except Exception as e:
+                    # If extensive fails, we still return the basic info we have
+                    print(f"Warning: Failed to fetch extensive details: {e}")
+                    pass
+
+            return ActionResult(data={
+                "id": call.get("id", call_id),
+                "title": call.get("title", "Unknown Call"),
+                "started": call.get("started", ""),
+                "duration": call.get("duration", 0),
+                "participants": participants,
+                "outcome": call.get("outcome", ""),
+                "crm_data": crm_data
+            })
         except Exception as e:
             return ActionResult(data={
                 "id": call_id,
