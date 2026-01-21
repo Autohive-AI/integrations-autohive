@@ -205,6 +205,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [productboard](productboard): Comprehensive product management integration with Productboard API v2 for managing product hierarchy entities, notes, and analytics. Supports full entity lifecycle management for features, products, components, initiatives, objectives, releases, and subfeatures with custom field support. Includes complete note/feedback operations (create, list, get, update) for simple notes and conversations with tagging, owner assignment, and customer linking. Features analytics report access, entity configuration metadata, and user information retrieval. Supports OAuth2 authentication with comprehensive scopes (product_hierarchy_data, notes, custom_fields, users, companies), cursor-based pagination, and robust error handling. Includes 12 actions covering entities, notes, analytics, and user operations. Ideal for product roadmap automation, customer feedback management, and product analytics workflows.
 
+### NZBN (New Zealand Business Number)
+
+[nzbn](nzbn): Integration with the New Zealand Business Number (NZBN) API for searching and retrieving business entity information from the NZBN Register. Supports searching entities by name, trading name, or NZBN with filters for entity type and status, retrieving detailed entity information, accessing addresses, roles/officers, trading names, GST numbers, and industry classifications (ANZSIC codes), and tracking entity changes over time. Features 2-legged OAuth (Client Credentials) authentication with automatic token caching and refresh, zero-config experience for end users with server-side credential injection, and comprehensive error handling. Includes 9 actions covering entity search, details retrieval, and change tracking. Ideal for business verification, due diligence, compliance workflows, and NZ company data integration.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
