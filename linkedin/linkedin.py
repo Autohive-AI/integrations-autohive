@@ -8,7 +8,7 @@ This module provides LinkedIn integration including:
 All actions use the LinkedIn API v2.
 """
 
-from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
+from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
 from typing import Dict, Any
 import os
 
@@ -25,17 +25,17 @@ class UserInfoActionHandler(ActionHandler):
         response = await context.fetch(url, method="GET")
 
         if isinstance(response, dict) and response.get("sub"):
-            return {
+            return ActionResult(data={
                 "result": "User information retrieved successfully",
                 "user_info": response
-            }
+            })
         else:
             error_details = response.get("error", "Unknown error") if isinstance(response, dict) else "Unknown error"
-            return {
+            return ActionResult(data={
                 "result": "Failed to retrieve user information",
                 "user_info": None,
                 "details": error_details
-            }
+            })
 
 
 @linkedin.action("share_content")
@@ -57,19 +57,19 @@ class ShareContentActionHandler(ActionHandler):
                     author_id = user_response.get("sub")
                     author_urn = f"urn:li:person:{author_id}"
                 else:
-                    return {
+                    return ActionResult(data={
                         "result": "Failed to share content. Could not determine current user.",
                         "post_id": None,
                         "post_data": None,
                         "details": "Please provide an author_id or ensure proper authentication."
-                    }
+                    })
             except Exception as e:
-                return {
+                return ActionResult(data={
                     "result": "Failed to share content. Error determining author.",
                     "post_id": None,
                     "post_data": None,
                     "details": str(e)
-                }
+                })
 
         posts_url = "https://api.linkedin.com/rest/posts"
 
@@ -98,17 +98,17 @@ class ShareContentActionHandler(ActionHandler):
             # Extract post ID from response
             post_id = response.get("id") if isinstance(response, dict) else None
 
-            return {
+            return ActionResult(data={
                 "result": "Content shared successfully.",
                 "post_id": post_id,
                 "post_data": response
-            }
+            })
         except Exception as e:
             error_message = str(e)
             error_details = getattr(e, 'response_data', str(e))
-            return {
+            return ActionResult(data={
                 "result": f"Failed to share content: {error_message}",
                 "post_id": None,
                 "post_data": None,
                 "details": error_details
-            }
+            })
