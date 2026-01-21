@@ -63,48 +63,6 @@ async def test_create_tweet():
             return None
 
 
-async def test_upload_media():
-    """Test uploading media (image)."""
-    import base64
-
-    auth = {
-        "auth_type": "PlatformOauth2",
-        "credentials": {"access_token": "your_access_token_here"}
-    }
-
-    # Minimal valid PNG (1x1 pixel)
-    png_data = bytes([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-        0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
-        0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
-        0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x05, 0xFE,
-        0xD4, 0xEF, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-        0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-    ])
-
-    inputs = {
-        "file": {
-            "content": base64.b64encode(png_data).decode('utf-8'),
-            "name": "test_image.png",
-            "contentType": "image/png"
-        }
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await x.execute_action("upload_media", inputs, context)
-            print(f"Upload Media Result: {result}")
-            assert result.get('result') == True
-            assert 'media_id' in result
-            return result
-        except Exception as e:
-            print(f"Error testing upload_media: {e}")
-            return None
-
-
 async def test_post_with_media():
     """Test posting with media in single action."""
     import base64
@@ -219,7 +177,6 @@ async def run_all_tests():
     test_functions = [
         ("Get Authenticated User", test_get_me),
         ("Get User by Username", test_get_user),
-        ("Upload Media", test_upload_media),
         ("Post With Media", test_post_with_media),
         ("Create Post", test_create_tweet),
         ("Get Post", test_get_tweet),

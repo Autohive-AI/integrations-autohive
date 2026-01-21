@@ -1,7 +1,7 @@
 {
     "name": "X",
     "display_name": "X (formerly Twitter)",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "X integration for posting, managing interactions, and engaging with users",
     "entry_point": "x.py",
     "supports_connected_account": true,
@@ -14,71 +14,13 @@
             "tweet.write",
             "media.write",
             "users.read",
+            "follows.read",
             "follows.write",
             "like.read",
             "offline.access"
         ]
     },
     "actions": {
-        "upload_media": {
-            "display_name": "Upload Media",
-            "description": "Upload media (image, GIF, or video) to X for use in posts. Returns a media_id that can be used with Create Post action. Supports images (PNG, JPG, GIF, WEBP up to 5MB), animated GIFs (up to 15MB), and videos (MP4, MOV up to 512MB).",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "file": {
-                        "type": "object",
-                        "description": "Single file object: base64 content, name, contentType.",
-                        "properties": {
-                            "content": {"type": "string", "description": "Base64-encoded file content"},
-                            "name": {"type": "string", "description": "Filename"},
-                            "contentType": {"type": "string", "description": "MIME type (image/jpeg, image/png, image/gif, video/mp4, etc.)"}
-                        },
-                        "required": ["content", "name", "contentType"]
-                    },
-                    "files": {
-                        "type": "array",
-                        "description": "Alternate input: array of file objects; the first will be used.",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "content": {"type": "string", "description": "Base64-encoded file content"},
-                                "name": {"type": "string", "description": "Filename"},
-                                "contentType": {"type": "string", "description": "MIME type"}
-                            },
-                            "required": ["content", "name", "contentType"]
-                        }
-                    }
-                },
-                "required": []
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "media_id": {
-                        "type": "string",
-                        "description": "Media ID to use when creating a post with media"
-                    },
-                    "media_type": {
-                        "type": "string",
-                        "description": "MIME type of the uploaded media"
-                    },
-                    "size": {
-                        "type": "integer",
-                        "description": "Size of the uploaded media in bytes"
-                    },
-                    "result": {
-                        "type": "boolean",
-                        "description": "Whether the operation was successful"
-                    },
-                    "error": {
-                        "type": "string",
-                        "description": "Error message if the action failed"
-                    }
-                },
-                "required": ["result"]
-            }
-        },
         "create_tweet": {
             "display_name": "Create Post",
             "description": "Creates a new post on X.",
@@ -139,7 +81,7 @@
         },
         "post_with_media": {
             "display_name": "Post with Media",
-            "description": "Create a post with an image, GIF, or video in a single action. Automatically uploads the media and creates the tweet. Use this instead of separate upload_media + create_tweet calls.",
+            "description": "Create a post with an image, GIF, or video in a single action. Automatically uploads the media and creates the post.",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -552,6 +494,42 @@
                     }
                 },
                 "required": ["user", "result"]
+            }
+        },
+        "follow_user": {
+            "display_name": "Follow User",
+            "description": "Follows a user on X.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "source_user_id": {
+                        "type": "string",
+                        "description": "The ID of the authenticated user (follower)"
+                    },
+                    "target_user_id": {
+                        "type": "string",
+                        "description": "The ID of the user to follow"
+                    }
+                },
+                "required": ["source_user_id", "target_user_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "followed": {
+                        "type": "boolean",
+                        "description": "Whether the user was followed"
+                    },
+                    "result": {
+                        "type": "boolean",
+                        "description": "Whether the operation was successful"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if the action failed"
+                    }
+                },
+                "required": ["followed", "result"]
             }
         },
         "unfollow_user": {

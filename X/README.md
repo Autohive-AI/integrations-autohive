@@ -6,7 +6,7 @@ Connects Autohive to the X API to enable posting, engagement management, user in
 
 This integration provides a comprehensive connection to X's social media platform. It allows users to automate post creation, search and retrieve posts, manage likes and reposts, follow/unfollow users, and retrieve user information directly from Autohive.
 
-The integration uses X API v2 with OAuth 2.0 authentication and implements 13 actions covering media, posts, reposts, and users.
+The integration uses X API v2 with OAuth 2.0 authentication and implements 13 actions covering posts, reposts, and users.
 
 ## Setup & Authentication
 
@@ -21,7 +21,7 @@ X supports multiple authentication methods:
    - Users authorize access to their account
    - Tokens are managed automatically by the platform
    - Recommended for multi-user integrations
-   - Required scopes: `tweet.read`, `tweet.write`, `media.write`, `users.read`, `follows.write`, `like.read`, `offline.access`
+   - Required scopes: `tweet.read`, `tweet.write`, `media.write`, `users.read`, `follows.read`, `follows.write`, `like.read`, `offline.access`
 
 2. **OAuth 1.0a** (Alternative method)
    - Uses API Key, API Secret, Access Token, and Access Token Secret
@@ -64,40 +64,6 @@ Example error response:
 ```
 
 ## Actions
-
-### Media (1 action)
-
-#### `upload_media`
-Uploads media (image, GIF, or video) to X for use in posts.
-
-**Important:** Media upload functionality may have limitations depending on your X API access level. The X API v1.1 media upload endpoint historically requires OAuth 1.0a authentication. If you encounter 403 errors with media upload, this may be due to:
-- API access level restrictions
-- OAuth 2.0 not being supported for media upload on your account
-- Rate limiting
-
-**Inputs:**
-- `file` (required): File object containing:
-  - `content`: Base64-encoded file content
-  - `name`: Filename
-  - `contentType`: MIME type (image/jpeg, image/png, image/gif, video/mp4, etc.)
-
-**Supported Media Types:**
-- Images: PNG, JPG, GIF, WEBP (up to 5MB)
-- Animated GIFs (up to 15MB)
-- Videos: MP4, MOV (up to 512MB)
-
-**Outputs:**
-- `media_id`: Media ID to use when creating a post with media
-- `media_type`: MIME type of the uploaded media
-- `size`: Size of the uploaded media in bytes
-- `result`: Success status (boolean)
-- `error`: Error message if action failed (optional)
-
-**Usage:**
-1. Upload media using this action to get a `media_id`
-2. Use the `media_id` in the `media_ids` array when creating a post
-
----
 
 ### Posts (6 actions)
 
@@ -280,7 +246,7 @@ Removes a repost.
 
 ---
 
-### Users (3 actions)
+### Users (4 actions)
 
 #### `get_user`
 Retrieves user profile information by ID or username.
@@ -303,6 +269,20 @@ Retrieves the authenticated user's profile information.
 
 **Outputs:**
 - `user`: Authenticated user's profile details
+- `result`: Success status (boolean)
+- `error`: Error message if action failed (optional)
+
+---
+
+#### `follow_user`
+Follows a user.
+
+**Inputs:**
+- `source_user_id` (required): The ID of the authenticated user (follower)
+- `target_user_id` (required): The ID of the user to follow
+
+**Outputs:**
+- `followed`: Whether the user was followed (boolean)
 - `result`: Success status (boolean)
 - `error`: Error message if action failed (optional)
 
@@ -392,6 +372,11 @@ To test the integration:
 
 ## Version History
 
+- **1.0.1** - Updated actions
+  - Removed standalone upload_media action (use post_with_media instead)
+  - Added follow_user action
+  - Added follows.read scope
+
 - **1.0.0** - Initial release with 13 actions
   - Media: upload_media (1 action)
   - Posts: create, post_with_media, get, delete, search, get_user_posts (6 actions)
@@ -430,9 +415,7 @@ To test the integration:
 - Post ID may be incorrect
 - User may have protected posts
 
-**Media Upload 403 Forbidden:**
-- X's media upload endpoint (v1.1) historically requires OAuth 1.0a authentication
-- OAuth 2.0 support for media upload may be limited depending on your API access level
+**Media Upload Issues:**
+- Media upload functionality may have limitations depending on your X API access level
 - Ensure you have the correct API access tier (some features require Pro or Enterprise access)
-- The platform may not support requests to the `upload.twitter.com` subdomain
-- Consider posting without media if upload consistently fails
+- If media upload fails, try posting without media first to verify connectivity

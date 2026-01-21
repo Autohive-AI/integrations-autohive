@@ -1,3 +1,6 @@
+import base64
+import asyncio
+
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult,
     ConnectedAccountHandler, ConnectedAccountInfo
@@ -54,9 +57,6 @@ class XConnectedAccountHandler(ConnectedAccountHandler):
 
 async def _upload_media(context: ExecutionContext, file_data: Dict[str, Any]) -> Dict[str, Any]:
     """Internal helper to upload media using X API v2 chunked upload. Returns dict with media_id or error."""
-    import base64
-    import asyncio
-
     media_content = file_data.get('content', '')
     content_type = file_data.get('contentType', 'image/jpeg')
 
@@ -175,51 +175,6 @@ async def _upload_media(context: ExecutionContext, file_data: Dict[str, Any]) ->
         "media_type": content_type,
         "size": total_bytes
     }
-
-
-# ---- Media Handlers ----
-
-@x.action("upload_media")
-class UploadMediaAction(ActionHandler):
-    """Upload media (image, GIF, or video) to X for use in posts."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            file_data = None
-            if 'file' in inputs and inputs['file']:
-                file_data = inputs['file']
-            elif 'files' in inputs and inputs['files'] and len(inputs['files']) > 0:
-                file_data = inputs['files'][0]
-
-            if not file_data:
-                return ActionResult(
-                    data={"media_id": "", "result": False, "error": "No file provided"},
-                    cost_usd=0.0
-                )
-
-            result = await _upload_media(context, file_data)
-
-            if "error" in result:
-                return ActionResult(
-                    data={"media_id": "", "result": False, "error": result["error"]},
-                    cost_usd=0.0
-                )
-
-            return ActionResult(
-                data={
-                    "media_id": result["media_id"],
-                    "media_type": result["media_type"],
-                    "size": result["size"],
-                    "result": True
-                },
-                cost_usd=0.0
-            )
-
-        except Exception as e:
-            return ActionResult(
-                data={"media_id": "", "result": False, "error": f"Media upload failed: {str(e)}"},
-                cost_usd=0.0
-            )
 
 
 # ---- Post Handlers ----
@@ -629,6 +584,33 @@ class GetMeAction(ActionHandler):
         except Exception as e:
             return ActionResult(
                 data={"user": {}, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+@x.action("follow_user")
+class FollowUserAction(ActionHandler):
+    """Follow a user on X."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            source_user_id = inputs['source_user_id']
+            target_user_id = inputs['target_user_id']
+
+            response = await context.fetch(
+                f"{X_API_BASE_URL}/users/{source_user_id}/following",
+                method="POST",
+                json={"target_user_id": target_user_id}
+            )
+
+            return ActionResult(
+                data={"followed": response.get('data', {}).get('following', False), "result": True},
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"followed": False, "result": False, "error": str(e)},
                 cost_usd=0.0
             )
 
