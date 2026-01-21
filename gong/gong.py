@@ -112,11 +112,9 @@ class GetCallTranscriptAction(ActionHandler):
         call_id = inputs["call_id"]
         
         try:
-            # 1. Get basic details to check privacy and get start time
             response = await client._make_request(f"calls/{call_id}")
             call_data = response.get("call", response)
             
-            # Block access to private calls
             if bool(call_data.get("isPrivate", False)):
                 return ActionResult(data={
                     "call_id": call_id,
@@ -124,11 +122,8 @@ class GetCallTranscriptAction(ActionHandler):
                     "error": "private_call_filtered"
                 })
 
-            # 2. Get extensive details for speaker mapping
             speaker_map = {}
             
-            # Fetch parties using extensive endpoint
-            # We use a safe default date 2015-01-01
             ext_data = {
                 "filter": {
                     "callIds": [call_id],
@@ -150,12 +145,10 @@ class GetCallTranscriptAction(ActionHandler):
                     participants = ext_call.get("parties", [])
                     
                     for participant in participants:
-                        # Extract speaker ID and name using multiple possible field names
                         speaker_id = str(participant.get("speakerId") or 
                                        participant.get("userId") or 
                                        participant.get("id") or "")
                         
-                        # Try different name field combinations
                         name = (participant.get("name") or 
                                participant.get("title") or
                                f"{participant.get('firstName', '')} {participant.get('lastName', '')}".strip() or
@@ -167,36 +160,30 @@ class GetCallTranscriptAction(ActionHandler):
             except Exception as e:
                 print(f"Warning: Failed to fetch speaker details: {e}")
 
-            # 3. Get transcript data
-            # Requires api:calls:read:transcript scope
             transcript_data = {
                 "filter": {
                     "callIds": [call_id],
-                    "fromDateTime": "2015-01-01T00:00:00.000Z"  # Ensure we find the call regardless of date
+                    "fromDateTime": "2015-01-01T00:00:00.000Z"
                 }
             }
             response = await client._make_request("calls/transcript", method="POST", data=transcript_data)
             
             transcript = []
-            # Response structure: {"callTranscripts": [{"callId": "...", "transcript": [...]}]}
             call_transcripts = response.get("callTranscripts", [])
             if call_transcripts:
                 for segment in call_transcripts[0].get("transcript", []):
-                    # Normalize speaker_id to string for schema and mapping consistency
                     raw_speaker_id = segment.get("speakerId", "")
                     speaker_id = str(raw_speaker_id) if raw_speaker_id is not None else ""
                     topic = segment.get("topic", "")
                     
-                    # Use speaker mapping or fallback to ID
                     speaker_name = speaker_map.get(speaker_id, f"Speaker {speaker_id}" if speaker_id else "Unknown Speaker")
                     
-                    # Process sentences within each segment
                     for sentence in segment.get("sentences", []):
                         transcript.append({
-                            "speaker_id": speaker_id,  # Original Gong speaker ID
-                            "speaker_name": speaker_name,  # Temporary speaker name
-                            "start_time": sentence.get("start", 0) / 1000,  # Convert ms to seconds
-                            "end_time": sentence.get("end", 0) / 1000,  # Convert ms to seconds
+                            "speaker_id": speaker_id,
+                            "speaker_name": speaker_name,
+                            "start_time": sentence.get("start", 0) / 1000,
+                            "end_time": sentence.get("end", 0) / 1000,
                             "text": sentence.get("text", "")
                         })
             
@@ -218,11 +205,9 @@ class GetCallDetailsAction(ActionHandler):
         call_id = inputs["call_id"]
         
         try:
-            # 1. Get basic call details using GET /v2/calls/{id}
             response = await client._make_request(f"calls/{call_id}")
             call = response.get("call", response)
             
-            # Check for private call
             if bool(call.get("isPrivate", False)):
                 return ActionResult(data={
                     "id": call_id,
@@ -235,35 +220,16 @@ class GetCallDetailsAction(ActionHandler):
                     "error": "private_call_filtered"
                 })
 
-            # 2. Fetch extended details (participants/parties) using POST /v2/calls/extensive
-            # We use the call's start time to narrow the search, which is required/recommended for performance
             participants = []
             crm_data = call.get("crmData", {})
             
             started_str = call.get("started")
             if started_str:
                 try:
-                    # Parse start time to create a safe window
-                    # Handle 'Z' by replacing with +00:00 for fromisoformat compatibility
-                    dt_str = started_str.replace("Z", "+00:00")
-                    # Remove milliseconds if present for safer parsing if needed, but ISO usually ok
-                    # simpler: just use the string as is for the API if possible, but calculating window is safer
-                    
-                    # Create a wide window (e.g. +/- 1 day) to avoid timezone/precision issues
-                    # But actually, just passing the exact same string as fromDateTime might be risky if they mean "strictly after"
-                    # So let's try to pass the exact string first, or even better, a fixed "old" date if we don't want to parse.
-                    # BUT, the issue before was empty results.
-                    # Let's try to use the fromDateTime we used before "2015-01-01" BUT with the ID.
-                    # Wait, why did the user say "that didn't work" before? 
-                    # Maybe extensive endpoint *requires* a tighter date range? 
-                    # Or maybe the "2015" date was fine but something else was wrong?
-                    # The user said "call details are empty".
-                    
-                    # Let's use the actual call date found from the GET request.
                     extensive_data = {
                         "filter": {
                             "callIds": [call_id],
-                            "fromDateTime": "2015-01-01T00:00:00Z" # Safe fallback
+                            "fromDateTime": "2015-01-01T00:00:00Z"
                         },
                         "contentSelector": {
                             "context": "Extended",
@@ -276,11 +242,8 @@ class GetCallDetailsAction(ActionHandler):
                         }
                     }
                     
-                    # If we have a start time, use it to optimize/ensure finding
                     if started_str:
                          extensive_data["filter"]["fromDateTime"] = "2015-01-01T00:00:00Z" 
-                         # Actually, sticking to 2015 is safest if it works. 
-                         # But let's rely on the fact that we have the ID.
                     
                     ext_response = await client._make_request("calls/extensive", method="POST", data=extensive_data)
                     ext_calls = ext_response.get("calls", [])
@@ -288,11 +251,9 @@ class GetCallDetailsAction(ActionHandler):
                         ext_call = ext_calls[0]
                         participants = ext_call.get("parties", [])
                         crm_data = ext_call.get("crmData", crm_data)
-                        # Update outcome if available
                         if not call.get("outcome"):
                             call["outcome"] = ext_call.get("outcome", "")
                 except Exception as e:
-                    # If extensive fails, we still return the basic info we have
                     print(f"Warning: Failed to fetch extensive details: {e}")
                     pass
 
