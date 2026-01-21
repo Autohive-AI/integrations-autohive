@@ -335,7 +335,6 @@ class SearchCallsAction(ActionHandler):
                 
                 # Check various content fields for the search query
                 content_fields = call.get("content", {})
-                highlights = content_fields.get("pointsOfInterest", [])
                 
                 # Let's try to match the original logic as much as possible but with valid API request structure.
                 topics = content_fields.get("topics", [])
