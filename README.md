@@ -209,6 +209,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [productboard](productboard): Comprehensive product management integration with Productboard API v2 for managing product hierarchy entities, notes, and analytics. Supports full entity lifecycle management for features, products, components, initiatives, objectives, releases, and subfeatures with custom field support. Includes complete note/feedback operations (create, list, get, update) for simple notes and conversations with tagging, owner assignment, and customer linking. Features analytics report access, entity configuration metadata, and user information retrieval. Supports OAuth2 authentication with comprehensive scopes (product_hierarchy_data, notes, custom_fields, users, companies), cursor-based pagination, and robust error handling. Includes 12 actions covering entities, notes, analytics, and user operations. Ideal for product roadmap automation, customer feedback management, and product analytics workflows.
 
+### Netlify
+
+[Netlify](Netlify): Web hosting and deployment integration with Netlify API v1 for managing sites and deployments. Supports complete site lifecycle management (create, list, get, update, delete sites with custom domain configuration), deployment operations (list deploys, create deploys with file uploads using SHA1 deduplication, get deploy details), and hosting automation. Features Personal Access Token authentication, automatic file hashing for efficient deployments, and comprehensive error handling. Includes 8 actions covering site management and deployment workflows. Ideal for static site hosting, continuous deployment automation, and web hosting management.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
