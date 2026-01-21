@@ -46,7 +46,7 @@ class XConnectedAccountHandler(ConnectedAccountHandler):
             first_name=first_name,
             last_name=last_name,
             user_id=user_id,
-            profile_image_url=profile_image
+            avatar_url=profile_image
         )
 
 
