@@ -255,7 +255,6 @@ class GetCallDetailsAction(ActionHandler):
                             call["outcome"] = ext_call.get("outcome", "")
                 except Exception as e:
                     print(f"Warning: Failed to fetch extensive details: {e}")
-                    pass
 
             return ActionResult(data={
                 "id": call.get("id", call_id),
