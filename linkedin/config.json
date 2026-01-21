@@ -47,7 +47,7 @@
             "description": "Result of the sharing action."
           },
           "post_id": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "The URN of the created post (e.g., urn:li:share:123456)."
           },
           "post_data": {
@@ -110,7 +110,7 @@
             "description": "Status of the user info retrieval operation."
           },
           "user_info": {
-            "type": "object",
+            "type": ["object", "null"],
             "description": "User profile information following OpenID Connect standard claims.",
             "properties": {
               "sub": {
