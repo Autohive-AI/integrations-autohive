@@ -163,6 +163,9 @@ def _parse_table(table_element, ns: str, index: int) -> Dict[str, Any]:
 def create_docx_from_text(text: str) -> bytes:
     """
     Create a minimal .docx file from plain text.
+    
+    Note: This creates a basic document without styles, headers, footers, etc.
+    Formatting from original documents will not be preserved.
     """
     import zipfile
     from xml.etree import ElementTree as ET
@@ -175,11 +178,11 @@ def create_docx_from_text(text: str) -> bytes:
     
     body_content = ''
     for para in paragraphs:
-        escaped_text = para.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        escaped_text = para.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
         body_content += f'''
         <w:p xmlns:w="{WORD_NS}">
             <w:r>
-                <w:t>{escaped_text}</w:t>
+                <w:t xml:space="preserve">{escaped_text}</w:t>
             </w:r>
         </w:p>'''
     
@@ -218,46 +221,69 @@ def modify_docx_content(docx_bytes: bytes, modifications: Dict[str, Any]) -> byt
     
     Supports:
     - replace_all: Replace entire content with new text
-    - search_replace: Find and replace text
-    - insert_text: Insert text at location
+    - search_replace: Find and replace text (safe XML-aware replacement)
     """
     import zipfile
     from xml.etree import ElementTree as ET
     
     WORD_NS = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
     
-    with zipfile.ZipFile(io.BytesIO(docx_bytes), 'r') as docx_zip:
-        file_list = docx_zip.namelist()
-        files = {name: docx_zip.read(name) for name in file_list}
-    
-    document_xml = files['word/document.xml'].decode('utf-8')
-    
     if 'replace_all' in modifications:
         new_text = modifications['replace_all']
         new_docx = create_docx_from_text(new_text)
         return new_docx
+    
+    with zipfile.ZipFile(io.BytesIO(docx_bytes), 'r') as docx_zip:
+        file_list = docx_zip.namelist()
+        files = {name: docx_zip.read(name) for name in file_list}
+    
+    if 'word/document.xml' not in files:
+        raise ValueError("Invalid docx: missing word/document.xml")
     
     if 'search_replace' in modifications:
         sr = modifications['search_replace']
         search_text = sr['search_text']
         replace_text = sr['replace_text']
         match_case = sr.get('match_case', False)
-        replace_all = sr.get('replace_all', True)
+        replace_all_occurrences = sr.get('replace_all', True)
         
-        if match_case:
-            if replace_all:
-                document_xml = document_xml.replace(search_text, replace_text)
+        if not search_text:
+            raise ValueError("search_text cannot be empty")
+        
+        tree = ET.fromstring(files['word/document.xml'])
+        replacement_count = 0
+        
+        for text_elem in tree.iter(f'{WORD_NS}t'):
+            if text_elem.text is None:
+                continue
+            
+            original_text = text_elem.text
+            
+            if match_case:
+                if search_text in original_text:
+                    if replace_all_occurrences:
+                        text_elem.text = original_text.replace(search_text, replace_text)
+                        replacement_count += original_text.count(search_text)
+                    else:
+                        if replacement_count == 0:
+                            text_elem.text = original_text.replace(search_text, replace_text, 1)
+                            replacement_count = 1
             else:
-                document_xml = document_xml.replace(search_text, replace_text, 1)
-        else:
-            pattern = re.escape(search_text)
-            flags = re.IGNORECASE if not match_case else 0
-            if replace_all:
-                document_xml = re.sub(pattern, replace_text, document_xml, flags=flags)
-            else:
-                document_xml = re.sub(pattern, replace_text, document_xml, count=1, flags=flags)
-    
-    files['word/document.xml'] = document_xml.encode('utf-8')
+                pattern = re.compile(re.escape(search_text), re.IGNORECASE)
+                matches = pattern.findall(original_text)
+                if matches:
+                    if replace_all_occurrences:
+                        text_elem.text = pattern.sub(replace_text, original_text)
+                        replacement_count += len(matches)
+                    else:
+                        if replacement_count == 0:
+                            text_elem.text = pattern.sub(replace_text, original_text, count=1)
+                            replacement_count = 1
+        
+        ET.register_namespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main')
+        modified_xml = ET.tostring(tree, encoding='unicode')
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        files['word/document.xml'] = (xml_declaration + modified_xml).encode('utf-8')
     
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as docx_zip:
@@ -384,12 +410,10 @@ class GetContent(ActionHandler):
             
             response = await context.fetch(content_url, method="GET")
             
-            if isinstance(response, bytes):
-                docx_bytes = response
-            elif isinstance(response, str):
-                docx_bytes = response.encode('latin-1')
-            else:
-                return {'result': False, 'error': 'Unexpected response format from API'}
+            if not isinstance(response, bytes):
+                return {'result': False, 'error': 'Failed to download document content'}
+            
+            docx_bytes = response
             
             parsed = parse_docx_content(docx_bytes)
             
@@ -523,8 +547,8 @@ class UpdateContent(ActionHandler):
                 content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
                 existing_bytes = await context.fetch(content_url, method="GET")
                 
-                if isinstance(existing_bytes, str):
-                    existing_bytes = existing_bytes.encode('latin-1')
+                if not isinstance(existing_bytes, bytes):
+                    return {'result': False, 'error': 'Failed to download document content'}
                 
                 docx_bytes = modify_docx_content(existing_bytes, {'replace_all': content})
             else:
@@ -550,7 +574,11 @@ class UpdateContent(ActionHandler):
 
 @microsoft_word.action("word_insert_text")
 class InsertText(ActionHandler):
-    """Insert text at a specific location in the document."""
+    """Insert text at a specific location in the document.
+    
+    Note: This action recreates the document with plain text, which means
+    formatting, styles, images, and other complex elements will be lost.
+    """
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
@@ -559,11 +587,14 @@ class InsertText(ActionHandler):
             location = inputs['location']
             paragraph_index = inputs.get('paragraph_index', 0)
             
+            if location in ('after_paragraph', 'before_paragraph') and paragraph_index < 0:
+                return {'result': False, 'error': 'paragraph_index must be non-negative'}
+            
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             existing_bytes = await context.fetch(content_url, method="GET")
             
-            if isinstance(existing_bytes, str):
-                existing_bytes = existing_bytes.encode('latin-1')
+            if not isinstance(existing_bytes, bytes):
+                return {'result': False, 'error': 'Failed to download document content'}
             
             parsed = parse_docx_content(existing_bytes)
             paragraphs = parsed['paragraphs']
@@ -618,11 +649,14 @@ class GetParagraphs(ActionHandler):
             count = inputs.get('count')
             include_formatting = inputs.get('include_formatting', False)
             
+            if start_index < 0:
+                return {'result': False, 'error': 'start_index must be non-negative'}
+            
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             docx_bytes = await context.fetch(content_url, method="GET")
             
-            if isinstance(docx_bytes, str):
-                docx_bytes = docx_bytes.encode('latin-1')
+            if not isinstance(docx_bytes, bytes):
+                return {'result': False, 'error': 'Failed to download document content'}
             
             parsed = parse_docx_content(docx_bytes)
             paragraphs = parsed['paragraphs']
@@ -630,7 +664,7 @@ class GetParagraphs(ActionHandler):
             if start_index > 0:
                 paragraphs = paragraphs[start_index:]
             
-            if count is not None:
+            if count is not None and count > 0:
                 paragraphs = paragraphs[:count]
             
             if not include_formatting:
@@ -662,16 +696,23 @@ class SearchReplace(ActionHandler):
             match_whole_word = inputs.get('match_whole_word', False)
             replace_all = inputs.get('replace_all', True)
             
+            if not search_text:
+                return {'result': False, 'error': 'search_text cannot be empty'}
+            
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             docx_bytes = await context.fetch(content_url, method="GET")
             
-            if isinstance(docx_bytes, str):
-                docx_bytes = docx_bytes.encode('latin-1')
+            if not isinstance(docx_bytes, bytes):
+                return {'result': False, 'error': 'Failed to download document content'}
             
             parsed_before = parse_docx_content(docx_bytes)
             text_before = parsed_before['full_text']
             
-            if match_case:
+            if match_whole_word:
+                pattern = re.compile(r'\b' + re.escape(search_text) + r'\b', 
+                                     0 if match_case else re.IGNORECASE)
+                count_before = len(pattern.findall(text_before))
+            elif match_case:
                 count_before = text_before.count(search_text)
             else:
                 count_before = text_before.lower().count(search_text.lower())
@@ -693,10 +734,19 @@ class SearchReplace(ActionHandler):
                 }
             }
             
-            if match_whole_word:
-                modifications['search_replace']['search_text'] = f'\\b{re.escape(search_text)}\\b'
-            
             modified_bytes = modify_docx_content(docx_bytes, modifications)
+            
+            parsed_after = parse_docx_content(modified_bytes)
+            text_after = parsed_after['full_text']
+            
+            if match_whole_word:
+                count_after = len(pattern.findall(text_after))
+            elif match_case:
+                count_after = text_after.count(search_text)
+            else:
+                count_after = text_after.lower().count(search_text.lower())
+            
+            actual_replacements = count_before - count_after
             
             upload_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             headers = {
@@ -705,11 +755,9 @@ class SearchReplace(ActionHandler):
             
             await context.fetch(upload_url, method="PUT", headers=headers, data=modified_bytes)
             
-            replacement_count = 1 if not replace_all else count_before
-            
             return {
-                'replaced': True,
-                'replacement_count': replacement_count,
+                'replaced': actual_replacements > 0,
+                'replacement_count': actual_replacements,
                 'document_id': document_id,
                 'result': True
             }
@@ -733,23 +781,12 @@ class ExportPdf(ActionHandler):
             
             pdf_response = await context.fetch(pdf_url, method="GET")
             
-            if isinstance(pdf_response, dict) and '@microsoft.graph.downloadUrl' in pdf_response:
-                download_url = pdf_response['@microsoft.graph.downloadUrl']
-                
-                if not save_to_drive:
-                    return {
-                        'pdf_url': download_url,
-                        'result': True
-                    }
+            if not isinstance(pdf_response, bytes):
+                return {'result': False, 'error': 'Failed to convert document to PDF'}
+            
+            pdf_bytes = pdf_response
             
             if save_to_drive:
-                if isinstance(pdf_response, str):
-                    pdf_bytes = pdf_response.encode('latin-1')
-                elif isinstance(pdf_response, bytes):
-                    pdf_bytes = pdf_response
-                else:
-                    return {'result': False, 'error': 'Could not retrieve PDF content'}
-                
                 if not output_name:
                     doc_info = await context.fetch(
                         f"{GRAPH_API_BASE}/me/drive/items/{document_id}",
@@ -783,8 +820,14 @@ class ExportPdf(ActionHandler):
                     'result': True
                 }
             
+            import base64
+            pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+            
             return {
-                'pdf_url': pdf_url,
+                'pdf_content': pdf_base64,
+                'pdf_size': len(pdf_bytes),
+                'content_type': 'application/pdf',
+                'encoding': 'base64',
                 'result': True
             }
             
@@ -794,19 +837,21 @@ class ExportPdf(ActionHandler):
 
 @microsoft_word.action("word_get_tables")
 class GetTables(ActionHandler):
-    """Extract tables from a Word document."""
+    """Extract tables from a Word document.
+    
+    Note: include_formatting is currently not implemented and will be ignored.
+    """
     
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             document_id = inputs['document_id']
             table_index = inputs.get('table_index')
-            include_formatting = inputs.get('include_formatting', False)
             
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             docx_bytes = await context.fetch(content_url, method="GET")
             
-            if isinstance(docx_bytes, str):
-                docx_bytes = docx_bytes.encode('latin-1')
+            if not isinstance(docx_bytes, bytes):
+                return {'result': False, 'error': 'Failed to download document content'}
             
             parsed = parse_docx_content(docx_bytes)
             tables = parsed['tables']
@@ -817,7 +862,7 @@ class GetTables(ActionHandler):
                         'tables': [],
                         'table_count': len(tables),
                         'result': True,
-                        'error': f'Table index {table_index} out of range'
+                        'error': f'Table index {table_index} out of range (0-{len(tables)-1})'
                     }
                 tables = [tables[table_index]]
             

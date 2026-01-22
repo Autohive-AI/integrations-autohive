@@ -324,7 +324,7 @@
     },
     "word_export_pdf": {
       "display_name": "Export to PDF",
-      "description": "Export the Word document to PDF format. Returns a download URL or saves to OneDrive.",
+      "description": "Export the Word document to PDF format. Returns base64-encoded PDF content or saves to OneDrive.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -338,7 +338,7 @@
           },
           "save_to_drive": {
             "type": "boolean",
-            "description": "Save PDF to OneDrive (default: false, returns download URL)."
+            "description": "Save PDF to OneDrive (default: false, returns base64 content)."
           },
           "folder_path": {
             "type": "string",
@@ -350,9 +350,13 @@
       "output_schema": {
         "type": "object",
         "properties": {
-          "pdf_url": { "type": "string", "description": "URL to download/access the PDF." },
+          "pdf_content": { "type": "string", "description": "Base64-encoded PDF content (when save_to_drive is false)." },
+          "pdf_size": { "type": "integer", "description": "PDF file size in bytes." },
+          "content_type": { "type": "string", "description": "MIME type (application/pdf)." },
+          "encoding": { "type": "string", "description": "Content encoding (base64)." },
+          "pdf_url": { "type": "string", "description": "URL to access PDF (when save_to_drive is true)." },
           "pdf_id": { "type": "string", "description": "Drive item ID if saved to drive." },
-          "size": { "type": "integer", "description": "PDF file size in bytes." },
+          "size": { "type": "integer", "description": "PDF file size in bytes (when saved to drive)." },
           "result": { "type": "boolean" },
           "error": { "type": "string" }
         },

@@ -375,16 +375,16 @@ class TestSearchReplace:
 
 class TestExportPdf:
     @pytest.mark.asyncio
-    async def test_export_pdf_url(self, mock_context):
-        mock_context.fetch.return_value = {
-            '@microsoft.graph.downloadUrl': 'https://example.com/download/pdf'
-        }
+    async def test_export_pdf_base64(self, mock_context):
+        mock_context.fetch.return_value = b'%PDF-1.4 fake pdf content'
         
         action = ExportPdf()
         result = await action.execute({'document_id': 'doc123'}, mock_context)
         
         assert result['result'] is True
-        assert 'pdf_url' in result
+        assert 'pdf_content' in result
+        assert result['encoding'] == 'base64'
+        assert result['content_type'] == 'application/pdf'
     
     @pytest.mark.asyncio
     async def test_export_pdf_save_to_drive(self, mock_context):
@@ -401,6 +401,7 @@ class TestExportPdf:
         }, mock_context)
         
         assert result['result'] is True
+        assert result['pdf_url'] == 'https://example.com/pdf'
 
 
 class TestGetTables:
