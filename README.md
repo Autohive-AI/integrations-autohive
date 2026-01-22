@@ -224,6 +224,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [nzbn](nzbn): Integration with the New Zealand Business Number (NZBN) API for searching and retrieving business entity information from the NZBN Register. Supports searching entities by name, trading name, or NZBN with filters for entity type and status, retrieving detailed entity information, accessing addresses, roles/officers, trading names, GST numbers, and industry classifications (ANZSIC codes), and tracking entity changes over time. Features 2-legged OAuth (Client Credentials) authentication with automatic token caching and refresh, zero-config experience for end users with server-side credential injection, and comprehensive error handling. Includes 9 actions covering entity search, details retrieval, and change tracking. Ideal for business verification, due diligence, compliance workflows, and NZ company data integration.
 
+### Code Analysis
+
+[code-analysis](code-analysis): Python code execution integration for data analysis, file processing, and automation tasks. Supports executing arbitrary Python code in a sandboxed environment, processing input files (CSV, Excel, JSON, images, PDFs), and automatically detecting and returning generated output files with base64 encoding. Pre-installed libraries include numpy, Pillow, PyPDF2, python-docx, reportlab, openpyxl, XlsxWriter, matplotlib, and python-pptx. Features ActionResult return type for cost tracking. No authentication required. Ideal for data transformation, document generation, chart creation, and custom automation workflows.
+
 ## Template
 
 [template-structure](template-structure) contains a structural template for new integrations, including a sample template for an appropriate README file and a basic testbed.
