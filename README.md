@@ -193,6 +193,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [shopify-admin](shopify-admin): Integrates with the Shopify Admin API for backend store management. Currently enables comprehensive customer lifecycle management including searching, creating, updating, and deleting customer records via the GraphQL API.
 
+### Shopify Storefront
+
+[shopify-storefront](shopify-storefront): Connects to the Shopify Storefront API to manage customer-facing e-commerce operations. Supports searching and retrieving products and collections, full cart management (create, update, discounts), and customer authentication.
+
 ### Stripe
 
 [stripe](stripe): Comprehensive payment and billing integration with Stripe API for managing customers, invoices, invoice items, subscriptions, products, prices, and payment methods. Supports full customer lifecycle management (create, list, get, update, delete) with address and metadata support. Features complete invoice workflow including draft creation, finalization, sending via email, payment processing, and voiding. Includes invoice item management for adding line items with quantities, unit amounts, and descriptions. Provides subscription management (create, update, cancel with trial periods and proration), product catalog operations (create, update, list products), price management (one-time and recurring pricing), and payment method handling (list, attach, detach). Supports OAuth authentication via Stripe Apps Marketplace and API key authentication (test and production keys). Features pagination with cursor-based navigation, filtering by customer/status/date, and multi-currency support. Includes actions covering customers, invoices, invoice items, subscriptions, products, prices, and payment methods. Ideal for billing automation, subscription management, and payment processing workflows.
