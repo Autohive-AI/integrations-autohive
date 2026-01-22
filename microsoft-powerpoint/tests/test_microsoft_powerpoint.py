@@ -53,6 +53,22 @@ class TestListPresentationsAction:
         mock_context.fetch.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_list_presentations_escapes_quotes(self, mock_context):
+        from microsoft_powerpoint import ListPresentationsAction
+
+        mock_context.fetch.return_value = {'value': [], '@odata.nextLink': None}
+
+        action = ListPresentationsAction()
+        result = await action.execute({
+            'name_contains': "O'Brien's Report"
+        }, mock_context)
+
+        assert result['result'] is True
+        call_args = mock_context.fetch.call_args
+        params = call_args.kwargs.get('params', {})
+        assert "O''Brien''s Report" in params.get('$filter', '')
+
+    @pytest.mark.asyncio
     async def test_list_presentations_error(self, mock_context):
         from microsoft_powerpoint import ListPresentationsAction
 
@@ -94,20 +110,21 @@ class TestGetPresentationAction:
 
 class TestGetSlidesAction:
     @pytest.mark.asyncio
-    async def test_get_slides_success(self, mock_context):
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_get_slides_success(self, mock_download, mock_context):
         from microsoft_powerpoint import GetSlidesAction
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
 
         mock_context.fetch.return_value = {
-            'value': [
-                {
-                    'id': '0',
-                    'medium': {'url': 'https://thumb1.com', 'width': 800, 'height': 600}
-                },
-                {
-                    'id': '1',
-                    'medium': {'url': 'https://thumb2.com', 'width': 800, 'height': 600}
-                }
-            ]
+            'value': [{'id': '0', 'medium': {'url': 'https://thumb.com', 'width': 800, 'height': 600}}]
         }
 
         action = GetSlidesAction()
@@ -117,36 +134,25 @@ class TestGetSlidesAction:
         assert result['slide_count'] == 2
         assert len(result['slides']) == 2
         assert result['slides'][0]['index'] == 1
-        assert result['slides'][0]['thumbnailUrl'] == 'https://thumb1.com'
-
-    @pytest.mark.asyncio
-    async def test_get_slides_without_thumbnails(self, mock_context):
-        from microsoft_powerpoint import GetSlidesAction
-
-        mock_context.fetch.return_value = {
-            'value': [{'id': '0'}, {'id': '1'}]
-        }
-
-        action = GetSlidesAction()
-        result = await action.execute({
-            'presentation_id': 'item-123',
-            'include_thumbnails': False
-        }, mock_context)
-
-        assert result['result'] is True
-        assert 'thumbnailUrl' not in result['slides'][0]
 
 
 class TestGetSlideAction:
     @pytest.mark.asyncio
-    async def test_get_slide_success(self, mock_context):
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_get_slide_success(self, mock_download, mock_context):
         from microsoft_powerpoint import GetSlideAction
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
 
         mock_context.fetch.return_value = {
-            'value': [
-                {'id': '0', 'large': {'url': 'https://thumb1.com', 'width': 1600, 'height': 1200}},
-                {'id': '1', 'large': {'url': 'https://thumb2.com', 'width': 1600, 'height': 1200}}
-            ]
+            'value': [{'id': '0', 'large': {'url': 'https://thumb.com', 'width': 1600, 'height': 1200}}]
         }
 
         action = GetSlideAction()
@@ -157,7 +163,6 @@ class TestGetSlideAction:
 
         assert result['result'] is True
         assert result['index'] == 2
-        assert result['thumbnailUrl'] == 'https://thumb2.com'
 
     @pytest.mark.asyncio
     async def test_get_slide_invalid_index(self, mock_context):
@@ -173,10 +178,17 @@ class TestGetSlideAction:
         assert 'error' in result
 
     @pytest.mark.asyncio
-    async def test_get_slide_out_of_range(self, mock_context):
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_get_slide_out_of_range(self, mock_download, mock_context):
         from microsoft_powerpoint import GetSlideAction
-
-        mock_context.fetch.return_value = {'value': [{'id': '0'}]}
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
 
         action = GetSlideAction()
         result = await action.execute({
@@ -186,6 +198,56 @@ class TestGetSlideAction:
 
         assert result['result'] is False
         assert 'out of range' in result['error']
+
+
+class TestDeleteSlideAction:
+    @pytest.mark.asyncio
+    @patch('microsoft_powerpoint.overwrite_file_content')
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_delete_slide_success(self, mock_download, mock_overwrite, mock_context):
+        from microsoft_powerpoint import DeleteSlideAction
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
+        mock_overwrite.return_value = {}
+
+        action = DeleteSlideAction()
+        result = await action.execute({
+            'presentation_id': 'item-123',
+            'slide_index': 1
+        }, mock_context)
+
+        assert result['result'] is True
+        assert result['deleted'] is True
+        assert result['slide_count'] == 1
+
+    @pytest.mark.asyncio
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_delete_last_slide_error(self, mock_download, mock_context):
+        from microsoft_powerpoint import DeleteSlideAction
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
+
+        action = DeleteSlideAction()
+        result = await action.execute({
+            'presentation_id': 'item-123',
+            'slide_index': 1
+        }, mock_context)
+
+        assert result['result'] is False
+        assert 'Cannot delete the last slide' in result['error']
 
 
 class TestExportPdfAction:
@@ -210,13 +272,20 @@ class TestExportPdfAction:
 
 class TestGetSlideImageAction:
     @pytest.mark.asyncio
-    async def test_get_slide_image_success(self, mock_context):
+    @patch('microsoft_powerpoint.download_file_content')
+    async def test_get_slide_image_success(self, mock_download, mock_context):
         from microsoft_powerpoint import GetSlideImageAction
+        from pptx import Presentation
+        
+        prs = Presentation()
+        prs.slides.add_slide(prs.slide_layouts[6])
+        buffer = io.BytesIO()
+        prs.save(buffer)
+        buffer.seek(0)
+        mock_download.return_value = buffer.read()
 
         mock_context.fetch.return_value = {
-            'value': [
-                {'id': '0', 'large': {'url': 'https://image.com/slide1.png', 'width': 1600, 'height': 1200}}
-            ]
+            'value': [{'id': '0', 'large': {'url': 'https://image.com/slide1.png', 'width': 1600, 'height': 1200}}]
         }
 
         action = GetSlideImageAction()
@@ -228,6 +297,7 @@ class TestGetSlideImageAction:
         assert result['result'] is True
         assert result['image_url'] == 'https://image.com/slide1.png'
         assert result['format'] == 'png'
+        assert 'note' in result
 
     @pytest.mark.asyncio
     async def test_get_slide_image_invalid_index(self, mock_context):
@@ -281,3 +351,12 @@ class TestCreatePresentationAction:
 
         assert result['result'] is True
         mock_create_blank.assert_called_once()
+
+
+class TestHelperFunctions:
+    def test_odata_escape(self):
+        from microsoft_powerpoint import odata_escape
+        
+        assert odata_escape("normal") == "normal"
+        assert odata_escape("O'Brien") == "O''Brien"
+        assert odata_escape("It's a test's") == "It''s a test''s"

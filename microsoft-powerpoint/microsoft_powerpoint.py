@@ -1,10 +1,8 @@
 from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler
 )
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import io
-import tempfile
-import os
 
 microsoft_powerpoint = Integration.load()
 
@@ -16,6 +14,13 @@ THUMBNAIL_SIZES = {
     "large": {"width": 1600, "height": 1200}
 }
 
+MAX_SIMPLE_UPLOAD_SIZE = 4 * 1024 * 1024
+
+
+def odata_escape(value: str) -> str:
+    """Escape single quotes for OData filter strings."""
+    return value.replace("'", "''")
+
 
 async def download_file_content(context: ExecutionContext, item_id: str) -> bytes:
     response = await context.fetch(
@@ -26,7 +31,27 @@ async def download_file_content(context: ExecutionContext, item_id: str) -> byte
     return response
 
 
+async def overwrite_file_content(context: ExecutionContext, item_id: str, content: bytes) -> Dict[str, Any]:
+    """Overwrite file content by item ID (simpler and more reliable than path-based upload)."""
+    if len(content) > MAX_SIMPLE_UPLOAD_SIZE:
+        raise ValueError(f"File size ({len(content)} bytes) exceeds simple upload limit ({MAX_SIMPLE_UPLOAD_SIZE} bytes). Large file upload not yet supported.")
+    
+    response = await context.fetch(
+        f"{GRAPH_API_BASE_URL}/me/drive/items/{item_id}/content",
+        method="PUT",
+        headers={
+            "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        },
+        data=content
+    )
+    return response
+
+
 async def upload_file_content(context: ExecutionContext, folder_path: str, file_name: str, content: bytes) -> Dict[str, Any]:
+    """Upload new file content to a folder path."""
+    if len(content) > MAX_SIMPLE_UPLOAD_SIZE:
+        raise ValueError(f"File size ({len(content)} bytes) exceeds simple upload limit ({MAX_SIMPLE_UPLOAD_SIZE} bytes). Large file upload not yet supported.")
+    
     if folder_path and folder_path != "/":
         upload_url = f"{GRAPH_API_BASE_URL}/me/drive/root:/{folder_path.strip('/')}/{file_name}:/content"
     else:
@@ -73,7 +98,7 @@ class ListPresentationsAction(ActionHandler):
 
             filter_parts = ["endswith(name, '.pptx')"]
             if name_contains:
-                filter_parts.append(f"contains(name, '{name_contains}')")
+                filter_parts.append(f"contains(name, '{odata_escape(name_contains)}')")
 
             params = {
                 "$filter": " and ".join(filter_parts),
@@ -145,35 +170,52 @@ class GetPresentationAction(ActionHandler):
 
 @microsoft_powerpoint.action("powerpoint_get_slides")
 class GetSlidesAction(ActionHandler):
-    """List all slides in a presentation with their thumbnails and basic metadata."""
+    """List all slides in a presentation with their basic metadata."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
+            from pptx import Presentation
+
             presentation_id = inputs['presentation_id']
             include_thumbnails = inputs.get('include_thumbnails', True)
             thumbnail_size = inputs.get('thumbnail_size', 'medium')
 
-            thumbnails_response = await context.fetch(
-                f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}/thumbnails",
-                method="GET"
-            )
+            content_bytes = await download_file_content(context, presentation_id)
+            prs = Presentation(io.BytesIO(content_bytes))
 
-            thumbnail_sets = thumbnails_response.get('value', [])
             slides = []
+            thumbnail_data = {}
 
-            for i, thumb_set in enumerate(thumbnail_sets):
-                slide = {
+            if include_thumbnails:
+                try:
+                    thumbnails_response = await context.fetch(
+                        f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}/thumbnails",
+                        method="GET"
+                    )
+                    thumbnail_sets = thumbnails_response.get('value', [])
+                    if thumbnail_sets:
+                        size_data = thumbnail_sets[0].get(thumbnail_size, thumbnail_sets[0].get('medium', {}))
+                        thumbnail_data = {
+                            "url": size_data.get('url'),
+                            "width": size_data.get('width'),
+                            "height": size_data.get('height')
+                        }
+                except Exception:
+                    pass
+
+            for i, slide in enumerate(prs.slides):
+                slide_info = {
                     "index": i + 1,
-                    "id": thumb_set.get('id', str(i))
+                    "id": str(slide.slide_id)
                 }
 
-                if include_thumbnails:
-                    size_data = thumb_set.get(thumbnail_size, thumb_set.get('medium', {}))
-                    slide["thumbnailUrl"] = size_data.get('url')
-                    slide["thumbnailWidth"] = size_data.get('width')
-                    slide["thumbnailHeight"] = size_data.get('height')
+                if include_thumbnails and thumbnail_data.get('url'):
+                    slide_info["thumbnailUrl"] = thumbnail_data.get('url')
+                    slide_info["thumbnailWidth"] = thumbnail_data.get('width')
+                    slide_info["thumbnailHeight"] = thumbnail_data.get('height')
+                    slide_info["thumbnailNote"] = "Thumbnail is for entire presentation, not individual slide"
 
-                slides.append(slide)
+                slides.append(slide_info)
 
             return {
                 "slides": slides,
@@ -181,6 +223,8 @@ class GetSlidesAction(ActionHandler):
                 "result": True
             }
 
+        except ImportError:
+            return {"slides": [], "slide_count": 0, "result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
         except Exception as e:
             return {"slides": [], "slide_count": 0, "result": False, "error": str(e)}
 
@@ -191,6 +235,8 @@ class GetSlideAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
+            from pptx import Presentation
+
             presentation_id = inputs['presentation_id']
             slide_index = inputs['slide_index']
             include_thumbnail = inputs.get('include_thumbnail', True)
@@ -199,32 +245,40 @@ class GetSlideAction(ActionHandler):
             if slide_index < 1:
                 return {"result": False, "error": "Slide index must be 1 or greater"}
 
-            thumbnails_response = await context.fetch(
-                f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}/thumbnails",
-                method="GET"
-            )
-
-            thumbnail_sets = thumbnails_response.get('value', [])
+            content_bytes = await download_file_content(context, presentation_id)
+            prs = Presentation(io.BytesIO(content_bytes))
             
-            if slide_index > len(thumbnail_sets):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(thumbnail_sets)} slides."}
+            if slide_index > len(prs.slides):
+                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
 
-            thumb_set = thumbnail_sets[slide_index - 1]
+            slide = prs.slides[slide_index - 1]
             
             result = {
                 "index": slide_index,
-                "id": thumb_set.get('id', str(slide_index - 1)),
+                "id": str(slide.slide_id),
                 "result": True
             }
 
             if include_thumbnail:
-                size_data = thumb_set.get(thumbnail_size, thumb_set.get('large', {}))
-                result["thumbnailUrl"] = size_data.get('url')
-                result["thumbnailWidth"] = size_data.get('width')
-                result["thumbnailHeight"] = size_data.get('height')
+                try:
+                    thumbnails_response = await context.fetch(
+                        f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}/thumbnails",
+                        method="GET"
+                    )
+                    thumbnail_sets = thumbnails_response.get('value', [])
+                    if thumbnail_sets:
+                        size_data = thumbnail_sets[0].get(thumbnail_size, thumbnail_sets[0].get('large', {}))
+                        result["thumbnailUrl"] = size_data.get('url')
+                        result["thumbnailWidth"] = size_data.get('width')
+                        result["thumbnailHeight"] = size_data.get('height')
+                        result["thumbnailNote"] = "Thumbnail is for entire presentation, not individual slide"
+                except Exception:
+                    pass
 
             return result
 
+        except ImportError:
+            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
         except Exception as e:
             return {"result": False, "error": str(e)}
 
@@ -344,16 +398,20 @@ class AddSlideAction(ActionHandler):
                 slide_index = len(prs.slides)
 
             if title:
+                from pptx.enum.shapes import PP_PLACEHOLDER
+                title_types = {PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE}
                 for shape in new_slide.shapes:
                     if shape.has_text_frame and shape.is_placeholder:
-                        if shape.placeholder_format.type == 1:
+                        if shape.placeholder_format.type in title_types:
                             shape.text = title
                             break
 
             if content:
+                from pptx.enum.shapes import PP_PLACEHOLDER
+                body_types = {PP_PLACEHOLDER.BODY, PP_PLACEHOLDER.OBJECT}
                 for shape in new_slide.shapes:
                     if shape.has_text_frame and shape.is_placeholder:
-                        if shape.placeholder_format.type == 2:
+                        if shape.placeholder_format.type in body_types:
                             shape.text = content
                             break
 
@@ -361,16 +419,7 @@ class AddSlideAction(ActionHandler):
             prs.save(buffer)
             buffer.seek(0)
 
-            file_info = await context.fetch(
-                f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}",
-                method="GET",
-                params={"$select": "name,parentReference"}
-            )
-
-            file_name = file_info.get('name')
-            parent_path = file_info.get('parentReference', {}).get('path', '/drive/root:').replace('/drive/root:', '')
-
-            await upload_file_content(context, parent_path, file_name, buffer.read())
+            await overwrite_file_content(context, presentation_id, buffer.read())
 
             return {
                 "slide_index": slide_index,
@@ -411,17 +460,21 @@ class UpdateSlideAction(ActionHandler):
             updated = False
 
             if title is not None:
+                from pptx.enum.shapes import PP_PLACEHOLDER
+                title_types = {PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE}
                 for shape in slide.shapes:
                     if shape.has_text_frame and shape.is_placeholder:
-                        if hasattr(shape, 'placeholder_format') and shape.placeholder_format.type == 1:
+                        if hasattr(shape, 'placeholder_format') and shape.placeholder_format.type in title_types:
                             shape.text = title
                             updated = True
                             break
 
             if content is not None:
+                from pptx.enum.shapes import PP_PLACEHOLDER
+                body_types = {PP_PLACEHOLDER.BODY, PP_PLACEHOLDER.OBJECT}
                 for shape in slide.shapes:
                     if shape.has_text_frame and shape.is_placeholder:
-                        if hasattr(shape, 'placeholder_format') and shape.placeholder_format.type == 2:
+                        if hasattr(shape, 'placeholder_format') and shape.placeholder_format.type in body_types:
                             shape.text = content
                             updated = True
                             break
@@ -436,16 +489,7 @@ class UpdateSlideAction(ActionHandler):
                 prs.save(buffer)
                 buffer.seek(0)
 
-                file_info = await context.fetch(
-                    f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}",
-                    method="GET",
-                    params={"$select": "name,parentReference"}
-                )
-
-                file_name = file_info.get('name')
-                parent_path = file_info.get('parentReference', {}).get('path', '/drive/root:').replace('/drive/root:', '')
-
-                await upload_file_content(context, parent_path, file_name, buffer.read())
+                await overwrite_file_content(context, presentation_id, buffer.read())
 
             return {
                 "updated": updated,
@@ -479,28 +523,26 @@ class DeleteSlideAction(ActionHandler):
             if slide_index > len(prs.slides):
                 return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
 
-            slide_id = prs.slides._sldIdLst[slide_index - 1].rId
-            prs.part.drop_rel(slide_id)
-            del prs.slides._sldIdLst[slide_index - 1]
+            if len(prs.slides) == 1:
+                return {"result": False, "error": "Cannot delete the last slide. Presentation must have at least one slide."}
+
+            sldIdLst = prs.slides._sldIdLst
+            sldId = sldIdLst[slide_index - 1]
+            rId = sldId.rId
+            prs.part.drop_rel(rId)
+            sldIdLst.remove(sldId)
+
+            remaining_count = len(prs.slides)
 
             buffer = io.BytesIO()
             prs.save(buffer)
             buffer.seek(0)
 
-            file_info = await context.fetch(
-                f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}",
-                method="GET",
-                params={"$select": "name,parentReference"}
-            )
-
-            file_name = file_info.get('name')
-            parent_path = file_info.get('parentReference', {}).get('path', '/drive/root:').replace('/drive/root:', '')
-
-            await upload_file_content(context, parent_path, file_name, buffer.read())
+            await overwrite_file_content(context, presentation_id, buffer.read())
 
             return {
                 "deleted": True,
-                "slide_count": len(prs.slides),
+                "slide_count": remaining_count,
                 "result": True
             }
 
@@ -556,8 +598,7 @@ class ExportPdfAction(ActionHandler):
 
             download_response = await context.fetch(
                 f"{GRAPH_API_BASE_URL}/me/drive/items/{response.get('id')}",
-                method="GET",
-                params={"$select": "@microsoft.graph.downloadUrl"}
+                method="GET"
             )
 
             return {
@@ -575,10 +616,12 @@ class ExportPdfAction(ActionHandler):
 
 @microsoft_powerpoint.action("powerpoint_get_slide_image")
 class GetSlideImageAction(ActionHandler):
-    """Get a slide as an image (PNG/JPEG thumbnail)."""
+    """Get a presentation thumbnail image. Note: Microsoft Graph returns a single thumbnail for the entire presentation, not per-slide images."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
+            from pptx import Presentation
+
             presentation_id = inputs['presentation_id']
             slide_index = inputs['slide_index']
             size = inputs.get('size', 'large')
@@ -587,8 +630,13 @@ class GetSlideImageAction(ActionHandler):
             if slide_index < 1:
                 return {"result": False, "error": "Slide index must be 1 or greater"}
 
+            content_bytes = await download_file_content(context, presentation_id)
+            prs = Presentation(io.BytesIO(content_bytes))
+            
+            if slide_index > len(prs.slides):
+                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
+
             size_info = THUMBNAIL_SIZES.get(size, THUMBNAIL_SIZES['large'])
-            custom_size = f"c{size_info['width']}x{size_info['height']}"
 
             thumbnails_response = await context.fetch(
                 f"{GRAPH_API_BASE_URL}/me/drive/items/{presentation_id}/thumbnails",
@@ -597,20 +645,21 @@ class GetSlideImageAction(ActionHandler):
 
             thumbnail_sets = thumbnails_response.get('value', [])
             
-            if slide_index > len(thumbnail_sets):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(thumbnail_sets)} slides."}
+            if not thumbnail_sets:
+                return {"result": False, "error": "No thumbnail available for this presentation"}
 
-            thumb_set = thumbnail_sets[slide_index - 1]
-            
-            size_data = thumb_set.get(size, thumb_set.get('large', {}))
+            size_data = thumbnail_sets[0].get(size, thumbnail_sets[0].get('large', {}))
 
             return {
                 "image_url": size_data.get('url'),
                 "width": size_data.get('width', size_info['width']),
                 "height": size_data.get('height', size_info['height']),
                 "format": image_format,
+                "note": "Microsoft Graph provides a single presentation thumbnail, not per-slide images",
                 "result": True
             }
 
+        except ImportError:
+            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
         except Exception as e:
             return {"result": False, "error": str(e)}
