@@ -1,5 +1,6 @@
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
+from urllib.parse import quote
 
 microsoft_excel = Integration.load()
 
@@ -7,27 +8,19 @@ GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
 EXCEL_MIMETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-def get_headers(context: ExecutionContext) -> Dict[str, str]:
-    access_token = context.auth["credentials"]["access_token"]
-    return {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
+def encode_path_segment(segment: str) -> str:
+    """URL-encode a path segment for use in Graph API URLs."""
+    return quote(segment, safe="")
 
 
 @microsoft_excel.action("excel_list_workbooks")
 class ListWorkbooks(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             name_contains = inputs.get("name_contains")
             folder_path = inputs.get("folder_path")
             page_size = inputs.get("page_size", 25)
             page_token = inputs.get("page_token")
-
-            filter_parts = [
-                f"file/mimeType eq '{EXCEL_MIMETYPE}'"
-            ]
 
             if folder_path:
                 url = f"{GRAPH_BASE_URL}/me/drive/root:/{folder_path}:/children"
@@ -35,7 +28,6 @@ class ListWorkbooks(ActionHandler):
                 url = f"{GRAPH_BASE_URL}/me/drive/root/children"
 
             params = {
-                "$filter": " and ".join(filter_parts),
                 "$top": min(page_size, 100),
                 "$select": "id,name,webUrl,lastModifiedDateTime,file,size",
                 "$orderby": "lastModifiedDateTime desc",
@@ -43,14 +35,15 @@ class ListWorkbooks(ActionHandler):
 
             if page_token:
                 url = page_token
+                params = None
 
-            response = await context.fetch(url, method="GET", headers=headers, params=params if not page_token else None)
+            response = await context.fetch(url, method="GET", params=params)
 
             if response.status_code != 200:
                 return {
                     "workbooks": [],
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -84,11 +77,10 @@ class ListWorkbooks(ActionHandler):
 class GetWorkbook(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
 
             file_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}"
-            file_response = await context.fetch(file_url, method="GET", headers=headers)
+            file_response = await context.fetch(file_url, method="GET")
 
             if file_response.status_code != 200:
                 return {
@@ -99,7 +91,7 @@ class GetWorkbook(ActionHandler):
             file_data = file_response.json()
 
             worksheets_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets"
-            ws_response = await context.fetch(worksheets_url, method="GET", headers=headers)
+            ws_response = await context.fetch(worksheets_url, method="GET")
 
             worksheets = []
             if ws_response.status_code == 200:
@@ -113,7 +105,7 @@ class GetWorkbook(ActionHandler):
                     })
 
             tables_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables"
-            tables_response = await context.fetch(tables_url, method="GET", headers=headers)
+            tables_response = await context.fetch(tables_url, method="GET")
 
             tables = []
             if tables_response.status_code == 200:
@@ -128,7 +120,7 @@ class GetWorkbook(ActionHandler):
                     })
 
             names_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/names"
-            names_response = await context.fetch(names_url, method="GET", headers=headers)
+            names_response = await context.fetch(names_url, method="GET")
 
             named_ranges = []
             if names_response.status_code == 200:
@@ -161,17 +153,16 @@ class GetWorkbook(ActionHandler):
 class ListWorksheets(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
 
             url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets"
-            response = await context.fetch(url, method="GET", headers=headers)
+            response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
                 return {
                     "worksheets": [],
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -194,19 +185,19 @@ class ListWorksheets(ActionHandler):
 class ReadRange(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             range_address = inputs["range"]
             value_render_option = inputs.get("value_render_option", "FORMATTED_VALUE")
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/range(address='{range_address}')"
-            response = await context.fetch(url, method="GET", headers=headers)
+            encoded_ws = encode_path_segment(worksheet_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')"
+            response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
                 return {
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -235,21 +226,21 @@ class ReadRange(ActionHandler):
 class WriteRange(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             range_address = inputs["range"]
             values = inputs["values"]
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/range(address='{range_address}')"
+            encoded_ws = encode_path_segment(worksheet_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')"
 
             body = {"values": values}
-            response = await context.fetch(url, method="PATCH", headers=headers, json=body)
+            response = await context.fetch(url, method="PATCH", json=body)
 
             if response.status_code not in [200, 201]:
                 return {
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -272,22 +263,22 @@ class WriteRange(ActionHandler):
 class ListTables(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs.get("worksheet_name")
 
             if worksheet_name:
-                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/tables"
+                encoded_ws = encode_path_segment(worksheet_name)
+                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/tables"
             else:
                 url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables"
 
-            response = await context.fetch(url, method="GET", headers=headers)
+            response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
                 return {
                     "tables": [],
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -311,15 +302,15 @@ class ListTables(ActionHandler):
 class GetTableData(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
             select_columns = inputs.get("select_columns")
             top = inputs.get("top")
             skip = inputs.get("skip")
 
-            header_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/headerRowRange"
-            header_response = await context.fetch(header_url, method="GET", headers=headers)
+            encoded_table = encode_path_segment(table_name)
+            header_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/headerRowRange"
+            header_response = await context.fetch(header_url, method="GET")
 
             if header_response.status_code != 200:
                 return {
@@ -330,8 +321,8 @@ class GetTableData(ActionHandler):
             header_data = header_response.json()
             all_headers = header_data.get("values", [[]])[0]
 
-            rows_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/dataBodyRange"
-            rows_response = await context.fetch(rows_url, method="GET", headers=headers)
+            rows_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/dataBodyRange"
+            rows_response = await context.fetch(rows_url, method="GET")
 
             if rows_response.status_code != 200:
                 return {
@@ -345,7 +336,7 @@ class GetTableData(ActionHandler):
             if select_columns:
                 col_indices = [all_headers.index(c) for c in select_columns if c in all_headers]
                 headers_out = [all_headers[i] for i in col_indices]
-                rows_out = [[row[i] for i in col_indices] for row in all_rows]
+                rows_out = [[row[i] for i in col_indices if i < len(row)] for row in all_rows]
             else:
                 headers_out = all_headers
                 rows_out = all_rows
@@ -377,28 +368,28 @@ class GetTableData(ActionHandler):
 class AddTableRow(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
             rows = inputs["rows"]
             index = inputs.get("index")
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/rows/add"
+            encoded_table = encode_path_segment(table_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/rows/add"
 
             body: Dict[str, Any] = {"values": rows}
             if index is not None:
                 body["index"] = index
 
-            response = await context.fetch(url, method="POST", headers=headers, json=body)
+            response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
                 return {
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
-            range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/range"
-            range_response = await context.fetch(range_url, method="GET", headers=headers)
+            range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/range"
+            range_response = await context.fetch(range_url, method="GET")
             table_range = ""
             if range_response.status_code == 200:
                 table_range = range_response.json().get("address", "")
@@ -417,22 +408,22 @@ class AddTableRow(ActionHandler):
 class GetUsedRange(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             values_only = inputs.get("values_only", False)
 
+            encoded_ws = encode_path_segment(worksheet_name)
             if values_only:
-                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/usedRange(valuesOnly=true)"
+                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/usedRange(valuesOnly=true)"
             else:
-                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/usedRange"
+                url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/usedRange"
 
-            response = await context.fetch(url, method="GET", headers=headers)
+            response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
                 return {
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -454,19 +445,18 @@ class GetUsedRange(ActionHandler):
 class CreateWorksheet(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             name = inputs["name"]
 
             url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/add"
 
             body = {"name": name}
-            response = await context.fetch(url, method="POST", headers=headers, json=body)
+            response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
                 return {
                     "result": False,
-                    "error": f"Microsoft Graph API error: {response.status_code} - {response.text}",
+                    "error": f"Microsoft Graph API error: {response.status_code}",
                 }
 
             data = response.json()
@@ -489,12 +479,12 @@ class CreateWorksheet(ActionHandler):
 class DeleteWorksheet(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}"
-            response = await context.fetch(url, method="DELETE", headers=headers)
+            encoded_ws = encode_path_segment(worksheet_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}"
+            response = await context.fetch(url, method="DELETE")
 
             if response.status_code not in [200, 204]:
                 return {
@@ -513,16 +503,16 @@ class DeleteWorksheet(ActionHandler):
 class CreateTable(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             range_address = inputs["range"]
             has_headers = inputs.get("has_headers", True)
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/tables/add"
+            encoded_ws = encode_path_segment(worksheet_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/tables/add"
 
             body = {"address": range_address, "hasHeaders": has_headers}
-            response = await context.fetch(url, method="POST", headers=headers, json=body)
+            response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
                 return {
@@ -548,16 +538,16 @@ class CreateTable(ActionHandler):
 class UpdateTableRow(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
             row_index = inputs["row_index"]
             values = inputs["values"]
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/rows/itemAt(index={row_index})"
+            encoded_table = encode_path_segment(table_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/rows/itemAt(index={row_index})"
 
             body = {"values": [values]}
-            response = await context.fetch(url, method="PATCH", headers=headers, json=body)
+            response = await context.fetch(url, method="PATCH", json=body)
 
             if response.status_code not in [200, 201]:
                 return {
@@ -576,13 +566,13 @@ class UpdateTableRow(ActionHandler):
 class DeleteTableRow(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
             row_index = inputs["row_index"]
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/rows/itemAt(index={row_index})"
-            response = await context.fetch(url, method="DELETE", headers=headers)
+            encoded_table = encode_path_segment(table_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/rows/itemAt(index={row_index})"
+            response = await context.fetch(url, method="DELETE")
 
             if response.status_code not in [200, 204]:
                 return {
@@ -601,14 +591,14 @@ class DeleteTableRow(ActionHandler):
 class SortRange(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             range_address = inputs["range"]
             sort_fields = inputs["sort_fields"]
             has_headers = inputs.get("has_headers", True)
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/range(address='{range_address}')/sort/apply"
+            encoded_ws = encode_path_segment(worksheet_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')/sort/apply"
 
             fields = []
             for sf in sort_fields:
@@ -618,7 +608,7 @@ class SortRange(ActionHandler):
                 })
 
             body = {"fields": fields, "hasHeaders": has_headers, "matchCase": False}
-            response = await context.fetch(url, method="POST", headers=headers, json=body)
+            response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 204]:
                 return {
@@ -637,14 +627,14 @@ class SortRange(ActionHandler):
 class ApplyFilter(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
             column_index = inputs["column_index"]
             filter_criteria = inputs["filter_criteria"]
 
-            columns_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/columns"
-            columns_response = await context.fetch(columns_url, method="GET", headers=headers)
+            encoded_table = encode_path_segment(table_name)
+            columns_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/columns"
+            columns_response = await context.fetch(columns_url, method="GET")
 
             if columns_response.status_code != 200:
                 return {
@@ -662,10 +652,10 @@ class ApplyFilter(ActionHandler):
                 }
 
             column_id = columns[column_index].get("id")
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/columns/{column_id}/filter/apply"
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/columns/{column_id}/filter/apply"
 
             body = {"criteria": filter_criteria}
-            response = await context.fetch(url, method="POST", headers=headers, json=body)
+            response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 204]:
                 return {
@@ -684,12 +674,12 @@ class ApplyFilter(ActionHandler):
 class ClearFilter(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
 
-            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{table_name}/clearFilters"
-            response = await context.fetch(url, method="POST", headers=headers)
+            encoded_table = encode_path_segment(table_name)
+            url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/clearFilters"
+            response = await context.fetch(url, method="POST")
 
             if response.status_code not in [200, 204]:
                 return {
@@ -708,21 +698,21 @@ class ClearFilter(ActionHandler):
 class FormatRange(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_headers(context)
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
             range_address = inputs["range"]
             format_spec = inputs["format"]
 
-            base_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/range(address='{range_address}')/format"
+            encoded_ws = encode_path_segment(worksheet_name)
+            base_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')/format"
 
             if "font" in format_spec:
                 font_url = f"{base_url}/font"
-                await context.fetch(font_url, method="PATCH", headers=headers, json=format_spec["font"])
+                await context.fetch(font_url, method="PATCH", json=format_spec["font"])
 
             if "fill" in format_spec:
                 fill_url = f"{base_url}/fill"
-                await context.fetch(fill_url, method="PATCH", headers=headers, json=format_spec["fill"])
+                await context.fetch(fill_url, method="PATCH", json=format_spec["fill"])
 
             alignment_body = {}
             if "horizontalAlignment" in format_spec:
@@ -731,11 +721,11 @@ class FormatRange(ActionHandler):
                 alignment_body["verticalAlignment"] = format_spec["verticalAlignment"]
 
             if alignment_body:
-                await context.fetch(base_url, method="PATCH", headers=headers, json=alignment_body)
+                await context.fetch(base_url, method="PATCH", json=alignment_body)
 
             if "numberFormat" in format_spec:
-                range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{worksheet_name}/range(address='{range_address}')"
-                await context.fetch(range_url, method="PATCH", headers=headers, json={"numberFormat": format_spec["numberFormat"]})
+                range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')"
+                await context.fetch(range_url, method="PATCH", json={"numberFormat": format_spec["numberFormat"]})
 
             return {"formatted": True, "result": True}
 

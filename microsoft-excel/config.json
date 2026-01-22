@@ -350,6 +350,278 @@
         },
         "required": ["result"]
       }
+    },
+    "excel_delete_worksheet": {
+      "display_name": "Delete Worksheet",
+      "description": "Remove a worksheet from the workbook.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "worksheet_name": {
+            "type": "string",
+            "description": "Name of the worksheet to delete."
+          }
+        },
+        "required": ["workbook_id", "worksheet_name"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "deleted": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_create_table": {
+      "display_name": "Create Table",
+      "description": "Convert a range to an Excel table with headers.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "worksheet_name": {
+            "type": "string",
+            "description": "Worksheet containing the range."
+          },
+          "range": {
+            "type": "string",
+            "description": "A1 range to convert to table."
+          },
+          "has_headers": {
+            "type": "boolean",
+            "description": "First row contains headers (default: true)."
+          }
+        },
+        "required": ["workbook_id", "worksheet_name", "range"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "table": { "type": "object" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_update_table_row": {
+      "display_name": "Update Table Row",
+      "description": "Update values in an existing table row.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "table_name": {
+            "type": "string",
+            "description": "Name or ID of the table."
+          },
+          "row_index": {
+            "type": "integer",
+            "description": "Zero-based row index to update."
+          },
+          "values": {
+            "type": "array",
+            "items": { "type": ["string", "number", "boolean", "null"] },
+            "description": "New values for the row."
+          }
+        },
+        "required": ["workbook_id", "table_name", "row_index", "values"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "updated_row": { "type": "object" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_delete_table_row": {
+      "display_name": "Delete Table Row",
+      "description": "Remove a row from a table.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "table_name": {
+            "type": "string",
+            "description": "Name or ID of the table."
+          },
+          "row_index": {
+            "type": "integer",
+            "description": "Zero-based row index to delete."
+          }
+        },
+        "required": ["workbook_id", "table_name", "row_index"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "deleted": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_sort_range": {
+      "display_name": "Sort Range",
+      "description": "Sort a range by specified columns.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "worksheet_name": {
+            "type": "string",
+            "description": "Worksheet name."
+          },
+          "range": {
+            "type": "string",
+            "description": "Range to sort."
+          },
+          "sort_fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "column_index": { "type": "integer" },
+                "ascending": { "type": "boolean" }
+              }
+            },
+            "description": "Array of sort criteria."
+          },
+          "has_headers": {
+            "type": "boolean",
+            "description": "First row is headers (default: true)."
+          }
+        },
+        "required": ["workbook_id", "worksheet_name", "range", "sort_fields"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "sorted": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_apply_filter": {
+      "display_name": "Apply Filter",
+      "description": "Apply filter to a table column.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "table_name": {
+            "type": "string",
+            "description": "Name of the table."
+          },
+          "column_index": {
+            "type": "integer",
+            "description": "Zero-based column index."
+          },
+          "filter_criteria": {
+            "type": "object",
+            "description": "Filter criteria object."
+          }
+        },
+        "required": ["workbook_id", "table_name", "column_index", "filter_criteria"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "filtered": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_clear_filter": {
+      "display_name": "Clear Filter",
+      "description": "Clear filters from a table.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "table_name": {
+            "type": "string",
+            "description": "Name of the table."
+          }
+        },
+        "required": ["workbook_id", "table_name"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "cleared": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
+    },
+    "excel_format_range": {
+      "display_name": "Format Range",
+      "description": "Apply formatting to a cell range (font, fill, alignment, number format).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "workbook_id": {
+            "type": "string",
+            "description": "The drive item ID of the workbook."
+          },
+          "worksheet_name": {
+            "type": "string",
+            "description": "Worksheet name."
+          },
+          "range": {
+            "type": "string",
+            "description": "A1 range to format."
+          },
+          "format": {
+            "type": "object",
+            "description": "Format specification with font, fill, alignment, numberFormat."
+          }
+        },
+        "required": ["workbook_id", "worksheet_name", "range", "format"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "formatted": { "type": "boolean" },
+          "result": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "required": ["result"]
+      }
     }
   }
 }
