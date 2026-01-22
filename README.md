@@ -193,9 +193,17 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [shopify-admin](shopify-admin): Integrates with the Shopify Admin API for backend store management. Currently enables comprehensive customer lifecycle management including searching, creating, updating, and deleting customer records via the GraphQL API.
 
+### Shopify Storefront
+
+[shopify-storefront](shopify-storefront): Connects to the Shopify Storefront API to manage customer-facing e-commerce operations. Supports searching and retrieving products and collections, full cart management (create, update, discounts), and customer authentication.
+
 ### Stripe
 
 [stripe](stripe): Comprehensive payment and billing integration with Stripe API for managing customers, invoices, invoice items, subscriptions, products, prices, and payment methods. Supports full customer lifecycle management (create, list, get, update, delete) with address and metadata support. Features complete invoice workflow including draft creation, finalization, sending via email, payment processing, and voiding. Includes invoice item management for adding line items with quantities, unit amounts, and descriptions. Provides subscription management (create, update, cancel with trial periods and proration), product catalog operations (create, update, list products), price management (one-time and recurring pricing), and payment method handling (list, attach, detach). Supports OAuth authentication via Stripe Apps Marketplace and API key authentication (test and production keys). Features pagination with cursor-based navigation, filtering by customer/status/date, and multi-currency support. Includes actions covering customers, invoices, invoice items, subscriptions, products, prices, and payment methods. Ideal for billing automation, subscription management, and payment processing workflows.
+
+### LinkedIn
+
+[linkedin](linkedin): LinkedIn integration for sharing content and accessing user profile information. Supports posting text content to LinkedIn feed with PUBLIC or CONNECTIONS visibility, and retrieving authenticated user profile via OpenID Connect (sub, name, email, picture, locale). Features OAuth2 authentication with openid, profile, email, and w_member_social scopes, LinkedIn Posts API with versioned headers (202501), and comprehensive test suite. Includes 2 actions covering profile retrieval and content sharing. Ideal for social media automation, content publishing, and user identity workflows.
 
 ### LinkedIn Ads
 
@@ -205,6 +213,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [trello](trello): Comprehensive project management integration with Trello REST API v1 for managing boards, lists, cards, and team collaboration automation. Supports full board lifecycle management (create, get, update, list boards with permission controls and filtering), list organization (create, get, update, list with positioning and archiving), complete card CRUD operations (create, get, update, delete, list cards with descriptions, due dates, member assignments, and label support), checklist management (create checklists, add checklist items with completion tracking), and team communication (add comments with Markdown support). Features custom API Key and Token authentication, position management (top/bottom/numeric), Markdown support in descriptions and comments, member and label assignment, and comprehensive filtering options. Includes 17 actions covering members, boards, lists, cards, checklists, and comments. Ideal for workflow automation, task tracking, project organization, team collaboration, and kanban-style board management.
 
+### Webcal
+
+[webcal](webcal): WebCalendar integration for fetching and processing events from webcal/iCal calendar feeds. Supports retrieving upcoming events within a configurable time range, searching events by keywords across summary, description, and location fields, timezone conversion for displaying events in any timezone, and detection of recurring and all-day events. Works with any iCal-compatible calendar source including Google Calendar, Apple iCloud, Microsoft Outlook, and Airbnb. Features no authentication required (public feeds), case-insensitive search with match field identification, and comprehensive event metadata extraction (organizer, attendees, URLs). Includes 2 actions for event fetching and searching. Ideal for calendar aggregation, scheduling automation, availability monitoring, and event-based workflow triggers.
+
 ### Productboard
 
 [productboard](productboard): Comprehensive product management integration with Productboard API v2 for managing product hierarchy entities, notes, and analytics. Supports full entity lifecycle management for features, products, components, initiatives, objectives, releases, and subfeatures with custom field support. Includes complete note/feedback operations (create, list, get, update) for simple notes and conversations with tagging, owner assignment, and customer linking. Features analytics report access, entity configuration metadata, and user information retrieval. Supports OAuth2 authentication with comprehensive scopes (product_hierarchy_data, notes, custom_fields, users, companies), cursor-based pagination, and robust error handling. Includes 12 actions covering entities, notes, analytics, and user operations. Ideal for product roadmap automation, customer feedback management, and product analytics workflows.
@@ -212,6 +224,16 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 ### Netlify
 
 [Netlify](Netlify): Web hosting and deployment integration with Netlify API v1 for managing sites and deployments. Supports complete site lifecycle management (create, list, get, update, delete sites with custom domain configuration), deployment operations (list deploys, create deploys with file uploads using SHA1 deduplication, get deploy details), and hosting automation. Features Personal Access Token authentication, automatic file hashing for efficient deployments, and comprehensive error handling. Includes 8 actions covering site management and deployment workflows. Ideal for static site hosting, continuous deployment automation, and web hosting management.
+### X (formerly Twitter)
+
+[X](X): X (formerly Twitter) integration for social media automation via X API v2. Supports post lifecycle management (create, get, delete, search posts with advanced query operators), combined post-with-media action for streamlined content publishing with images, GIFs, and videos, repost operations, follow/unfollow users, and user profile retrieval. Features connected account support for automatic user info retrieval and pagination support for large datasets. Uses OAuth 2.0 with PKCE authentication. Includes 13 actions covering posts, reposts, and user operations. Ideal for social media automation, content scheduling, brand monitoring, and community management workflows.
+### NZBN (New Zealand Business Number)
+
+[nzbn](nzbn): Integration with the New Zealand Business Number (NZBN) API for searching and retrieving business entity information from the NZBN Register. Supports searching entities by name, trading name, or NZBN with filters for entity type and status, retrieving detailed entity information, accessing addresses, roles/officers, trading names, GST numbers, and industry classifications (ANZSIC codes), and tracking entity changes over time. Features 2-legged OAuth (Client Credentials) authentication with automatic token caching and refresh, zero-config experience for end users with server-side credential injection, and comprehensive error handling. Includes 9 actions covering entity search, details retrieval, and change tracking. Ideal for business verification, due diligence, compliance workflows, and NZ company data integration.
+
+### Code Analysis
+
+[code-analysis](code-analysis): Python code execution integration for data analysis, file processing, and automation tasks. Supports executing arbitrary Python code in a sandboxed environment, processing input files (CSV, Excel, JSON, images, PDFs), and automatically detecting and returning generated output files with base64 encoding. Pre-installed libraries include numpy, Pillow, PyPDF2, python-docx, reportlab, openpyxl, XlsxWriter, matplotlib, and python-pptx. Features ActionResult return type for cost tracking. No authentication required. Ideal for data transformation, document generation, chart creation, and custom automation workflows.
 
 ## Template
 
