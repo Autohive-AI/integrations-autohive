@@ -5,6 +5,23 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
+class MockActionResult:
+    """Mock ActionResult that mimics the SDK's ActionResult class."""
+    def __init__(self, is_success: bool, data: dict = None, error: str = None):
+        self.is_success = is_success
+        self.data = data or {}
+        self.error = error
+    
+    @classmethod
+    def success(cls, data: dict = None):
+        return cls(is_success=True, data=data or {})
+    
+    @classmethod
+    def failure(cls, error: str = None):
+        return cls(is_success=False, error=error)
+
+
 mock_integration = MagicMock()
 mock_integration.action = lambda name: lambda cls: cls
 
@@ -21,6 +38,7 @@ with patch.dict('sys.modules', {'autohive_integrations_sdk': MagicMock()}):
         autohive_integrations_sdk.Integration.load = MagicMock(return_value=mock_integration)
         autohive_integrations_sdk.ExecutionContext = MagicMock
         autohive_integrations_sdk.ActionHandler = object
+        autohive_integrations_sdk.ActionResult = MockActionResult
         
         from microsoft_word import (
             ListDocuments,
@@ -135,9 +153,9 @@ class TestListDocuments:
         action = ListDocuments()
         result = await action.execute({}, mock_context)
         
-        assert result['result'] is True
-        assert len(result['documents']) == 2
-        assert result['documents'][0]['name'] == 'Report.docx'
+        assert result.is_success is True
+        assert len(result.data['documents']) == 2
+        assert result.data['documents'][0]['name'] == 'Report.docx'
     
     @pytest.mark.asyncio
     async def test_list_documents_with_filter(self, mock_context):
@@ -149,7 +167,7 @@ class TestListDocuments:
             'folder_path': 'Documents'
         }, mock_context)
         
-        assert result['result'] is True
+        assert result.is_success is True
         mock_context.fetch.assert_called_once()
     
     @pytest.mark.asyncio
@@ -162,8 +180,8 @@ class TestListDocuments:
         action = ListDocuments()
         result = await action.execute({'page_size': 10}, mock_context)
         
-        assert result['result'] is True
-        assert result['next_page_token'] == 'https://graph.microsoft.com/v1.0/next-page'
+        assert result.is_success is True
+        assert result.data['next_page_token'] == 'https://graph.microsoft.com/v1.0/next-page'
 
 
 class TestGetDocument:
@@ -181,9 +199,9 @@ class TestGetDocument:
         action = GetDocument()
         result = await action.execute({'document_id': 'doc123'}, mock_context)
         
-        assert result['result'] is True
-        assert result['document']['id'] == 'doc123'
-        assert result['document']['name'] == 'Test.docx'
+        assert result.is_success is True
+        assert result.data['document']['id'] == 'doc123'
+        assert result.data['document']['name'] == 'Test.docx'
     
     @pytest.mark.asyncio
     async def test_get_document_not_found(self, mock_context):
@@ -192,8 +210,8 @@ class TestGetDocument:
         action = GetDocument()
         result = await action.execute({'document_id': 'invalid'}, mock_context)
         
-        assert result['result'] is False
-        assert 'error' in result
+        assert result.is_success is False
+        assert result.error is not None
 
 
 class TestGetContent:
@@ -208,9 +226,9 @@ class TestGetContent:
             'format': 'text'
         }, mock_context)
         
-        assert result['result'] is True
-        assert 'content' in result
-        assert result['word_count'] > 0
+        assert result.is_success is True
+        assert 'content' in result.data
+        assert result.data['word_count'] > 0
     
     @pytest.mark.asyncio
     async def test_get_content_html_format(self, mock_context):
@@ -223,8 +241,8 @@ class TestGetContent:
             'format': 'html'
         }, mock_context)
         
-        assert result['result'] is True
-        assert '<html>' in result['content']
+        assert result.is_success is True
+        assert '<html>' in result.data['content']
 
 
 class TestCreateDocument:
@@ -242,9 +260,9 @@ class TestCreateDocument:
             'content': 'Initial content'
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['document_id'] == 'new-doc-id'
-        assert result['name'] == 'NewDoc.docx'
+        assert result.is_success is True
+        assert result.data['document_id'] == 'new-doc-id'
+        assert result.data['name'] == 'NewDoc.docx'
     
     @pytest.mark.asyncio
     async def test_create_document_with_folder(self, mock_context):
@@ -261,7 +279,7 @@ class TestCreateDocument:
             'content': 'Report content'
         }, mock_context)
         
-        assert result['result'] is True
+        assert result.is_success is True
 
 
 class TestUpdateContent:
@@ -275,9 +293,9 @@ class TestUpdateContent:
             'content': 'New content here'
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['updated'] is True
-        assert result['word_count'] == 3
+        assert result.is_success is True
+        assert result.data['updated'] is True
+        assert result.data['word_count'] == 3
 
 
 class TestInsertText:
@@ -293,8 +311,8 @@ class TestInsertText:
             'location': 'end'
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['inserted'] is True
+        assert result.is_success is True
+        assert result.data['inserted'] is True
     
     @pytest.mark.asyncio
     async def test_insert_text_at_start(self, mock_context):
@@ -308,8 +326,8 @@ class TestInsertText:
             'location': 'start'
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['inserted'] is True
+        assert result.is_success is True
+        assert result.data['inserted'] is True
 
 
 class TestGetParagraphs:
@@ -321,9 +339,9 @@ class TestGetParagraphs:
         action = GetParagraphs()
         result = await action.execute({'document_id': 'doc123'}, mock_context)
         
-        assert result['result'] is True
-        assert 'paragraphs' in result
-        assert result['total_count'] > 0
+        assert result.is_success is True
+        assert 'paragraphs' in result.data
+        assert result.data['total_count'] > 0
     
     @pytest.mark.asyncio
     async def test_get_paragraphs_with_range(self, mock_context):
@@ -337,8 +355,8 @@ class TestGetParagraphs:
             'count': 2
         }, mock_context)
         
-        assert result['result'] is True
-        assert len(result['paragraphs']) <= 2
+        assert result.is_success is True
+        assert len(result.data['paragraphs']) <= 2
 
 
 class TestSearchReplace:
@@ -354,7 +372,7 @@ class TestSearchReplace:
             'replace_text': 'John'
         }, mock_context)
         
-        assert result['result'] is True
+        assert result.is_success is True
     
     @pytest.mark.asyncio
     async def test_search_replace_no_match(self, mock_context):
@@ -368,9 +386,9 @@ class TestSearchReplace:
             'replace_text': 'replacement'
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['replaced'] is False
-        assert result['replacement_count'] == 0
+        assert result.is_success is True
+        assert result.data['replaced'] is False
+        assert result.data['replacement_count'] == 0
 
 
 class TestExportPdf:
@@ -381,10 +399,10 @@ class TestExportPdf:
         action = ExportPdf()
         result = await action.execute({'document_id': 'doc123'}, mock_context)
         
-        assert result['result'] is True
-        assert 'pdf_content' in result
-        assert result['encoding'] == 'base64'
-        assert result['content_type'] == 'application/pdf'
+        assert result.is_success is True
+        assert 'pdf_content' in result.data
+        assert result.data['encoding'] == 'base64'
+        assert result.data['content_type'] == 'application/pdf'
     
     @pytest.mark.asyncio
     async def test_export_pdf_save_to_drive(self, mock_context):
@@ -400,8 +418,8 @@ class TestExportPdf:
             'save_to_drive': True
         }, mock_context)
         
-        assert result['result'] is True
-        assert result['pdf_url'] == 'https://example.com/pdf'
+        assert result.is_success is True
+        assert result.data['pdf_url'] == 'https://example.com/pdf'
 
 
 class TestGetTables:
@@ -413,6 +431,6 @@ class TestGetTables:
         action = GetTables()
         result = await action.execute({'document_id': 'doc123'}, mock_context)
         
-        assert result['result'] is True
-        assert result['tables'] == []
-        assert result['table_count'] == 0
+        assert result.is_success is True
+        assert result.data['tables'] == []
+        assert result.data['table_count'] == 0

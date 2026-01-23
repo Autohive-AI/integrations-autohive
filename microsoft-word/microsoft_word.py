@@ -1,4 +1,4 @@
-from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
+from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
 from typing import Dict, Any, List, Optional
 import io
 import base64
@@ -7,11 +7,6 @@ import re
 microsoft_word = Integration.load()
 
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
-
-
-def handle_api_error(error: Exception, message: str = "Microsoft Graph API error") -> Dict[str, Any]:
-    """Handle API error responses."""
-    return {'result': False, 'error': f'{message}: {str(error)}'}
 
 
 def ensure_docx_extension(name: str) -> str:
@@ -360,14 +355,13 @@ class ListDocuments(ActionHandler):
             
             next_link = response.get('@odata.nextLink')
             
-            return {
+            return ActionResult.success(data={
                 'documents': documents,
-                'next_page_token': next_link if next_link else None,
-                'result': True
-            }
+                'next_page_token': next_link if next_link else None
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to list documents")
+            return ActionResult.failure(error=f"Failed to list documents: {str(e)}")
 
 
 @microsoft_word.action("word_get_document")
@@ -385,15 +379,10 @@ class GetDocument(ActionHandler):
             
             document = await context.fetch(url, method="GET", params=params)
             
-            return {
-                'document': document,
-                'result': True
-            }
+            return ActionResult.success(data={'document': document})
             
         except Exception as e:
-            error_result = handle_api_error(e, "Failed to get document")
-            error_result['document'] = {}
-            return error_result
+            return ActionResult.failure(error=f"Failed to get document: {str(e)}")
 
 
 @microsoft_word.action("word_get_content")
@@ -411,7 +400,7 @@ class GetContent(ActionHandler):
             response = await context.fetch(content_url, method="GET")
             
             if not isinstance(response, bytes):
-                return {'result': False, 'error': 'Failed to download document content'}
+                return ActionResult.failure(error='Failed to download document content')
             
             docx_bytes = response
             
@@ -424,23 +413,22 @@ class GetContent(ActionHandler):
             else:
                 content = parsed['full_text']
             
-            result = {
+            result_data = {
                 'content': content,
                 'word_count': parsed['word_count'],
                 'character_count': parsed['character_count'],
-                'paragraph_count': parsed['paragraph_count'],
-                'result': True
+                'paragraph_count': parsed['paragraph_count']
             }
             
             if include_metadata:
                 meta_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}"
                 metadata = await context.fetch(meta_url, method="GET")
-                result['metadata'] = metadata
+                result_data['metadata'] = metadata
             
-            return result
+            return ActionResult.success(data=result_data)
             
         except Exception as e:
-            return handle_api_error(e, "Failed to get document content")
+            return ActionResult.failure(error=f"Failed to get document content: {str(e)}")
 
 
 @microsoft_word.action("word_create_document")
@@ -491,12 +479,11 @@ class CreateDocument(ActionHandler):
                     data=docx_bytes
                 )
                 
-                return {
+                return ActionResult.success(data={
                     'document_id': response.get('id'),
                     'name': response.get('name'),
-                    'webUrl': response.get('webUrl'),
-                    'result': True
-                }
+                    'webUrl': response.get('webUrl')
+                })
             
             if folder_path:
                 search_url = f"{GRAPH_API_BASE}/me/drive/root:/{folder_path}/{name}"
@@ -505,15 +492,14 @@ class CreateDocument(ActionHandler):
             
             new_doc = await context.fetch(search_url, method="GET")
             
-            return {
+            return ActionResult.success(data={
                 'document_id': new_doc.get('id'),
                 'name': new_doc.get('name'),
-                'webUrl': new_doc.get('webUrl'),
-                'result': True
-            }
+                'webUrl': new_doc.get('webUrl')
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to create document")
+            return ActionResult.failure(error=f"Failed to create document: {str(e)}")
 
 
 async def _wait_for_copy(context: ExecutionContext, name: str, folder_path: str, max_attempts: int = 10):
@@ -548,7 +534,7 @@ class UpdateContent(ActionHandler):
                 existing_bytes = await context.fetch(content_url, method="GET")
                 
                 if not isinstance(existing_bytes, bytes):
-                    return {'result': False, 'error': 'Failed to download document content'}
+                    return ActionResult.failure(error='Failed to download document content')
                 
                 docx_bytes = modify_docx_content(existing_bytes, {'replace_all': content})
             else:
@@ -561,15 +547,14 @@ class UpdateContent(ActionHandler):
             
             await context.fetch(upload_url, method="PUT", headers=headers, data=docx_bytes)
             
-            return {
+            return ActionResult.success(data={
                 'updated': True,
                 'document_id': document_id,
-                'word_count': count_words(content),
-                'result': True
-            }
+                'word_count': count_words(content)
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to update document content")
+            return ActionResult.failure(error=f"Failed to update document content: {str(e)}")
 
 
 @microsoft_word.action("word_insert_text")
@@ -588,13 +573,13 @@ class InsertText(ActionHandler):
             paragraph_index = inputs.get('paragraph_index', 0)
             
             if location in ('after_paragraph', 'before_paragraph') and paragraph_index < 0:
-                return {'result': False, 'error': 'paragraph_index must be non-negative'}
+                return ActionResult.failure(error='paragraph_index must be non-negative')
             
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             existing_bytes = await context.fetch(content_url, method="GET")
             
             if not isinstance(existing_bytes, bytes):
-                return {'result': False, 'error': 'Failed to download document content'}
+                return ActionResult.failure(error='Failed to download document content')
             
             parsed = parse_docx_content(existing_bytes)
             paragraphs = parsed['paragraphs']
@@ -616,7 +601,7 @@ class InsertText(ActionHandler):
                 else:
                     texts.insert(paragraph_index, text)
             else:
-                return {'result': False, 'error': f"Invalid location: {location}"}
+                return ActionResult.failure(error=f"Invalid location: {location}")
             
             new_content = '\n'.join(texts)
             docx_bytes = create_docx_from_text(new_content)
@@ -628,14 +613,13 @@ class InsertText(ActionHandler):
             
             await context.fetch(upload_url, method="PUT", headers=headers, data=docx_bytes)
             
-            return {
+            return ActionResult.success(data={
                 'inserted': True,
-                'document_id': document_id,
-                'result': True
-            }
+                'document_id': document_id
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to insert text")
+            return ActionResult.failure(error=f"Failed to insert text: {str(e)}")
 
 
 @microsoft_word.action("word_get_paragraphs")
@@ -650,13 +634,13 @@ class GetParagraphs(ActionHandler):
             include_formatting = inputs.get('include_formatting', False)
             
             if start_index < 0:
-                return {'result': False, 'error': 'start_index must be non-negative'}
+                return ActionResult.failure(error='start_index must be non-negative')
             
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             docx_bytes = await context.fetch(content_url, method="GET")
             
             if not isinstance(docx_bytes, bytes):
-                return {'result': False, 'error': 'Failed to download document content'}
+                return ActionResult.failure(error='Failed to download document content')
             
             parsed = parse_docx_content(docx_bytes)
             paragraphs = parsed['paragraphs']
@@ -673,14 +657,13 @@ class GetParagraphs(ActionHandler):
                     for p in paragraphs
                 ]
             
-            return {
+            return ActionResult.success(data={
                 'paragraphs': paragraphs,
-                'total_count': parsed['paragraph_count'],
-                'result': True
-            }
+                'total_count': parsed['paragraph_count']
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to get paragraphs")
+            return ActionResult.failure(error=f"Failed to get paragraphs: {str(e)}")
 
 
 @microsoft_word.action("word_search_replace")
@@ -697,13 +680,13 @@ class SearchReplace(ActionHandler):
             replace_all = inputs.get('replace_all', True)
             
             if not search_text:
-                return {'result': False, 'error': 'search_text cannot be empty'}
+                return ActionResult.failure(error='search_text cannot be empty')
             
             content_url = f"{GRAPH_API_BASE}/me/drive/items/{document_id}/content"
             docx_bytes = await context.fetch(content_url, method="GET")
             
             if not isinstance(docx_bytes, bytes):
-                return {'result': False, 'error': 'Failed to download document content'}
+                return ActionResult.failure(error='Failed to download document content')
             
             parsed_before = parse_docx_content(docx_bytes)
             text_before = parsed_before['full_text']
@@ -718,12 +701,11 @@ class SearchReplace(ActionHandler):
                 count_before = text_before.lower().count(search_text.lower())
             
             if count_before == 0:
-                return {
+                return ActionResult.success(data={
                     'replaced': False,
                     'replacement_count': 0,
-                    'document_id': document_id,
-                    'result': True
-                }
+                    'document_id': document_id
+                })
             
             modifications = {
                 'search_replace': {
@@ -755,15 +737,14 @@ class SearchReplace(ActionHandler):
             
             await context.fetch(upload_url, method="PUT", headers=headers, data=modified_bytes)
             
-            return {
+            return ActionResult.success(data={
                 'replaced': actual_replacements > 0,
                 'replacement_count': actual_replacements,
-                'document_id': document_id,
-                'result': True
-            }
+                'document_id': document_id
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to search and replace")
+            return ActionResult.failure(error=f"Failed to search and replace: {str(e)}")
 
 
 @microsoft_word.action("word_export_pdf")
@@ -782,7 +763,7 @@ class ExportPdf(ActionHandler):
             pdf_response = await context.fetch(pdf_url, method="GET")
             
             if not isinstance(pdf_response, bytes):
-                return {'result': False, 'error': 'Failed to convert document to PDF'}
+                return ActionResult.failure(error='Failed to convert document to PDF')
             
             pdf_bytes = pdf_response
             
@@ -813,26 +794,24 @@ class ExportPdf(ActionHandler):
                     data=pdf_bytes
                 )
                 
-                return {
+                return ActionResult.success(data={
                     'pdf_url': uploaded.get('webUrl'),
                     'pdf_id': uploaded.get('id'),
-                    'size': uploaded.get('size'),
-                    'result': True
-                }
+                    'size': uploaded.get('size')
+                })
             
             import base64
             pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
             
-            return {
+            return ActionResult.success(data={
                 'pdf_content': pdf_base64,
                 'pdf_size': len(pdf_bytes),
                 'content_type': 'application/pdf',
-                'encoding': 'base64',
-                'result': True
-            }
+                'encoding': 'base64'
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to export to PDF")
+            return ActionResult.failure(error=f"Failed to export to PDF: {str(e)}")
 
 
 @microsoft_word.action("word_get_tables")
@@ -851,26 +830,24 @@ class GetTables(ActionHandler):
             docx_bytes = await context.fetch(content_url, method="GET")
             
             if not isinstance(docx_bytes, bytes):
-                return {'result': False, 'error': 'Failed to download document content'}
+                return ActionResult.failure(error='Failed to download document content')
             
             parsed = parse_docx_content(docx_bytes)
             tables = parsed['tables']
             
             if table_index is not None:
                 if table_index < 0 or table_index >= len(tables):
-                    return {
+                    return ActionResult.success(data={
                         'tables': [],
                         'table_count': len(tables),
-                        'result': True,
-                        'error': f'Table index {table_index} out of range (0-{len(tables)-1})'
-                    }
+                        'warning': f'Table index {table_index} out of range (0-{len(tables)-1})'
+                    })
                 tables = [tables[table_index]]
             
-            return {
+            return ActionResult.success(data={
                 'tables': tables,
-                'table_count': len(parsed['tables']),
-                'result': True
-            }
+                'table_count': len(parsed['tables'])
+            })
             
         except Exception as e:
-            return handle_api_error(e, "Failed to get tables")
+            return ActionResult.failure(error=f"Failed to get tables: {str(e)}")
