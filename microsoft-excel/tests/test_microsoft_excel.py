@@ -39,10 +39,17 @@ class MockIntegration:
         return decorator
 
 
+class MockActionResult:
+    def __init__(self, data: Dict[str, Any], cost_usd: float = 0.0):
+        self.data = data
+        self.cost_usd = cost_usd
+
+
 sdk_mock = Mock()
 sdk_mock.Integration = MockIntegration
 sdk_mock.ExecutionContext = MockExecutionContext
 sdk_mock.ActionHandler = MockActionHandler
+sdk_mock.ActionResult = MockActionResult
 sys.modules['autohive_integrations_sdk'] = sdk_mock
 
 integration_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -96,9 +103,9 @@ class TestMicrosoftExcelIntegration:
         action = ListWorkbooks()
         result = await action.execute({}, self.context)
 
-        assert result["result"] is True
-        assert len(result["workbooks"]) == 2
-        assert result["workbooks"][0]["name"] == "Report.xlsx"
+        assert result.data["result"] is True
+        assert len(result.data["workbooks"]) == 2
+        assert result.data["workbooks"][0]["name"] == "Report.xlsx"
 
     async def test_list_workbooks_with_filter(self):
         """Test listing workbooks with name filter"""
@@ -111,8 +118,8 @@ class TestMicrosoftExcelIntegration:
         action = ListWorkbooks()
         result = await action.execute({"name_contains": "Sales"}, self.context)
 
-        assert result["result"] is True
-        assert len(result["workbooks"]) == 1
+        assert result.data["result"] is True
+        assert len(result.data["workbooks"]) == 1
 
     async def test_list_workbooks_api_error(self):
         """Test error handling for API errors"""
@@ -125,8 +132,8 @@ class TestMicrosoftExcelIntegration:
         action = ListWorkbooks()
         result = await action.execute({}, self.context)
 
-        assert result["result"] is False
-        assert "401" in result["error"]
+        assert result.data["result"] is False
+        assert "401" in result.data["error"]
 
     async def test_list_workbooks_with_pagination(self):
         """Test listing workbooks with pagination"""
@@ -138,8 +145,8 @@ class TestMicrosoftExcelIntegration:
         action = ListWorkbooks()
         result = await action.execute({"page_size": 10}, self.context)
 
-        assert result["result"] is True
-        assert "next_page_token" in result
+        assert result.data["result"] is True
+        assert "next_page_token" in result.data
 
     async def test_get_workbook_success(self):
         """Test getting workbook metadata"""
@@ -170,10 +177,10 @@ class TestMicrosoftExcelIntegration:
         action = GetWorkbook()
         result = await action.execute({"workbook_id": "workbook123"}, self.context)
 
-        assert result["result"] is True
-        assert len(result["worksheets"]) == 1
-        assert len(result["tables"]) == 1
-        assert len(result["named_ranges"]) == 1
+        assert result.data["result"] is True
+        assert len(result.data["worksheets"]) == 1
+        assert len(result.data["tables"]) == 1
+        assert len(result.data["named_ranges"]) == 1
 
     async def test_list_worksheets_success(self):
         """Test listing worksheets"""
@@ -187,8 +194,8 @@ class TestMicrosoftExcelIntegration:
         action = ListWorksheets()
         result = await action.execute({"workbook_id": "workbook123"}, self.context)
 
-        assert result["result"] is True
-        assert len(result["worksheets"]) == 2
+        assert result.data["result"] is True
+        assert len(result.data["worksheets"]) == 2
 
     async def test_read_range_success(self):
         """Test reading a range of cells"""
@@ -206,10 +213,10 @@ class TestMicrosoftExcelIntegration:
             "range": "A1:B2"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["values"] == [["Name", "Value"], ["Test", 123]]
-        assert result["row_count"] == 2
-        assert result["column_count"] == 2
+        assert result.data["result"] is True
+        assert result.data["values"] == [["Name", "Value"], ["Test", 123]]
+        assert result.data["row_count"] == 2
+        assert result.data["column_count"] == 2
 
     async def test_read_range_not_found(self):
         """Test error when worksheet not found"""
@@ -226,8 +233,8 @@ class TestMicrosoftExcelIntegration:
             "range": "A1:B2"
         }, self.context)
 
-        assert result["result"] is False
-        assert "404" in result["error"]
+        assert result.data["result"] is False
+        assert "404" in result.data["error"]
 
     async def test_write_range_success(self):
         """Test writing values to a range"""
@@ -243,10 +250,10 @@ class TestMicrosoftExcelIntegration:
             "values": [["Name", "Value"], ["Test", 123]]
         }, self.context)
 
-        assert result["result"] is True
-        assert result["updated_rows"] == 2
-        assert result["updated_columns"] == 2
-        assert result["updated_cells"] == 4
+        assert result.data["result"] is True
+        assert result.data["updated_rows"] == 2
+        assert result.data["updated_columns"] == 2
+        assert result.data["updated_cells"] == 4
 
     async def test_list_tables_success(self):
         """Test listing tables in a workbook"""
@@ -259,9 +266,9 @@ class TestMicrosoftExcelIntegration:
         action = ListTables()
         result = await action.execute({"workbook_id": "workbook123"}, self.context)
 
-        assert result["result"] is True
-        assert len(result["tables"]) == 1
-        assert result["tables"][0]["name"] == "Table1"
+        assert result.data["result"] is True
+        assert len(result.data["tables"]) == 1
+        assert result.data["tables"][0]["name"] == "Table1"
 
     async def test_list_tables_by_worksheet(self):
         """Test listing tables filtered by worksheet"""
@@ -275,7 +282,7 @@ class TestMicrosoftExcelIntegration:
             "worksheet_name": "Sheet1"
         }, self.context)
 
-        assert result["result"] is True
+        assert result.data["result"] is True
         call_url = self.context.fetch.call_args[0][0]
         assert "worksheets" in call_url
 
@@ -299,10 +306,10 @@ class TestMicrosoftExcelIntegration:
             "table_name": "Table1"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["headers"] == ["Name", "Email", "Status"]
-        assert len(result["rows"]) == 2
-        assert result["rows"][0]["Name"] == "John"
+        assert result.data["result"] is True
+        assert result.data["headers"] == ["Name", "Email", "Status"]
+        assert len(result.data["rows"]) == 2
+        assert result.data["rows"][0]["Name"] == "John"
 
     async def test_get_table_data_with_select_columns(self):
         """Test getting table data with column selection"""
@@ -324,10 +331,10 @@ class TestMicrosoftExcelIntegration:
             "select_columns": ["Name", "Status"]
         }, self.context)
 
-        assert result["result"] is True
-        assert "Name" in result["rows"][0]
-        assert "Status" in result["rows"][0]
-        assert "Email" not in result["rows"][0]
+        assert result.data["result"] is True
+        assert "Name" in result.data["rows"][0]
+        assert "Status" in result.data["rows"][0]
+        assert "Email" not in result.data["rows"][0]
 
     async def test_add_table_row_success(self):
         """Test adding rows to a table"""
@@ -343,8 +350,8 @@ class TestMicrosoftExcelIntegration:
             "rows": [["New", "new@example.com", "Active"]]
         }, self.context)
 
-        assert result["result"] is True
-        assert result["added_rows"] == 1
+        assert result.data["result"] is True
+        assert result.data["added_rows"] == 1
 
     async def test_add_table_row_with_index(self):
         """Test adding rows at specific index"""
@@ -361,8 +368,8 @@ class TestMicrosoftExcelIntegration:
             "index": 0
         }, self.context)
 
-        assert result["result"] is True
-        assert result["added_rows"] == 1
+        assert result.data["result"] is True
+        assert result.data["added_rows"] == 1
 
     async def test_create_worksheet_success(self):
         """Test creating a new worksheet"""
@@ -379,8 +386,8 @@ class TestMicrosoftExcelIntegration:
             "name": "NewSheet"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["worksheet"]["name"] == "NewSheet"
+        assert result.data["result"] is True
+        assert result.data["worksheet"]["name"] == "NewSheet"
 
     async def test_delete_worksheet_success(self):
         """Test deleting a worksheet"""
@@ -392,8 +399,8 @@ class TestMicrosoftExcelIntegration:
             "worksheet_name": "Sheet2"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["deleted"] is True
+        assert result.data["result"] is True
+        assert result.data["deleted"] is True
 
     async def test_create_table_success(self):
         """Test creating a table from a range"""
@@ -411,8 +418,8 @@ class TestMicrosoftExcelIntegration:
             "has_headers": True
         }, self.context)
 
-        assert result["result"] is True
-        assert result["table"]["name"] == "Table1"
+        assert result.data["result"] is True
+        assert result.data["table"]["name"] == "Table1"
 
     async def test_update_table_row_success(self):
         """Test updating a table row"""
@@ -428,7 +435,7 @@ class TestMicrosoftExcelIntegration:
             "values": ["Updated", "updated@example.com", "Inactive"]
         }, self.context)
 
-        assert result["result"] is True
+        assert result.data["result"] is True
 
     async def test_delete_table_row_success(self):
         """Test deleting a table row"""
@@ -441,8 +448,8 @@ class TestMicrosoftExcelIntegration:
             "row_index": 0
         }, self.context)
 
-        assert result["result"] is True
-        assert result["deleted"] is True
+        assert result.data["result"] is True
+        assert result.data["deleted"] is True
 
     async def test_sort_range_success(self):
         """Test sorting a range"""
@@ -456,8 +463,8 @@ class TestMicrosoftExcelIntegration:
             "sort_fields": [{"column_index": 0, "ascending": True}]
         }, self.context)
 
-        assert result["result"] is True
-        assert result["sorted"] is True
+        assert result.data["result"] is True
+        assert result.data["sorted"] is True
 
     async def test_sort_range_multiple_columns(self):
         """Test sorting by multiple columns"""
@@ -474,7 +481,7 @@ class TestMicrosoftExcelIntegration:
             ]
         }, self.context)
 
-        assert result["result"] is True
+        assert result.data["result"] is True
         call_body = self.context.fetch.call_args[1]["json"]
         assert len(call_body["fields"]) == 2
 
@@ -498,8 +505,8 @@ class TestMicrosoftExcelIntegration:
             "filter_criteria": {"filterOn": "Values", "values": ["Active"]}
         }, self.context)
 
-        assert result["result"] is True
-        assert result["filtered"] is True
+        assert result.data["result"] is True
+        assert result.data["filtered"] is True
 
     async def test_apply_filter_column_out_of_range(self):
         """Test applying filter with invalid column index"""
@@ -515,8 +522,8 @@ class TestMicrosoftExcelIntegration:
             "filter_criteria": {"filterOn": "Values", "values": ["Active"]}
         }, self.context)
 
-        assert result["result"] is False
-        assert "out of range" in result["error"]
+        assert result.data["result"] is False
+        assert "out of range" in result.data["error"]
 
     async def test_clear_filter_success(self):
         """Test clearing filters from a table"""
@@ -528,8 +535,8 @@ class TestMicrosoftExcelIntegration:
             "table_name": "Table1"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["cleared"] is True
+        assert result.data["result"] is True
+        assert result.data["cleared"] is True
 
     async def test_get_used_range_success(self):
         """Test getting the used range of a worksheet"""
@@ -546,10 +553,10 @@ class TestMicrosoftExcelIntegration:
             "worksheet_name": "Sheet1"
         }, self.context)
 
-        assert result["result"] is True
-        assert result["range"] == "Sheet1!A1:D10"
-        assert result["row_count"] == 10
-        assert result["column_count"] == 4
+        assert result.data["result"] is True
+        assert result.data["range"] == "Sheet1!A1:D10"
+        assert result.data["row_count"] == 10
+        assert result.data["column_count"] == 4
 
     async def test_get_used_range_values_only(self):
         """Test getting used range with values only"""
@@ -566,7 +573,7 @@ class TestMicrosoftExcelIntegration:
             "values_only": True
         }, self.context)
 
-        assert result["result"] is True
+        assert result.data["result"] is True
         call_url = self.context.fetch.call_args[0][0]
         assert "valuesOnly=true" in call_url
 
@@ -586,8 +593,8 @@ class TestMicrosoftExcelIntegration:
             }
         }, self.context)
 
-        assert result["result"] is True
-        assert result["formatted"] is True
+        assert result.data["result"] is True
+        assert result.data["formatted"] is True
 
     async def test_format_range_with_number_format(self):
         """Test formatting with number format"""
@@ -603,8 +610,8 @@ class TestMicrosoftExcelIntegration:
             }
         }, self.context)
 
-        assert result["result"] is True
-        assert result["formatted"] is True
+        assert result.data["result"] is True
+        assert result.data["formatted"] is True
 
     async def test_exception_handling(self):
         """Test handling of unexpected exceptions"""
@@ -613,8 +620,8 @@ class TestMicrosoftExcelIntegration:
         action = ListWorkbooks()
         result = await action.execute({}, self.context)
 
-        assert result["result"] is False
-        assert "Network error" in result["error"]
+        assert result.data["result"] is False
+        assert "Network error" in result.data["error"]
 
 
 async def run_all_tests():

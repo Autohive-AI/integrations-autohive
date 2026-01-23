@@ -1,4 +1,4 @@
-from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler
+from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
 from typing import Dict, Any
 from urllib.parse import quote
 
@@ -15,7 +15,7 @@ def encode_path_segment(segment: str) -> str:
 
 @microsoft_excel.action("excel_list_workbooks")
 class ListWorkbooks(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             name_contains = inputs.get("name_contains")
             folder_path = inputs.get("folder_path")
@@ -40,11 +40,11 @@ class ListWorkbooks(ActionHandler):
             response = await context.fetch(url, method="GET", params=params)
 
             if response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "workbooks": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             items = data.get("value", [])
@@ -62,20 +62,20 @@ class ListWorkbooks(ActionHandler):
                         "size": item.get("size"),
                     })
 
-            result = {"workbooks": workbooks, "result": True}
+            result_data = {"workbooks": workbooks, "result": True}
             next_link = data.get("@odata.nextLink")
             if next_link:
-                result["next_page_token"] = next_link
+                result_data["next_page_token"] = next_link
 
-            return result
+            return ActionResult(data=result_data)
 
         except Exception as e:
-            return {"workbooks": [], "result": False, "error": str(e)}
+            return ActionResult(data={"workbooks": [], "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_get_workbook")
 class GetWorkbook(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
 
@@ -83,10 +83,10 @@ class GetWorkbook(ActionHandler):
             file_response = await context.fetch(file_url, method="GET")
 
             if file_response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get file info: {file_response.status_code}",
-                }
+                })
 
             file_data = file_response.json()
 
@@ -132,7 +132,7 @@ class GetWorkbook(ActionHandler):
                         "type": name.get("type"),
                     })
 
-            return {
+            return ActionResult(data={
                 "workbook": {
                     "id": file_data.get("id"),
                     "name": file_data.get("name"),
@@ -143,15 +143,15 @@ class GetWorkbook(ActionHandler):
                 "tables": tables,
                 "named_ranges": named_ranges,
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_list_worksheets")
 class ListWorksheets(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
 
@@ -159,11 +159,11 @@ class ListWorksheets(ActionHandler):
             response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "worksheets": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             worksheets = []
@@ -175,15 +175,15 @@ class ListWorksheets(ActionHandler):
                     "visibility": ws.get("visibility"),
                 })
 
-            return {"worksheets": worksheets, "result": True}
+            return ActionResult(data={"worksheets": worksheets, "result": True})
 
         except Exception as e:
-            return {"worksheets": [], "result": False, "error": str(e)}
+            return ActionResult(data={"worksheets": [], "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_read_range")
 class ReadRange(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -195,10 +195,10 @@ class ReadRange(ActionHandler):
             response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             values = data.get("values", [])
@@ -208,7 +208,7 @@ class ReadRange(ActionHandler):
             row_count = len(values)
             column_count = len(values[0]) if values else 0
 
-            return {
+            return ActionResult(data={
                 "range": data.get("address", range_address),
                 "values": values,
                 "formulas": formulas,
@@ -216,15 +216,15 @@ class ReadRange(ActionHandler):
                 "row_count": row_count,
                 "column_count": column_count,
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_write_range")
 class WriteRange(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -238,30 +238,30 @@ class WriteRange(ActionHandler):
             response = await context.fetch(url, method="PATCH", json=body)
 
             if response.status_code not in [200, 201]:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             row_count = len(values)
             column_count = len(values[0]) if values else 0
 
-            return {
+            return ActionResult(data={
                 "updated_range": data.get("address", range_address),
                 "updated_rows": row_count,
                 "updated_columns": column_count,
                 "updated_cells": row_count * column_count,
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_list_tables")
 class ListTables(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs.get("worksheet_name")
@@ -275,11 +275,11 @@ class ListTables(ActionHandler):
             response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "tables": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             tables = []
@@ -292,15 +292,15 @@ class ListTables(ActionHandler):
                     "style": table.get("style"),
                 })
 
-            return {"tables": tables, "result": True}
+            return ActionResult(data={"tables": tables, "result": True})
 
         except Exception as e:
-            return {"tables": [], "result": False, "error": str(e)}
+            return ActionResult(data={"tables": [], "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_get_table_data")
 class GetTableData(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -313,10 +313,10 @@ class GetTableData(ActionHandler):
             header_response = await context.fetch(header_url, method="GET")
 
             if header_response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get table headers: {header_response.status_code}",
-                }
+                })
 
             header_data = header_response.json()
             all_headers = header_data.get("values", [[]])[0]
@@ -325,10 +325,10 @@ class GetTableData(ActionHandler):
             rows_response = await context.fetch(rows_url, method="GET")
 
             if rows_response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get table data: {rows_response.status_code}",
-                }
+                })
 
             rows_data = rows_response.json()
             all_rows = rows_data.get("values", [])
@@ -353,20 +353,20 @@ class GetTableData(ActionHandler):
                     row_obj[header] = row[i] if i < len(row) else None
                 row_objects.append(row_obj)
 
-            return {
+            return ActionResult(data={
                 "headers": headers_out,
                 "rows": row_objects,
                 "total_rows": len(all_rows),
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_add_table_row")
 class AddTableRow(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -383,10 +383,10 @@ class AddTableRow(ActionHandler):
             response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/range"
             range_response = await context.fetch(range_url, method="GET")
@@ -394,19 +394,19 @@ class AddTableRow(ActionHandler):
             if range_response.status_code == 200:
                 table_range = range_response.json().get("address", "")
 
-            return {
+            return ActionResult(data={
                 "added_rows": len(rows),
                 "table_range": table_range,
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_get_used_range")
 class GetUsedRange(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -421,29 +421,29 @@ class GetUsedRange(ActionHandler):
             response = await context.fetch(url, method="GET")
 
             if response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
             values = data.get("values", [])
 
-            return {
+            return ActionResult(data={
                 "range": data.get("address", ""),
                 "row_count": data.get("rowCount", len(values)),
                 "column_count": data.get("columnCount", len(values[0]) if values else 0),
                 "values": values,
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_create_worksheet")
 class CreateWorksheet(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             name = inputs["name"]
@@ -454,14 +454,14 @@ class CreateWorksheet(ActionHandler):
             response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
 
-            return {
+            return ActionResult(data={
                 "worksheet": {
                     "id": data.get("id"),
                     "name": data.get("name"),
@@ -469,15 +469,15 @@ class CreateWorksheet(ActionHandler):
                     "visibility": data.get("visibility"),
                 },
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_delete_worksheet")
 class DeleteWorksheet(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -487,21 +487,21 @@ class DeleteWorksheet(ActionHandler):
             response = await context.fetch(url, method="DELETE")
 
             if response.status_code not in [200, 204]:
-                return {
+                return ActionResult(data={
                     "deleted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
-            return {"deleted": True, "result": True}
+            return ActionResult(data={"deleted": True, "result": True})
 
         except Exception as e:
-            return {"deleted": False, "result": False, "error": str(e)}
+            return ActionResult(data={"deleted": False, "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_create_table")
 class CreateTable(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -515,28 +515,28 @@ class CreateTable(ActionHandler):
             response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 201]:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
-            return {
+            return ActionResult(data={
                 "table": {
                     "id": data.get("id"),
                     "name": data.get("name"),
                     "showHeaders": data.get("showHeaders"),
                 },
                 "result": True,
-            }
+            })
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_update_table_row")
 class UpdateTableRow(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -550,21 +550,21 @@ class UpdateTableRow(ActionHandler):
             response = await context.fetch(url, method="PATCH", json=body)
 
             if response.status_code not in [200, 201]:
-                return {
+                return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
             data = response.json()
-            return {"updated_row": data, "result": True}
+            return ActionResult(data={"updated_row": data, "result": True})
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(data={"result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_delete_table_row")
 class DeleteTableRow(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -575,21 +575,21 @@ class DeleteTableRow(ActionHandler):
             response = await context.fetch(url, method="DELETE")
 
             if response.status_code not in [200, 204]:
-                return {
+                return ActionResult(data={
                     "deleted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
-            return {"deleted": True, "result": True}
+            return ActionResult(data={"deleted": True, "result": True})
 
         except Exception as e:
-            return {"deleted": False, "result": False, "error": str(e)}
+            return ActionResult(data={"deleted": False, "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_sort_range")
 class SortRange(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -611,21 +611,21 @@ class SortRange(ActionHandler):
             response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 204]:
-                return {
+                return ActionResult(data={
                     "sorted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
-            return {"sorted": True, "result": True}
+            return ActionResult(data={"sorted": True, "result": True})
 
         except Exception as e:
-            return {"sorted": False, "result": False, "error": str(e)}
+            return ActionResult(data={"sorted": False, "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_apply_filter")
 class ApplyFilter(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -637,19 +637,19 @@ class ApplyFilter(ActionHandler):
             columns_response = await context.fetch(columns_url, method="GET")
 
             if columns_response.status_code != 200:
-                return {
+                return ActionResult(data={
                     "filtered": False,
                     "result": False,
                     "error": f"Failed to get columns: {columns_response.status_code}",
-                }
+                })
 
             columns = columns_response.json().get("value", [])
             if column_index >= len(columns):
-                return {
+                return ActionResult(data={
                     "filtered": False,
                     "result": False,
                     "error": "Column index out of range",
-                }
+                })
 
             column_id = columns[column_index].get("id")
             url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/columns/{column_id}/filter/apply"
@@ -658,21 +658,21 @@ class ApplyFilter(ActionHandler):
             response = await context.fetch(url, method="POST", json=body)
 
             if response.status_code not in [200, 204]:
-                return {
+                return ActionResult(data={
                     "filtered": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
-            return {"filtered": True, "result": True}
+            return ActionResult(data={"filtered": True, "result": True})
 
         except Exception as e:
-            return {"filtered": False, "result": False, "error": str(e)}
+            return ActionResult(data={"filtered": False, "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_clear_filter")
 class ClearFilter(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             table_name = inputs["table_name"]
@@ -682,21 +682,21 @@ class ClearFilter(ActionHandler):
             response = await context.fetch(url, method="POST")
 
             if response.status_code not in [200, 204]:
-                return {
+                return ActionResult(data={
                     "cleared": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                }
+                })
 
-            return {"cleared": True, "result": True}
+            return ActionResult(data={"cleared": True, "result": True})
 
         except Exception as e:
-            return {"cleared": False, "result": False, "error": str(e)}
+            return ActionResult(data={"cleared": False, "result": False, "error": str(e)})
 
 
 @microsoft_excel.action("excel_format_range")
 class FormatRange(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             workbook_id = inputs["workbook_id"]
             worksheet_name = inputs["worksheet_name"]
@@ -727,7 +727,7 @@ class FormatRange(ActionHandler):
                 range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')"
                 await context.fetch(range_url, method="PATCH", json={"numberFormat": format_spec["numberFormat"]})
 
-            return {"formatted": True, "result": True}
+            return ActionResult(data={"formatted": True, "result": True})
 
         except Exception as e:
-            return {"formatted": False, "result": False, "error": str(e)}
+            return ActionResult(data={"formatted": False, "result": False, "error": str(e)})
