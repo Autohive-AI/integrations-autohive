@@ -9,7 +9,6 @@ EXCEL_MIMETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sh
 
 
 def encode_path_segment(segment: str) -> str:
-    """URL-encode a path segment for use in Graph API URLs."""
     return quote(segment, safe="")
 
 
@@ -44,7 +43,7 @@ class ListWorkbooks(ActionHandler):
                     "workbooks": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             items = data.get("value", [])
@@ -67,10 +66,10 @@ class ListWorkbooks(ActionHandler):
             if next_link:
                 result_data["next_page_token"] = next_link
 
-            return ActionResult(data=result_data)
+            return ActionResult(data=result_data, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"workbooks": [], "result": False, "error": str(e)})
+            return ActionResult(data={"workbooks": [], "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_get_workbook")
@@ -86,7 +85,7 @@ class GetWorkbook(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get file info: {file_response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             file_data = file_response.json()
 
@@ -143,10 +142,10 @@ class GetWorkbook(ActionHandler):
                 "tables": tables,
                 "named_ranges": named_ranges,
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_list_worksheets")
@@ -163,7 +162,7 @@ class ListWorksheets(ActionHandler):
                     "worksheets": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             worksheets = []
@@ -175,10 +174,10 @@ class ListWorksheets(ActionHandler):
                     "visibility": ws.get("visibility"),
                 })
 
-            return ActionResult(data={"worksheets": worksheets, "result": True})
+            return ActionResult(data={"worksheets": worksheets, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"worksheets": [], "result": False, "error": str(e)})
+            return ActionResult(data={"worksheets": [], "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_read_range")
@@ -198,7 +197,7 @@ class ReadRange(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             values = data.get("values", [])
@@ -216,10 +215,10 @@ class ReadRange(ActionHandler):
                 "row_count": row_count,
                 "column_count": column_count,
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_write_range")
@@ -241,7 +240,7 @@ class WriteRange(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             row_count = len(values)
@@ -253,10 +252,10 @@ class WriteRange(ActionHandler):
                 "updated_columns": column_count,
                 "updated_cells": row_count * column_count,
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_list_tables")
@@ -279,7 +278,7 @@ class ListTables(ActionHandler):
                     "tables": [],
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             tables = []
@@ -292,10 +291,10 @@ class ListTables(ActionHandler):
                     "style": table.get("style"),
                 })
 
-            return ActionResult(data={"tables": tables, "result": True})
+            return ActionResult(data={"tables": tables, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"tables": [], "result": False, "error": str(e)})
+            return ActionResult(data={"tables": [], "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_get_table_data")
@@ -316,7 +315,7 @@ class GetTableData(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get table headers: {header_response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             header_data = header_response.json()
             all_headers = header_data.get("values", [[]])[0]
@@ -328,7 +327,7 @@ class GetTableData(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Failed to get table data: {rows_response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             rows_data = rows_response.json()
             all_rows = rows_data.get("values", [])
@@ -358,10 +357,10 @@ class GetTableData(ActionHandler):
                 "rows": row_objects,
                 "total_rows": len(all_rows),
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_add_table_row")
@@ -386,7 +385,7 @@ class AddTableRow(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/range"
             range_response = await context.fetch(range_url, method="GET")
@@ -398,10 +397,10 @@ class AddTableRow(ActionHandler):
                 "added_rows": len(rows),
                 "table_range": table_range,
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_get_used_range")
@@ -424,7 +423,7 @@ class GetUsedRange(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             values = data.get("values", [])
@@ -435,10 +434,10 @@ class GetUsedRange(ActionHandler):
                 "column_count": data.get("columnCount", len(values[0]) if values else 0),
                 "values": values,
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_create_worksheet")
@@ -457,7 +456,7 @@ class CreateWorksheet(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
 
@@ -469,10 +468,10 @@ class CreateWorksheet(ActionHandler):
                     "visibility": data.get("visibility"),
                 },
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_delete_worksheet")
@@ -491,12 +490,12 @@ class DeleteWorksheet(ActionHandler):
                     "deleted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
-            return ActionResult(data={"deleted": True, "result": True})
+            return ActionResult(data={"deleted": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"deleted": False, "result": False, "error": str(e)})
+            return ActionResult(data={"deleted": False, "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_create_table")
@@ -518,7 +517,7 @@ class CreateTable(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
             return ActionResult(data={
@@ -528,10 +527,10 @@ class CreateTable(ActionHandler):
                     "showHeaders": data.get("showHeaders"),
                 },
                 "result": True,
-            })
+            }, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_update_table_row")
@@ -553,13 +552,13 @@ class UpdateTableRow(ActionHandler):
                 return ActionResult(data={
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             data = response.json()
-            return ActionResult(data={"updated_row": data, "result": True})
+            return ActionResult(data={"updated_row": data, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"result": False, "error": str(e)})
+            return ActionResult(data={"result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_delete_table_row")
@@ -579,12 +578,12 @@ class DeleteTableRow(ActionHandler):
                     "deleted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
-            return ActionResult(data={"deleted": True, "result": True})
+            return ActionResult(data={"deleted": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"deleted": False, "result": False, "error": str(e)})
+            return ActionResult(data={"deleted": False, "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_sort_range")
@@ -615,12 +614,12 @@ class SortRange(ActionHandler):
                     "sorted": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
-            return ActionResult(data={"sorted": True, "result": True})
+            return ActionResult(data={"sorted": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"sorted": False, "result": False, "error": str(e)})
+            return ActionResult(data={"sorted": False, "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_apply_filter")
@@ -641,7 +640,7 @@ class ApplyFilter(ActionHandler):
                     "filtered": False,
                     "result": False,
                     "error": f"Failed to get columns: {columns_response.status_code}",
-                })
+                }, cost_usd=0.0)
 
             columns = columns_response.json().get("value", [])
             if column_index >= len(columns):
@@ -649,7 +648,7 @@ class ApplyFilter(ActionHandler):
                     "filtered": False,
                     "result": False,
                     "error": "Column index out of range",
-                })
+                }, cost_usd=0.0)
 
             column_id = columns[column_index].get("id")
             url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/tables/{encoded_table}/columns/{column_id}/filter/apply"
@@ -662,12 +661,12 @@ class ApplyFilter(ActionHandler):
                     "filtered": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
-            return ActionResult(data={"filtered": True, "result": True})
+            return ActionResult(data={"filtered": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"filtered": False, "result": False, "error": str(e)})
+            return ActionResult(data={"filtered": False, "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_clear_filter")
@@ -686,12 +685,12 @@ class ClearFilter(ActionHandler):
                     "cleared": False,
                     "result": False,
                     "error": f"Microsoft Graph API error: {response.status_code}",
-                })
+                }, cost_usd=0.0)
 
-            return ActionResult(data={"cleared": True, "result": True})
+            return ActionResult(data={"cleared": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"cleared": False, "result": False, "error": str(e)})
+            return ActionResult(data={"cleared": False, "result": False, "error": str(e)}, cost_usd=0.0)
 
 
 @microsoft_excel.action("excel_format_range")
@@ -727,7 +726,7 @@ class FormatRange(ActionHandler):
                 range_url = f"{GRAPH_BASE_URL}/me/drive/items/{workbook_id}/workbook/worksheets/{encoded_ws}/range(address='{range_address}')"
                 await context.fetch(range_url, method="PATCH", json={"numberFormat": format_spec["numberFormat"]})
 
-            return ActionResult(data={"formatted": True, "result": True})
+            return ActionResult(data={"formatted": True, "result": True}, cost_usd=0.0)
 
         except Exception as e:
-            return ActionResult(data={"formatted": False, "result": False, "error": str(e)})
+            return ActionResult(data={"formatted": False, "result": False, "error": str(e)}, cost_usd=0.0)
