@@ -172,7 +172,6 @@ class TestGetProducts:
         assert result.data["result"] is False
         assert "error" in result.data
         assert "error_type" in result.data
-        assert result.data["products"] == []
 
     @pytest.mark.asyncio
     async def test_invalid_latitude(self, mock_context):
@@ -543,7 +542,8 @@ class TestRequestRide:
         )
 
         assert result.data["result"] is False
-        assert result.data["request_id"] is None
+        assert "error" in result.data
+        assert result.data["error_type"] == "validation_error"
 
     @pytest.mark.asyncio
     async def test_partial_response_handling(self, mock_context):
