@@ -7,7 +7,7 @@ from autohive_integrations_sdk import ExecutionContext
 async def test_list_sites():
     """Test listing all sites."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
 
@@ -26,7 +26,7 @@ async def test_list_sites():
 async def test_create_site():
     """Test creating a new site."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
     inputs = {"name": "test-site-autohive"}
@@ -46,7 +46,7 @@ async def test_create_site():
 async def test_get_site():
     """Test getting site details."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
     inputs = {"site_id": "your_site_id_here"}
@@ -66,7 +66,7 @@ async def test_get_site():
 async def test_list_deploys():
     """Test listing deploys for a site."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
     inputs = {"site_id": "your_site_id_here"}
@@ -86,7 +86,7 @@ async def test_list_deploys():
 async def test_create_deploy():
     """Test creating a deploy with files."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
     inputs = {
@@ -112,7 +112,7 @@ async def test_create_deploy():
 async def test_get_deploy():
     """Test getting deploy details."""
     auth = {
-        "auth_type": "Custom",
+        "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
     inputs = {"deploy_id": "your_deploy_id_here"}

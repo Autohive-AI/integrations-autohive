@@ -6,25 +6,26 @@ Connects Autohive to the Netlify API for managing sites, deployments, and hostin
 
 This integration provides a connection to Netlify's hosting platform. It allows users to manage sites, create and monitor deployments, and automate web hosting workflows directly from Autohive.
 
-The integration uses Netlify API v1 with Personal Access Token authentication and implements 8 actions covering site management and deployments.
+The integration uses Netlify API v1 with OAuth 2.0 authentication and implements 8 actions covering site management and deployments.
 
 ## Setup & Authentication
 
-This integration uses **Custom API Token** authentication.
+This integration uses **Platform OAuth 2.0** authentication, which provides a secure and seamless connection to your Netlify account.
 
-### Getting Your Access Token
+### Connecting Your Netlify Account
 
-1. Log in to your Netlify account at [app.netlify.com](https://app.netlify.com)
-2. Go to **User Settings** > **Applications** > **Personal access tokens**
-3. Click **New access token**
-4. Give it a descriptive name (e.g., "Autohive Integration")
-5. Copy the generated token
+1. Add the Netlify integration in Autohive
+2. Click **Connect to Netlify**
+3. You will be redirected to Netlify's authorization page
+4. Sign in to your Netlify account (if not already signed in)
+5. Review and authorize the requested permissions
+6. You will be redirected back to Autohive with the connection complete
 
-### Setup Steps in Autohive
+### Token Management
 
-1. Add Netlify integration in Autohive
-2. Enter your Personal Access Token
-3. Save the configuration
+- **Automatic Token Refresh**: The platform automatically handles token refresh, so you don't need to worry about token expiration
+- **Secure Storage**: Your OAuth tokens are securely stored and managed by the platform
+- **Revocation**: To disconnect, you can revoke access from your Netlify account settings under **User Settings** > **Applications** > **Authorized applications**
 
 ## Action Results
 
@@ -184,7 +185,7 @@ Gets details of a specific deployment.
 
 - **API Version**: v1
 - **Base URL**: `https://api.netlify.com/api/v1`
-- **Authentication**: Personal Access Token (Bearer)
+- **Authentication**: OAuth 2.0 (Platform-managed)
 - **Documentation**: https://docs.netlify.com/api/get-started/
 - **Rate Limits**: 500 requests per minute
 
@@ -242,9 +243,9 @@ To test the integration:
 ### Common Issues
 
 **401 Unauthorized:**
-- Check that your access token is valid
-- Ensure the token has not expired
-- Verify the token has the required permissions
+- Try reconnecting your Netlify account
+- Ensure you have granted the required permissions
+- Check if your Netlify account is still active
 
 **404 Not Found:**
 - Verify the site_id or deploy_id is correct

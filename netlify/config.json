@@ -5,19 +5,9 @@
   "description": "Integration with Netlify for managing sites, deployments, and hosting",
   "entry_point": "netlify.py",
   "auth": {
-    "type": "custom",
-    "title": "Netlify API Authentication",
-    "fields": {
-      "type": "object",
-      "properties": {
-        "access_token": {
-          "type": "string",
-          "format": "password",
-          "label": "Access Token",
-          "help_text": "Please enter your Netlify Personal Access Token or OAuth Access Token"
-        }
-      }
-    }
+    "type": "platform",
+    "provider": "Netlify",
+    "scopes": []
   },
   "actions": {
     "list_sites": {

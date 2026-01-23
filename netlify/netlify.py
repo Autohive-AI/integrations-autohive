@@ -10,21 +10,8 @@ netlify = Integration.load()
 # Base URL for Netlify API
 NETLIFY_API_BASE_URL = "https://api.netlify.com/api/v1"
 
-
-# ---- Helper Functions ----
-
-def get_auth_headers(context: ExecutionContext) -> Dict[str, str]:
-    """Get authorization headers from context."""
-    credentials = context.auth.get("credentials", {})
-    access_token = credentials.get("access_token")
-
-    if not access_token:
-        raise ValueError("Missing required access_token")
-
-    return {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
+# Note: Authentication is handled automatically by the platform OAuth integration.
+# The context.fetch method automatically includes the OAuth token in requests.
 
 
 # ---- Site Handlers ----
@@ -35,12 +22,9 @@ class ListSitesAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
-
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites",
-                method="GET",
-                headers=headers
+                method="GET"
             )
 
             sites = response if isinstance(response, list) else []
@@ -63,7 +47,6 @@ class CreateSiteAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             name = inputs["name"]
 
             payload = {"name": name}
@@ -74,7 +57,6 @@ class CreateSiteAction(ActionHandler):
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites",
                 method="POST",
-                headers=headers,
                 json=payload
             )
 
@@ -96,13 +78,11 @@ class GetSiteAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             site_id = inputs["site_id"]
 
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites/{site_id}",
-                method="GET",
-                headers=headers
+                method="GET"
             )
 
             return ActionResult(
@@ -123,7 +103,6 @@ class UpdateSiteAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             site_id = inputs["site_id"]
 
             payload = {}
@@ -135,7 +114,6 @@ class UpdateSiteAction(ActionHandler):
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites/{site_id}",
                 method="PATCH",
-                headers=headers,
                 json=payload
             )
 
@@ -157,13 +135,11 @@ class DeleteSiteAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             site_id = inputs["site_id"]
 
             await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites/{site_id}",
-                method="DELETE",
-                headers=headers
+                method="DELETE"
             )
 
             return ActionResult(
@@ -186,13 +162,11 @@ class ListDeploysAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             site_id = inputs["site_id"]
 
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites/{site_id}/deploys",
-                method="GET",
-                headers=headers
+                method="GET"
             )
 
             deploys = response if isinstance(response, list) else []
@@ -215,7 +189,6 @@ class CreateDeployAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             site_id = inputs["site_id"]
             files = inputs["files"]
 
@@ -232,7 +205,6 @@ class CreateDeployAction(ActionHandler):
             deploy = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/sites/{site_id}/deploys",
                 method="POST",
-                headers=headers,
                 json={"files": files_dict}
             )
 
@@ -244,21 +216,17 @@ class CreateDeployAction(ActionHandler):
                 if sha1_hash in hash_to_content:
                     file_content = hash_to_content[sha1_hash]
 
-                    upload_headers = get_auth_headers(context)
-                    upload_headers["Content-Type"] = "application/octet-stream"
-
                     await context.fetch(
                         f"{NETLIFY_API_BASE_URL}/deploys/{deploy_id}/files/{sha1_hash}",
                         method="PUT",
-                        headers=upload_headers,
+                        headers={"Content-Type": "application/octet-stream"},
                         data=file_content.encode()
                     )
 
             # Get final deploy info
             final_deploy = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/deploys/{deploy_id}",
-                method="GET",
-                headers=headers
+                method="GET"
             )
 
             deploy_url = (
@@ -289,13 +257,11 @@ class GetDeployAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            headers = get_auth_headers(context)
             deploy_id = inputs["deploy_id"]
 
             response = await context.fetch(
                 f"{NETLIFY_API_BASE_URL}/deploys/{deploy_id}",
-                method="GET",
-                headers=headers
+                method="GET"
             )
 
             return ActionResult(
