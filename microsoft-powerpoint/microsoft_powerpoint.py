@@ -1,5 +1,5 @@
 from autohive_integrations_sdk import (
-    Integration, ExecutionContext, ActionHandler
+    Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any
 import io
@@ -84,7 +84,7 @@ def create_blank_pptx() -> bytes:
 class ListPresentationsAction(ActionHandler):
     """Find accessible PowerPoint presentations (.pptx) in OneDrive/SharePoint."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             folder_path = inputs.get('folder_path', '')
             name_contains = inputs.get('name_contains', '')
@@ -125,21 +125,27 @@ class ListPresentationsAction(ActionHandler):
 
             next_page_token = response.get('@odata.nextLink')
 
-            return {
-                "presentations": presentations,
-                "next_page_token": next_page_token,
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "presentations": presentations,
+                    "next_page_token": next_page_token,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"presentations": [], "result": False, "error": str(e)}
+            return ActionResult(
+                data={"presentations": [], "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_get_presentation")
 class GetPresentationAction(ActionHandler):
     """Retrieve presentation properties including file info, author, and last modified details."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             presentation_id = inputs['presentation_id']
 
@@ -151,28 +157,34 @@ class GetPresentationAction(ActionHandler):
                 }
             )
 
-            return {
-                "id": response.get('id'),
-                "name": response.get('name'),
-                "size": response.get('size'),
-                "webUrl": response.get('webUrl'),
-                "createdDateTime": response.get('createdDateTime'),
-                "lastModifiedDateTime": response.get('lastModifiedDateTime'),
-                "createdBy": response.get('createdBy'),
-                "lastModifiedBy": response.get('lastModifiedBy'),
-                "parentReference": response.get('parentReference'),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "id": response.get('id'),
+                    "name": response.get('name'),
+                    "size": response.get('size'),
+                    "webUrl": response.get('webUrl'),
+                    "createdDateTime": response.get('createdDateTime'),
+                    "lastModifiedDateTime": response.get('lastModifiedDateTime'),
+                    "createdBy": response.get('createdBy'),
+                    "lastModifiedBy": response.get('lastModifiedBy'),
+                    "parentReference": response.get('parentReference'),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_get_slides")
 class GetSlidesAction(ActionHandler):
     """List all slides in a presentation with their basic metadata."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
 
@@ -217,23 +229,32 @@ class GetSlidesAction(ActionHandler):
 
                 slides.append(slide_info)
 
-            return {
-                "slides": slides,
-                "slide_count": len(slides),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "slides": slides,
+                    "slide_count": len(slides),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"slides": [], "slide_count": 0, "result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"slides": [], "slide_count": 0, "result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"slides": [], "slide_count": 0, "result": False, "error": str(e)}
+            return ActionResult(
+                data={"slides": [], "slide_count": 0, "result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_get_slide")
 class GetSlideAction(ActionHandler):
     """Get details for a specific slide by its index (1-based)."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
 
@@ -243,17 +264,23 @@ class GetSlideAction(ActionHandler):
             thumbnail_size = inputs.get('thumbnail_size', 'large')
 
             if slide_index < 1:
-                return {"result": False, "error": "Slide index must be 1 or greater"}
+                return ActionResult(
+                    data={"result": False, "error": "Slide index must be 1 or greater"},
+                    cost_usd=0.0
+                )
 
             content_bytes = await download_file_content(context, presentation_id)
             prs = Presentation(io.BytesIO(content_bytes))
             
             if slide_index > len(prs.slides):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
+                return ActionResult(
+                    data={"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."},
+                    cost_usd=0.0
+                )
 
             slide = prs.slides[slide_index - 1]
             
-            result = {
+            result_data = {
                 "index": slide_index,
                 "id": str(slide.slide_id),
                 "result": True
@@ -268,26 +295,35 @@ class GetSlideAction(ActionHandler):
                     thumbnail_sets = thumbnails_response.get('value', [])
                     if thumbnail_sets:
                         size_data = thumbnail_sets[0].get(thumbnail_size, thumbnail_sets[0].get('large', {}))
-                        result["thumbnailUrl"] = size_data.get('url')
-                        result["thumbnailWidth"] = size_data.get('width')
-                        result["thumbnailHeight"] = size_data.get('height')
-                        result["thumbnailNote"] = "Thumbnail is for entire presentation, not individual slide"
+                        result_data["thumbnailUrl"] = size_data.get('url')
+                        result_data["thumbnailWidth"] = size_data.get('width')
+                        result_data["thumbnailHeight"] = size_data.get('height')
+                        result_data["thumbnailNote"] = "Thumbnail is for entire presentation, not individual slide"
                 except Exception:
                     pass
 
-            return result
+            return ActionResult(
+                data=result_data,
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_create_presentation")
 class CreatePresentationAction(ActionHandler):
     """Create a new PowerPoint presentation in the specified folder."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             name = inputs['name']
             folder_path = inputs.get('folder_path', '')
@@ -318,40 +354,52 @@ class CreatePresentationAction(ActionHandler):
                 )
 
                 if response.get('id'):
-                    return {
+                    return ActionResult(
+                        data={
+                            "id": response.get('id'),
+                            "name": response.get('name'),
+                            "webUrl": response.get('webUrl'),
+                            "createdDateTime": response.get('createdDateTime'),
+                            "result": True
+                        },
+                        cost_usd=0.0
+                    )
+                else:
+                    return ActionResult(
+                        data={
+                            "result": True,
+                            "message": "Copy operation initiated. The file will be available shortly.",
+                            "name": file_name
+                        },
+                        cost_usd=0.0
+                    )
+            else:
+                pptx_content = create_blank_pptx()
+                response = await upload_file_content(context, folder_path, file_name, pptx_content)
+
+                return ActionResult(
+                    data={
                         "id": response.get('id'),
                         "name": response.get('name'),
                         "webUrl": response.get('webUrl'),
                         "createdDateTime": response.get('createdDateTime'),
                         "result": True
-                    }
-                else:
-                    return {
-                        "result": True,
-                        "message": "Copy operation initiated. The file will be available shortly.",
-                        "name": file_name
-                    }
-            else:
-                pptx_content = create_blank_pptx()
-                response = await upload_file_content(context, folder_path, file_name, pptx_content)
-
-                return {
-                    "id": response.get('id'),
-                    "name": response.get('name'),
-                    "webUrl": response.get('webUrl'),
-                    "createdDateTime": response.get('createdDateTime'),
-                    "result": True
-                }
+                    },
+                    cost_usd=0.0
+                )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_add_slide")
 class AddSlideAction(ActionHandler):
     """Add a new slide to an existing presentation."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
             from pptx.util import Inches, Pt
@@ -421,23 +469,32 @@ class AddSlideAction(ActionHandler):
 
             await overwrite_file_content(context, presentation_id, buffer.read())
 
-            return {
-                "slide_index": slide_index,
-                "slide_count": len(prs.slides),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "slide_index": slide_index,
+                    "slide_count": len(prs.slides),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_update_slide")
 class UpdateSlideAction(ActionHandler):
     """Update the content of an existing slide."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
 
@@ -448,13 +505,19 @@ class UpdateSlideAction(ActionHandler):
             notes = inputs.get('notes')
 
             if slide_index < 1:
-                return {"result": False, "error": "Slide index must be 1 or greater"}
+                return ActionResult(
+                    data={"result": False, "error": "Slide index must be 1 or greater"},
+                    cost_usd=0.0
+                )
 
             content_bytes = await download_file_content(context, presentation_id)
             prs = Presentation(io.BytesIO(content_bytes))
 
             if slide_index > len(prs.slides):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
+                return ActionResult(
+                    data={"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."},
+                    cost_usd=0.0
+                )
 
             slide = prs.slides[slide_index - 1]
             updated = False
@@ -491,23 +554,32 @@ class UpdateSlideAction(ActionHandler):
 
                 await overwrite_file_content(context, presentation_id, buffer.read())
 
-            return {
-                "updated": updated,
-                "slide_index": slide_index,
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "updated": updated,
+                    "slide_index": slide_index,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_delete_slide")
 class DeleteSlideAction(ActionHandler):
     """Delete a slide from the presentation."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
 
@@ -515,16 +587,25 @@ class DeleteSlideAction(ActionHandler):
             slide_index = inputs['slide_index']
 
             if slide_index < 1:
-                return {"result": False, "error": "Slide index must be 1 or greater"}
+                return ActionResult(
+                    data={"result": False, "error": "Slide index must be 1 or greater"},
+                    cost_usd=0.0
+                )
 
             content_bytes = await download_file_content(context, presentation_id)
             prs = Presentation(io.BytesIO(content_bytes))
 
             if slide_index > len(prs.slides):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
+                return ActionResult(
+                    data={"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."},
+                    cost_usd=0.0
+                )
 
             if len(prs.slides) == 1:
-                return {"result": False, "error": "Cannot delete the last slide. Presentation must have at least one slide."}
+                return ActionResult(
+                    data={"result": False, "error": "Cannot delete the last slide. Presentation must have at least one slide."},
+                    cost_usd=0.0
+                )
 
             sldIdLst = prs.slides._sldIdLst
             sldId = sldIdLst[slide_index - 1]
@@ -540,23 +621,32 @@ class DeleteSlideAction(ActionHandler):
 
             await overwrite_file_content(context, presentation_id, buffer.read())
 
-            return {
-                "deleted": True,
-                "slide_count": remaining_count,
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "deleted": True,
+                    "slide_count": remaining_count,
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_export_pdf")
 class ExportPdfAction(ActionHandler):
     """Export the presentation to PDF format."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             presentation_id = inputs['presentation_id']
             output_folder = inputs.get('output_folder')
@@ -601,24 +691,30 @@ class ExportPdfAction(ActionHandler):
                 method="GET"
             )
 
-            return {
-                "pdf_id": response.get('id'),
-                "pdf_name": response.get('name'),
-                "pdf_webUrl": response.get('webUrl'),
-                "pdf_size": response.get('size'),
-                "download_url": download_response.get('@microsoft.graph.downloadUrl'),
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "pdf_id": response.get('id'),
+                    "pdf_name": response.get('name'),
+                    "pdf_webUrl": response.get('webUrl'),
+                    "pdf_size": response.get('size'),
+                    "download_url": download_response.get('@microsoft.graph.downloadUrl'),
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
 
 
 @microsoft_powerpoint.action("powerpoint_get_slide_image")
 class GetSlideImageAction(ActionHandler):
     """Get a presentation thumbnail image. Note: Microsoft Graph returns a single thumbnail for the entire presentation, not per-slide images."""
 
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         try:
             from pptx import Presentation
 
@@ -628,13 +724,19 @@ class GetSlideImageAction(ActionHandler):
             image_format = inputs.get('format', 'png')
 
             if slide_index < 1:
-                return {"result": False, "error": "Slide index must be 1 or greater"}
+                return ActionResult(
+                    data={"result": False, "error": "Slide index must be 1 or greater"},
+                    cost_usd=0.0
+                )
 
             content_bytes = await download_file_content(context, presentation_id)
             prs = Presentation(io.BytesIO(content_bytes))
             
             if slide_index > len(prs.slides):
-                return {"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."}
+                return ActionResult(
+                    data={"result": False, "error": f"Slide index {slide_index} is out of range. Presentation has {len(prs.slides)} slides."},
+                    cost_usd=0.0
+                )
 
             size_info = THUMBNAIL_SIZES.get(size, THUMBNAIL_SIZES['large'])
 
@@ -646,20 +748,32 @@ class GetSlideImageAction(ActionHandler):
             thumbnail_sets = thumbnails_response.get('value', [])
             
             if not thumbnail_sets:
-                return {"result": False, "error": "No thumbnail available for this presentation"}
+                return ActionResult(
+                    data={"result": False, "error": "No thumbnail available for this presentation"},
+                    cost_usd=0.0
+                )
 
             size_data = thumbnail_sets[0].get(size, thumbnail_sets[0].get('large', {}))
 
-            return {
-                "image_url": size_data.get('url'),
-                "width": size_data.get('width', size_info['width']),
-                "height": size_data.get('height', size_info['height']),
-                "format": image_format,
-                "note": "Microsoft Graph provides a single presentation thumbnail, not per-slide images",
-                "result": True
-            }
+            return ActionResult(
+                data={
+                    "image_url": size_data.get('url'),
+                    "width": size_data.get('width', size_info['width']),
+                    "height": size_data.get('height', size_info['height']),
+                    "format": image_format,
+                    "note": "Microsoft Graph provides a single presentation thumbnail, not per-slide images",
+                    "result": True
+                },
+                cost_usd=0.0
+            )
 
         except ImportError:
-            return {"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"}
+            return ActionResult(
+                data={"result": False, "error": "python-pptx library is required. Install with: pip install python-pptx"},
+                cost_usd=0.0
+            )
         except Exception as e:
-            return {"result": False, "error": str(e)}
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
