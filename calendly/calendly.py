@@ -266,10 +266,12 @@ class GetInviteeAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
+            event_uuid = inputs["event_uuid"]
             invitee_uuid = inputs["invitee_uuid"]
 
+            # Calendly API v2 requires invitees to be accessed through the scheduled event endpoint
             response = await context.fetch(
-                f"{CALENDLY_API_BASE_URL}/invitees/{invitee_uuid}",
+                f"{CALENDLY_API_BASE_URL}/scheduled_events/{event_uuid}/invitees/{invitee_uuid}",
                 method="GET"
             )
 

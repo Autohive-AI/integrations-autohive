@@ -311,16 +311,20 @@
     },
     "get_invitee": {
       "display_name": "Get Invitee",
-      "description": "Get details of a specific invitee",
+      "description": "Get details of a specific invitee for a scheduled event",
       "input_schema": {
         "type": "object",
         "properties": {
+          "event_uuid": {
+            "type": "string",
+            "description": "The UUID of the scheduled event"
+          },
           "invitee_uuid": {
             "type": "string",
             "description": "The UUID of the invitee"
           }
         },
-        "required": ["invitee_uuid"]
+        "required": ["event_uuid", "invitee_uuid"]
       },
       "output_schema": {
         "type": "object",

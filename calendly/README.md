@@ -164,9 +164,10 @@ List all invitees for a scheduled event.
 ---
 
 #### `get_invitee`
-Get details of a specific invitee.
+Get details of a specific invitee for a scheduled event.
 
 **Inputs:**
+- `event_uuid` (required): The UUID of the scheduled event
 - `invitee_uuid` (required): The UUID of the invitee
 
 **Outputs:**

@@ -176,7 +176,7 @@ async def test_get_invitee():
         "auth_type": "PlatformOauth2",
         "credentials": {"access_token": "your_access_token_here"}
     }
-    inputs = {"invitee_uuid": "your_invitee_uuid_here"}
+    inputs = {"event_uuid": "your_event_uuid_here", "invitee_uuid": "your_invitee_uuid_here"}
 
     async with ExecutionContext(auth=auth) as context:
         try:
