@@ -1,7 +1,7 @@
 # Test suite for Supabase integration
 import asyncio
 from context import supabase
-from autohive_integrations_sdk import ExecutionContext, ActionResult
+from autohive_integrations_sdk import ExecutionContext
 
 
 # Test credentials - replace with your actual values
