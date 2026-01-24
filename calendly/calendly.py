@@ -607,7 +607,8 @@ class ListRoutingFormSubmissionsAction(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
-            params = {"routing_form": inputs["routing_form"]}
+            # Calendly API expects 'form' parameter, not 'routing_form'
+            params = {"form": inputs["routing_form"]}
             if inputs.get("count"):
                 params["count"] = inputs["count"]
             if inputs.get("page_token"):
