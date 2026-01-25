@@ -23,6 +23,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [google-analytics](google-analytics): Google Analytics 4 (GA4) integration for accessing analytics data, reports, and metrics through the Analytics Data API. Supports running customized reports with dimensions and metrics, real-time analytics for monitoring active users and current activity in the last 30 minutes, metadata discovery for exploring available dimensions and metrics, and batch processing for running multiple reports in a single API call. Features OAuth2 authentication with Analytics Data API scope, flexible date range filtering (absolute YYYY-MM-DD and relative formats like "7daysAgo"), pagination support with limit and offset, and access to all GA4 event data including common dimensions (country, city, deviceCategory, browser, pagePath, eventName) and metrics (activeUsers, sessions, screenPageViews, bounceRate, conversions, engagementRate). Includes 4 actions for standard reports, real-time data, metadata retrieval, and batch report execution. Ideal for analytics workflows, data analysis, reporting automation, and business intelligence.
 
+### Bitly
+
+[bitly](bitly): URL shortening and link management integration with Bitly API v4 for creating, managing, and tracking shortened links. Supports quick URL shortening, advanced bitlink creation with custom back-halves and tags, link retrieval and updates, expanding bitlinks to original URLs, and listing bitlinks by group. Features click analytics (detailed counts by time unit and summaries), group management, and organization access. Uses OAuth 2.0 platform authentication with automatic token handling. Includes 12 actions covering user info, link management (6 actions), click analytics (2 actions), and groups/organizations (3 actions). Ideal for marketing automation, link tracking, campaign analytics, and URL management workflows.
+
 ### Box
 
 [box](box): Manages files and folders in Box cloud storage. Supports listing shared folders, searching files, downloading file contents, uploading files, and browsing folder contents with recursive support.
