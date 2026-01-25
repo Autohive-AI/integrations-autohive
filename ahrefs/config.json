@@ -1,0 +1,304 @@
+{
+  "name": "Ahrefs",
+  "display_name": "Ahrefs",
+  "version": "1.0.0",
+  "description": "SEO analytics integration with Ahrefs API v3 for backlink analysis, domain ratings, keyword research, and organic traffic insights",
+  "entry_point": "ahrefs.py",
+  "auth": {
+    "type": "custom",
+    "title": "Ahrefs",
+    "fields": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "format": "password",
+          "label": "API Key",
+          "help_text": "Your Ahrefs API key (Enterprise plan required). Find it in Settings > API Access."
+        }
+      }
+    }
+  },
+  "actions": {
+    "get_domain_rating": {
+      "display_name": "Get Domain Rating",
+      "description": "Get the Domain Rating (DR) and Ahrefs Rank for a target domain",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain to analyze (e.g., 'example.com')"
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "domain_rating": {
+            "type": "number",
+            "description": "Domain Rating score (0-100)"
+          },
+          "ahrefs_rank": {
+            "type": "integer",
+            "description": "Ahrefs Rank position"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_backlinks_stats": {
+      "display_name": "Get Backlinks Stats",
+      "description": "Get backlink statistics for a target domain including total backlinks, referring domains, and dofollow/nofollow counts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain or URL to analyze"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Analysis mode: 'exact' (URL only), 'domain' (entire domain), 'subdomains' (domain + subdomains), 'prefix' (URL prefix)",
+            "enum": ["exact", "domain", "subdomains", "prefix"]
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "description": "Backlink statistics"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_backlinks": {
+      "display_name": "Get Backlinks",
+      "description": "Get a list of backlinks pointing to a target domain or URL",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain or URL to analyze"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Analysis mode: 'exact', 'domain', 'subdomains', or 'prefix'",
+            "enum": ["exact", "domain", "subdomains", "prefix"]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of backlinks to return (default: 100, max: 1000)"
+          },
+          "order_by": {
+            "type": "string",
+            "description": "Sort order: 'ahrefs_rank', 'domain_rating', 'url_rating', 'first_seen', 'last_seen'",
+            "enum": ["ahrefs_rank", "domain_rating", "url_rating", "first_seen", "last_seen"]
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "backlinks": {
+            "type": "array",
+            "description": "List of backlinks"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_referring_domains": {
+      "display_name": "Get Referring Domains",
+      "description": "Get a list of domains that link to the target",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain or URL to analyze"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Analysis mode: 'exact', 'domain', 'subdomains', or 'prefix'",
+            "enum": ["exact", "domain", "subdomains", "prefix"]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of referring domains to return (default: 100, max: 1000)"
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "referring_domains": {
+            "type": "array",
+            "description": "List of referring domains"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_organic_keywords": {
+      "display_name": "Get Organic Keywords",
+      "description": "Get organic keywords that a domain ranks for in search results",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain to analyze"
+          },
+          "country": {
+            "type": "string",
+            "description": "Two-letter country code for search results (e.g., 'us', 'uk', 'de')"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of keywords to return (default: 100, max: 1000)"
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "keywords": {
+            "type": "array",
+            "description": "List of organic keywords with rankings"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_top_pages": {
+      "display_name": "Get Top Pages",
+      "description": "Get the top pages of a domain by organic traffic",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain to analyze"
+          },
+          "country": {
+            "type": "string",
+            "description": "Two-letter country code (e.g., 'us', 'uk')"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of pages to return (default: 100, max: 1000)"
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "pages": {
+            "type": "array",
+            "description": "List of top pages by traffic"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_keyword_metrics": {
+      "display_name": "Get Keyword Metrics",
+      "description": "Get search metrics for specific keywords including volume, difficulty, and CPC",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "keywords": {
+            "type": "array",
+            "description": "List of keywords to analyze (max 10)",
+            "items": {
+              "type": "string"
+            }
+          },
+          "country": {
+            "type": "string",
+            "description": "Two-letter country code (e.g., 'us', 'uk')"
+          }
+        },
+        "required": ["keywords"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "metrics": {
+            "type": "array",
+            "description": "Keyword metrics for each keyword"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    },
+    "get_outgoing_links": {
+      "display_name": "Get Outgoing Links",
+      "description": "Get external links from a target domain or page",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target domain or URL to analyze"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Analysis mode: 'exact', 'domain', 'subdomains', or 'prefix'",
+            "enum": ["exact", "domain", "subdomains", "prefix"]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of outgoing links to return (default: 100)"
+          }
+        },
+        "required": ["target"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "outgoing_links": {
+            "type": "array",
+            "description": "List of outgoing links"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Operation success status"
+          }
+        }
+      }
+    }
+  }
+}
