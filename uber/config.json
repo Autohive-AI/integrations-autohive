@@ -7,11 +7,8 @@
     "supports_billing": false,
     "supports_connected_account": true,
     "auth": {
-        "type": "oauth2",
-        "provider": "uber",
-        "grant_type": "authorization_code",
-        "authorization_url": "https://login.uber.com/oauth/v2/authorize",
-        "token_url": "https://login.uber.com/oauth/v2/token",
+        "type": "platform",
+        "provider": "Uber",
         "scopes": [
             "profile",
             "history",
