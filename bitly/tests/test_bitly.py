@@ -6,8 +6,10 @@ from autohive_integrations_sdk import ExecutionContext
 
 # Test credentials - replace with your actual OAuth token
 TEST_AUTH = {
-    "auth_type": "oauth2",
-    "access_token": "your_access_token_here"
+    "auth_type": "PlatformOauth2",
+    "credentials": {
+        "access_token": "your_access_token_here"
+    }
 }
 
 
@@ -222,6 +224,14 @@ async def run_all_tests():
     print("=" * 60)
     print("Bitly Integration Test Suite")
     print("=" * 60)
+    print()
+    print("NOTE: Replace placeholders with actual values:")
+    print("  - your_access_token_here: Your OAuth access token")
+    print("  - bit.ly/example: Replace with actual bitlinks")
+    print("  - your_group_guid: Replace with actual group GUID")
+    print()
+    print("TIP: Run get_user and list_groups first to discover IDs!")
+    print()
 
     test_functions = [
         # User
