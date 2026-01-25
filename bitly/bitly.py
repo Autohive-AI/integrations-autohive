@@ -2,6 +2,7 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any
+from urllib.parse import quote
 
 # Create the integration
 bitly = Integration.load()
@@ -22,6 +23,11 @@ def normalize_bitlink(bitlink: str) -> str:
     if bitlink.startswith("https://"):
         return bitlink[8:]
     return bitlink
+
+
+def encode_bitlink_for_url(bitlink: str) -> str:
+    """URL-encode a bitlink for use in API paths (e.g., bit.ly/abc -> bit.ly%2Fabc)."""
+    return quote(bitlink, safe="")
 
 
 # ---- User Handlers ----
@@ -130,9 +136,10 @@ class GetBitlinkAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             bitlink = normalize_bitlink(inputs["bitlink"])
+            encoded_bitlink = encode_bitlink_for_url(bitlink)
 
             response = await context.fetch(
-                f"{BITLY_API_BASE_URL}/bitlinks/{bitlink}",
+                f"{BITLY_API_BASE_URL}/bitlinks/{encoded_bitlink}",
                 method="GET"
             )
 
@@ -155,6 +162,7 @@ class UpdateBitlinkAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             bitlink = normalize_bitlink(inputs["bitlink"])
+            encoded_bitlink = encode_bitlink_for_url(bitlink)
 
             body = {}
             if inputs.get("title") is not None:
@@ -165,7 +173,7 @@ class UpdateBitlinkAction(ActionHandler):
                 body["archived"] = inputs["archived"]
 
             response = await context.fetch(
-                f"{BITLY_API_BASE_URL}/bitlinks/{bitlink}",
+                f"{BITLY_API_BASE_URL}/bitlinks/{encoded_bitlink}",
                 method="PATCH",
                 json=body
             )
@@ -220,6 +228,7 @@ class GetClicksAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             bitlink = normalize_bitlink(inputs["bitlink"])
+            encoded_bitlink = encode_bitlink_for_url(bitlink)
 
             params = {}
             if inputs.get("unit"):
@@ -232,7 +241,7 @@ class GetClicksAction(ActionHandler):
                 params["units"] = -1
 
             response = await context.fetch(
-                f"{BITLY_API_BASE_URL}/bitlinks/{bitlink}/clicks",
+                f"{BITLY_API_BASE_URL}/bitlinks/{encoded_bitlink}/clicks",
                 method="GET",
                 params=params
             )
@@ -258,6 +267,7 @@ class GetClicksSummaryAction(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             bitlink = normalize_bitlink(inputs["bitlink"])
+            encoded_bitlink = encode_bitlink_for_url(bitlink)
 
             params = {}
             if inputs.get("unit"):
@@ -270,7 +280,7 @@ class GetClicksSummaryAction(ActionHandler):
                 params["units"] = -1
 
             response = await context.fetch(
-                f"{BITLY_API_BASE_URL}/bitlinks/{bitlink}/clicks/summary",
+                f"{BITLY_API_BASE_URL}/bitlinks/{encoded_bitlink}/clicks/summary",
                 method="GET",
                 params=params
             )
