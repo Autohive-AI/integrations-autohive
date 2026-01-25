@@ -29,6 +29,10 @@
           "target": {
             "type": "string",
             "description": "Target domain to analyze (e.g., 'example.com')"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -53,7 +57,7 @@
     },
     "get_backlinks_stats": {
       "display_name": "Get Backlinks Stats",
-      "description": "Get backlink statistics for a target domain including total backlinks, referring domains, and dofollow/nofollow counts",
+      "description": "Get backlink statistics for a target domain including total backlinks and referring domains",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -65,6 +69,10 @@
             "type": "string",
             "description": "Analysis mode: 'exact' (URL only), 'domain' (entire domain), 'subdomains' (domain + subdomains), 'prefix' (URL prefix)",
             "enum": ["exact", "domain", "subdomains", "prefix"]
+          },
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -72,9 +80,21 @@
       "output_schema": {
         "type": "object",
         "properties": {
-          "stats": {
-            "type": "object",
-            "description": "Backlink statistics"
+          "live_backlinks": {
+            "type": "integer",
+            "description": "Number of live backlinks"
+          },
+          "all_time_backlinks": {
+            "type": "integer",
+            "description": "Total backlinks ever seen"
+          },
+          "live_refdomains": {
+            "type": "integer",
+            "description": "Number of live referring domains"
+          },
+          "all_time_refdomains": {
+            "type": "integer",
+            "description": "Total referring domains ever seen"
           },
           "result": {
             "type": "boolean",
@@ -102,10 +122,9 @@
             "type": "integer",
             "description": "Maximum number of backlinks to return (default: 100, max: 1000)"
           },
-          "order_by": {
+          "date": {
             "type": "string",
-            "description": "Sort order: 'ahrefs_rank', 'domain_rating', 'url_rating', 'first_seen', 'last_seen'",
-            "enum": ["ahrefs_rank", "domain_rating", "url_rating", "first_seen", "last_seen"]
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -115,7 +134,7 @@
         "properties": {
           "backlinks": {
             "type": "array",
-            "description": "List of backlinks"
+            "description": "List of backlinks with url_from, url_to, domain_rating_source, anchor, first_seen, is_dofollow"
           },
           "result": {
             "type": "boolean",
@@ -142,6 +161,10 @@
           "limit": {
             "type": "integer",
             "description": "Maximum number of referring domains to return (default: 100, max: 1000)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -151,7 +174,7 @@
         "properties": {
           "referring_domains": {
             "type": "array",
-            "description": "List of referring domains"
+            "description": "List of referring domains with domain, domain_rating, backlinks, first_seen, last_visited"
           },
           "result": {
             "type": "boolean",
@@ -177,6 +200,10 @@
           "limit": {
             "type": "integer",
             "description": "Maximum number of keywords to return (default: 100, max: 1000)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -186,7 +213,7 @@
         "properties": {
           "keywords": {
             "type": "array",
-            "description": "List of organic keywords with rankings"
+            "description": "List of keywords with keyword, volume, best_position, keyword_difficulty, cpc, sum_traffic"
           },
           "result": {
             "type": "boolean",
@@ -212,6 +239,10 @@
           "limit": {
             "type": "integer",
             "description": "Maximum number of pages to return (default: 100, max: 1000)"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -221,7 +252,7 @@
         "properties": {
           "pages": {
             "type": "array",
-            "description": "List of top pages by traffic"
+            "description": "List of pages with url, sum_traffic, keywords, referring_domains"
           },
           "result": {
             "type": "boolean",
@@ -230,43 +261,9 @@
         }
       }
     },
-    "get_keyword_metrics": {
-      "display_name": "Get Keyword Metrics",
-      "description": "Get search metrics for specific keywords including volume, difficulty, and CPC",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "keywords": {
-            "type": "array",
-            "description": "List of keywords to analyze (max 10)",
-            "items": {
-              "type": "string"
-            }
-          },
-          "country": {
-            "type": "string",
-            "description": "Two-letter country code (e.g., 'us', 'uk')"
-          }
-        },
-        "required": ["keywords"]
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "metrics": {
-            "type": "array",
-            "description": "Keyword metrics for each keyword"
-          },
-          "result": {
-            "type": "boolean",
-            "description": "Operation success status"
-          }
-        }
-      }
-    },
-    "get_outgoing_links": {
-      "display_name": "Get Outgoing Links",
-      "description": "Get external links from a target domain or page",
+    "get_outlinks_stats": {
+      "display_name": "Get Outlinks Stats",
+      "description": "Get outgoing link statistics for a target domain",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -279,9 +276,9 @@
             "description": "Analysis mode: 'exact', 'domain', 'subdomains', or 'prefix'",
             "enum": ["exact", "domain", "subdomains", "prefix"]
           },
-          "limit": {
-            "type": "integer",
-            "description": "Maximum number of outgoing links to return (default: 100)"
+          "date": {
+            "type": "string",
+            "description": "Date for historical data in YYYY-MM-DD format (default: today)"
           }
         },
         "required": ["target"]
@@ -290,8 +287,20 @@
         "type": "object",
         "properties": {
           "outgoing_links": {
-            "type": "array",
-            "description": "List of outgoing links"
+            "type": "integer",
+            "description": "Total outgoing links"
+          },
+          "outgoing_links_dofollow": {
+            "type": "integer",
+            "description": "Dofollow outgoing links"
+          },
+          "linked_domains": {
+            "type": "integer",
+            "description": "Number of linked domains"
+          },
+          "linked_domains_dofollow": {
+            "type": "integer",
+            "description": "Number of dofollow linked domains"
           },
           "result": {
             "type": "boolean",

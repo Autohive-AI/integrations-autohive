@@ -2,6 +2,7 @@ from autohive_integrations_sdk import (
     Integration, ExecutionContext, ActionHandler, ActionResult
 )
 from typing import Dict, Any
+from datetime import datetime
 
 # Create the integration
 ahrefs = Integration.load()
@@ -19,6 +20,11 @@ def get_headers(context: ExecutionContext) -> Dict[str, str]:
     }
 
 
+def get_today_date() -> str:
+    """Get today's date in YYYY-MM-DD format for API requests."""
+    return datetime.now().strftime("%Y-%m-%d")
+
+
 # ---- Domain Analysis Handlers ----
 
 @ahrefs.action("get_domain_rating")
@@ -29,18 +35,24 @@ class GetDomainRatingAction(ActionHandler):
         try:
             headers = get_headers(context)
             target = inputs["target"]
+            date = inputs.get("date", get_today_date())
 
             response = await context.fetch(
                 f"{AHREFS_API_BASE_URL}/site-explorer/domain-rating",
                 method="GET",
                 headers=headers,
-                params={"target": target}
+                params={
+                    "target": target,
+                    "date": date
+                }
             )
+
+            domain_rating_data = response.get("domain_rating", {})
 
             return ActionResult(
                 data={
-                    "domain_rating": response.get("domain_rating", 0),
-                    "ahrefs_rank": response.get("ahrefs_rank", 0),
+                    "domain_rating": domain_rating_data.get("domain_rating", 0),
+                    "ahrefs_rank": domain_rating_data.get("ahrefs_rank", 0),
                     "result": True
                 },
                 cost_usd=0.0
@@ -69,6 +81,7 @@ class GetBacklinksStatsAction(ActionHandler):
             headers = get_headers(context)
             target = inputs["target"]
             mode = inputs.get("mode", "domain")
+            date = inputs.get("date", get_today_date())
 
             response = await context.fetch(
                 f"{AHREFS_API_BASE_URL}/site-explorer/backlinks-stats",
@@ -76,18 +89,34 @@ class GetBacklinksStatsAction(ActionHandler):
                 headers=headers,
                 params={
                     "target": target,
-                    "mode": mode
+                    "mode": mode,
+                    "date": date
                 }
             )
 
+            metrics = response.get("metrics", {})
+
             return ActionResult(
-                data={"stats": response, "result": True},
+                data={
+                    "live_backlinks": metrics.get("live", 0),
+                    "all_time_backlinks": metrics.get("all_time", 0),
+                    "live_refdomains": metrics.get("live_refdomains", 0),
+                    "all_time_refdomains": metrics.get("all_time_refdomains", 0),
+                    "result": True
+                },
                 cost_usd=0.0
             )
 
         except Exception as e:
             return ActionResult(
-                data={"stats": {}, "result": False, "error": str(e)},
+                data={
+                    "live_backlinks": 0,
+                    "all_time_backlinks": 0,
+                    "live_refdomains": 0,
+                    "all_time_refdomains": 0,
+                    "result": False,
+                    "error": str(e)
+                },
                 cost_usd=0.0
             )
 
@@ -102,22 +131,22 @@ class GetBacklinksAction(ActionHandler):
             target = inputs["target"]
             mode = inputs.get("mode", "domain")
             limit = inputs.get("limit", 100)
-            order_by = inputs.get("order_by")
+            date = inputs.get("date", get_today_date())
 
-            params = {
-                "target": target,
-                "mode": mode,
-                "limit": limit
-            }
-
-            if order_by:
-                params["order_by"] = order_by
+            # Default select columns for backlinks
+            select = "url_from,url_to,domain_rating_source,anchor,first_seen,is_dofollow"
 
             response = await context.fetch(
-                f"{AHREFS_API_BASE_URL}/site-explorer/backlinks",
+                f"{AHREFS_API_BASE_URL}/site-explorer/all-backlinks",
                 method="GET",
                 headers=headers,
-                params=params
+                params={
+                    "target": target,
+                    "mode": mode,
+                    "limit": limit,
+                    "date": date,
+                    "select": select
+                }
             )
 
             backlinks = response.get("backlinks", [])
@@ -144,6 +173,10 @@ class GetReferringDomainsAction(ActionHandler):
             target = inputs["target"]
             mode = inputs.get("mode", "domain")
             limit = inputs.get("limit", 100)
+            date = inputs.get("date", get_today_date())
+
+            # Default select columns for referring domains
+            select = "domain,domain_rating,backlinks,first_seen,last_visited"
 
             response = await context.fetch(
                 f"{AHREFS_API_BASE_URL}/site-explorer/refdomains",
@@ -152,7 +185,9 @@ class GetReferringDomainsAction(ActionHandler):
                 params={
                     "target": target,
                     "mode": mode,
-                    "limit": limit
+                    "limit": limit,
+                    "date": date,
+                    "select": select
                 }
             )
 
@@ -182,6 +217,10 @@ class GetOrganicKeywordsAction(ActionHandler):
             target = inputs["target"]
             country = inputs.get("country", "us")
             limit = inputs.get("limit", 100)
+            date = inputs.get("date", get_today_date())
+
+            # Default select columns for organic keywords
+            select = "keyword,volume,best_position,keyword_difficulty,cpc,sum_traffic"
 
             response = await context.fetch(
                 f"{AHREFS_API_BASE_URL}/site-explorer/organic-keywords",
@@ -190,7 +229,9 @@ class GetOrganicKeywordsAction(ActionHandler):
                 params={
                     "target": target,
                     "country": country,
-                    "limit": limit
+                    "limit": limit,
+                    "date": date,
+                    "select": select
                 }
             )
 
@@ -218,6 +259,10 @@ class GetTopPagesAction(ActionHandler):
             target = inputs["target"]
             country = inputs.get("country", "us")
             limit = inputs.get("limit", 100)
+            date = inputs.get("date", get_today_date())
+
+            # Default select columns for top pages
+            select = "url,sum_traffic,keywords,referring_domains"
 
             response = await context.fetch(
                 f"{AHREFS_API_BASE_URL}/site-explorer/top-pages",
@@ -226,7 +271,9 @@ class GetTopPagesAction(ActionHandler):
                 params={
                     "target": target,
                     "country": country,
-                    "limit": limit
+                    "limit": limit,
+                    "date": date,
+                    "select": select
                 }
             )
 
@@ -244,78 +291,52 @@ class GetTopPagesAction(ActionHandler):
             )
 
 
-# ---- Keywords Explorer Handlers ----
-
-@ahrefs.action("get_keyword_metrics")
-class GetKeywordMetricsAction(ActionHandler):
-    """Get search metrics for specific keywords."""
-
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        try:
-            headers = get_headers(context)
-            keywords = inputs["keywords"]
-            country = inputs.get("country", "us")
-
-            # Limit to 10 keywords max
-            keywords = keywords[:10] if len(keywords) > 10 else keywords
-
-            response = await context.fetch(
-                f"{AHREFS_API_BASE_URL}/keywords-explorer/metrics",
-                method="POST",
-                headers=headers,
-                json={
-                    "keywords": keywords,
-                    "country": country
-                }
-            )
-
-            metrics = response.get("metrics", [])
-
-            return ActionResult(
-                data={"metrics": metrics, "result": True},
-                cost_usd=0.0
-            )
-
-        except Exception as e:
-            return ActionResult(
-                data={"metrics": [], "result": False, "error": str(e)},
-                cost_usd=0.0
-            )
-
-
 # ---- Outgoing Links Handlers ----
 
-@ahrefs.action("get_outgoing_links")
-class GetOutgoingLinksAction(ActionHandler):
-    """Get external links from a target domain or page."""
+@ahrefs.action("get_outlinks_stats")
+class GetOutlinksStatsAction(ActionHandler):
+    """Get outgoing link statistics for a target domain."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:
             headers = get_headers(context)
             target = inputs["target"]
             mode = inputs.get("mode", "domain")
-            limit = inputs.get("limit", 100)
+            date = inputs.get("date", get_today_date())
 
             response = await context.fetch(
-                f"{AHREFS_API_BASE_URL}/site-explorer/outlinks",
+                f"{AHREFS_API_BASE_URL}/site-explorer/outlinks-stats",
                 method="GET",
                 headers=headers,
                 params={
                     "target": target,
                     "mode": mode,
-                    "limit": limit
+                    "date": date
                 }
             )
 
-            outlinks = response.get("outlinks", [])
+            metrics = response.get("metrics", {})
 
             return ActionResult(
-                data={"outgoing_links": outlinks, "result": True},
+                data={
+                    "outgoing_links": metrics.get("outgoing_links", 0),
+                    "outgoing_links_dofollow": metrics.get("outgoing_links_dofollow", 0),
+                    "linked_domains": metrics.get("linked_domains", 0),
+                    "linked_domains_dofollow": metrics.get("linked_domains_dofollow", 0),
+                    "result": True
+                },
                 cost_usd=0.0
             )
 
         except Exception as e:
             return ActionResult(
-                data={"outgoing_links": [], "result": False, "error": str(e)},
+                data={
+                    "outgoing_links": 0,
+                    "outgoing_links_dofollow": 0,
+                    "linked_domains": 0,
+                    "linked_domains_dofollow": 0,
+                    "result": False,
+                    "error": str(e)
+                },
                 cost_usd=0.0
             )

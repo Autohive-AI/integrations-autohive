@@ -14,7 +14,6 @@ TEST_AUTH = {
 
 async def test_get_domain_rating():
     """Test getting domain rating."""
-    # Note: Free users can only test with ahrefs.com or wordcount.com
     inputs = {"target": "ahrefs.com"}
 
     async with ExecutionContext(auth=TEST_AUTH) as context:
@@ -23,6 +22,7 @@ async def test_get_domain_rating():
             print(f"Get Domain Rating Result: {result}")
             assert result.data.get('result') == True
             assert 'domain_rating' in result.data
+            assert 'ahrefs_rank' in result.data
             return result
         except Exception as e:
             print(f"Error testing get_domain_rating: {e}")
@@ -43,7 +43,7 @@ async def test_get_backlinks_stats():
             result = await ahrefs.execute_action("get_backlinks_stats", inputs, context)
             print(f"Get Backlinks Stats Result: {result}")
             assert result.data.get('result') == True
-            assert 'stats' in result.data
+            assert 'live_backlinks' in result.data
             return result
         except Exception as e:
             print(f"Error testing get_backlinks_stats: {e}")
@@ -132,46 +132,24 @@ async def test_get_top_pages():
             return None
 
 
-# ---- Keywords Explorer Tests ----
-
-async def test_get_keyword_metrics():
-    """Test getting keyword metrics."""
-    inputs = {
-        "keywords": ["seo tools", "backlink checker", "keyword research"],
-        "country": "us"
-    }
-
-    async with ExecutionContext(auth=TEST_AUTH) as context:
-        try:
-            result = await ahrefs.execute_action("get_keyword_metrics", inputs, context)
-            print(f"Get Keyword Metrics Result: {result}")
-            assert result.data.get('result') == True
-            assert 'metrics' in result.data
-            return result
-        except Exception as e:
-            print(f"Error testing get_keyword_metrics: {e}")
-            return None
-
-
 # ---- Outgoing Links Tests ----
 
-async def test_get_outgoing_links():
-    """Test getting outgoing links."""
+async def test_get_outlinks_stats():
+    """Test getting outgoing link statistics."""
     inputs = {
         "target": "ahrefs.com",
-        "mode": "domain",
-        "limit": 10
+        "mode": "domain"
     }
 
     async with ExecutionContext(auth=TEST_AUTH) as context:
         try:
-            result = await ahrefs.execute_action("get_outgoing_links", inputs, context)
-            print(f"Get Outgoing Links Result: {result}")
+            result = await ahrefs.execute_action("get_outlinks_stats", inputs, context)
+            print(f"Get Outlinks Stats Result: {result}")
             assert result.data.get('result') == True
             assert 'outgoing_links' in result.data
             return result
         except Exception as e:
-            print(f"Error testing get_outgoing_links: {e}")
+            print(f"Error testing get_outlinks_stats: {e}")
             return None
 
 
@@ -184,7 +162,6 @@ async def run_all_tests():
     print()
     print("NOTE: Replace 'your_api_key_here' with your actual API key.")
     print("NOTE: Ahrefs API requires Enterprise plan for full access.")
-    print("      Free users can only test with 'ahrefs.com' or 'wordcount.com'")
     print()
 
     test_functions = [
@@ -197,10 +174,8 @@ async def run_all_tests():
         # Organic Search
         ("Get Organic Keywords", test_get_organic_keywords),
         ("Get Top Pages", test_get_top_pages),
-        # Keywords Explorer
-        ("Get Keyword Metrics", test_get_keyword_metrics),
         # Outgoing Links
-        ("Get Outgoing Links", test_get_outgoing_links),
+        ("Get Outlinks Stats", test_get_outlinks_stats),
     ]
 
     results = []
