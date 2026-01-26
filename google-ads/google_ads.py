@@ -514,6 +514,9 @@ class CreateCampaignAction(ActionHandler):
             campaign.network_settings.target_content_network = False
             campaign.network_settings.target_partner_search_network = False
 
+            # EU political advertising compliance (required by Google Ads API)
+            campaign.contains_eu_political_advertising = False
+
             campaign_response = campaign_service.mutate_campaigns(
                 customer_id=customer_id,
                 operations=[campaign_operation]
