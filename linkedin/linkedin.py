@@ -68,7 +68,7 @@ async def post_to_linkedin(url: str, payload: dict, access_token: str) -> Tuple[
             if response.content_length and response.content_length > 0:
                 try:
                     body = await response.json()
-                except:
+                except Exception:
                     body = await response.text()
 
             return response.status, dict(response.headers), body
