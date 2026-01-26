@@ -16,6 +16,7 @@ from typing import Dict, Any, Tuple, List
 from urllib.parse import quote
 import os
 import base64
+import aiohttp
 
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 linkedin = Integration.load(config_path)
@@ -45,6 +46,32 @@ async def get_current_user_urn(context: ExecutionContext) -> str:
     if isinstance(user_response, dict) and user_response.get("sub"):
         return f"urn:li:person:{user_response.get('sub')}"
     raise ValueError("Could not determine current user. Please ensure proper authentication.")
+
+
+async def post_to_linkedin(url: str, payload: dict, access_token: str) -> Tuple[int, dict, Any]:
+    """
+    Make a POST request to LinkedIn API and return status, headers, and body.
+
+    This is separate from context.fetch() because LinkedIn returns the post ID
+    in the x-restli-id response header, which context.fetch() doesn't expose.
+
+    Returns:
+        Tuple of (status_code, headers_dict, response_body)
+    """
+    headers = get_linkedin_headers()
+    headers["Authorization"] = f"Bearer {access_token}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=payload, headers=headers) as response:
+            # Get response body if any
+            body = None
+            if response.content_length and response.content_length > 0:
+                try:
+                    body = await response.json()
+                except:
+                    body = await response.text()
+
+            return response.status, dict(response.headers), body
 
 
 # =============================================================================
@@ -134,6 +161,15 @@ async def upload_image_from_base64(context: ExecutionContext, owner_urn: str,
     upload_url = init_result["upload_url"]
     image_urn = init_result["image_urn"]
 
+    # Strip data URL prefix if present (e.g., "data:image/jpeg;base64,")
+    if "," in image_content and image_content.startswith("data:"):
+        image_content = image_content.split(",", 1)[1]
+
+    # Fix padding if needed (base64 strings must be multiple of 4)
+    padding_needed = len(image_content) % 4
+    if padding_needed:
+        image_content += "=" * (4 - padding_needed)
+
     # Decode and upload the binary
     image_data = base64.b64decode(image_content)
     await upload_image_binary(context, upload_url, image_data, content_type)
@@ -141,34 +177,41 @@ async def upload_image_from_base64(context: ExecutionContext, owner_urn: str,
     return image_urn
 
 
-def validate_image_input(image: dict) -> Tuple[str, str, str]:
+def validate_file_input(file_obj: dict) -> Tuple[str, str, str]:
     """
-    Validate an image input object.
+    Validate a file input object using the standard platform format.
 
     Args:
-        image: Dict with content, contentType, and optional altText
+        file_obj: Dict with content, name, and contentType
 
     Returns:
         Tuple of (content, content_type, alt_text)
+        alt_text is derived from filename without extension
 
     Raises:
         ValueError: If validation fails
     """
-    content = image.get("content")
-    content_type = image.get("contentType")
-    alt_text = image.get("altText", "")
+    content = file_obj.get("content")
+    content_type = file_obj.get("contentType")
+    name = file_obj.get("name", "")
 
     if not content:
-        raise ValueError("Image 'content' (base64-encoded data) is required")
+        raise ValueError("File 'content' (base64-encoded data) is required")
 
     if not content_type:
-        raise ValueError("Image 'contentType' is required")
+        raise ValueError("File 'contentType' is required")
+
+    if not name:
+        raise ValueError("File 'name' is required")
 
     if content_type not in SUPPORTED_IMAGE_TYPES:
         raise ValueError(
             f"Unsupported image type: {content_type}. "
             f"Supported types: {', '.join(SUPPORTED_IMAGE_TYPES)}"
         )
+
+    # Derive alt_text from filename (without extension)
+    alt_text = name.rsplit(".", 1)[0] if "." in name else name
 
     return content, content_type, alt_text
 
@@ -203,70 +246,6 @@ class UserInfoActionHandler(ActionHandler):
 # POST MANAGEMENT ACTIONS
 # =============================================================================
 
-@linkedin.action("share_content")
-class ShareContentActionHandler(ActionHandler):
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
-        """Share a text post on LinkedIn."""
-        content = inputs.get("content")
-        author_id = inputs.get("author_id")
-        visibility = inputs.get("visibility", "PUBLIC")
-        disable_reshare = inputs.get("disable_reshare", False)
-
-        # Determine author URN
-        if author_id:
-            author_urn = f"urn:li:person:{author_id}"
-        else:
-            try:
-                author_urn = await get_current_user_urn(context)
-            except Exception as e:
-                return ActionResult(data={
-                    "result": "Failed to share content. Could not determine current user.",
-                    "post_id": None,
-                    "post_data": None,
-                    "details": str(e)
-                })
-
-        posts_url = "https://api.linkedin.com/rest/posts"
-
-        payload = {
-            "author": author_urn,
-            "commentary": content,
-            "visibility": visibility,
-            "distribution": {
-                "feedDistribution": "MAIN_FEED",
-                "targetEntities": [],
-                "thirdPartyDistributionChannels": []
-            },
-            "lifecycleState": "PUBLISHED",
-            "isReshareDisabledByAuthor": disable_reshare
-        }
-
-        try:
-            response = await context.fetch(
-                posts_url,
-                method="POST",
-                json=payload,
-                headers=get_linkedin_headers()
-            )
-
-            post_id = response.get("id") if isinstance(response, dict) else None
-
-            return ActionResult(data={
-                "result": "Content shared successfully.",
-                "post_id": post_id,
-                "post_data": response
-            })
-        except Exception as e:
-            error_message = str(e)
-            error_details = getattr(e, 'response_data', str(e))
-            return ActionResult(data={
-                "result": f"Failed to share content: {error_message}",
-                "post_id": None,
-                "post_data": None,
-                "details": error_details
-            })
-
-
 @linkedin.action("create_post")
 class CreatePostActionHandler(ActionHandler):
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
@@ -279,44 +258,46 @@ class CreatePostActionHandler(ActionHandler):
         - Multi-image posts (2-20 images)
         """
         text = inputs.get("text", "")
-        images = inputs.get("images", [])
         visibility = inputs.get("visibility", "PUBLIC")
         author_id = inputs.get("author_id")
         disable_reshare = inputs.get("disable_reshare", False)
 
-        # Validate image count before any API calls
-        if len(images) > MAX_IMAGES_PER_POST:
+        # Handle both 'file' (single) and 'files' (array) inputs
+        files = inputs.get("files", [])
+        single_file = inputs.get("file")
+        if single_file:
+            files = [single_file]
+
+        # Validate file count before any API calls
+        if len(files) > MAX_IMAGES_PER_POST:
             return ActionResult(data={
-                "result": f"Too many images. Maximum allowed is {MAX_IMAGES_PER_POST}, got {len(images)}.",
+                "result": f"Too many images. Maximum allowed is {MAX_IMAGES_PER_POST}, got {len(files)}.",
                 "post_id": None,
                 "post_url": None,
                 "images_uploaded": 0,
-                "post_data": None
             })
 
-        # Validate all images upfront before any uploads
+        # Validate all files upfront before any uploads
         validated_images: List[Tuple[str, str, str]] = []
-        for idx, image in enumerate(images):
+        for idx, file_obj in enumerate(files):
             try:
-                content, content_type, alt_text = validate_image_input(image)
+                content, content_type, alt_text = validate_file_input(file_obj)
                 validated_images.append((content, content_type, alt_text))
             except ValueError as e:
                 return ActionResult(data={
-                    "result": f"Invalid image at index {idx}: {str(e)}",
+                    "result": f"Invalid file at index {idx}: {str(e)}",
                     "post_id": None,
                     "post_url": None,
                     "images_uploaded": 0,
-                    "post_data": None
-                })
+                    })
 
-        # Require at least text or images
-        if not text and not images:
+        # Require at least text or files
+        if not text and not files:
             return ActionResult(data={
-                "result": "Post must have either text or at least one image.",
+                "result": "Post must have either text or at least one file.",
                 "post_id": None,
                 "post_url": None,
                 "images_uploaded": 0,
-                "post_data": None
             })
 
         # Determine author URN
@@ -336,7 +317,7 @@ class CreatePostActionHandler(ActionHandler):
                 })
 
         # Upload images if provided
-        uploaded_image_urns: List[str] = []
+        uploaded_image_urns: List[Tuple[str, str]] = []
         for idx, (content, content_type, alt_text) in enumerate(validated_images):
             try:
                 image_urn = await upload_image_from_base64(
@@ -395,25 +376,27 @@ class CreatePostActionHandler(ActionHandler):
         # No content field for text-only posts
 
         try:
-            response = await context.fetch(
-                posts_url,
-                method="POST",
-                json=payload,
-                headers=get_linkedin_headers()
-            )
+            # Use helper function to get response headers (LinkedIn returns post ID in header)
+            access_token = context.auth.get("credentials", {}).get("access_token")
+            status, headers, body = await post_to_linkedin(posts_url, payload, access_token)
 
-            post_id = response.get("id") if isinstance(response, dict) else None
-            post_url = None
-            if post_id:
-                # Convert post URN to LinkedIn URL
-                post_url = f"https://www.linkedin.com/feed/update/{post_id}"
+            if status >= 400:
+                return ActionResult(data={
+                    "result": f"Failed to create post: HTTP {status}",
+                    "post_id": None,
+                    "post_url": None,
+                    "images_uploaded": len(uploaded_image_urns),
+                    "details": body
+                })
+
+            post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
+            post_url = f"https://www.linkedin.com/feed/update/{post_id}" if post_id else None
 
             return ActionResult(data={
                 "result": "Post created successfully.",
                 "post_id": post_id,
                 "post_url": post_url,
-                "images_uploaded": len(uploaded_image_urns),
-                "post_data": response
+                "images_uploaded": len(uploaded_image_urns)
             })
         except Exception as e:
             error_message = str(e)
@@ -423,7 +406,6 @@ class CreatePostActionHandler(ActionHandler):
                 "post_id": None,
                 "post_url": None,
                 "images_uploaded": len(uploaded_image_urns),
-                "post_data": None,
                 "details": error_details
             })
 
@@ -449,7 +431,7 @@ class ShareArticleActionHandler(ActionHandler):
                 return ActionResult(data={
                     "result": "Failed to share article. Could not determine current user.",
                     "post_id": None,
-                    "post_data": None,
+                    "post_url": None,
                     "details": str(e)
                 })
 
@@ -476,19 +458,24 @@ class ShareArticleActionHandler(ActionHandler):
         }
 
         try:
-            response = await context.fetch(
-                posts_url,
-                method="POST",
-                json=payload,
-                headers=get_linkedin_headers()
-            )
+            access_token = context.auth.get("credentials", {}).get("access_token")
+            status, headers, body = await post_to_linkedin(posts_url, payload, access_token)
 
-            post_id = response.get("id") if isinstance(response, dict) else None
+            if status >= 400:
+                return ActionResult(data={
+                    "result": f"Failed to share article: HTTP {status}",
+                    "post_id": None,
+                    "post_url": None,
+                    "details": body
+                })
+
+            post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
+            post_url = f"https://www.linkedin.com/feed/update/{post_id}" if post_id else None
 
             return ActionResult(data={
                 "result": "Article shared successfully.",
                 "post_id": post_id,
-                "post_data": response
+                "post_url": post_url
             })
         except Exception as e:
             error_message = str(e)
@@ -496,7 +483,7 @@ class ShareArticleActionHandler(ActionHandler):
             return ActionResult(data={
                 "result": f"Failed to share article: {error_message}",
                 "post_id": None,
-                "post_data": None,
+                "post_url": None,
                 "details": error_details
             })
 
@@ -520,7 +507,7 @@ class ResharePostActionHandler(ActionHandler):
                 return ActionResult(data={
                     "result": "Failed to reshare post. Could not determine current user.",
                     "post_id": None,
-                    "post_data": None,
+                    "post_url": None,
                     "details": str(e)
                 })
 
@@ -543,19 +530,24 @@ class ResharePostActionHandler(ActionHandler):
         }
 
         try:
-            response = await context.fetch(
-                posts_url,
-                method="POST",
-                json=payload,
-                headers=get_linkedin_headers()
-            )
+            access_token = context.auth.get("credentials", {}).get("access_token")
+            status, headers, body = await post_to_linkedin(posts_url, payload, access_token)
 
-            post_id = response.get("id") if isinstance(response, dict) else None
+            if status >= 400:
+                return ActionResult(data={
+                    "result": f"Failed to reshare post: HTTP {status}",
+                    "post_id": None,
+                    "post_url": None,
+                    "details": body
+                })
+
+            post_id = headers.get("x-restli-id") or headers.get("X-RestLi-Id")
+            post_url = f"https://www.linkedin.com/feed/update/{post_id}" if post_id else None
 
             return ActionResult(data={
                 "result": "Post reshared successfully.",
                 "post_id": post_id,
-                "post_data": response
+                "post_url": post_url
             })
         except Exception as e:
             error_message = str(e)
@@ -563,7 +555,7 @@ class ResharePostActionHandler(ActionHandler):
             return ActionResult(data={
                 "result": f"Failed to reshare post: {error_message}",
                 "post_id": None,
-                "post_data": None,
+                "post_url": None,
                 "details": error_details
             })
 

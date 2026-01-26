@@ -86,57 +86,6 @@
         "required": ["result"]
       }
     },
-    "share_content": {
-      "display_name": "Share Content",
-      "description": "Share a text-only post on LinkedIn. For posts with images, use the 'create_post' action instead.",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "string",
-            "description": "The text content/commentary to share in the post."
-          },
-          "visibility": {
-            "type": "string",
-            "enum": ["PUBLIC", "CONNECTIONS"],
-            "description": "Post visibility. PUBLIC makes it visible to everyone, CONNECTIONS limits to your connections. Defaults to PUBLIC.",
-            "default": "PUBLIC"
-          },
-          "author_id": {
-            "type": "string",
-            "description": "The LinkedIn user ID (sub) for the person posting. If not provided, uses the authenticated user."
-          },
-          "disable_reshare": {
-            "type": "boolean",
-            "description": "If true, prevents others from resharing this post. Defaults to false.",
-            "default": false
-          }
-        },
-        "required": ["content"]
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "type": "string",
-            "description": "Result of the sharing action."
-          },
-          "post_id": {
-            "type": ["string", "null"],
-            "description": "The URN of the created post (e.g., urn:li:share:123456)."
-          },
-          "post_data": {
-            "type": ["object", "null"],
-            "description": "The full post data returned by LinkedIn API."
-          },
-          "details": {
-            "type": ["string", "object", "null"],
-            "description": "Error details if the operation failed."
-          }
-        },
-        "required": ["result"]
-      }
-    },
     "create_post": {
       "display_name": "Create Post",
       "description": "Create a LinkedIn post with optional images. Supports text-only posts, single image posts, and multi-image posts (up to 20 images). This is the recommended action for creating posts with images.",
@@ -147,27 +96,27 @@
             "type": "string",
             "description": "The text content/commentary for the post. Optional if images are provided."
           },
-          "images": {
+          "file": {
+            "type": "object",
+            "description": "Single file object for the post image.",
+            "properties": {
+              "content": {"type": "string", "description": "Base64-encoded file content"},
+              "name": {"type": "string", "description": "Filename"},
+              "contentType": {"type": "string", "description": "MIME type (image/jpeg, image/png, image/gif)"}
+            },
+            "required": ["content", "name", "contentType"]
+          },
+          "files": {
             "type": "array",
-            "description": "Array of images to include in the post. Supports 0-20 images.",
+            "description": "Array of file objects for multi-image posts (up to 20 images).",
             "items": {
               "type": "object",
               "properties": {
-                "content": {
-                  "type": "string",
-                  "description": "Base64-encoded image data."
-                },
-                "contentType": {
-                  "type": "string",
-                  "enum": ["image/jpeg", "image/png", "image/gif"],
-                  "description": "MIME type of the image."
-                },
-                "altText": {
-                  "type": "string",
-                  "description": "Alternative text for accessibility. Optional."
-                }
+                "content": {"type": "string", "description": "Base64-encoded file content"},
+                "name": {"type": "string", "description": "Filename"},
+                "contentType": {"type": "string", "description": "MIME type (image/jpeg, image/png, image/gif)"}
               },
-              "required": ["content", "contentType"]
+              "required": ["content", "name", "contentType"]
             },
             "maxItems": 20
           },
@@ -207,10 +156,6 @@
           "images_uploaded": {
             "type": "integer",
             "description": "Number of images successfully uploaded."
-          },
-          "post_data": {
-            "type": ["object", "null"],
-            "description": "The full post data returned by LinkedIn API."
           },
           "details": {
             "type": ["string", "object", "null"],
@@ -268,9 +213,9 @@
             "type": ["string", "null"],
             "description": "The URN of the created post."
           },
-          "post_data": {
-            "type": ["object", "null"],
-            "description": "The full post data returned by LinkedIn API."
+          "post_url": {
+            "type": ["string", "null"],
+            "description": "Direct URL to the post on LinkedIn."
           },
           "details": {
             "type": ["string", "object", "null"],
@@ -319,9 +264,9 @@
             "type": ["string", "null"],
             "description": "The URN of the created reshare post."
           },
-          "post_data": {
-            "type": ["object", "null"],
-            "description": "The full post data returned by LinkedIn API."
+          "post_url": {
+            "type": ["string", "null"],
+            "description": "Direct URL to the post on LinkedIn."
           },
           "details": {
             "type": ["string", "object", "null"],

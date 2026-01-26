@@ -6,11 +6,12 @@ without making actual LinkedIn API calls.
 """
 
 from typing import Any
+from unittest.mock import patch, AsyncMock
 from urllib.parse import quote
 
 import pytest
 
-from context import linkedin
+from context import linkedin, linkedin_module
 
 pytestmark = pytest.mark.asyncio
 
@@ -258,254 +259,17 @@ async def test_get_user_info_error():
 # SHARE CONTENT TESTS
 # =============================================================================
 
-async def test_share_content_success():
-    """Test sharing content successfully."""
-    responses = {
-        "GET /userinfo": {
-            "sub": "user789",
-            "name": "Test User"
-        },
-        "POST /posts": {
-            "id": "urn:li:share:987654321",
-            "author": "urn:li:person:user789",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Hello LinkedIn!",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "Hello LinkedIn!"
-    }, context)
-    data = result.result.data
-
-    assert data["result"] == "Content shared successfully."
-    assert data["post_id"] == "urn:li:share:987654321"
-    assert data["post_data"]["author"] == "urn:li:person:user789"
-    assert data["post_data"]["lifecycleState"] == "PUBLISHED"
-
-
-async def test_share_content_with_author_id():
-    """Test sharing content with explicit author_id."""
-    responses = {
-        "POST /posts": {
-            "id": "urn:li:share:111222333",
-            "author": "urn:li:person:explicit_user",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Post with explicit author",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "Post with explicit author",
-        "author_id": "explicit_user"
-    }, context)
-    data = result.result.data
-
-    assert data["result"] == "Content shared successfully."
-    assert data["post_id"] == "urn:li:share:111222333"
-
-    # Verify userinfo was not called (author_id provided)
-    userinfo_calls = [r for r in context._requests if "/userinfo" in r["url"]]
-    assert len(userinfo_calls) == 0
-
-
-async def test_share_content_with_connections_visibility():
-    """Test sharing content with CONNECTIONS visibility."""
-    responses = {
-        "GET /userinfo": {
-            "sub": "user_conn",
-            "name": "Connections User"
-        },
-        "POST /posts": {
-            "id": "urn:li:share:conn123",
-            "author": "urn:li:person:user_conn",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "CONNECTIONS",
-            "commentary": "Only for connections",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "Only for connections",
-        "visibility": "CONNECTIONS"
-    }, context)
-    data = result.result.data
-
-    assert data["result"] == "Content shared successfully."
-
-    # Verify the request had CONNECTIONS visibility
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert len(post_calls) == 1
-    assert post_calls[0]["json"]["visibility"] == "CONNECTIONS"
-
-
-async def test_share_content_with_disable_reshare():
-    """Test sharing content with reshare disabled."""
-    responses = {
-        "GET /userinfo": {"sub": "user123", "name": "Test"},
-        "POST /posts": {
-            "id": "urn:li:share:noshare123",
-            "author": "urn:li:person:user123",
-            "lifecycleState": "PUBLISHED",
-            "isReshareDisabledByAuthor": True
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "No resharing allowed",
-        "disable_reshare": True
-    }, context)
-    data = result.result.data
-
-    assert data["result"] == "Content shared successfully."
-
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert post_calls[0]["json"]["isReshareDisabledByAuthor"] == True
-
-
-async def test_share_content_default_visibility():
-    """Test that default visibility is PUBLIC."""
-    responses = {
-        "GET /userinfo": {
-            "sub": "user_pub",
-            "name": "Public User"
-        },
-        "POST /posts": {
-            "id": "urn:li:share:pub123",
-            "author": "urn:li:person:user_pub",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Public post",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "Public post"
-    }, context)
-    data = result.result.data
-
-    assert data["result"] == "Content shared successfully."
-
-    # Verify the request had PUBLIC visibility (default)
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert len(post_calls) == 1
-    assert post_calls[0]["json"]["visibility"] == "PUBLIC"
-
-
-async def test_share_content_userinfo_failure():
-    """Test handling when userinfo fails and no author_id provided."""
-    responses = {
-        "GET /userinfo": {
-            "error": "unauthorized"
-        }
-    }
-    context = MockExecutionContext(responses)
-    result = await linkedin.execute_action("share_content", {
-        "content": "This will fail"
-    }, context)
-    data = result.result.data
-
-    assert "Failed to share content" in data["result"]
-    assert data["post_id"] is None
-    assert data["post_data"] is None
-
-
-async def test_share_content_verifies_headers():
-    """Test that correct LinkedIn API headers are sent."""
-    responses = {
-        "GET /userinfo": {
-            "sub": "header_user",
-            "name": "Header Test"
-        },
-        "POST /posts": {
-            "id": "urn:li:share:header123",
-            "author": "urn:li:person:header_user",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Header test",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    await linkedin.execute_action("share_content", {
-        "content": "Header test"
-    }, context)
-
-    # Verify headers on POST request
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert len(post_calls) == 1
-    headers = post_calls[0]["headers"]
-    assert headers["LinkedIn-Version"] == "202601"
-    assert headers["X-Restli-Protocol-Version"] == "2.0.0"
-    assert headers["Content-Type"] == "application/json"
-
-
-async def test_share_content_payload_structure():
-    """Test that the post payload has correct structure."""
-    responses = {
-        "GET /userinfo": {
-            "sub": "struct_user",
-            "name": "Structure Test"
-        },
-        "POST /posts": {
-            "id": "urn:li:share:struct123",
-            "author": "urn:li:person:struct_user",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Structure test content",
-            "createdAt": 1705849200000,
-            "publishedAt": 1705849200000
-        }
-    }
-    context = MockExecutionContext(responses)
-    await linkedin.execute_action("share_content", {
-        "content": "Structure test content"
-    }, context)
-
-    # Verify payload structure
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
-
-    assert payload["author"] == "urn:li:person:struct_user"
-    assert payload["commentary"] == "Structure test content"
-    assert payload["visibility"] == "PUBLIC"
-    assert payload["lifecycleState"] == "PUBLISHED"
-    assert payload["isReshareDisabledByAuthor"] == False
-    assert "distribution" in payload
-    assert payload["distribution"]["feedDistribution"] == "MAIN_FEED"
-
-
 # =============================================================================
 # SHARE ARTICLE TESTS
 # =============================================================================
 
-async def test_share_article_success():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_share_article_success(mock_post):
     """Test sharing an article successfully."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:article123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "article_user", "name": "Article User"},
-        "POST /posts": {
-            "id": "urn:li:share:article123",
-            "author": "urn:li:person:article_user",
-            "lifecycleState": "PUBLISHED",
-            "content": {
-                "article": {
-                    "source": "https://example.com/article",
-                    "title": "Test Article",
-                    "description": "Article description"
-                }
-            }
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("share_article", {
@@ -518,24 +282,23 @@ async def test_share_article_success():
 
     assert data["result"] == "Article shared successfully."
     assert data["post_id"] == "urn:li:share:article123"
+    assert data["post_url"] == "https://www.linkedin.com/feed/update/urn:li:share:article123"
 
     # Verify article content in payload
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert payload["content"]["article"]["source"] == "https://example.com/article"
     assert payload["content"]["article"]["title"] == "Test Article"
     assert payload["commentary"] == "Check out this article!"
 
 
-async def test_share_article_minimal():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_share_article_minimal(mock_post):
     """Test sharing article with only required fields."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:min_article"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "min_user", "name": "Min User"},
-        "POST /posts": {
-            "id": "urn:li:share:min_article",
-            "author": "urn:li:person:min_user",
-            "lifecycleState": "PUBLISHED"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("share_article", {
@@ -546,8 +309,8 @@ async def test_share_article_minimal():
 
     assert data["result"] == "Article shared successfully."
 
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert payload["commentary"] == ""  # Default empty
     assert payload["content"]["article"]["description"] == ""  # Default empty
 
@@ -556,16 +319,13 @@ async def test_share_article_minimal():
 # RESHARE POST TESTS
 # =============================================================================
 
-async def test_reshare_post_success():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_reshare_post_success(mock_post):
     """Test resharing a post successfully."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:reshare123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "reshare_user", "name": "Reshare User"},
-        "POST /posts": {
-            "id": "urn:li:share:reshare123",
-            "author": "urn:li:person:reshare_user",
-            "lifecycleState": "PUBLISHED",
-            "reshareContext": {"parent": "urn:li:share:original123"}
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("reshare_post", {
@@ -576,21 +336,21 @@ async def test_reshare_post_success():
 
     assert data["result"] == "Post reshared successfully."
     assert data["post_id"] == "urn:li:share:reshare123"
+    assert data["post_url"] == "https://www.linkedin.com/feed/update/urn:li:share:reshare123"
 
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert payload["reshareContext"]["parent"] == "urn:li:share:original123"
     assert payload["commentary"] == "Great post!"
 
 
-async def test_reshare_post_no_commentary():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_reshare_post_no_commentary(mock_post):
     """Test resharing without commentary."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:reshare456"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "reshare_user2", "name": "Reshare User 2"},
-        "POST /posts": {
-            "id": "urn:li:share:reshare456",
-            "author": "urn:li:person:reshare_user2"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("reshare_post", {
@@ -600,8 +360,8 @@ async def test_reshare_post_no_commentary():
 
     assert data["result"] == "Post reshared successfully."
 
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert payload["commentary"] == ""  # Default empty
 
 
@@ -1150,20 +910,6 @@ async def test_delete_reaction_with_author_id():
 
 
 # =============================================================================
-# INPUT VALIDATION TESTS
-# =============================================================================
-
-async def test_share_content_missing_content():
-    """Test that content is required for share_content."""
-    context = MockExecutionContext({})
-
-    with pytest.raises(Exception) as exc_info:
-        await linkedin.execute_action("share_content", {}, context)
-
-    assert "content" in str(exc_info.value).lower() or "required" in str(exc_info.value).lower()
-
-
-# =============================================================================
 # CREATE POST TESTS (with image support)
 # =============================================================================
 
@@ -1172,17 +918,14 @@ SAMPLE_JPEG_BASE64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDA
 SAMPLE_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
 
-async def test_create_post_text_only():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_text_only(mock_post):
     """Test creating a text-only post with no images."""
+    # Mock post_to_linkedin to return success with post ID in headers
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:text123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "text_user", "name": "Text User"},
-        "POST /posts": {
-            "id": "urn:li:share:text123",
-            "author": "urn:li:person:text_user",
-            "lifecycleState": "PUBLISHED",
-            "visibility": "PUBLIC",
-            "commentary": "Hello from create_post!"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
@@ -1199,13 +942,19 @@ async def test_create_post_text_only():
     image_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
     assert len(image_calls) == 0
 
-    # Verify post payload has no content field
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert "content" not in post_calls[0]["json"]
+    # Verify post_to_linkedin was called with correct payload (no content field)
+    mock_post.assert_called_once()
+    call_args = mock_post.call_args
+    payload = call_args[0][1]  # Second positional arg is payload
+    assert "content" not in payload
+    assert payload["commentary"] == "Hello from create_post!"
 
 
-async def test_create_post_single_image():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_single_image(mock_post):
     """Test creating a post with a single image."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:img123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "img_user", "name": "Image User"},
         "POST /images/initializeUpload": {
@@ -1215,18 +964,14 @@ async def test_create_post_single_image():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:img123",
-            "author": "urn:li:person:img_user",
-            "lifecycleState": "PUBLISHED"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
         "text": "Check out this image!",
-        "images": [
+        "files": [
             {
                 "content": SAMPLE_JPEG_BASE64,
+                "name": "photo.jpg",
                 "contentType": "image/jpeg"
             }
         ]
@@ -1242,15 +987,18 @@ async def test_create_post_single_image():
     assert len(init_calls) == 1
 
     # Verify post payload has content.media for single image
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert "content" in payload
     assert "media" in payload["content"]
     assert "id" in payload["content"]["media"]
 
 
-async def test_create_post_multi_image():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_multi_image(mock_post):
     """Test creating a post with multiple images."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:multi123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "multi_user", "name": "Multi User"},
         "POST /images/initializeUpload": {
@@ -1260,19 +1008,14 @@ async def test_create_post_multi_image():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:multi123",
-            "author": "urn:li:person:multi_user",
-            "lifecycleState": "PUBLISHED"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
         "text": "Multiple images!",
-        "images": [
-            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"},
-            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png"},
-            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"}
+        "files": [
+            {"content": SAMPLE_JPEG_BASE64, "name": "image1.jpg", "contentType": "image/jpeg"},
+            {"content": SAMPLE_PNG_BASE64, "name": "image2.png", "contentType": "image/png"},
+            {"content": SAMPLE_JPEG_BASE64, "name": "image3.jpg", "contentType": "image/jpeg"}
         ]
     }, context)
     data = result.result.data
@@ -1285,8 +1028,8 @@ async def test_create_post_multi_image():
     assert len(init_calls) == 3
 
     # Verify post payload has content.multiImage structure
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert "content" in payload
     assert "multiImage" in payload["content"]
     assert "images" in payload["content"]["multiImage"]
@@ -1297,12 +1040,12 @@ async def test_create_post_too_many_images():
     """Test that >20 images are rejected before any API calls."""
     context = MockExecutionContext({})
 
-    # Create 21 images
-    images = [{"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"} for _ in range(21)]
+    # Create 21 files
+    files = [{"content": SAMPLE_JPEG_BASE64, "name": f"image{i}.jpg", "contentType": "image/jpeg"} for i in range(21)]
 
     result = await linkedin.execute_action("create_post", {
         "text": "Too many images",
-        "images": images
+        "files": files
     }, context)
     data = result.result.data
 
@@ -1320,13 +1063,13 @@ async def test_create_post_invalid_image_type():
 
     result = await linkedin.execute_action("create_post", {
         "text": "Invalid image type",
-        "images": [
-            {"content": "base64data", "contentType": "image/bmp"}
+        "files": [
+            {"content": "base64data", "name": "image.bmp", "contentType": "image/bmp"}
         ]
     }, context)
     data = result.result.data
 
-    assert "Invalid image" in data["result"]
+    assert "Invalid file" in data["result"]
     assert "Unsupported image type" in data["result"]
     assert data["post_id"] is None
 
@@ -1334,8 +1077,11 @@ async def test_create_post_invalid_image_type():
     assert len(context._requests) == 0
 
 
-async def test_create_post_image_with_alt_text():
-    """Test that alt text is included in the post payload."""
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_image_with_alt_text(mock_post):
+    """Test that alt text (derived from filename) is included in the post payload."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:alt123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "alt_user", "name": "Alt User"},
         "POST /images/initializeUpload": {
@@ -1345,19 +1091,15 @@ async def test_create_post_image_with_alt_text():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:alt123",
-            "author": "urn:li:person:alt_user"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
         "text": "Image with alt text",
-        "images": [
+        "files": [
             {
                 "content": SAMPLE_JPEG_BASE64,
-                "contentType": "image/jpeg",
-                "altText": "A beautiful sunset over the mountains"
+                "name": "A beautiful sunset over the mountains.jpg",
+                "contentType": "image/jpeg"
             }
         ]
     }, context)
@@ -1365,21 +1107,19 @@ async def test_create_post_image_with_alt_text():
 
     assert data["result"] == "Post created successfully."
 
-    # Verify alt text is in the payload
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    # Verify alt text (derived from filename) is in the payload
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     assert payload["content"]["media"]["altText"] == "A beautiful sunset over the mountains"
 
 
-async def test_create_post_visibility_options():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_visibility_options(mock_post):
     """Test that visibility options are correctly applied."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:vis123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "vis_user", "name": "Visibility User"},
-        "POST /posts": {
-            "id": "urn:li:share:vis123",
-            "author": "urn:li:person:vis_user",
-            "visibility": "CONNECTIONS"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
@@ -1391,23 +1131,27 @@ async def test_create_post_visibility_options():
     assert data["result"] == "Post created successfully."
 
     # Verify visibility in payload
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert post_calls[0]["json"]["visibility"] == "CONNECTIONS"
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
+    assert payload["visibility"] == "CONNECTIONS"
 
 
 async def test_create_post_no_content():
-    """Test that a post with neither text nor images is rejected."""
+    """Test that a post with neither text nor files is rejected."""
     context = MockExecutionContext({})
 
     result = await linkedin.execute_action("create_post", {}, context)
     data = result.result.data
 
-    assert "must have either text or at least one image" in data["result"]
+    assert "must have either text or at least one file" in data["result"]
     assert data["post_id"] is None
 
 
-async def test_create_post_image_only():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_image_only(mock_post):
     """Test creating a post with only an image and no text."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:imgonly123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "imgonly_user", "name": "Image Only User"},
         "POST /images/initializeUpload": {
@@ -1417,15 +1161,11 @@ async def test_create_post_image_only():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:imgonly123",
-            "author": "urn:li:person:imgonly_user"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
-        "images": [
-            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png"}
+        "files": [
+            {"content": SAMPLE_PNG_BASE64, "name": "photo.png", "contentType": "image/png"}
         ]
     }, context)
     data = result.result.data
@@ -1434,12 +1174,16 @@ async def test_create_post_image_only():
     assert data["images_uploaded"] == 1
 
     # Verify commentary is empty string
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert post_calls[0]["json"]["commentary"] == ""
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
+    assert payload["commentary"] == ""
 
 
-async def test_create_post_with_author_id():
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_with_author_id(mock_post):
     """Test creating a post with explicit author_id."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:auth123"}, None)
+
     responses = {
         "POST /images/initializeUpload": {
             "value": {
@@ -1448,17 +1192,13 @@ async def test_create_post_with_author_id():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:auth123",
-            "author": "urn:li:person:explicit_author"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
         "text": "Post with explicit author",
         "author_id": "explicit_author",
-        "images": [
-            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"}
+        "files": [
+            {"content": SAMPLE_JPEG_BASE64, "name": "photo.jpg", "contentType": "image/jpeg"}
         ]
     }, context)
     data = result.result.data
@@ -1469,48 +1209,53 @@ async def test_create_post_with_author_id():
     userinfo_calls = [r for r in context._requests if "/userinfo" in r["url"]]
     assert len(userinfo_calls) == 0
 
-    # Verify author in image init and post payload
+    # Verify author in image init payload
     init_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
     assert init_calls[0]["json"]["initializeUploadRequest"]["owner"] == "urn:li:person:explicit_author"
 
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    assert post_calls[0]["json"]["author"] == "urn:li:person:explicit_author"
+    # Verify author in post payload
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
+    assert payload["author"] == "urn:li:person:explicit_author"
 
 
-async def test_create_post_missing_image_content():
-    """Test that image without content is rejected."""
+async def test_create_post_missing_file_content():
+    """Test that file without content is rejected."""
     context = MockExecutionContext({})
 
     result = await linkedin.execute_action("create_post", {
-        "text": "Missing image content",
-        "images": [
-            {"contentType": "image/jpeg"}
+        "text": "Missing file content",
+        "files": [
+            {"name": "photo.jpg", "contentType": "image/jpeg"}
         ]
     }, context)
     data = result.result.data
 
-    assert "Invalid image" in data["result"]
+    assert "Invalid file" in data["result"]
     assert "content" in data["result"].lower()
 
 
-async def test_create_post_missing_image_content_type():
-    """Test that image without contentType is rejected."""
+async def test_create_post_missing_file_content_type():
+    """Test that file without contentType is rejected."""
     context = MockExecutionContext({})
 
     result = await linkedin.execute_action("create_post", {
         "text": "Missing content type",
-        "images": [
-            {"content": SAMPLE_JPEG_BASE64}
+        "files": [
+            {"content": SAMPLE_JPEG_BASE64, "name": "photo.jpg"}
         ]
     }, context)
     data = result.result.data
 
-    assert "Invalid image" in data["result"]
+    assert "Invalid file" in data["result"]
     assert "contentType" in data["result"]
 
 
-async def test_create_post_multi_image_with_alt_texts():
-    """Test that alt texts are included for all images in multi-image post."""
+@patch.object(linkedin_module, 'post_to_linkedin')
+async def test_create_post_multi_image_with_alt_texts(mock_post):
+    """Test that alt texts (derived from filenames) are included for all images in multi-image post."""
+    mock_post.return_value = (201, {"x-restli-id": "urn:li:share:multialt123"}, None)
+
     responses = {
         "GET /userinfo": {"sub": "multi_alt_user", "name": "Multi Alt User"},
         "POST /images/initializeUpload": {
@@ -1520,17 +1265,13 @@ async def test_create_post_multi_image_with_alt_texts():
             }
         },
         "PUT /images/upload": {},
-        "POST /posts": {
-            "id": "urn:li:share:multialt123",
-            "author": "urn:li:person:multi_alt_user"
-        }
     }
     context = MockExecutionContext(responses)
     result = await linkedin.execute_action("create_post", {
         "text": "Multiple images with alt texts",
-        "images": [
-            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg", "altText": "First image"},
-            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png", "altText": "Second image"}
+        "files": [
+            {"content": SAMPLE_JPEG_BASE64, "name": "First image.jpg", "contentType": "image/jpeg"},
+            {"content": SAMPLE_PNG_BASE64, "name": "Second image.png", "contentType": "image/png"}
         ]
     }, context)
     data = result.result.data
@@ -1538,9 +1279,9 @@ async def test_create_post_multi_image_with_alt_texts():
     assert data["result"] == "Post created successfully."
     assert data["images_uploaded"] == 2
 
-    # Verify alt texts in multiImage payload
-    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
-    payload = post_calls[0]["json"]
+    # Verify alt texts (derived from filenames) in multiImage payload
+    mock_post.assert_called_once()
+    payload = mock_post.call_args[0][1]
     images = payload["content"]["multiImage"]["images"]
     assert images[0]["altText"] == "First image"
     assert images[1]["altText"] == "Second image"
