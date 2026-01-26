@@ -12,9 +12,10 @@ All actions use the LinkedIn API with version 202601.
 """
 
 from autohive_integrations_sdk import Integration, ExecutionContext, ActionHandler, ActionResult
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List
 from urllib.parse import quote
 import os
+import base64
 
 config_path = os.path.join(os.path.dirname(__file__), "config.json")
 linkedin = Integration.load(config_path)
@@ -44,6 +45,132 @@ async def get_current_user_urn(context: ExecutionContext) -> str:
     if isinstance(user_response, dict) and user_response.get("sub"):
         return f"urn:li:person:{user_response.get('sub')}"
     raise ValueError("Could not determine current user. Please ensure proper authentication.")
+
+
+# =============================================================================
+# IMAGE UPLOAD HELPERS
+# =============================================================================
+
+SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif"}
+MAX_IMAGES_PER_POST = 20
+
+
+async def initialize_image_upload(context: ExecutionContext, owner_urn: str) -> dict:
+    """
+    Initialize image upload with LinkedIn.
+
+    Args:
+        context: Execution context with auth
+        owner_urn: The owner URN (person or organization)
+
+    Returns:
+        dict with upload_url, image_urn
+    """
+    url = "https://api.linkedin.com/rest/images?action=initializeUpload"
+
+    payload = {
+        "initializeUploadRequest": {
+            "owner": owner_urn
+        }
+    }
+
+    response = await context.fetch(
+        url,
+        method="POST",
+        json=payload,
+        headers=get_linkedin_headers()
+    )
+
+    if isinstance(response, dict) and "value" in response:
+        value = response["value"]
+        return {
+            "upload_url": value.get("uploadUrl"),
+            "image_urn": value.get("image")
+        }
+
+    raise ValueError(f"Failed to initialize image upload: {response}")
+
+
+async def upload_image_binary(context: ExecutionContext, upload_url: str,
+                              image_data: bytes, content_type: str) -> None:
+    """
+    Upload binary image data to LinkedIn's upload URL.
+
+    Args:
+        context: Execution context
+        upload_url: The upload URL from initialize_image_upload
+        image_data: Raw binary image data
+        content_type: MIME type (image/jpeg, image/png, image/gif)
+    """
+    headers = {
+        "Content-Type": content_type,
+        "LinkedIn-Version": LINKEDIN_VERSION
+    }
+
+    await context.fetch(
+        upload_url,
+        method="PUT",
+        data=image_data,
+        headers=headers
+    )
+
+
+async def upload_image_from_base64(context: ExecutionContext, owner_urn: str,
+                                   image_content: str, content_type: str) -> str:
+    """
+    Complete image upload workflow: initialize + upload binary.
+
+    Args:
+        context: Execution context
+        owner_urn: The owner URN
+        image_content: Base64-encoded image data
+        content_type: MIME type
+
+    Returns:
+        Image URN for use in post creation
+    """
+    # Initialize the upload
+    init_result = await initialize_image_upload(context, owner_urn)
+    upload_url = init_result["upload_url"]
+    image_urn = init_result["image_urn"]
+
+    # Decode and upload the binary
+    image_data = base64.b64decode(image_content)
+    await upload_image_binary(context, upload_url, image_data, content_type)
+
+    return image_urn
+
+
+def validate_image_input(image: dict) -> Tuple[str, str, str]:
+    """
+    Validate an image input object.
+
+    Args:
+        image: Dict with content, contentType, and optional altText
+
+    Returns:
+        Tuple of (content, content_type, alt_text)
+
+    Raises:
+        ValueError: If validation fails
+    """
+    content = image.get("content")
+    content_type = image.get("contentType")
+    alt_text = image.get("altText", "")
+
+    if not content:
+        raise ValueError("Image 'content' (base64-encoded data) is required")
+
+    if not content_type:
+        raise ValueError("Image 'contentType' is required")
+
+    if content_type not in SUPPORTED_IMAGE_TYPES:
+        raise ValueError(
+            f"Unsupported image type: {content_type}. "
+            f"Supported types: {', '.join(SUPPORTED_IMAGE_TYPES)}"
+        )
+
+    return content, content_type, alt_text
 
 
 # =============================================================================
@@ -135,6 +262,167 @@ class ShareContentActionHandler(ActionHandler):
             return ActionResult(data={
                 "result": f"Failed to share content: {error_message}",
                 "post_id": None,
+                "post_data": None,
+                "details": error_details
+            })
+
+
+@linkedin.action("create_post")
+class CreatePostActionHandler(ActionHandler):
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        """
+        Create a LinkedIn post with optional images.
+
+        Supports:
+        - Text-only posts (no images)
+        - Single image posts (1 image)
+        - Multi-image posts (2-20 images)
+        """
+        text = inputs.get("text", "")
+        images = inputs.get("images", [])
+        visibility = inputs.get("visibility", "PUBLIC")
+        author_id = inputs.get("author_id")
+        disable_reshare = inputs.get("disable_reshare", False)
+
+        # Validate image count before any API calls
+        if len(images) > MAX_IMAGES_PER_POST:
+            return ActionResult(data={
+                "result": f"Too many images. Maximum allowed is {MAX_IMAGES_PER_POST}, got {len(images)}.",
+                "post_id": None,
+                "post_url": None,
+                "images_uploaded": 0,
+                "post_data": None
+            })
+
+        # Validate all images upfront before any uploads
+        validated_images: List[Tuple[str, str, str]] = []
+        for idx, image in enumerate(images):
+            try:
+                content, content_type, alt_text = validate_image_input(image)
+                validated_images.append((content, content_type, alt_text))
+            except ValueError as e:
+                return ActionResult(data={
+                    "result": f"Invalid image at index {idx}: {str(e)}",
+                    "post_id": None,
+                    "post_url": None,
+                    "images_uploaded": 0,
+                    "post_data": None
+                })
+
+        # Require at least text or images
+        if not text and not images:
+            return ActionResult(data={
+                "result": "Post must have either text or at least one image.",
+                "post_id": None,
+                "post_url": None,
+                "images_uploaded": 0,
+                "post_data": None
+            })
+
+        # Determine author URN
+        if author_id:
+            author_urn = f"urn:li:person:{author_id}"
+        else:
+            try:
+                author_urn = await get_current_user_urn(context)
+            except Exception as e:
+                return ActionResult(data={
+                    "result": "Failed to create post. Could not determine current user.",
+                    "post_id": None,
+                    "post_url": None,
+                    "images_uploaded": 0,
+                    "post_data": None,
+                    "details": str(e)
+                })
+
+        # Upload images if provided
+        uploaded_image_urns: List[str] = []
+        for idx, (content, content_type, alt_text) in enumerate(validated_images):
+            try:
+                image_urn = await upload_image_from_base64(
+                    context, author_urn, content, content_type
+                )
+                uploaded_image_urns.append((image_urn, alt_text))
+            except Exception as e:
+                return ActionResult(data={
+                    "result": f"Failed to upload image at index {idx}: {str(e)}",
+                    "post_id": None,
+                    "post_url": None,
+                    "images_uploaded": idx,
+                    "post_data": None,
+                    "details": str(e)
+                })
+
+        # Build post payload
+        posts_url = "https://api.linkedin.com/rest/posts"
+
+        payload = {
+            "author": author_urn,
+            "commentary": text,
+            "visibility": visibility,
+            "distribution": {
+                "feedDistribution": "MAIN_FEED",
+                "targetEntities": [],
+                "thirdPartyDistributionChannels": []
+            },
+            "lifecycleState": "PUBLISHED",
+            "isReshareDisabledByAuthor": disable_reshare
+        }
+
+        # Add content based on number of images
+        if len(uploaded_image_urns) == 1:
+            # Single image post
+            image_urn, alt_text = uploaded_image_urns[0]
+            media_content = {"id": image_urn}
+            if alt_text:
+                media_content["altText"] = alt_text
+            payload["content"] = {
+                "media": media_content
+            }
+        elif len(uploaded_image_urns) > 1:
+            # Multi-image post
+            multi_images = []
+            for image_urn, alt_text in uploaded_image_urns:
+                image_obj = {"id": image_urn}
+                if alt_text:
+                    image_obj["altText"] = alt_text
+                multi_images.append(image_obj)
+            payload["content"] = {
+                "multiImage": {
+                    "images": multi_images
+                }
+            }
+        # No content field for text-only posts
+
+        try:
+            response = await context.fetch(
+                posts_url,
+                method="POST",
+                json=payload,
+                headers=get_linkedin_headers()
+            )
+
+            post_id = response.get("id") if isinstance(response, dict) else None
+            post_url = None
+            if post_id:
+                # Convert post URN to LinkedIn URL
+                post_url = f"https://www.linkedin.com/feed/update/{post_id}"
+
+            return ActionResult(data={
+                "result": "Post created successfully.",
+                "post_id": post_id,
+                "post_url": post_url,
+                "images_uploaded": len(uploaded_image_urns),
+                "post_data": response
+            })
+        except Exception as e:
+            error_message = str(e)
+            error_details = getattr(e, 'response_data', str(e))
+            return ActionResult(data={
+                "result": f"Failed to create post: {error_message}",
+                "post_id": None,
+                "post_url": None,
+                "images_uploaded": len(uploaded_image_urns),
                 "post_data": None,
                 "details": error_details
             })

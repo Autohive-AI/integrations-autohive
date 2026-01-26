@@ -167,6 +167,21 @@ class MockExecutionContext:
         if "/rest/reactions/(actor:" in url and method == "DELETE":
             return self._responses.get("DELETE /reactions", {})
 
+        # Images endpoint - Initialize upload
+        if "/rest/images?action=initializeUpload" in url and method == "POST":
+            # Generate a unique image URN based on the number of image init calls
+            image_count = len([r for r in self._requests if "initializeUpload" in r["url"]])
+            return self._responses.get("POST /images/initializeUpload", {
+                "value": {
+                    "uploadUrl": f"https://api.linkedin.com/upload/image{image_count}",
+                    "image": f"urn:li:image:{image_count}"
+                }
+            })
+
+        # Images endpoint - Binary upload
+        if "api.linkedin.com/upload/" in url and method == "PUT":
+            return self._responses.get("PUT /images/upload", {})
+
         return {}
 
 
@@ -1146,3 +1161,386 @@ async def test_share_content_missing_content():
         await linkedin.execute_action("share_content", {}, context)
 
     assert "content" in str(exc_info.value).lower() or "required" in str(exc_info.value).lower()
+
+
+# =============================================================================
+# CREATE POST TESTS (with image support)
+# =============================================================================
+
+# Sample base64-encoded 1x1 pixel images for testing
+SAMPLE_JPEG_BASE64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQCEAwEPwAB//9k="
+SAMPLE_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+
+async def test_create_post_text_only():
+    """Test creating a text-only post with no images."""
+    responses = {
+        "GET /userinfo": {"sub": "text_user", "name": "Text User"},
+        "POST /posts": {
+            "id": "urn:li:share:text123",
+            "author": "urn:li:person:text_user",
+            "lifecycleState": "PUBLISHED",
+            "visibility": "PUBLIC",
+            "commentary": "Hello from create_post!"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Hello from create_post!"
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+    assert data["post_id"] == "urn:li:share:text123"
+    assert data["post_url"] == "https://www.linkedin.com/feed/update/urn:li:share:text123"
+    assert data["images_uploaded"] == 0
+
+    # Verify no image upload calls were made
+    image_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
+    assert len(image_calls) == 0
+
+    # Verify post payload has no content field
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    assert "content" not in post_calls[0]["json"]
+
+
+async def test_create_post_single_image():
+    """Test creating a post with a single image."""
+    responses = {
+        "GET /userinfo": {"sub": "img_user", "name": "Image User"},
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/image1",
+                "image": "urn:li:image:single123"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:img123",
+            "author": "urn:li:person:img_user",
+            "lifecycleState": "PUBLISHED"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Check out this image!",
+        "images": [
+            {
+                "content": SAMPLE_JPEG_BASE64,
+                "contentType": "image/jpeg"
+            }
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+    assert data["post_id"] == "urn:li:share:img123"
+    assert data["images_uploaded"] == 1
+
+    # Verify image upload was called
+    init_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
+    assert len(init_calls) == 1
+
+    # Verify post payload has content.media for single image
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    payload = post_calls[0]["json"]
+    assert "content" in payload
+    assert "media" in payload["content"]
+    assert "id" in payload["content"]["media"]
+
+
+async def test_create_post_multi_image():
+    """Test creating a post with multiple images."""
+    responses = {
+        "GET /userinfo": {"sub": "multi_user", "name": "Multi User"},
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/img",
+                "image": "urn:li:image:multi"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:multi123",
+            "author": "urn:li:person:multi_user",
+            "lifecycleState": "PUBLISHED"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Multiple images!",
+        "images": [
+            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"},
+            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png"},
+            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+    assert data["images_uploaded"] == 3
+
+    # Verify 3 image uploads were initiated
+    init_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
+    assert len(init_calls) == 3
+
+    # Verify post payload has content.multiImage structure
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    payload = post_calls[0]["json"]
+    assert "content" in payload
+    assert "multiImage" in payload["content"]
+    assert "images" in payload["content"]["multiImage"]
+    assert len(payload["content"]["multiImage"]["images"]) == 3
+
+
+async def test_create_post_too_many_images():
+    """Test that >20 images are rejected before any API calls."""
+    context = MockExecutionContext({})
+
+    # Create 21 images
+    images = [{"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"} for _ in range(21)]
+
+    result = await linkedin.execute_action("create_post", {
+        "text": "Too many images",
+        "images": images
+    }, context)
+    data = result.result.data
+
+    assert "Too many images" in data["result"]
+    assert data["post_id"] is None
+    assert data["images_uploaded"] == 0
+
+    # Verify no API calls were made
+    assert len(context._requests) == 0
+
+
+async def test_create_post_invalid_image_type():
+    """Test that unsupported image types are rejected."""
+    context = MockExecutionContext({})
+
+    result = await linkedin.execute_action("create_post", {
+        "text": "Invalid image type",
+        "images": [
+            {"content": "base64data", "contentType": "image/bmp"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert "Invalid image" in data["result"]
+    assert "Unsupported image type" in data["result"]
+    assert data["post_id"] is None
+
+    # Verify no API calls were made
+    assert len(context._requests) == 0
+
+
+async def test_create_post_image_with_alt_text():
+    """Test that alt text is included in the post payload."""
+    responses = {
+        "GET /userinfo": {"sub": "alt_user", "name": "Alt User"},
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/alt",
+                "image": "urn:li:image:alt123"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:alt123",
+            "author": "urn:li:person:alt_user"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Image with alt text",
+        "images": [
+            {
+                "content": SAMPLE_JPEG_BASE64,
+                "contentType": "image/jpeg",
+                "altText": "A beautiful sunset over the mountains"
+            }
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+
+    # Verify alt text is in the payload
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    payload = post_calls[0]["json"]
+    assert payload["content"]["media"]["altText"] == "A beautiful sunset over the mountains"
+
+
+async def test_create_post_visibility_options():
+    """Test that visibility options are correctly applied."""
+    responses = {
+        "GET /userinfo": {"sub": "vis_user", "name": "Visibility User"},
+        "POST /posts": {
+            "id": "urn:li:share:vis123",
+            "author": "urn:li:person:vis_user",
+            "visibility": "CONNECTIONS"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Connections only post",
+        "visibility": "CONNECTIONS"
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+
+    # Verify visibility in payload
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    assert post_calls[0]["json"]["visibility"] == "CONNECTIONS"
+
+
+async def test_create_post_no_content():
+    """Test that a post with neither text nor images is rejected."""
+    context = MockExecutionContext({})
+
+    result = await linkedin.execute_action("create_post", {}, context)
+    data = result.result.data
+
+    assert "must have either text or at least one image" in data["result"]
+    assert data["post_id"] is None
+
+
+async def test_create_post_image_only():
+    """Test creating a post with only an image and no text."""
+    responses = {
+        "GET /userinfo": {"sub": "imgonly_user", "name": "Image Only User"},
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/imgonly",
+                "image": "urn:li:image:only123"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:imgonly123",
+            "author": "urn:li:person:imgonly_user"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "images": [
+            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+    assert data["images_uploaded"] == 1
+
+    # Verify commentary is empty string
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    assert post_calls[0]["json"]["commentary"] == ""
+
+
+async def test_create_post_with_author_id():
+    """Test creating a post with explicit author_id."""
+    responses = {
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/auth",
+                "image": "urn:li:image:auth123"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:auth123",
+            "author": "urn:li:person:explicit_author"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Post with explicit author",
+        "author_id": "explicit_author",
+        "images": [
+            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+
+    # Verify no userinfo call was made
+    userinfo_calls = [r for r in context._requests if "/userinfo" in r["url"]]
+    assert len(userinfo_calls) == 0
+
+    # Verify author in image init and post payload
+    init_calls = [r for r in context._requests if "initializeUpload" in r["url"]]
+    assert init_calls[0]["json"]["initializeUploadRequest"]["owner"] == "urn:li:person:explicit_author"
+
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    assert post_calls[0]["json"]["author"] == "urn:li:person:explicit_author"
+
+
+async def test_create_post_missing_image_content():
+    """Test that image without content is rejected."""
+    context = MockExecutionContext({})
+
+    result = await linkedin.execute_action("create_post", {
+        "text": "Missing image content",
+        "images": [
+            {"contentType": "image/jpeg"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert "Invalid image" in data["result"]
+    assert "content" in data["result"].lower()
+
+
+async def test_create_post_missing_image_content_type():
+    """Test that image without contentType is rejected."""
+    context = MockExecutionContext({})
+
+    result = await linkedin.execute_action("create_post", {
+        "text": "Missing content type",
+        "images": [
+            {"content": SAMPLE_JPEG_BASE64}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert "Invalid image" in data["result"]
+    assert "contentType" in data["result"]
+
+
+async def test_create_post_multi_image_with_alt_texts():
+    """Test that alt texts are included for all images in multi-image post."""
+    responses = {
+        "GET /userinfo": {"sub": "multi_alt_user", "name": "Multi Alt User"},
+        "POST /images/initializeUpload": {
+            "value": {
+                "uploadUrl": "https://api.linkedin.com/upload/multialt",
+                "image": "urn:li:image:multialt"
+            }
+        },
+        "PUT /images/upload": {},
+        "POST /posts": {
+            "id": "urn:li:share:multialt123",
+            "author": "urn:li:person:multi_alt_user"
+        }
+    }
+    context = MockExecutionContext(responses)
+    result = await linkedin.execute_action("create_post", {
+        "text": "Multiple images with alt texts",
+        "images": [
+            {"content": SAMPLE_JPEG_BASE64, "contentType": "image/jpeg", "altText": "First image"},
+            {"content": SAMPLE_PNG_BASE64, "contentType": "image/png", "altText": "Second image"}
+        ]
+    }, context)
+    data = result.result.data
+
+    assert data["result"] == "Post created successfully."
+    assert data["images_uploaded"] == 2
+
+    # Verify alt texts in multiImage payload
+    post_calls = [r for r in context._requests if "/rest/posts" in r["url"] and r["method"] == "POST"]
+    payload = post_calls[0]["json"]
+    images = payload["content"]["multiImage"]["images"]
+    assert images[0]["altText"] == "First image"
+    assert images[1]["altText"] == "Second image"
