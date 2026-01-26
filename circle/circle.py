@@ -792,12 +792,13 @@ class CreateCommentAction(ActionHandler):
             
             # Build comment payload
             comment_data = {
+                "post_id": post_id,
                 "body": inputs["body"]
             }
 
             # Make API call
             response = await context.fetch(
-                f"{CIRCLE_API_BASE}/posts/{post_id}/comments",
+                f"{CIRCLE_API_BASE}/comments",
                 headers=headers,
                 method="POST",
                 json=comment_data
@@ -832,9 +833,12 @@ class GetPostCommentsAction(ActionHandler):
 
             # Make API call
             response = await context.fetch(
-                f"{CIRCLE_API_BASE}/posts/{post_id}/comments",
+                f"{CIRCLE_API_BASE}/comments",
                 headers=headers,
-                params={"per_page": per_page}
+                params={
+                    "post_id": post_id,
+                    "per_page": per_page
+                }
             )
 
             # Check for API errors or HTML responses
