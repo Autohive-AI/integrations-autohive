@@ -460,6 +460,13 @@ class CreateCampaignAction(ActionHandler):
 
         campaign_name = inputs.get('campaign_name')
         budget_amount_micros = inputs.get('budget_amount_micros')
+
+        # Validate required inputs
+        if not campaign_name:
+            raise Exception("campaign_name is required")
+        if not budget_amount_micros:
+            raise Exception("budget_amount_micros is required")
+
         budget_name = inputs.get('budget_name', f"Budget for {campaign_name}")
         bidding_strategy = inputs.get('bidding_strategy', 'MANUAL_CPC')
         
@@ -499,20 +506,49 @@ class CreateCampaignAction(ActionHandler):
             campaign.end_date = end_date
 
             # Set bidding strategy
+            # Note: For smart bidding strategies, we only set optional constraints if provided
+            # Setting values to 0 can cause API errors; omitting them lets Google optimize automatically
+            # Uses client.copy_from() as per Google Ads Python library best practices
             if bidding_strategy == 'MANUAL_CPC':
-                campaign.manual_cpc.enhanced_cpc_enabled = False
+                campaign.manual_cpc.enhanced_cpc_enabled = inputs.get('enhanced_cpc_enabled', False)
             elif bidding_strategy == 'TARGET_SPEND':
-                campaign.target_spend.target_spend_micros = 0
+                # TARGET_SPEND = Maximize clicks within budget
+                target_spend_micros = inputs.get('target_spend_micros')
+                if target_spend_micros:
+                    campaign.target_spend.target_spend_micros = target_spend_micros
+                else:
+                    # Enable strategy without specific target (Google optimizes automatically)
+                    client.copy_from(campaign.target_spend, client.get_type("TargetSpend")())
             elif bidding_strategy == 'MAXIMIZE_CONVERSIONS':
-                campaign.maximize_conversions.target_cpa_micros = 0
+                # MAXIMIZE_CONVERSIONS with optional target CPA
+                target_cpa_micros = inputs.get('target_cpa_micros')
+                if target_cpa_micros:
+                    campaign.maximize_conversions.target_cpa_micros = target_cpa_micros
+                else:
+                    # Enable strategy without specific target CPA
+                    client.copy_from(campaign.maximize_conversions, client.get_type("MaximizeConversions")())
             elif bidding_strategy == 'MAXIMIZE_CLICKS':
-                campaign.maximize_clicks.cpc_bid_ceiling_micros = 0
+                # MAXIMIZE_CLICKS with optional bid ceiling
+                cpc_bid_ceiling_micros = inputs.get('cpc_bid_ceiling_micros')
+                if cpc_bid_ceiling_micros:
+                    campaign.maximize_clicks.cpc_bid_ceiling_micros = cpc_bid_ceiling_micros
+                else:
+                    # Enable strategy without bid ceiling
+                    client.copy_from(campaign.maximize_clicks, client.get_type("MaximizeClicks")())
 
             # Network settings
             campaign.network_settings.target_google_search = True
             campaign.network_settings.target_search_network = True
             campaign.network_settings.target_content_network = False
             campaign.network_settings.target_partner_search_network = False
+
+            # EU Political Advertising compliance (required field as of API v19.2+)
+            # Convert boolean input to Google Ads API enum value
+            is_political = inputs.get('contains_eu_political_advertising', False)
+            if is_political:
+                campaign.contains_eu_political_advertising = client.enums.EuPoliticalAdvertisingStatusEnum.CONTAINS_EU_POLITICAL_ADVERTISING
+            else:
+                campaign.contains_eu_political_advertising = client.enums.EuPoliticalAdvertisingStatusEnum.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING
 
             campaign_response = campaign_service.mutate_campaigns(
                 customer_id=customer_id,
