@@ -109,6 +109,10 @@ Supports basic HTTP authentication and Bearer token authentication via the SDK.
 
 [heygen](heygen): AI-powered video avatar integration for creating realistic talking avatar videos. Supports generating AI photo avatars, creating and training avatar groups, generating new looks, creating videos with avatars and voice synthesis, and checking generation/video status. Includes voice and avatar discovery, motion and sound effects, and avatar group management. Features 19 actions with API key authentication.
 
+### Shotstack
+
+[shotstack](shotstack): Cloud-based video editing API integration for automated video production at scale. Supports video rendering with JSON edit specifications, template management for reusable video layouts with merge fields, media probing for metadata extraction, asset hosting and transfer to external storage (S3), source ingestion and transformation, and AI-powered content generation (images, videos, voiceovers) via multiple providers (Stability AI, ElevenLabs, OpenAI). Features 20 actions covering Edit API (rendering, templates), Serve API (asset management), Ingest API (source management), and Create API (AI generation). Uses custom API key authentication with environment selection (production/sandbox).
+
 ### Instagram
 
 [instagram](instagram): Comprehensive Instagram Business/Creator integration for managing posts, comments, and insights via the Instagram Graph API v24.0. Supports account information retrieval, content publishing (images, videos, reels, carousels, stories), comment moderation (read, reply, hide/unhide, delete), and advanced analytics for both account and post performance. Features Business Login for Instagram authentication with granular permissions, media container polling for reliable publishing, and support for alt text on images. Includes 8 actions covering account management, content creation, comment engagement, and insights retrieval. Rate limits scale with account reach (4800 × impressions per 24hrs) with 100 posts per day publishing limit.

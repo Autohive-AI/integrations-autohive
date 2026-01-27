@@ -1,0 +1,1 @@
+# Shotstack integration tests

@@ -1,0 +1,1032 @@
+{
+  "name": "Shotstack",
+  "display_name": "Shotstack",
+  "version": "1.0.0",
+  "description": "Shotstack integration for automated video editing, rendering, and asset management using the cloud video editing API",
+  "entry_point": "shotstack.py",
+  "auth": {
+    "type": "custom",
+    "title": "Shotstack API Credentials",
+    "fields": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "format": "password",
+          "label": "API Key",
+          "help_text": "Your Shotstack API Key from https://dashboard.shotstack.io/apikeys"
+        },
+        "environment": {
+          "type": "string",
+          "label": "Environment",
+          "help_text": "Use 'v1' for production (no watermarks) or 'stage' for development sandbox (watermarked)",
+          "default": "stage"
+        }
+      }
+    }
+  },
+  "actions": {
+    "render_video": {
+      "display_name": "Render Video",
+      "description": "Submit a video render job using a JSON edit specification. The render is processed asynchronously and you can check the status using get_render_status.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "timeline": {
+            "type": "object",
+            "description": "The timeline object containing tracks with clips to render"
+          },
+          "output": {
+            "type": "object",
+            "description": "Output configuration including format, resolution, fps, etc.",
+            "properties": {
+              "format": {
+                "type": "string",
+                "description": "Output format: mp4, gif, mp3, jpg, png, bmp, webp",
+                "enum": [
+                  "mp4",
+                  "gif",
+                  "mp3",
+                  "jpg",
+                  "png",
+                  "bmp",
+                  "webp"
+                ]
+              },
+              "resolution": {
+                "type": "string",
+                "description": "Output resolution: preview, mobile, sd, hd, 1080, 4k",
+                "enum": [
+                  "preview",
+                  "mobile",
+                  "sd",
+                  "hd",
+                  "1080",
+                  "4k"
+                ]
+              },
+              "fps": {
+                "type": "number",
+                "description": "Frames per second (12-60)"
+              },
+              "quality": {
+                "type": "string",
+                "description": "Output quality: low, medium, high",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              }
+            }
+          },
+          "merge": {
+            "type": "array",
+            "description": "Array of merge fields to replace placeholders in the edit",
+            "items": {
+              "type": "object",
+              "properties": {
+                "find": {
+                  "type": "string",
+                  "description": "The placeholder to find"
+                },
+                "replace": {
+                  "type": "string",
+                  "description": "The value to replace it with"
+                }
+              }
+            }
+          },
+          "callback": {
+            "type": "string",
+            "description": "Webhook URL to receive render completion notification"
+          }
+        },
+        "required": [
+          "timeline",
+          "output"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unique ID of the render job"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status message from the API"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_render_status": {
+      "display_name": "Get Render Status",
+      "description": "Check the status of a render job and get the output URL when complete",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": "string",
+            "description": "The ID of the render job to check"
+          },
+          "data": {
+            "type": "boolean",
+            "description": "Include the original edit data in the response"
+          },
+          "merged": {
+            "type": "boolean",
+            "description": "Include merged data if merge fields were used"
+          }
+        },
+        "required": [
+          "render_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "render": {
+            "type": "object",
+            "description": "The render job details including status, url, etc."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Current status: queued, fetching, rendering, saving, done, failed"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The URL of the rendered output (when status is done)"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "create_template": {
+      "display_name": "Create Template",
+      "description": "Create a reusable template from an edit specification",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name for the template"
+          },
+          "template": {
+            "type": "object",
+            "description": "The edit specification to save as a template",
+            "properties": {
+              "timeline": {
+                "type": "object",
+                "description": "The timeline object"
+              },
+              "output": {
+                "type": "object",
+                "description": "Output configuration"
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "template"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unique ID of the created template"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status message"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "list_templates": {
+      "display_name": "List Templates",
+      "description": "Get a list of all saved templates",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "templates": {
+            "type": "array",
+            "description": "List of template objects",
+            "items": {
+              "type": "object"
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_template": {
+      "display_name": "Get Template",
+      "description": "Get a template by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "description": "The ID of the template to retrieve"
+          }
+        },
+        "required": [
+          "template_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "object",
+            "description": "The template object including name and edit data"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "update_template": {
+      "display_name": "Update Template",
+      "description": "Update an existing template",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "description": "The ID of the template to update"
+          },
+          "name": {
+            "type": "string",
+            "description": "New name for the template"
+          },
+          "template": {
+            "type": "object",
+            "description": "The updated edit specification"
+          }
+        },
+        "required": [
+          "template_id",
+          "name",
+          "template"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The ID of the updated template"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status message"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "delete_template": {
+      "display_name": "Delete Template",
+      "description": "Delete a template by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "description": "The ID of the template to delete"
+          }
+        },
+        "required": [
+          "template_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Whether the template was deleted"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "render_template": {
+      "display_name": "Render Template",
+      "description": "Render a video using a saved template with optional merge fields",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "description": "The ID of the template to render"
+          },
+          "merge": {
+            "type": "array",
+            "description": "Array of merge fields to personalize the template",
+            "items": {
+              "type": "object",
+              "properties": {
+                "find": {
+                  "type": "string",
+                  "description": "The placeholder to find"
+                },
+                "replace": {
+                  "type": "string",
+                  "description": "The value to replace it with"
+                }
+              }
+            }
+          },
+          "callback": {
+            "type": "string",
+            "description": "Webhook URL to receive render completion notification"
+          }
+        },
+        "required": [
+          "template_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unique ID of the render job"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status message from the API"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "probe_media": {
+      "display_name": "Probe Media",
+      "description": "Inspect a media file to get its metadata (duration, dimensions, codec, etc.)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL of the media file to probe"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "description": "Media metadata including duration, width, height, codec, etc."
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_asset": {
+      "display_name": "Get Asset",
+      "description": "Get details of a hosted asset by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "description": "The ID of the asset to retrieve"
+          }
+        },
+        "required": [
+          "asset_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "object",
+            "description": "The asset details including URL, status, etc."
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "delete_asset": {
+      "display_name": "Delete Asset",
+      "description": "Delete a hosted asset by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "description": "The ID of the asset to delete"
+          }
+        },
+        "required": [
+          "asset_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Whether the asset was deleted"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_render_assets": {
+      "display_name": "Get Render Assets",
+      "description": "Get all assets generated by a specific render job",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": "string",
+            "description": "The ID of the render job"
+          }
+        },
+        "required": [
+          "render_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "assets": {
+            "type": "array",
+            "description": "List of assets from the render",
+            "items": {
+              "type": "object"
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "transfer_asset": {
+      "display_name": "Transfer Asset",
+      "description": "Transfer an asset to external storage destinations (S3, etc.)",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL of the asset to transfer"
+          },
+          "destinations": {
+            "type": "array",
+            "description": "Array of destination configurations",
+            "items": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Storage provider: s3, shotstack"
+                },
+                "options": {
+                  "type": "object",
+                  "description": "Provider-specific options"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "url",
+          "destinations"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "transfer": {
+            "type": "object",
+            "description": "Transfer job details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "ingest_source": {
+      "display_name": "Ingest Source",
+      "description": "Ingest and transform a source file for use in video editing",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL of the source file to ingest"
+          },
+          "outputs": {
+            "type": "object",
+            "description": "Output transformation configuration",
+            "properties": {
+              "renditions": {
+                "type": "array",
+                "description": "Array of rendition configurations for transcoding",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "callback": {
+            "type": "string",
+            "description": "Webhook URL for completion notification"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The ID of the ingest job"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status message"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "list_sources": {
+      "display_name": "List Sources",
+      "description": "Get a list of all ingested sources",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "description": "List of source objects",
+            "items": {
+              "type": "object"
+            }
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_source": {
+      "display_name": "Get Source",
+      "description": "Get details of an ingested source by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "description": "The ID of the source to retrieve"
+          }
+        },
+        "required": [
+          "source_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "object",
+            "description": "The source details"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "delete_source": {
+      "display_name": "Delete Source",
+      "description": "Delete an ingested source by its ID",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "description": "The ID of the source to delete"
+          }
+        },
+        "required": [
+          "source_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Whether the source was deleted"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "create_generated_asset": {
+      "display_name": "Generate Asset with AI",
+      "description": "Generate images, videos, voiceovers, or text using AI providers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "AI provider to use: shotstack, openai, stability, elevenlabs, google, etc."
+          },
+          "options": {
+            "type": "object",
+            "description": "Provider-specific options for generation",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type of asset to generate: image, video, audio, text"
+              },
+              "prompt": {
+                "type": "string",
+                "description": "Text prompt for generation"
+              },
+              "text": {
+                "type": "string",
+                "description": "Text for text-to-speech"
+              },
+              "voice": {
+                "type": "string",
+                "description": "Voice ID for text-to-speech"
+              }
+            }
+          }
+        },
+        "required": [
+          "provider",
+          "options"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The ID of the generated asset job"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Current status of generation"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    },
+    "get_generated_asset": {
+      "display_name": "Get Generated Asset",
+      "description": "Check the status of an AI-generated asset and get the output URL",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "description": "The ID of the generated asset job"
+          }
+        },
+        "required": [
+          "asset_id"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "object",
+            "description": "The generated asset details including status and URL"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Current status: queued, processing, done, failed"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL of the generated asset (when done)"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the operation was successful"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error message if the operation failed"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      }
+    }
+  }
+}
