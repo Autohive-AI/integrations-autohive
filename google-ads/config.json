@@ -58,6 +58,11 @@
                             "type": "string"
                         },
                         "description": "List of date ranges. Supported formats: 'YYYY-MM-DD_YYYY-MM-DD', 'last 7 days', or single dates 'DD/MM/YYYY'."
+                    },
+                    "campaign_type": {
+                        "type": "string",
+                        "enum": ["SEARCH", "VIDEO", "DISPLAY", "PERFORMANCE_MAX", "ALL"],
+                        "description": "Filter by campaign type. VIDEO includes video-specific metrics (average_cpv). SEARCH, DISPLAY, PERFORMANCE_MAX filter to that type. ALL (default) uses universal metrics safe for mixed campaign types."
                     }
                 },
                 "required": ["login_customer_id", "customer_id"]
