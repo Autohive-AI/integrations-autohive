@@ -28,28 +28,35 @@
   "actions": {
     "upload_file": {
       "display_name": "Upload File",
-      "description": "Upload a file (video/image/audio) directly to Shotstack and get a URL that can be used in edits. Accepts base64-encoded content. Handles presigned URL workflow internally and polls until the file is ready to use.",
+      "description": "Upload a file (video/image/audio) from conversation context to Shotstack. Returns a source_id immediately. Use check_source_status to poll until the file is ready, then use the source_url in video edits.",
       "input_schema": {
         "type": "object",
         "properties": {
-          "content": {
-            "type": "string",
-            "description": "Base64-encoded file content"
-          },
-          "filename": {
-            "type": "string",
-            "description": "Filename with extension (e.g., 'video.mp4', 'logo.png')"
-          },
-          "content_type": {
-            "type": "string",
-            "description": "MIME type (auto-detected from filename if not provided)"
+          "file": {
+            "type": "object",
+            "description": "File to upload to Shotstack",
+            "properties": {
+              "content": {
+                "type": "string",
+                "description": "Base64-encoded file content"
+              },
+              "name": {
+                "type": "string",
+                "description": "Filename with extension (e.g., 'video.mp4', 'logo.png')"
+              },
+              "contentType": {
+                "type": "string",
+                "description": "MIME type of the file"
+              }
+            },
+            "required": ["content", "name", "contentType"]
           },
           "wait_for_ready": {
             "type": "boolean",
-            "description": "Wait and poll until file is ready to use (default: true)"
+            "description": "Wait and poll until file is ready (default: false). Leave as false to avoid timeout, then use check_source_status to poll."
           }
         },
-        "required": ["content", "filename"]
+        "required": ["file"]
       },
       "output_schema": {
         "type": "object",
@@ -73,6 +80,50 @@
           "error": {
             "type": ["string", "null"],
             "description": "Error message if the operation failed"
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "check_source_status": {
+      "display_name": "Check Source Status",
+      "description": "Check the status of an uploaded file. Call this after upload_file returns to check when the file is ready. Status progression: importing -> ready (or failed).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "description": "The source_id returned from upload_file"
+          }
+        },
+        "required": ["source_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": ["string", "null"],
+            "description": "The source ID"
+          },
+          "status": {
+            "type": ["string", "null"],
+            "description": "Current status: importing, ready, or failed"
+          },
+          "source_url": {
+            "type": ["string", "null"],
+            "description": "URL to use in video edits (only when status is 'ready')"
+          },
+          "message": {
+            "type": ["string", "null"],
+            "description": "Human-readable status message"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the check was successful (false if source failed)"
+          },
+          "error": {
+            "type": ["string", "null"],
+            "description": "Error message if the source failed"
           }
         },
         "required": ["result"]
@@ -161,9 +212,118 @@
         "required": ["result"]
       }
     },
+    "submit_render": {
+      "display_name": "Submit Render",
+      "description": "Submit a render job and return immediately with a render_id. Does NOT wait for completion - use check_render_status to poll for results. This is the recommended approach for complex renders that may take more than 30 seconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "timeline": {
+            "type": "object",
+            "description": "The timeline object containing tracks with clips"
+          },
+          "output": {
+            "type": "object",
+            "description": "Output configuration (format, resolution, fps, quality)",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": ["mp4", "gif", "mp3", "jpg", "png"]
+              },
+              "resolution": {
+                "type": "string",
+                "enum": ["preview", "mobile", "sd", "hd", "1080", "4k"]
+              },
+              "fps": {
+                "type": "number"
+              },
+              "quality": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            }
+          }
+        },
+        "required": ["timeline", "output"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": ["string", "null"],
+            "description": "The unique ID of the render job - use with check_render_status"
+          },
+          "status": {
+            "type": ["string", "null"],
+            "description": "Initial status (usually 'queued')"
+          },
+          "message": {
+            "type": ["string", "null"],
+            "description": "Instructions for next steps"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the submission was successful"
+          },
+          "error": {
+            "type": ["string", "null"],
+            "description": "Error message if the submission failed"
+          }
+        },
+        "required": ["result"]
+      }
+    },
+    "check_render_status": {
+      "display_name": "Check Render Status",
+      "description": "Check the status of a previously submitted render job. Call this repeatedly (every 5-10 seconds) until status is 'done' or 'failed'. Status progression: queued -> fetching -> rendering -> saving -> done.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": "string",
+            "description": "The render_id returned from submit_render or custom_edit"
+          }
+        },
+        "required": ["render_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "render_id": {
+            "type": ["string", "null"],
+            "description": "The render job ID"
+          },
+          "status": {
+            "type": ["string", "null"],
+            "description": "Current status: queued, fetching, rendering, saving, done, or failed"
+          },
+          "url": {
+            "type": ["string", "null"],
+            "description": "URL of the rendered output (only when status is 'done')"
+          },
+          "duration": {
+            "type": ["number", "null"],
+            "description": "Duration of the rendered video in seconds (only when done)"
+          },
+          "message": {
+            "type": ["string", "null"],
+            "description": "Human-readable status message"
+          },
+          "result": {
+            "type": "boolean",
+            "description": "Whether the check was successful (false if render failed)"
+          },
+          "error": {
+            "type": ["string", "null"],
+            "description": "Error message if the render failed"
+          }
+        },
+        "required": ["result"]
+      }
+    },
     "render_and_wait": {
       "display_name": "Render and Wait",
-      "description": "Submit a render job and poll until complete. Use this when you have a complete timeline structure ready.",
+      "description": "Submit a render job and poll until complete. WARNING: May timeout for complex renders. For renders that might take more than 30 seconds, use submit_render + check_render_status instead.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -236,7 +396,7 @@
     },
     "custom_edit": {
       "display_name": "Custom Video Edit",
-      "description": "Create a fully customizable video edit using Shotstack's timeline structure.\n\n## Timeline Structure\nA timeline contains tracks (layers). Tracks at index 0 are on top (foreground).\n- timeline.tracks: array of Track objects\n- timeline.background: hex color (e.g., '#000000')\n- timeline.soundtrack: optional audio track\n\n## Tracks and Clips\nEach track contains clips placed at specific times:\n- clip.asset: the media asset (video, image, title, audio, html)\n- clip.start: when the clip starts (seconds from timeline start)\n- clip.length: how long the clip plays (seconds)\n- clip.fit: how to fit the asset ('crop', 'cover', 'contain', 'none')\n- clip.scale: scale factor (1 = 100%)\n- clip.position: position preset ('center', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left', 'topLeft')\n- clip.offset: {x, y} offset from position (-1 to 1, relative to frame)\n- clip.transition: {in: 'fade', out: 'fade'} - see transitions below\n- clip.effect: motion effect ('zoomIn', 'zoomOut', 'slideLeft', etc.)\n- clip.filter: visual filter ('greyscale')\n- clip.opacity: 0 to 1\n\n## Asset Types\n\n### VideoAsset\n{type: 'video', src: 'https://...', trim: 5, volume: 0.8}\n- src: video URL\n- trim: start playback from this point (seconds)\n- volume: 0 to 1\n\n### ImageAsset\n{type: 'image', src: 'https://...'}\n- src: image URL\n\n### TitleAsset (Text)\n{type: 'title', text: 'Hello World', style: 'minimal', color: '#ffffff', size: 'medium', position: 'center'}\n- text: the text to display\n- style: 'minimal', 'blockbuster', 'vogue', 'sketch', 'chunk', 'marker', 'future', 'subtitle'\n- color: hex color\n- size: 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'\n- position: 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left', 'topLeft', 'center'\n- background: hex color for text background\n\n### AudioAsset\n{type: 'audio', src: 'https://...', trim: 0, volume: 1, effect: 'fadeIn'}\n- src: audio URL\n- trim: start from this point\n- volume: 0 to 1\n- effect: 'fadeIn', 'fadeOut', 'fadeInFadeOut'\n\n### HtmlAsset\n{type: 'html', html: '<p>HTML content</p>', css: 'p { color: white; }', width: 400, height: 300}\n\n## Transitions (for clip.transition.in or .out)\n- fade, fadeSlow, fadeFast\n- fadeBlack, fadeWhite\n- wipeLeft, wipeRight (+ Slow/Fast variants)\n- slideLeft, slideRight, slideUp, slideDown (+ Slow/Fast)\n- carouselLeft, carouselRight, carouselUp, carouselDown\n- zoom, reveal\n\n## Motion Effects (for clip.effect)\n- zoomIn, zoomOut (+ Slow/Fast)\n- slideLeft, slideRight, slideUp, slideDown (+ Slow/Fast)\n\n## Output Configuration\n- format: 'mp4', 'gif', 'mp3', 'jpg', 'png'\n- resolution: 'preview', 'mobile', 'sd', 'hd', '1080', '4k'\n- aspectRatio: '16:9', '9:16', '1:1', '4:5', '4:3'\n- fps: 12-60\n- quality: 'low', 'medium', 'high'\n- poster: {capture: 1} - capture frame at 1 second as thumbnail\n\n## Example: Video with text overlay\n{\n  timeline: {\n    tracks: [\n      {clips: [{asset: {type: 'title', text: 'My Title', style: 'blockbuster'}, start: 0, length: 5}]},\n      {clips: [{asset: {type: 'video', src: 'https://example.com/video.mp4'}, start: 0, length: 10}]}\n    ]\n  },\n  output: {format: 'mp4', resolution: 'hd'}\n}",
+      "description": "Create a fully customizable video edit using Shotstack's timeline structure.\n\n**IMPORTANT**: For complex renders that may take more than 30 seconds, set wait_for_completion=false and use check_render_status to poll for results, OR use submit_render + check_render_status instead.\n\n## Timeline Structure\nA timeline contains tracks (layers). Tracks at index 0 are on top (foreground).\n- timeline.tracks: array of Track objects\n- timeline.background: hex color (e.g., '#000000')\n- timeline.soundtrack: optional audio track\n\n## Tracks and Clips\nEach track contains clips placed at specific times:\n- clip.asset: the media asset (video, image, title, audio, html)\n- clip.start: when the clip starts (seconds from timeline start)\n- clip.length: how long the clip plays (seconds)\n- clip.fit: how to fit the asset ('crop', 'cover', 'contain', 'none')\n- clip.scale: scale factor (1 = 100%)\n- clip.position: position preset ('center', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left', 'topLeft')\n- clip.offset: {x, y} offset from position (-1 to 1, relative to frame)\n- clip.transition: {in: 'fade', out: 'fade'} - see transitions below\n- clip.effect: motion effect ('zoomIn', 'zoomOut', 'slideLeft', etc.)\n- clip.filter: visual filter ('greyscale')\n- clip.opacity: 0 to 1\n\n## Asset Types\n\n### VideoAsset\n{type: 'video', src: 'https://...', trim: 5, volume: 0.8}\n- src: video URL\n- trim: start playback from this point (seconds)\n- volume: 0 to 1\n\n### ImageAsset\n{type: 'image', src: 'https://...'}\n- src: image URL\n\n### TitleAsset (Text)\n{type: 'title', text: 'Hello World', style: 'minimal', color: '#ffffff', size: 'medium', position: 'center'}\n- text: the text to display\n- style: 'minimal', 'blockbuster', 'vogue', 'sketch', 'chunk', 'marker', 'future', 'subtitle'\n- color: hex color\n- size: 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'\n- position: 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left', 'topLeft', 'center'\n- background: hex color for text background\n\n### AudioAsset\n{type: 'audio', src: 'https://...', trim: 0, volume: 1, effect: 'fadeIn'}\n- src: audio URL\n- trim: start from this point\n- volume: 0 to 1\n- effect: 'fadeIn', 'fadeOut', 'fadeInFadeOut'\n\n### HtmlAsset\n{type: 'html', html: '<p>HTML content</p>', css: 'p { color: white; }', width: 400, height: 300}\n\n## Transitions (for clip.transition.in or .out)\n- fade, fadeSlow, fadeFast\n- fadeBlack, fadeWhite\n- wipeLeft, wipeRight (+ Slow/Fast variants)\n- slideLeft, slideRight, slideUp, slideDown (+ Slow/Fast)\n- carouselLeft, carouselRight, carouselUp, carouselDown\n- zoom, reveal\n\n## Motion Effects (for clip.effect)\n- zoomIn, zoomOut (+ Slow/Fast)\n- slideLeft, slideRight, slideUp, slideDown (+ Slow/Fast)\n\n## Output Configuration\n- format: 'mp4', 'gif', 'mp3', 'jpg', 'png'\n- resolution: 'preview', 'mobile', 'sd', 'hd', '1080', '4k'\n- aspectRatio: '16:9', '9:16', '1:1', '4:5', '4:3'\n- fps: 12-60\n- quality: 'low', 'medium', 'high'\n- poster: {capture: 1} - capture frame at 1 second as thumbnail\n\n## Example: Video with text overlay\n{\n  timeline: {\n    tracks: [\n      {clips: [{asset: {type: 'title', text: 'My Title', style: 'blockbuster'}, start: 0, length: 5}]},\n      {clips: [{asset: {type: 'video', src: 'https://example.com/video.mp4'}, start: 0, length: 10}]}\n    ]\n  },\n  output: {format: 'mp4', resolution: 'hd'}\n}",
       "input_schema": {
         "type": "object",
         "properties": {

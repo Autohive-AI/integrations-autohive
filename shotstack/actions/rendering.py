@@ -25,9 +25,97 @@ except ImportError:
     )
 
 
+@shotstack.action("submit_render")
+class SubmitRenderAction(ActionHandler):
+    """Submit a render job and return immediately with render_id (no waiting)."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            env = get_environment(context)
+
+            payload = {
+                "timeline": inputs["timeline"],
+                "output": inputs["output"]
+            }
+
+            response = await context.fetch(
+                f"{EDIT_API_BASE}/{env}/render",
+                method="POST",
+                headers=get_headers(context),
+                json=payload
+            )
+
+            render_id = response.get("response", {}).get("id")
+            if not render_id:
+                return ActionResult(
+                    data={"result": False, "error": "Failed to submit render job"},
+                    cost_usd=0.0
+                )
+
+            return ActionResult(
+                data={
+                    "render_id": render_id,
+                    "status": "queued",
+                    "message": "Render job submitted. Use check_render_status to poll for completion.",
+                    "result": True
+                },
+                cost_usd=0.0
+            )
+
+        except Exception as e:
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
+@shotstack.action("check_render_status")
+class CheckRenderStatusAction(ActionHandler):
+    """Check the status of a render job. Call repeatedly until status is 'done' or 'failed'."""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
+        try:
+            env = get_environment(context)
+            render_id = inputs["render_id"]
+
+            response = await context.fetch(
+                f"{EDIT_API_BASE}/{env}/render/{render_id}",
+                method="GET",
+                headers=get_headers(context)
+            )
+
+            render_data = response.get("response", {})
+            status = render_data.get("status")
+
+            result_data = {
+                "render_id": render_id,
+                "status": status,
+                "result": True
+            }
+
+            if status == "done":
+                result_data["url"] = render_data.get("url")
+                result_data["duration"] = render_data.get("duration")
+                result_data["message"] = "Render complete!"
+            elif status == "failed":
+                result_data["error"] = render_data.get("error", "Render failed")
+                result_data["result"] = False
+            else:
+                # Still processing (queued, fetching, rendering, saving)
+                result_data["message"] = f"Render is {status}. Check again in a few seconds."
+
+            return ActionResult(data=result_data, cost_usd=0.0)
+
+        except Exception as e:
+            return ActionResult(
+                data={"result": False, "error": str(e)},
+                cost_usd=0.0
+            )
+
+
 @shotstack.action("render_and_wait")
 class RenderAndWaitAction(ActionHandler):
-    """Submit a render job and wait for completion."""
+    """Submit a render job and wait for completion. Note: For long renders, consider using submit_render + check_render_status instead to avoid timeouts."""
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext):
         try:

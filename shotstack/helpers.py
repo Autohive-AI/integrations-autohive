@@ -97,10 +97,10 @@ async def poll_source_until_ready(
         )
 
         source_data = response.get("data", {})
-        status = source_data.get("status")
+        attributes = source_data.get("attributes", {})
+        status = attributes.get("status")  # status is inside attributes
 
         if status == "ready":
-            attributes = source_data.get("attributes", {})
             source_url = attributes.get("source")
             return {
                 "status": "ready",
