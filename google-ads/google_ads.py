@@ -146,25 +146,54 @@ def parse_date_range(range_name_str: str) -> Dict[str, str]:
 
 # ---- Data Fetching Functions ----
 
-def fetch_campaign_data(client, customer_id, date_ranges_input):
-    """Fetches campaign performance data from Google Ads API."""
+def fetch_campaign_data(client, customer_id, date_ranges_input, campaign_type=None):
+    """Fetches campaign performance data from Google Ads API.
+    
+    Args:
+        client: GoogleAdsClient instance.
+        customer_id: The Google Ads customer ID.
+        date_ranges_input: Date ranges to query.
+        campaign_type: Optional campaign type filter. 
+            'VIDEO' includes video-specific metrics (average_cpv).
+            'SEARCH', 'DISPLAY', 'PERFORMANCE_MAX', or 'ALL' use universal metrics only.
+            Defaults to 'ALL' (universal metrics safe for all campaign types).
+    """
     ga_service = client.get_service("GoogleAdsService")
 
-    query_template = """
-    SELECT
+    # Base fields that work for all campaign types
+    base_fields = """
         campaign.id, campaign.status, campaign.name, campaign_budget.amount_micros,
         customer.currency_code, campaign.bidding_strategy_system_status,
         campaign.optimization_score, customer.descriptive_name,
-        campaign.advertising_channel_type, metrics.average_cpv, metrics.interactions,
+        campaign.advertising_channel_type, metrics.interactions,
         metrics.interaction_rate, metrics.average_cost, metrics.cost_micros,
         metrics.impressions, campaign.bidding_strategy_type, metrics.clicks,
         metrics.conversions_value, metrics.cost_per_all_conversions,
-        metrics.all_conversions, metrics.average_cpc, metrics.cost_per_conversion
+        metrics.all_conversions, metrics.average_cpc, metrics.cost_per_conversion"""
+
+    # Video-specific metrics (only valid for VIDEO campaigns)
+    video_fields = ", metrics.average_cpv"
+
+    # Build query based on campaign type
+    include_video_metrics = campaign_type and campaign_type.upper() == 'VIDEO'
+    
+    select_fields = base_fields
+    if include_video_metrics:
+        select_fields += video_fields
+
+    query_template = f"""
+    SELECT{select_fields}
     FROM campaign
-    WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+    WHERE segments.date BETWEEN '{{start_date}}' AND '{{end_date}}'
         AND campaign.status = 'ENABLED'
         AND campaign.bidding_strategy_system_status != 'PAUSED'
     """
+    
+    # Add campaign type filter if specified (and not 'ALL')
+    if campaign_type and campaign_type.upper() not in ['ALL', 'VIDEO']:
+        query_template += f"\n        AND campaign.advertising_channel_type = '{campaign_type.upper()}'"
+    elif campaign_type and campaign_type.upper() == 'VIDEO':
+        query_template += "\n        AND campaign.advertising_channel_type = 'VIDEO'"
 
     all_results = []
     parsed_date_ranges = []
@@ -224,7 +253,6 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
                 "Optimization score": campaign.get('optimization_score', 'N/A'),
                 "Account": customer.get('descriptive_name', 'N/A'),
                 "Campaign type": campaign.get('advertising_channel_type', 'N/A'),
-                "Avg. CPV": micros_to_currency(metrics.get('average_cpv')),
                 "Interactions": metrics.get('interactions', 'N/A'),
                 "Interaction rate": metrics.get('interaction_rate', 'N/A'),
                 "Avg. cost": micros_to_currency(metrics.get('average_cost')),
@@ -239,6 +267,10 @@ def fetch_campaign_data(client, customer_id, date_ranges_input):
                 "Cost / conv.": micros_to_currency(metrics.get('cost_per_conversion')),
                 "All Conversions Rate": all_conversions_rate
             }
+            
+            # Only include video-specific metrics when querying VIDEO campaigns
+            if include_video_metrics:
+                data["Avg. CPV"] = micros_to_currency(metrics.get('average_cpv'))
             date_range_result['data'].append(data)
         all_results.append(date_range_result)
     return all_results
@@ -406,9 +438,11 @@ class RetrieveCampaignMetricsAction(ActionHandler):
         date_ranges_input = inputs.get('date_ranges')
         if not date_ranges_input:
             raise Exception("'date_ranges' is required.")
+        
+        campaign_type = inputs.get('campaign_type', 'ALL')
 
         try:
-            results = fetch_campaign_data(client, customer_id, date_ranges_input)
+            results = fetch_campaign_data(client, customer_id, date_ranges_input, campaign_type)
             logger.info("Successfully retrieved campaign data.")
             return ActionResult(data=results, cost_usd=0.00)
         except Exception as e:
