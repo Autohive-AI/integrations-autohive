@@ -9,7 +9,10 @@ Or run individual tests:
 """
 
 import asyncio
+import pytest
 from context import shotstack
+
+pytestmark = pytest.mark.asyncio
 from autohive_integrations_sdk import ExecutionContext
 
 
@@ -29,10 +32,67 @@ def get_test_auth():
     }
 
 
-# ---- Edit API Tests ----
+def get_result_data(result):
+    """Extract data dict from IntegrationResult or return dict directly."""
+    if hasattr(result, 'result') and hasattr(result.result, 'data'):
+        return result.result.data
+    return result
 
-async def test_render_video():
-    """Test submitting a render job."""
+
+# ---- File Upload/Download Tests ----
+
+async def test_get_upload_url():
+    """Test getting a presigned upload URL."""
+    auth = get_test_auth()
+
+    inputs = {}
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("get_upload_url", inputs, context)
+            data = get_result_data(result)
+            print(f"Get Upload URL Result: {data}")
+            assert data.get('result') == True
+            assert 'upload_url' in data
+            assert 'source_id' in data
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_download_render():
+    """Test downloading a rendered video."""
+    auth = get_test_auth()
+
+    # First create a simple render
+    render_result = await test_render_and_wait()
+    if not render_result or not render_result.get('url'):
+        print("Skipping download_render - no render available")
+        return None
+
+    inputs = {
+        "url": render_result['url']
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("download_render", inputs, context)
+            data = get_result_data(result)
+            print(f"Download Render Result: content_type={data.get('content_type')}, size={data.get('size')}")
+            assert data.get('result') == True
+            assert 'content' in data
+            assert data.get('size', 0) > 0
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+# ---- Workflow Tests ----
+
+async def test_render_and_wait():
+    """Test rendering a video and waiting for completion."""
     auth = get_test_auth()
 
     inputs = {
@@ -43,7 +103,7 @@ async def test_render_video():
                         {
                             "asset": {
                                 "type": "title",
-                                "text": "Hello World",
+                                "text": "Render and Wait Test",
                                 "style": "minimal"
                             },
                             "start": 0,
@@ -55,219 +115,324 @@ async def test_render_video():
         },
         "output": {
             "format": "mp4",
-            "resolution": "sd"
-        }
+            "resolution": "preview"
+        },
+        "max_wait_seconds": 120,
+        "poll_interval_seconds": 3
     }
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await shotstack.execute_action("render_video", inputs, context)
-            print(f"Render Video Result: {result}")
-            assert result.get('result') == True
-            assert 'render_id' in result
-            return result
+            result = await shotstack.execute_action("render_and_wait", inputs, context)
+            data = get_result_data(result)
+            print(f"Render and Wait Result: {data}")
+            assert data.get('result') == True
+            assert data.get('status') == 'done'
+            assert 'url' in data
+            return data
         except Exception as e:
             print(f"Error: {e}")
             return None
 
 
-async def test_get_render_status():
-    """Test checking render status."""
-    auth = get_test_auth()
-
-    # First create a render to get an ID
-    render_result = await test_render_video()
-    if not render_result or not render_result.get('render_id'):
-        print("Skipping get_render_status - no render_id available")
-        return None
-
-    inputs = {
-        "render_id": render_result['render_id']
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await shotstack.execute_action("get_render_status", inputs, context)
-            print(f"Get Render Status Result: {result}")
-            assert result.get('result') == True
-            assert 'status' in result
-            return result
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-
-async def test_probe_media():
-    """Test probing a media file."""
+async def test_custom_edit():
+    """Test custom edit with full timeline control."""
     auth = get_test_auth()
 
     inputs = {
-        "url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4"
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await shotstack.execute_action("probe_media", inputs, context)
-            print(f"Probe Media Result: {result}")
-            assert result.get('result') == True
-            assert 'metadata' in result
-            return result
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-
-# ---- Template Tests ----
-
-async def test_create_template():
-    """Test creating a template."""
-    auth = get_test_auth()
-
-    inputs = {
-        "name": "Test Template",
-        "template": {
-            "timeline": {
-                "tracks": [
-                    {
-                        "clips": [
-                            {
-                                "asset": {
-                                    "type": "title",
-                                    "text": "{{TITLE}}",
-                                    "style": "minimal"
-                                },
-                                "start": 0,
-                                "length": 3
+        "timeline": {
+            "background": "#000000",
+            "tracks": [
+                {
+                    "clips": [
+                        {
+                            "asset": {
+                                "type": "title",
+                                "text": "Custom Edit Test",
+                                "style": "blockbuster",
+                                "color": "#ffffff",
+                                "size": "large"
+                            },
+                            "start": 0,
+                            "length": 5,
+                            "transition": {
+                                "in": "fade",
+                                "out": "fade"
                             }
-                        ]
-                    }
-                ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True,
+        "max_wait_seconds": 120
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("custom_edit", inputs, context)
+            data = get_result_data(result)
+            print(f"Custom Edit Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+# ---- Convenience Action Tests ----
+
+async def test_compose_video():
+    """Test composing video from multiple clips."""
+    auth = get_test_auth()
+
+    inputs = {
+        "clips": [
+            {
+                "url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/images/wave-01.jpg",
+                "duration": 3,
+                "fit": "crop",
+                "effect": "zoomIn"
             },
-            "output": {
-                "format": "mp4",
-                "resolution": "sd"
+            {
+                "url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/images/wave-02.jpg",
+                "duration": 3,
+                "fit": "crop",
+                "transition": {"in": "fade"}
             }
-        }
+        ],
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "background_color": "#000000",
+        "wait_for_completion": True
     }
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await shotstack.execute_action("create_template", inputs, context)
-            print(f"Create Template Result: {result}")
-            assert result.get('result') == True
-            return result
+            result = await shotstack.execute_action("compose_video", inputs, context)
+            data = get_result_data(result)
+            print(f"Compose Video Result: {data}")
+            assert data.get('result') == True
+            return data
         except Exception as e:
             print(f"Error: {e}")
             return None
 
 
-async def test_list_templates():
-    """Test listing templates."""
-    auth = get_test_auth()
-
-    inputs = {}
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await shotstack.execute_action("list_templates", inputs, context)
-            print(f"List Templates Result: {result}")
-            assert result.get('result') == True
-            assert 'templates' in result
-            return result
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-
-async def test_render_template():
-    """Test rendering a template with merge fields."""
-    auth = get_test_auth()
-
-    # First create a template
-    template_result = await test_create_template()
-    if not template_result or not template_result.get('template_id'):
-        print("Skipping render_template - no template_id available")
-        return None
-
-    inputs = {
-        "template_id": template_result['template_id'],
-        "merge": [
-            {"find": "TITLE", "replace": "Hello from Template!"}
-        ]
-    }
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await shotstack.execute_action("render_template", inputs, context)
-            print(f"Render Template Result: {result}")
-            assert result.get('result') == True
-            return result
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-
-# ---- Ingest API Tests ----
-
-async def test_ingest_source():
-    """Test ingesting a source file."""
+async def test_add_text_overlay():
+    """Test adding text overlay to a video."""
     auth = get_test_auth()
 
     inputs = {
-        "url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4"
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4",
+        "text": "Beach Vibes",
+        "style": "blockbuster",
+        "position": "center",
+        "start_time": 0,
+        "duration": 5,
+        "font_size": "large",
+        "color": "#ffffff",
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
     }
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await shotstack.execute_action("ingest_source", inputs, context)
-            print(f"Ingest Source Result: {result}")
-            assert result.get('result') == True
-            return result
+            result = await shotstack.execute_action("add_text_overlay", inputs, context)
+            data = get_result_data(result)
+            print(f"Add Text Overlay Result: {data}")
+            assert data.get('result') == True
+            return data
         except Exception as e:
             print(f"Error: {e}")
             return None
 
 
-async def test_list_sources():
-    """Test listing ingested sources."""
+async def test_add_logo_overlay():
+    """Test adding logo overlay to a video."""
     auth = get_test_auth()
 
-    inputs = {}
-
-    async with ExecutionContext(auth=auth) as context:
-        try:
-            result = await shotstack.execute_action("list_sources", inputs, context)
-            print(f"List Sources Result: {result}")
-            assert result.get('result') == True
-            assert 'sources' in result
-            return result
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-
-# ---- Create API Tests ----
-
-async def test_create_generated_asset():
-    """Test generating an AI asset."""
-    auth = get_test_auth()
-
-    # Using Shotstack's built-in text-to-speech
     inputs = {
-        "provider": "shotstack",
-        "options": {
-            "type": "text-to-speech",
-            "text": "Hello, this is a test of the Shotstack integration.",
-            "voice": "Matthew"
-        }
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4",
+        "logo_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/logos/real-estate-logo.png",
+        "position": "bottomRight",
+        "scale": 0.2,
+        "opacity": 0.8,
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
     }
 
     async with ExecutionContext(auth=auth) as context:
         try:
-            result = await shotstack.execute_action("create_generated_asset", inputs, context)
-            print(f"Create Generated Asset Result: {result}")
-            assert result.get('result') == True
-            return result
+            result = await shotstack.execute_action("add_logo_overlay", inputs, context)
+            data = get_result_data(result)
+            print(f"Add Logo Overlay Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_add_audio_track():
+    """Test adding audio track to a video."""
+    auth = get_test_auth()
+
+    inputs = {
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4",
+        "audio_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/music/freepd/fireworks.mp3",
+        "volume": 0.5,
+        "mix_mode": "mix",
+        "fade_in": True,
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("add_audio_track", inputs, context)
+            data = get_result_data(result)
+            print(f"Add Audio Track Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_trim_video():
+    """Test trimming a video segment."""
+    auth = get_test_auth()
+
+    inputs = {
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4",
+        "start_time": 2,
+        "duration": 5,
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("trim_video", inputs, context)
+            data = get_result_data(result)
+            print(f"Trim Video Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_concatenate_videos():
+    """Test concatenating multiple videos."""
+    auth = get_test_auth()
+
+    inputs = {
+        "videos": [
+            "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/beach-overhead.mp4",
+            "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/sunset.mp4"
+        ],
+        "transition": "fade",
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("concatenate_videos", inputs, context)
+            data = get_result_data(result)
+            print(f"Concatenate Videos Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_add_captions_auto():
+    """Test adding auto-generated captions to a video."""
+    auth = get_test_auth()
+
+    inputs = {
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/scott-ko-walking.mp4",
+        "auto_generate": True,
+        "font_size": 20,
+        "font_color": "#ffffff",
+        "stroke_color": "#000000",
+        "stroke_width": 2,
+        "background_color": "#000000",
+        "background_opacity": 0.7,
+        "background_padding": 12,
+        "background_border_radius": 6,
+        "position": "bottom",
+        "margin_bottom": 0.1,
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True,
+        "max_wait_seconds": 300
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("add_captions", inputs, context)
+            data = get_result_data(result)
+            print(f"Add Captions (Auto) Result: {data}")
+            assert data.get('result') == True
+            return data
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+
+async def test_add_captions_manual():
+    """Test adding manual captions from SRT file to a video."""
+    auth = get_test_auth()
+
+    inputs = {
+        "video_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/footage/scott-ko-walking.mp4",
+        "subtitle_url": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/captions/scott-ko.srt",
+        "auto_generate": False,
+        "font_size": 18,
+        "font_color": "#ffff00",
+        "position": "bottom",
+        "output": {
+            "format": "mp4",
+            "resolution": "preview"
+        },
+        "wait_for_completion": True
+    }
+
+    async with ExecutionContext(auth=auth) as context:
+        try:
+            result = await shotstack.execute_action("add_captions", inputs, context)
+            data = get_result_data(result)
+            print(f"Add Captions (Manual SRT) Result: {data}")
+            assert data.get('result') == True
+            return data
         except Exception as e:
             print(f"Error: {e}")
             return None
@@ -278,11 +443,18 @@ async def test_create_generated_asset():
 async def run_all_tests():
     """Run all tests and report results."""
     tests = [
-        ("Probe Media", test_probe_media),
-        ("List Templates", test_list_templates),
-        ("List Sources", test_list_sources),
-        ("Render Video", test_render_video),
-        ("Create Template", test_create_template),
+        ("Get Upload URL", test_get_upload_url),
+        ("Render and Wait", test_render_and_wait),
+        ("Custom Edit", test_custom_edit),
+        ("Compose Video", test_compose_video),
+        ("Add Text Overlay", test_add_text_overlay),
+        ("Add Logo Overlay", test_add_logo_overlay),
+        ("Add Audio Track", test_add_audio_track),
+        ("Trim Video", test_trim_video),
+        ("Concatenate Videos", test_concatenate_videos),
+        ("Add Captions (Auto)", test_add_captions_auto),
+        ("Add Captions (Manual)", test_add_captions_manual),
+        ("Download Render", test_download_render),
     ]
 
     results = []
