@@ -514,7 +514,7 @@ class CreateCampaignAction(ActionHandler):
             elif bidding_strategy == 'TARGET_SPEND':
                 # TARGET_SPEND = Maximize clicks within budget
                 target_spend_micros = inputs.get('target_spend_micros')
-                if target_spend_micros:
+                if target_spend_micros is not None:
                     campaign.target_spend.target_spend_micros = target_spend_micros
                 else:
                     # Enable strategy without specific target (Google optimizes automatically)
@@ -522,7 +522,7 @@ class CreateCampaignAction(ActionHandler):
             elif bidding_strategy == 'MAXIMIZE_CONVERSIONS':
                 # MAXIMIZE_CONVERSIONS with optional target CPA
                 target_cpa_micros = inputs.get('target_cpa_micros')
-                if target_cpa_micros:
+                if target_cpa_micros is not None:
                     campaign.maximize_conversions.target_cpa_micros = target_cpa_micros
                 else:
                     # Enable strategy without specific target CPA
@@ -530,7 +530,7 @@ class CreateCampaignAction(ActionHandler):
             elif bidding_strategy == 'MAXIMIZE_CLICKS':
                 # MAXIMIZE_CLICKS with optional bid ceiling
                 cpc_bid_ceiling_micros = inputs.get('cpc_bid_ceiling_micros')
-                if cpc_bid_ceiling_micros:
+                if cpc_bid_ceiling_micros is not None:
                     campaign.maximize_clicks.cpc_bid_ceiling_micros = cpc_bid_ceiling_micros
                 else:
                     # Enable strategy without bid ceiling
