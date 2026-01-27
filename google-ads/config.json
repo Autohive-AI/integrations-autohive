@@ -170,9 +170,27 @@
                         "enum": ["MANUAL_CPC", "TARGET_SPEND", "MAXIMIZE_CONVERSIONS", "MAXIMIZE_CLICKS"],
                         "description": "Bidding strategy for the campaign. Defaults to MANUAL_CPC."
                     },
+                    "enhanced_cpc_enabled": {
+                        "type": "boolean",
+                        "description": "For MANUAL_CPC: Enable enhanced CPC. Defaults to false.",
+                        "default": false
+                    },
+                    "target_spend_micros": {
+                        "type": "integer",
+                        "description": "For TARGET_SPEND: Optional target spend in micros. If omitted, Google optimizes automatically."
+                    },
+                    "target_cpa_micros": {
+                        "type": "integer",
+                        "description": "For MAXIMIZE_CONVERSIONS: Optional target CPA in micros. If omitted, Google optimizes automatically."
+                    },
+                    "cpc_bid_ceiling_micros": {
+                        "type": "integer",
+                        "description": "For MAXIMIZE_CLICKS: Optional max CPC bid ceiling in micros. If omitted, no ceiling is applied."
+                    },
                     "contains_eu_political_advertising": {
                         "type": "boolean",
-                        "description": "Whether the campaign contains EU political advertising content. Required for compliance. Defaults to false."
+                        "description": "Whether the campaign contains EU political advertising content. Required by Google Ads API. Defaults to false.",
+                        "default": false
                     }
                 },
                 "required": ["login_customer_id", "customer_id", "campaign_name", "budget_amount_micros"]
