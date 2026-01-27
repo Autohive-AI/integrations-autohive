@@ -1,0 +1,196 @@
+{
+    "name": "Humanitix",
+    "display_name": "Humanitix",
+    "version": "1.0.0",
+    "description": "Humanitix integration for managing events, orders, tickets, and tags",
+    "entry_point": "humanitix.py",
+    "auth": {
+        "type": "custom",
+        "title": "Humanitix API Key",
+        "fields": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "format": "password",
+                    "label": "API Key",
+                    "help_text": "Your Humanitix API Key. Generate it from Account > Advanced > Public API Key in the Humanitix console."
+                }
+            }
+        }
+    },
+    "actions": {
+        "get_events": {
+            "display_name": "Get Events",
+            "description": "Retrieve events from your Humanitix account. Fetch a single event by ID, or list all events. Returns event details including name, dates, venue, and ticket information.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "Optional: Specific event ID to retrieve. If omitted, returns all events."
+                    }
+                },
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "description": "List of events (single item if event_id specified)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Unique event ID"},
+                                "name": {"type": "string", "description": "Event name"},
+                                "slug": {"type": "string", "description": "URL-friendly event slug"},
+                                "status": {"type": "string", "description": "Event status"},
+                                "timezone": {"type": "string", "description": "Event timezone"},
+                                "start_date": {"type": "string", "description": "Event start date/time"},
+                                "end_date": {"type": "string", "description": "Event end date/time"},
+                                "venue": {
+                                    "type": "object",
+                                    "description": "Venue details",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "address": {"type": "string"},
+                                        "city": {"type": "string"},
+                                        "state": {"type": "string"},
+                                        "country": {"type": "string"}
+                                    }
+                                },
+                                "url": {"type": "string", "description": "Public event URL"}
+                            }
+                        }
+                    }
+                },
+                "required": ["events"]
+            }
+        },
+        "get_orders": {
+            "display_name": "Get Orders",
+            "description": "Retrieve orders for a specific event. Returns order details including buyer information, ticket quantities, and payment status.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The event ID to get orders for"
+                    },
+                    "order_id": {
+                        "type": "string",
+                        "description": "Optional: Specific order ID to retrieve. If omitted, returns all orders for the event."
+                    }
+                },
+                "required": ["event_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "orders": {
+                        "type": "array",
+                        "description": "List of orders (single item if order_id specified)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Unique order ID"},
+                                "order_number": {"type": "string", "description": "Buyer-facing order number"},
+                                "status": {"type": "string", "description": "Order status"},
+                                "created_at": {"type": "string", "description": "Order creation timestamp"},
+                                "buyer": {
+                                    "type": "object",
+                                    "description": "Buyer information",
+                                    "properties": {
+                                        "first_name": {"type": "string"},
+                                        "last_name": {"type": "string"},
+                                        "email": {"type": "string"}
+                                    }
+                                },
+                                "total_amount": {"type": "number", "description": "Total order amount"},
+                                "currency": {"type": "string", "description": "Currency code"},
+                                "ticket_count": {"type": "integer", "description": "Number of tickets in order"}
+                            }
+                        }
+                    }
+                },
+                "required": ["orders"]
+            }
+        },
+        "get_tickets": {
+            "display_name": "Get Tickets",
+            "description": "Retrieve tickets for a specific event. Returns ticket details including attendee information, ticket type, and check-in status.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The event ID to get tickets for"
+                    },
+                    "ticket_id": {
+                        "type": "string",
+                        "description": "Optional: Specific ticket ID to retrieve. If omitted, returns all tickets for the event."
+                    }
+                },
+                "required": ["event_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "tickets": {
+                        "type": "array",
+                        "description": "List of tickets (single item if ticket_id specified)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Unique ticket ID"},
+                                "ticket_type": {"type": "string", "description": "Ticket type name"},
+                                "status": {"type": "string", "description": "Ticket status"},
+                                "checked_in": {"type": "boolean", "description": "Whether ticket has been checked in"},
+                                "checked_in_at": {"type": "string", "description": "Check-in timestamp if checked in"},
+                                "attendee": {
+                                    "type": "object",
+                                    "description": "Attendee information",
+                                    "properties": {
+                                        "first_name": {"type": "string"},
+                                        "last_name": {"type": "string"},
+                                        "email": {"type": "string"}
+                                    }
+                                },
+                                "order_id": {"type": "string", "description": "Associated order ID"}
+                            }
+                        }
+                    }
+                },
+                "required": ["tickets"]
+            }
+        },
+        "get_tags": {
+            "display_name": "Get Tags",
+            "description": "Retrieve all tags from your Humanitix account. Tags are used to categorize and filter events.",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "tags": {
+                        "type": "array",
+                        "description": "List of tags",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string", "description": "Unique tag ID"},
+                                "name": {"type": "string", "description": "Tag name"},
+                                "color": {"type": "string", "description": "Tag color"}
+                            }
+                        }
+                    }
+                },
+                "required": ["tags"]
+            }
+        }
+    }
+}

@@ -1,0 +1,118 @@
+# Humanitix Integration
+
+Humanitix integration for Autohive. Manage events, orders, tickets, and tags from a unified interface.
+
+Humanitix is a non-profit ticketing platform where 100% of profits from booking fees go to charities providing education, healthcare, and basic necessities worldwide.
+
+## Features
+
+| Category | Capabilities |
+|----------|-------------|
+| **Events** | Retrieve event details including dates, venue, and status |
+| **Orders** | Access order information with buyer details and payment status |
+| **Tickets** | View ticket details, attendee info, and check-in status |
+| **Tags** | Retrieve tags for event categorization |
+
+## Actions
+
+### Events
+
+#### `get_events`
+Retrieve events from your Humanitix account. Fetch a single event or list all events.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `event_id` | No | Specific event ID (omit to list all) |
+
+**Outputs:** Event ID, name, slug, status, timezone, dates, venue, URL
+
+---
+
+### Orders
+
+#### `get_orders`
+Retrieve orders for a specific event.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `event_id` | Yes | The event ID to get orders for |
+| `order_id` | No | Specific order ID (omit to list all) |
+
+**Outputs:** Order ID, order number, status, buyer info, total amount, currency, ticket count
+
+---
+
+### Tickets
+
+#### `get_tickets`
+Retrieve tickets for a specific event.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `event_id` | Yes | The event ID to get tickets for |
+| `ticket_id` | No | Specific ticket ID (omit to list all) |
+
+**Outputs:** Ticket ID, type, status, check-in status, attendee info, order ID
+
+---
+
+### Tags
+
+#### `get_tags`
+Retrieve all tags from your account. Tags are used to categorize and filter events.
+
+**Outputs:** Tag ID, name, color
+
+---
+
+## Authentication
+
+This integration uses API Key authentication.
+
+### Getting Your API Key
+
+1. Log into your Humanitix account
+2. Navigate to **Account > Advanced > Public API Key**
+3. Generate your API key
+
+**Important:**
+- Do not share your API key - it provides access to sensitive event data
+- Generating a new key will invalidate any existing keys
+- All requests use HTTPS
+
+---
+
+## Rate Limits
+
+The Humanitix API enforces rate limits:
+
+- **Limit:** 200 requests per minute
+- **Response when exceeded:** HTTP 429 (Too Many Requests)
+
+---
+
+## Project Structure
+
+```
+humanitix/
+├── humanitix.py         # Entry point, loads Integration
+├── config.json          # Integration configuration
+├── helpers.py           # Shared utilities (API base URL, headers)
+├── actions/
+│   ├── __init__.py      # Imports all action submodules
+│   ├── events.py        # Event retrieval actions
+│   ├── orders.py        # Order retrieval actions
+│   ├── tickets.py       # Ticket retrieval actions
+│   └── tags.py          # Tag retrieval actions
+└── requirements.txt     # Python dependencies
+```
+
+---
+
+## API Version
+
+This integration uses Humanitix Public API **v1**.
+
+Base URL: `https://api.humanitix.com/v1`
+
+For more information, see the [Humanitix API Documentation](https://humanitix.stoplight.io/docs/humanitix-public-api/).
