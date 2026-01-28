@@ -444,7 +444,7 @@ class RetrieveCampaignMetricsAction(ActionHandler):
         try:
             results = fetch_campaign_data(client, customer_id, date_ranges_input, campaign_type)
             logger.info("Successfully retrieved campaign data.")
-            return ActionResult(data=results, cost_usd=0.00)
+            return ActionResult(data={"results": results}, cost_usd=0.00)
         except Exception as e:
             logger.exception(f"Exception during campaign data retrieval: {str(e)}")
             raise
@@ -472,7 +472,7 @@ class RetrieveKeywordMetricsAction(ActionHandler):
         try:
             results = fetch_keyword_data(client, customer_id, date_ranges_input, campaign_ids, ad_group_ids)
             logger.info("Successfully retrieved keyword data.")
-            return ActionResult(data=results, cost_usd=0.00)
+            return ActionResult(data={"results": results}, cost_usd=0.00)
         except Exception as e:
             logger.exception(f"Exception during keyword data retrieval: {str(e)}")
             raise
