@@ -186,6 +186,35 @@ class NotionCreateCommentHandler(ActionHandler):
             raise Exception(f"Failed to create comment: {str(e)}")
 
 
+@notion.action("get_notion_comments")
+class NotionGetCommentsHandler(ActionHandler):
+    """Handler for retrieving comments from a Notion page or block"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        block_id = inputs["block_id"]
+
+        params = {"block_id": block_id}
+
+        if "page_size" in inputs and inputs["page_size"]:
+            params["page_size"] = inputs["page_size"]
+
+        if "start_cursor" in inputs and inputs["start_cursor"]:
+            params["start_cursor"] = inputs["start_cursor"]
+
+        headers = {"Notion-Version": "2022-06-28"}
+
+        try:
+            response = await context.fetch(
+                url="https://api.notion.com/v1/comments",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+            return response
+        except Exception as e:
+            raise Exception(f"Failed to get comments for {block_id}: {str(e)}")
+
+
 # ---- Phase 1 Enhancement Handlers ----
 
 @notion.action("query_notion_database")

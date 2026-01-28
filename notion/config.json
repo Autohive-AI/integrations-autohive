@@ -304,6 +304,63 @@
                 }
             }
         },
+        "get_notion_comments": {
+            "display_name": "Get Comments",
+            "description": "Retrieve comments from a Notion page or block",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "block_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the page or block to retrieve comments from"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Number of comments to return (1-100)"
+                    },
+                    "start_cursor": {
+                        "type": "string",
+                        "description": "Pagination cursor for retrieving next page of comments"
+                    }
+                },
+                "required": ["block_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of response (always 'list')"
+                    },
+                    "results": {
+                        "type": "array",
+                        "description": "Array of comment objects",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "discussion_id": {"type": "string"},
+                                "created_time": {"type": "string"},
+                                "last_edited_time": {"type": "string"},
+                                "created_by": {"type": "object"},
+                                "rich_text": {"type": "array"},
+                                "parent": {"type": "object"}
+                            }
+                        }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for next page (null if no more results)"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether more comments are available"
+                    }
+                }
+            }
+        },
         "query_notion_database": {
             "display_name": "Query Database",
             "description": "Query a database with advanced filtering, sorting, and pagination",
