@@ -25,7 +25,7 @@
                         "properties": {
                             "value": {
                                 "type": "string",
-                                "enum": ["page", "database"],
+                                "enum": ["page", "data_source"],
                                 "description": "Type of object to search for"
                             },
                             "property": {
@@ -179,20 +179,20 @@
                 "properties": {
                     "parent": {
                         "type": "object",
-                        "description": "Parent page or database where this page will be created",
+                        "description": "Parent page or data source where this page will be created",
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "enum": ["page_id", "database_id"],
+                                "enum": ["page_id", "data_source_id"],
                                 "description": "Type of parent"
                             },
                             "page_id": {
                                 "type": "string",
                                 "description": "ID of parent page (if type is page_id)"
                             },
-                            "database_id": {
+                            "data_source_id": {
                                 "type": "string",
-                                "description": "ID of parent database (if type is database_id)"
+                                "description": "ID of parent data source (if type is data_source_id)"
                             }
                         },
                         "required": ["type"]
@@ -361,15 +361,116 @@
                 }
             }
         },
-        "query_notion_database": {
-            "display_name": "Query Database",
-            "description": "Query a database with advanced filtering, sorting, and pagination",
+        "list_data_sources": {
+            "display_name": "List Data Sources",
+            "description": "List data sources within a database container",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "database_id": {
                         "type": "string",
-                        "description": "The unique identifier of the database to query"
+                        "description": "The unique identifier of the database container"
+                    },
+                    "page_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Number of data sources to return (1-100)"
+                    },
+                    "start_cursor": {
+                        "type": "string",
+                        "description": "Pagination cursor for retrieving next page of data sources"
+                    }
+                },
+                "required": ["database_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of response (always 'list')"
+                    },
+                    "data_sources": {
+                        "type": "array",
+                        "description": "Array of data source objects",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Unique identifier of the data source"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the data source"
+                                },
+                                "properties": {
+                                    "type": "object",
+                                    "description": "Data source property schema"
+                                }
+                            }
+                        }
+                    },
+                    "next_cursor": {
+                        "type": ["string", "null"],
+                        "description": "Cursor for next page (null if no more results)"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "description": "Whether more data sources are available"
+                    }
+                }
+            }
+        },
+        "get_data_source": {
+            "display_name": "Get Data Source",
+            "description": "Retrieve a specific data source's schema and properties",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "data_source_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the data source to retrieve"
+                    }
+                },
+                "required": ["data_source_id"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "description": "Type of object (always 'data_source')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier of the data source"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the data source"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Data source property schema definitions"
+                    },
+                    "parent": {
+                        "type": "object",
+                        "description": "Parent database container information"
+                    }
+                }
+            }
+        },
+        "query_notion_data_source": {
+            "display_name": "Query Data Source",
+            "description": "Query a data source with advanced filtering, sorting, and pagination",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "data_source_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the data source to query"
                     },
                     "filter": {
                         "type": "object",
@@ -406,7 +507,7 @@
                         "description": "Pagination cursor for retrieving next page of results"
                     }
                 },
-                "required": ["database_id"]
+                "required": ["data_source_id"]
             },
             "output_schema": {
                 "type": "object",
@@ -417,7 +518,7 @@
                     },
                     "results": {
                         "type": "array",
-                        "description": "Array of database pages matching the query",
+                        "description": "Array of data source pages matching the query",
                         "items": {
                             "type": "object",
                             "description": "Database page object"

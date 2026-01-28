@@ -3,6 +3,9 @@ from autohive_integrations_sdk import (
 )
 from typing import Dict, Any, List, Optional
 
+# API Version constant for Notion API
+NOTION_API_VERSION = "2025-09-03"
+
 # Create the integration using the config.json
 notion = Integration.load()
 
@@ -45,7 +48,7 @@ class NotionSearchHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
@@ -91,7 +94,7 @@ class NotionGetPageHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28"
+            "Notion-Version": NOTION_API_VERSION
         }
 
         # Make the get page request to Notion API
@@ -131,7 +134,7 @@ class NotionCreatePageHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
@@ -173,7 +176,7 @@ class NotionCreateCommentHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
@@ -207,7 +210,7 @@ class NotionGetCommentsHandler(ActionHandler):
         if "start_cursor" in inputs and inputs["start_cursor"]:
             params["start_cursor"] = inputs["start_cursor"]
 
-        headers = {"Notion-Version": "2022-06-28"}
+        headers = {"Notion-Version": NOTION_API_VERSION}
 
         try:
             response = await context.fetch(
@@ -225,24 +228,97 @@ class NotionGetCommentsHandler(ActionHandler):
             return ActionResult(data={"error": str(e), "comments": []})
 
 
-# ---- Phase 1 Enhancement Handlers ----
+@notion.action("list_data_sources")
+class NotionListDataSourcesHandler(ActionHandler):
+    """Handler for listing data sources within a database container"""
 
-@notion.action("query_notion_database")
-class NotionQueryDatabaseHandler(ActionHandler):
-    """Handler for querying databases with filtering, sorting, and pagination"""
-    
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         """
-        Query a database with advanced filtering and sorting
+        List data sources within a database container
 
         Args:
-            inputs: Dictionary containing 'database_id' and optional 'filter', 'sorts', 'page_size', 'start_cursor'
+            inputs: Dictionary containing 'database_id' and optional 'page_size', 'start_cursor'
             context: Execution context with auth and network capabilities
 
         Returns:
-            ActionResult containing database query results from Notion API
+            ActionResult containing list of data sources from Notion API
         """
         database_id = inputs["database_id"]
+
+        params = {}
+
+        if "page_size" in inputs and inputs["page_size"]:
+            params["page_size"] = inputs["page_size"]
+
+        if "start_cursor" in inputs and inputs["start_cursor"]:
+            params["start_cursor"] = inputs["start_cursor"]
+
+        headers = {"Notion-Version": NOTION_API_VERSION}
+
+        try:
+            response = await context.fetch(
+                url=f"https://api.notion.com/v1/databases/{database_id}/data_sources",
+                method="GET",
+                headers=headers,
+                params=params
+            )
+            return ActionResult(data={
+                "data_sources": response.get("results", []),
+                "has_more": response.get("has_more", False),
+                "next_cursor": response.get("next_cursor")
+            })
+        except Exception as e:
+            return ActionResult(data={"error": str(e), "data_sources": []})
+
+
+@notion.action("get_data_source")
+class NotionGetDataSourceHandler(ActionHandler):
+    """Handler for retrieving a specific data source's schema"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
+        """
+        Retrieve a specific data source's schema
+
+        Args:
+            inputs: Dictionary containing 'data_source_id'
+            context: Execution context with auth and network capabilities
+
+        Returns:
+            ActionResult containing data source schema from Notion API
+        """
+        data_source_id = inputs["data_source_id"]
+
+        headers = {"Notion-Version": NOTION_API_VERSION}
+
+        try:
+            response = await context.fetch(
+                url=f"https://api.notion.com/v1/data_sources/{data_source_id}",
+                method="GET",
+                headers=headers
+            )
+            return ActionResult(data={"data_source": response})
+        except Exception as e:
+            return ActionResult(data={"error": str(e), "data_source": None})
+
+
+# ---- Phase 1 Enhancement Handlers ----
+
+@notion.action("query_notion_data_source")
+class NotionQueryDataSourceHandler(ActionHandler):
+    """Handler for querying data sources with filtering, sorting, and pagination"""
+
+    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
+        """
+        Query a data source with advanced filtering and sorting
+
+        Args:
+            inputs: Dictionary containing 'data_source_id' and optional 'filter', 'sorts', 'page_size', 'start_cursor'
+            context: Execution context with auth and network capabilities
+
+        Returns:
+            ActionResult containing data source query results from Notion API
+        """
+        data_source_id = inputs["data_source_id"]
 
         # Prepare the query request body
         query_body = {}
@@ -264,14 +340,14 @@ class NotionQueryDatabaseHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
         # Make the query request to Notion API
         try:
             response = await context.fetch(
-                url=f"https://api.notion.com/v1/databases/{database_id}/query",
+                url=f"https://api.notion.com/v1/data_sources/{data_source_id}/query",
                 method="POST",
                 headers=headers,
                 json=query_body
@@ -307,7 +383,7 @@ class NotionGetDatabaseHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28"
+            "Notion-Version": NOTION_API_VERSION
         }
 
         # Make the get database request to Notion API
@@ -352,7 +428,7 @@ class NotionGetBlockChildrenHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28"
+            "Notion-Version": NOTION_API_VERSION
         }
 
         # Make the get block children request to Notion API
@@ -405,7 +481,7 @@ class NotionAppendBlockChildrenHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
@@ -458,7 +534,7 @@ class NotionGetPagePropertyHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28"
+            "Notion-Version": NOTION_API_VERSION
         }
 
         # Make the get page property request to Notion API
@@ -511,7 +587,7 @@ class NotionUpdateBlockHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
@@ -549,7 +625,7 @@ class NotionDeleteBlockHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28"
+            "Notion-Version": NOTION_API_VERSION
         }
 
         # Make the delete block request to Notion API
@@ -594,7 +670,7 @@ class NotionUpdatePageHandler(ActionHandler):
 
         # Prepare headers for Notion API
         headers = {
-            "Notion-Version": "2022-06-28",
+            "Notion-Version": NOTION_API_VERSION,
             "Content-Type": "application/json"
         }
 
