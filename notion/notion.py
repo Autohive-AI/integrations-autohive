@@ -62,6 +62,7 @@ class NotionSearchHandler(ActionHandler):
             )
 
             return ActionResult(data={
+                "object": response.get("object", "list"),
                 "results": response.get("results", []),
                 "has_more": response.get("has_more", False),
                 "next_cursor": response.get("next_cursor"),
@@ -70,8 +71,10 @@ class NotionSearchHandler(ActionHandler):
 
         except Exception as e:
             return ActionResult(data={
+                "object": "list",
                 "error": str(e),
-                "results": []
+                "results": [],
+                "has_more": False
             })
 
 
@@ -201,6 +204,7 @@ class NotionGetCommentsHandler(ActionHandler):
 
     async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
         block_id = inputs["block_id"]
+        include_child_blocks_with_comments = inputs.get("include_child_blocks_with_comments", False)
 
         params = {"block_id": block_id}
 
@@ -219,11 +223,41 @@ class NotionGetCommentsHandler(ActionHandler):
                 headers=headers,
                 params=params
             )
-            return ActionResult(data={
+
+            result = {
                 "comments": response.get("results", []),
                 "has_more": response.get("has_more", False),
                 "next_cursor": response.get("next_cursor")
-            })
+            }
+
+            if include_child_blocks_with_comments:
+                blocks_with_comments = []
+
+                blocks_response = await context.fetch(
+                    url=f"https://api.notion.com/v1/blocks/{block_id}/children",
+                    method="GET",
+                    headers=headers
+                )
+
+                for block in blocks_response.get("results", []):
+                    child_block_id = block.get("id")
+                    if child_block_id:
+                        comments_response = await context.fetch(
+                            url="https://api.notion.com/v1/comments",
+                            method="GET",
+                            headers=headers,
+                            params={"block_id": child_block_id, "page_size": 1}
+                        )
+                        if comments_response.get("results"):
+                            blocks_with_comments.append({
+                                "block_id": child_block_id,
+                                "block_type": block.get("type"),
+                                "comment_count": len(comments_response.get("results", []))
+                            })
+
+                result["child_blocks_with_comments"] = blocks_with_comments
+
+            return ActionResult(data=result)
         except Exception as e:
             return ActionResult(data={"error": str(e), "comments": []})
 
@@ -362,42 +396,6 @@ class NotionQueryDataSourceHandler(ActionHandler):
 
         except Exception as e:
             return ActionResult(data={"error": str(e), "results": []})
-
-
-@notion.action("get_notion_database")
-class NotionGetDatabaseHandler(ActionHandler):
-    """Handler for retrieving database schema and metadata"""
-    
-    async def execute(self, inputs: Dict[str, Any], context: ExecutionContext) -> ActionResult:
-        """
-        Retrieve database structure and properties
-
-        Args:
-            inputs: Dictionary containing 'database_id'
-            context: Execution context with auth and network capabilities
-
-        Returns:
-            ActionResult containing database schema from Notion API
-        """
-        database_id = inputs["database_id"]
-
-        # Prepare headers for Notion API
-        headers = {
-            "Notion-Version": NOTION_API_VERSION
-        }
-
-        # Make the get database request to Notion API
-        try:
-            response = await context.fetch(
-                url=f"https://api.notion.com/v1/databases/{database_id}",
-                method="GET",
-                headers=headers
-            )
-
-            return ActionResult(data={"database": response})
-
-        except Exception as e:
-            return ActionResult(data={"error": str(e), "database": None})
 
 
 @notion.action("get_notion_block_children")

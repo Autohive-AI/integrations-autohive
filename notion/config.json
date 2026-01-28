@@ -306,13 +306,18 @@
         },
         "get_notion_comments": {
             "display_name": "Get Comments",
-            "description": "Retrieve comments from a Notion page or block",
+            "description": "Retrieve comments from a Notion page or block, optionally including info about child blocks with comments",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "block_id": {
                         "type": "string",
                         "description": "The unique identifier of the page or block to retrieve comments from"
+                    },
+                    "include_child_blocks_with_comments": {
+                        "type": "boolean",
+                        "description": "If true, also fetches child blocks and reports which ones have inline comments. This requires additional API calls.",
+                        "default": false
                     },
                     "page_size": {
                         "type": "integer",
@@ -334,7 +339,7 @@
                         "type": "string",
                         "description": "Type of response (always 'list')"
                     },
-                    "results": {
+                    "comments": {
                         "type": "array",
                         "description": "Array of comment objects",
                         "items": {
@@ -347,6 +352,27 @@
                                 "created_by": {"type": "object"},
                                 "rich_text": {"type": "array"},
                                 "parent": {"type": "object"}
+                            }
+                        }
+                    },
+                    "child_blocks_with_comments": {
+                        "type": "array",
+                        "description": "List of child blocks that have inline comments (only present if include_child_blocks_with_comments is true)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "block_id": {
+                                    "type": "string",
+                                    "description": "ID of the block with comments"
+                                },
+                                "block_type": {
+                                    "type": "string",
+                                    "description": "Type of the block (paragraph, heading_1, etc.)"
+                                },
+                                "comment_count": {
+                                    "type": "integer",
+                                    "description": "Number of comments on this block"
+                                }
                             }
                         }
                     },
@@ -531,49 +557,6 @@
                     "has_more": {
                         "type": "boolean",
                         "description": "Whether more results are available"
-                    }
-                }
-            }
-        },
-        "get_notion_database": {
-            "display_name": "Get Database Schema",
-            "description": "Retrieve database structure, properties, and metadata",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "database_id": {
-                        "type": "string",
-                        "description": "The unique identifier of the database to retrieve"
-                    }
-                },
-                "required": ["database_id"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "object": {
-                        "type": "string",
-                        "description": "Type of object (always 'database')"
-                    },
-                    "id": {
-                        "type": "string",
-                        "description": "Unique identifier of the database"
-                    },
-                    "title": {
-                        "type": "array",
-                        "description": "Database title as rich text"
-                    },
-                    "description": {
-                        "type": "array",
-                        "description": "Database description as rich text"
-                    },
-                    "properties": {
-                        "type": "object",
-                        "description": "Database property schema definitions"
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "URL of the database"
                     }
                 }
             }
