@@ -10,6 +10,7 @@ from unittest.mock import patch, AsyncMock
 from urllib.parse import quote
 
 import pytest
+from autohive_integrations_sdk.integration import ValidationError
 
 from context import linkedin, linkedin_module
 
@@ -576,7 +577,8 @@ async def test_get_comments_url_structure():
     get_calls = [r for r in context._requests if "/socialActions/" in r["url"]]
     assert len(get_calls) == 1
     assert "/comments" in get_calls[0]["url"]
-    assert quote("urn:li:activity:789", safe="") in get_calls[0]["url"]
+    # URN should NOT be encoded in the path to avoid syntax exception
+    assert "urn:li:activity:789" in get_calls[0]["url"]
 
 
 # =============================================================================
@@ -1043,15 +1045,16 @@ async def test_create_post_too_many_images():
     # Create 21 files
     files = [{"content": SAMPLE_JPEG_BASE64, "name": f"image{i}.jpg", "contentType": "image/jpeg"} for i in range(21)]
 
-    result = await linkedin.execute_action("create_post", {
-        "text": "Too many images",
-        "files": files
-    }, context)
-    data = result.result.data
-
-    assert "Too many images" in data["result"]
-    assert data["post_id"] is None
-    assert data["images_uploaded"] == 0
+    # Expect ValidationError from SDK due to maxItems schema constraint
+    with pytest.raises(ValidationError) as excinfo:
+        await linkedin.execute_action("create_post", {
+            "text": "Too many images",
+            "files": files
+        }, context)
+    
+    # Verify the validation error mentions the specific constraint
+    assert "files" in str(excinfo.value)
+    assert "maxItems" in str(excinfo.value)
 
     # Verify no API calls were made
     assert len(context._requests) == 0
@@ -1223,32 +1226,34 @@ async def test_create_post_missing_file_content():
     """Test that file without content is rejected."""
     context = MockExecutionContext({})
 
-    result = await linkedin.execute_action("create_post", {
-        "text": "Missing file content",
-        "files": [
-            {"name": "photo.jpg", "contentType": "image/jpeg"}
-        ]
-    }, context)
-    data = result.result.data
-
-    assert "Invalid file" in data["result"]
-    assert "content" in data["result"].lower()
+    # Expect ValidationError from SDK due to required property schema constraint
+    with pytest.raises(ValidationError) as excinfo:
+        await linkedin.execute_action("create_post", {
+            "text": "Missing file content",
+            "files": [
+                {"name": "photo.jpg", "contentType": "image/jpeg"}
+            ]
+        }, context)
+    
+    assert "content" in str(excinfo.value)
+    assert "required property" in str(excinfo.value)
 
 
 async def test_create_post_missing_file_content_type():
     """Test that file without contentType is rejected."""
     context = MockExecutionContext({})
 
-    result = await linkedin.execute_action("create_post", {
-        "text": "Missing content type",
-        "files": [
-            {"content": SAMPLE_JPEG_BASE64, "name": "photo.jpg"}
-        ]
-    }, context)
-    data = result.result.data
-
-    assert "Invalid file" in data["result"]
-    assert "contentType" in data["result"]
+    # Expect ValidationError from SDK due to required property schema constraint
+    with pytest.raises(ValidationError) as excinfo:
+        await linkedin.execute_action("create_post", {
+            "text": "Missing content type",
+            "files": [
+                {"content": SAMPLE_JPEG_BASE64, "name": "photo.jpg"}
+            ]
+        }, context)
+    
+    assert "contentType" in str(excinfo.value)
+    assert "required property" in str(excinfo.value)
 
 
 @patch.object(linkedin_module, 'post_to_linkedin')

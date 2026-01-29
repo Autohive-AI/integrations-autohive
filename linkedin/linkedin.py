@@ -614,7 +614,10 @@ class GetPostsActionHandler(ActionHandler):
                 })
 
         encoded_author = encode_urn(author_urn)
-        url = f"https://api.linkedin.com/rest/posts?author={encoded_author}&q=author&count={count}&start={start}&sortBy={sort_by}"
+        url = f"https://api.linkedin.com/rest/posts?author={encoded_author}&q=author&count={count}&start={start}"
+
+        if sort_by and sort_by != "LAST_MODIFIED":
+            url += f"&sortBy={sort_by}"
 
         headers = get_linkedin_headers()
         headers["X-RestLi-Method"] = "FINDER"
@@ -731,14 +734,20 @@ class GetCommentsActionHandler(ActionHandler):
         """Retrieve comments on a post or share."""
         post_urn = inputs.get("post_urn")
 
-        encoded_urn = encode_urn(post_urn)
-        url = f"https://api.linkedin.com/rest/socialActions/{encoded_urn}/comments"
+        # For socialActions endpoint, we must NOT encode the URN in the path
+        # and we must REMOVE the X-Restli-Protocol-Version header
+        # to avoid "Syntax exception in path variables" error.
+        url = f"https://api.linkedin.com/rest/socialActions/{post_urn}/comments"
+
+        headers = get_linkedin_headers()
+        if "X-Restli-Protocol-Version" in headers:
+            del headers["X-Restli-Protocol-Version"]
 
         try:
             response = await context.fetch(
                 url,
                 method="GET",
-                headers=get_linkedin_headers()
+                headers=headers
             )
 
             comments = response.get("elements", []) if isinstance(response, dict) else []
@@ -782,8 +791,9 @@ class CreateCommentActionHandler(ActionHandler):
                     "details": str(e)
                 })
 
-        encoded_post_urn = encode_urn(post_urn)
-        url = f"https://api.linkedin.com/rest/socialActions/{encoded_post_urn}/comments"
+        # For socialActions endpoint, we must NOT encode the URN in the path
+        # and we must REMOVE the X-Restli-Protocol-Version header
+        url = f"https://api.linkedin.com/rest/socialActions/{post_urn}/comments"
 
         payload = {
             "actor": actor_urn,
@@ -793,12 +803,16 @@ class CreateCommentActionHandler(ActionHandler):
             }
         }
 
+        headers = get_linkedin_headers()
+        if "X-Restli-Protocol-Version" in headers:
+            del headers["X-Restli-Protocol-Version"]
+
         try:
             response = await context.fetch(
                 url,
                 method="POST",
                 json=payload,
-                headers=get_linkedin_headers()
+                headers=headers
             )
 
             comment_id = response.get("id") if isinstance(response, dict) else None
@@ -839,16 +853,21 @@ class DeleteCommentActionHandler(ActionHandler):
                     "details": str(e)
                 })
 
-        encoded_post_urn = encode_urn(post_urn)
+        # For socialActions endpoint, we must NOT encode the URN in the path
+        # and we must REMOVE the X-Restli-Protocol-Version header
         encoded_actor = encode_urn(actor_urn)
         encoded_comment_id = quote(str(comment_id), safe="")
-        url = f"https://api.linkedin.com/rest/socialActions/{encoded_post_urn}/comments/{encoded_comment_id}?actor={encoded_actor}"
+        url = f"https://api.linkedin.com/rest/socialActions/{post_urn}/comments/{encoded_comment_id}?actor={encoded_actor}"
+
+        headers = get_linkedin_headers()
+        if "X-Restli-Protocol-Version" in headers:
+            del headers["X-Restli-Protocol-Version"]
 
         try:
             await context.fetch(
                 url,
                 method="DELETE",
-                headers=get_linkedin_headers()
+                headers=headers
             )
 
             return ActionResult(data={
