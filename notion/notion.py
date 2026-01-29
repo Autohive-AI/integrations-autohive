@@ -252,7 +252,7 @@ class NotionGetCommentsHandler(ActionHandler):
                             blocks_with_comments.append({
                                 "block_id": child_block_id,
                                 "block_type": block.get("type"),
-                                "comment_count": len(comments_response.get("results", []))
+                                "has_comments": True
                             })
 
                 result["child_blocks_with_comments"] = blocks_with_comments

@@ -64,10 +64,10 @@ async def test_get_comments():
 
         # Check output schema
         output_schema = action_config["output_schema"]
-        assert "results" in output_schema["properties"]
+        assert "comments" in output_schema["properties"]
         assert "next_cursor" in output_schema["properties"]
         assert "has_more" in output_schema["properties"]
-        print("   - Has correct output schema with results, next_cursor, has_more")
+        print("   - Has correct output schema with comments, next_cursor, has_more")
 
         return True
     else:
@@ -123,8 +123,8 @@ async def test_create_and_get_comment():
 
         # Verify get_notion_comments returns array of comments with ids
         get_output = actions["get_notion_comments"]["output_schema"]["properties"]
-        assert "results" in get_output
-        print("   - get_notion_comments returns results array")
+        assert "comments" in get_output
+        print("   - get_notion_comments returns comments array")
 
         return True
     else:
@@ -164,14 +164,13 @@ async def test_get_comments_handler_basic():
     mock_context.fetch.assert_called_once_with(
         url="https://api.notion.com/v1/comments",
         method="GET",
-        headers={"Notion-Version": "2022-06-28"},
+        headers={"Notion-Version": "2025-09-03"},
         params={"block_id": "page-789"}
     )
 
-    assert result == mock_response
-    assert result["object"] == "list"
-    assert len(result["results"]) == 1
-    assert result["results"][0]["id"] == "comment-123"
+    assert len(result.data["comments"]) == 1
+    assert result.data["comments"][0]["id"] == "comment-123"
+    assert result.data["has_more"] is False
 
 
 async def test_get_comments_handler_with_pagination():
@@ -199,7 +198,7 @@ async def test_get_comments_handler_with_pagination():
     mock_context.fetch.assert_called_once_with(
         url="https://api.notion.com/v1/comments",
         method="GET",
-        headers={"Notion-Version": "2022-06-28"},
+        headers={"Notion-Version": "2025-09-03"},
         params={
             "block_id": "page-123",
             "page_size": 2,
@@ -207,8 +206,8 @@ async def test_get_comments_handler_with_pagination():
         }
     )
 
-    assert result["has_more"] is True
-    assert result["next_cursor"] == "cursor-abc"
+    assert result.data["has_more"] is True
+    assert result.data["next_cursor"] == "cursor-abc"
 
 
 async def test_get_comments_handler_error():
@@ -220,12 +219,10 @@ async def test_get_comments_handler_error():
 
     inputs = {"block_id": "page-789"}
 
-    try:
-        await handler.execute(inputs, mock_context)
-        assert False, "Expected exception was not raised"
-    except Exception as e:
-        assert "Failed to get comments for page-789" in str(e)
-        assert "API rate limit exceeded" in str(e)
+    result = await handler.execute(inputs, mock_context)
+    assert "error" in result.data
+    assert "API rate limit exceeded" in result.data["error"]
+    assert result.data["comments"] == []
 
 
 async def test_get_comments_handler_empty_optional_params():
@@ -243,13 +240,13 @@ async def test_get_comments_handler_empty_optional_params():
         "page_size": None,
         "start_cursor": ""
     }
-    result = await handler.execute(inputs, mock_context)
+    await handler.execute(inputs, mock_context)
 
     # Verify only block_id was passed (empty values should be ignored)
     mock_context.fetch.assert_called_once_with(
         url="https://api.notion.com/v1/comments",
         method="GET",
-        headers={"Notion-Version": "2022-06-28"},
+        headers={"Notion-Version": "2025-09-03"},
         params={"block_id": "page-123"}
     )
 

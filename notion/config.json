@@ -369,9 +369,9 @@
                                     "type": "string",
                                     "description": "Type of the block (paragraph, heading_1, etc.)"
                                 },
-                                "comment_count": {
-                                    "type": "integer",
-                                    "description": "Number of comments on this block"
+                                "has_comments": {
+                                    "type": "boolean",
+                                    "description": "Whether this block has comments"
                                 }
                             }
                         }
